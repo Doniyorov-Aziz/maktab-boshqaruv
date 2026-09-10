@@ -1,0 +1,6 @@
+package uz.azizbek.maktabboshqaruv.repository;
+import uz.azizbek.maktabboshqaruv.entity.School;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SchoolRepository extends JpaRepository<School, Long> {
+}
