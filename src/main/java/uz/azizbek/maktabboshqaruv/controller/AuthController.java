@@ -6,6 +6,7 @@ import uz.azizbek.maktabboshqaruv.repository.UserRepository;
 import uz.azizbek.maktabboshqaruv.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +35,7 @@ public class AuthController {
         return ResponseEntity.ok(token);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/hash/{raw}")
     public String hashPassword(@PathVariable String raw) {
         return passwordEncoder.encode(raw);
