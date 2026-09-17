@@ -2,9 +2,11 @@ package uz.azizbek.maktabboshqaruv.service;
 
 import uz.azizbek.maktabboshqaruv.dto.UserRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.UserResponseDto;
+import uz.azizbek.maktabboshqaruv.dto.UserUpdateRequestDto;
 import uz.azizbek.maktabboshqaruv.entity.User;
 import uz.azizbek.maktabboshqaruv.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,39 @@ public class UserService {
 
         User saved = userRepository.save(user);
         return toResponseDto(saved);
+    }
+
+    @Transactional
+    public UserResponseDto updateUser(Long id, UserUpdateRequestDto request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Bunday foydalanuvchi topilmadi: " + id));
+
+        if (!user.getUsername().equals(request.getUsername()) && userRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalStateException("Bu username bilan foydalanuvchi allaqachon mavjud");
+        }
+
+        user.setUsername(request.getUsername());
+        user.setRole(request.getRole());
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        User updated = userRepository.save(user);
+        return toResponseDto(updated);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Bunday foydalanuvchi topilmadi: " + id));
+
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (user.getUsername().equals(currentUsername)) {
+            throw new IllegalStateException("O'zingizni o'chira olmaysiz");
+        }
+
+        userRepository.deleteById(id);
     }
 
     private UserResponseDto toResponseDto(User user) {
