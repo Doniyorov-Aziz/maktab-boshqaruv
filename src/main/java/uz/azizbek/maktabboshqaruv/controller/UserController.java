@@ -1,0 +1,37 @@
+package uz.azizbek.maktabboshqaruv.controller;
+
+import uz.azizbek.maktabboshqaruv.dto.UserRequestDto;
+import uz.azizbek.maktabboshqaruv.dto.UserResponseDto;
+import uz.azizbek.maktabboshqaruv.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/users")
+@PreAuthorize("hasRole('ADMIN')")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping
+    public List<UserResponseDto> getAllUsers() {
+        return userService.getAllUsers();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserRequestDto request) {
+        UserResponseDto created = userService.createUser(request);
+        return ResponseEntity.status(201).body(created);
+    }
+}
