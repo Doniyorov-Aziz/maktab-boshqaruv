@@ -83,8 +83,11 @@ public class EmployeeService {
     private EmployeeResponseDto toResponseDto(Employee employee) {
         EmployeeResponseDto dto = new EmployeeResponseDto();
         dto.setId(employee.getId());
+        dto.setFirstName(employee.getFirstName());
+        dto.setLastName(employee.getLastName());
         dto.setFullName(employee.getFirstName() + " " + employee.getLastName());
         dto.setPhone(employee.getPhone());
+        dto.setPositionId(employee.getPosition().getId());
         dto.setPositionTitle(employee.getPosition().getTitle());
         return dto;
     }

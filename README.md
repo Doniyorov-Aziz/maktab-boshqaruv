@@ -27,6 +27,7 @@ Maktab boshqaruv tizimi uchun REST API. Spring Boot + PostgreSQL asosida qurilga
 | `JWT_SECRET` | **Ha** | JWT tokenlarni imzolash uchun Base64 kodlangan, kamida 32 baytlik maxfiy kalit |
 | `ADMIN_USERNAME` | Yo'q | Tizimda hech qanday foydalanuvchi bo'lmaganda avtomatik yaratiladigan dastlabki ADMIN uchun login |
 | `ADMIN_PASSWORD` | Yo'q | Dastlabki ADMIN uchun parol |
+| `CORS_ALLOWED_ORIGINS` | Yo'q (default: `http://localhost:9000`) | Frontend'ning manzili (vergul bilan bir nechtasini ko'rsatish mumkin) |
 
 `JWT_SECRET` generatsiya qilish uchun (PowerShell):
 ```powershell
@@ -79,3 +80,18 @@ Javobda qaytgan JWT tokenni keyingi so'rovlarda `Authorization: Bearer <token>` 
 `/api/schools`, `/api/buildings`, `/api/rooms`, `/api/academic-years`, `/api/school-classes`, `/api/students`, `/api/subjects`, `/api/employees`, `/api/positions`, `/api/lesson-slots`, `/api/users` — barchasi bir xil CRUD patternga ega.
 
 Ro'yxat endpoint'lari (`GET` ko'plik) pagination'ni qo'llab-quvvatlaydi: `?page=0&size=20&sort=name,asc`.
+
+## Frontend
+
+`frontend/` papkasida Quasar (Vue 3) admin panel joylashgan — login sahifasi va barcha 11 modul uchun jadval/forma CRUD ekranlari, bitta universal komponent (`src/pages/CrudPage.vue`) orqali `src/config/modules.js` konfiguratsiyasidan generatsiya qilinadi.
+
+### Ishga tushirish
+
+```bash
+cd frontend
+npm install
+cp .env.example .env   # kerak bo'lsa QCLI_API_BASE_URL'ni o'zgartiring
+npm run dev
+```
+
+Standart holatda `http://localhost:9000` da ochiladi va backend'ga `http://localhost:8080` orqali ulanadi. Backend'ning `CORS_ALLOWED_ORIGINS` shu manzilga mos bo'lishi kerak (default qiymat mos keladi).

@@ -75,6 +75,8 @@ public class StudentService {
     private StudentResponseDto toResponseDto(Student student) {
         StudentResponseDto dto = new StudentResponseDto();
         dto.setId(student.getId());
+        dto.setFirstName(student.getFirstName());
+        dto.setLastName(student.getLastName());
         dto.setFullName(student.getFirstName() + " " + student.getLastName());
         dto.setBirthDate(student.getBirthDate());
         dto.setSchoolClassId(student.getSchoolClass().getId());
