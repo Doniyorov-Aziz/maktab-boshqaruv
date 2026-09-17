@@ -7,10 +7,10 @@ import uz.azizbek.maktabboshqaruv.entity.Position;
 import uz.azizbek.maktabboshqaruv.repository.EmployeeRepository;
 import uz.azizbek.maktabboshqaruv.repository.PositionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class EmployeeService {
@@ -21,11 +21,9 @@ public class EmployeeService {
     @Autowired
     private PositionRepository positionRepository;
 
-    public List<EmployeeResponseDto> getAllEmployees() {
-        return employeeRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<EmployeeResponseDto> getAllEmployees(Pageable pageable) {
+        return employeeRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public EmployeeResponseDto getEmployeeById(Long id) {

@@ -13,10 +13,10 @@ import uz.azizbek.maktabboshqaruv.repository.RoomRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository;
 import uz.azizbek.maktabboshqaruv.repository.SubjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class LessonSlotService {
@@ -36,11 +36,9 @@ public class LessonSlotService {
     @Autowired
     private RoomRepository roomRepository;
 
-    public List<LessonSlotResponseDto> getAllLessonSlots() {
-        return lessonSlotRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<LessonSlotResponseDto> getAllLessonSlots(Pageable pageable) {
+        return lessonSlotRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public LessonSlotResponseDto getLessonSlotById(Long id) {

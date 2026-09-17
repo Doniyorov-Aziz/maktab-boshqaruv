@@ -9,6 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,17 +34,18 @@ class SchoolServiceTest {
     private SchoolService schoolService;
 
     @Test
-    void getAllSchools_returnsMappedList() {
+    void getAllSchools_returnsMappedPage() {
         School school = new School();
         school.setId(1L);
         school.setName("Maktab 1");
         school.setAddress("Toshkent");
-        when(schoolRepository.findAll()).thenReturn(List.of(school));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(schoolRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(school), pageable, 1));
 
-        List<SchoolResponseDto> result = schoolService.getAllSchools();
+        Page<SchoolResponseDto> result = schoolService.getAllSchools(pageable);
 
-        assertEquals(1, result.size());
-        assertEquals("Maktab 1", result.get(0).getName());
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Maktab 1", result.getContent().get(0).getName());
     }
 
     @Test

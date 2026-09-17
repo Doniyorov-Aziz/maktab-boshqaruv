@@ -7,10 +7,10 @@ import uz.azizbek.maktabboshqaruv.entity.SchoolClass;
 import uz.azizbek.maktabboshqaruv.repository.AcademicYearRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class SchoolClassService {
@@ -21,11 +21,9 @@ public class SchoolClassService {
     @Autowired
     private AcademicYearRepository academicYearRepository;
 
-    public List<SchoolClassResponseDto> getAllSchoolClasses() {
-        return schoolClassRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<SchoolClassResponseDto> getAllSchoolClasses(Pageable pageable) {
+        return schoolClassRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public SchoolClassResponseDto getSchoolClassById(Long id) {

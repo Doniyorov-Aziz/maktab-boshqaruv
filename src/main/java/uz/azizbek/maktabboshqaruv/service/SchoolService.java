@@ -5,10 +5,10 @@ import uz.azizbek.maktabboshqaruv.dto.SchoolResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class SchoolService {
@@ -16,11 +16,9 @@ public class SchoolService {
     @Autowired
     private SchoolRepository schoolRepository;
 
-    public List<SchoolResponseDto> getAllSchools() {
-        return schoolRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<SchoolResponseDto> getAllSchools(Pageable pageable) {
+        return schoolRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public SchoolResponseDto getSchoolById(Long id) {

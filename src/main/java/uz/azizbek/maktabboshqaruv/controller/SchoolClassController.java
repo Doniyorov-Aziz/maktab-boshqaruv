@@ -4,12 +4,12 @@ import uz.azizbek.maktabboshqaruv.dto.SchoolClassRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.SchoolClassResponseDto;
 import uz.azizbek.maktabboshqaruv.service.SchoolClassService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/school-classes")
@@ -20,8 +20,8 @@ public class SchoolClassController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public List<SchoolClassResponseDto> getAllSchoolClasses() {
-        return schoolClassService.getAllSchoolClasses();
+    public Page<SchoolClassResponseDto> getAllSchoolClasses(Pageable pageable) {
+        return schoolClassService.getAllSchoolClasses(pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

@@ -5,10 +5,10 @@ import uz.azizbek.maktabboshqaruv.dto.SubjectResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.Subject;
 import uz.azizbek.maktabboshqaruv.repository.SubjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class SubjectService {
@@ -16,11 +16,9 @@ public class SubjectService {
     @Autowired
     private SubjectRepository subjectRepository;
 
-    public List<SubjectResponseDto> getAllSubjects() {
-        return subjectRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<SubjectResponseDto> getAllSubjects(Pageable pageable) {
+        return subjectRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public SubjectResponseDto getSubjectById(Long id) {

@@ -4,12 +4,12 @@ import uz.azizbek.maktabboshqaruv.dto.SubjectRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.SubjectResponseDto;
 import uz.azizbek.maktabboshqaruv.service.SubjectService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/subjects")
@@ -20,8 +20,8 @@ public class SubjectController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public List<SubjectResponseDto> getAllSubjects() {
-        return subjectService.getAllSubjects();
+    public Page<SubjectResponseDto> getAllSubjects(Pageable pageable) {
+        return subjectService.getAllSubjects(pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

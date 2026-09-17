@@ -4,12 +4,12 @@ import uz.azizbek.maktabboshqaruv.dto.RoomRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.RoomResponseDto;
 import uz.azizbek.maktabboshqaruv.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -20,8 +20,8 @@ public class RoomController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public List<RoomResponseDto> getAllRooms() {
-        return roomService.getAllRooms();
+    public Page<RoomResponseDto> getAllRooms(Pageable pageable) {
+        return roomService.getAllRooms(pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

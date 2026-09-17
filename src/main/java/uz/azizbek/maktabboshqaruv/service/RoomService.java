@@ -7,10 +7,10 @@ import uz.azizbek.maktabboshqaruv.entity.Room;
 import uz.azizbek.maktabboshqaruv.repository.BuildingRepository;
 import uz.azizbek.maktabboshqaruv.repository.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class RoomService {
@@ -21,11 +21,9 @@ public class RoomService {
     @Autowired
     private BuildingRepository buildingRepository;
 
-    public List<RoomResponseDto> getAllRooms() {
-        return roomRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<RoomResponseDto> getAllRooms(Pageable pageable) {
+        return roomRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public RoomResponseDto getRoomById(Long id) {

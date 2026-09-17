@@ -4,12 +4,12 @@ import uz.azizbek.maktabboshqaruv.dto.EmployeeRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.EmployeeResponseDto;
 import uz.azizbek.maktabboshqaruv.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -20,8 +20,8 @@ public class EmployeeController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public List<EmployeeResponseDto> getAllEmployees() {
-        return employeeService.getAllEmployees();
+    public Page<EmployeeResponseDto> getAllEmployees(Pageable pageable) {
+        return employeeService.getAllEmployees(pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

@@ -4,10 +4,10 @@ import uz.azizbek.maktabboshqaruv.dto.PositionResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.Position;
 import uz.azizbek.maktabboshqaruv.repository.PositionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class PositionService {
@@ -15,11 +15,9 @@ public class PositionService {
     @Autowired
     private PositionRepository positionRepository;
 
-    public List<PositionResponseDto> getAllPositions() {
-        return positionRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<PositionResponseDto> getAllPositions(Pageable pageable) {
+        return positionRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public PositionResponseDto getPositionById(Long id) {

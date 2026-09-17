@@ -4,12 +4,12 @@ import uz.azizbek.maktabboshqaruv.dto.LessonSlotRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.LessonSlotResponseDto;
 import uz.azizbek.maktabboshqaruv.service.LessonSlotService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/lesson-slots")
@@ -20,8 +20,8 @@ public class LessonSlotController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public List<LessonSlotResponseDto> getAllLessonSlots() {
-        return lessonSlotService.getAllLessonSlots();
+    public Page<LessonSlotResponseDto> getAllLessonSlots(Pageable pageable) {
+        return lessonSlotService.getAllLessonSlots(pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

@@ -5,12 +5,12 @@ import uz.azizbek.maktabboshqaruv.dto.UserResponseDto;
 import uz.azizbek.maktabboshqaruv.dto.UserUpdateRequestDto;
 import uz.azizbek.maktabboshqaruv.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -21,8 +21,8 @@ public class UserController {
     private UserService userService;
 
     @GetMapping
-    public List<UserResponseDto> getAllUsers() {
-        return userService.getAllUsers();
+    public Page<UserResponseDto> getAllUsers(Pageable pageable) {
+        return userService.getAllUsers(pageable);
     }
 
     @GetMapping("/{id}")

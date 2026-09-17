@@ -4,12 +4,12 @@ import uz.azizbek.maktabboshqaruv.dto.PositionRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.PositionResponseDto;
 import uz.azizbek.maktabboshqaruv.service.PositionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/positions")
@@ -20,8 +20,8 @@ public class PositionController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public List<PositionResponseDto> getAllPositions() {
-        return positionService.getAllPositions();
+    public Page<PositionResponseDto> getAllPositions(Pageable pageable) {
+        return positionService.getAllPositions(pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

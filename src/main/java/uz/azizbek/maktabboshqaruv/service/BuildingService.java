@@ -7,10 +7,10 @@ import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.repository.BuildingRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class BuildingService {
@@ -21,11 +21,9 @@ public class BuildingService {
     @Autowired
     private SchoolRepository schoolRepository;
 
-    public List<BuildingResponseDto> getAllBuildings() {
-        return buildingRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<BuildingResponseDto> getAllBuildings(Pageable pageable) {
+        return buildingRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public BuildingResponseDto getBuildingById(Long id) {

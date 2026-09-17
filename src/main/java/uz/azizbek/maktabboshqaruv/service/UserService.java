@@ -6,12 +6,12 @@ import uz.azizbek.maktabboshqaruv.dto.UserUpdateRequestDto;
 import uz.azizbek.maktabboshqaruv.entity.User;
 import uz.azizbek.maktabboshqaruv.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class UserService {
@@ -22,11 +22,9 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public List<UserResponseDto> getAllUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<UserResponseDto> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable)
+                .map(this::toResponseDto);
     }
 
     public UserResponseDto getUserById(Long id) {
