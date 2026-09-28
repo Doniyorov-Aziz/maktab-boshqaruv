@@ -15,47 +15,35 @@ Maktab boshqaruv tizimi uchun REST API. Spring Boot + PostgreSQL asosida qurilga
 
 `School` → `Building` → `Room`, `School` → `AcademicYear` → `SchoolClass` → `Student`, `Subject`, `Employee`/`Position`, va bularning barchasini bog'lovchi `LessonSlot` (dars jadvali). Foydalanuvchilar `User` (rollar: `ADMIN`, `EDITOR`, `VIEWER`) orqali boshqariladi.
 
-## Ishga tushirish
+## Ishga tushirish (lokal/o'rganish uchun)
 
-### 1. Kerakli environment variable'lar
-
-| Nomi | Majburiymi | Tavsifi |
-|---|---|---|
-| `DB_URL` | Yo'q (default: `jdbc:postgresql://localhost:5432/maktab_db`) | PostgreSQL ulanish manzili |
-| `DB_USERNAME` | Yo'q (default: `postgres`) | DB foydalanuvchi nomi |
-| `DB_PASSWORD` | **Ha** | DB paroli |
-| `JWT_SECRET` | **Ha** | JWT tokenlarni imzolash uchun Base64 kodlangan, kamida 32 baytlik maxfiy kalit |
-| `ADMIN_USERNAME` | Yo'q | Tizimda hech qanday foydalanuvchi bo'lmaganda avtomatik yaratiladigan dastlabki ADMIN uchun login |
-| `ADMIN_PASSWORD` | Yo'q | Dastlabki ADMIN uchun parol |
-| `CORS_ALLOWED_ORIGINS` | Yo'q (default: `http://localhost:9000`) | Frontend'ning manzili (vergul bilan bir nechtasini ko'rsatish mumkin) |
-
-`JWT_SECRET` generatsiya qilish uchun (PowerShell):
-```powershell
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
-```
-
-### 2. Environment variable'larni sozlash (PowerShell misoli)
-
-```powershell
-$env:DB_PASSWORD="sizning_parolingiz"
-$env:JWT_SECRET="Base64_kodlangan_maxfiy_kalit"
-$env:ADMIN_USERNAME="admin"
-$env:ADMIN_PASSWORD="kamida_6_belgi"
-```
-
-### 3. Ishga tushirish
+Hech qanday sozlash shart emas — standart qiymatlar bilan darhol ishga tushadi:
 
 ```bash
 ./gradlew bootRun
 ```
 
-Birinchi marta ishga tushirilganda, agar `ADMIN_USERNAME`/`ADMIN_PASSWORD` berilgan bo'lsa va bazada hech qanday foydalanuvchi bo'lmasa, dastlabki ADMIN akkaunt avtomatik yaratiladi (`AdminSeeder`). Shundan keyin `/api/users` orqali qo'shimcha foydalanuvchilar (EDITOR/VIEWER) yaratish mumkin.
+Birinchi marta ishga tushirilganda, bazada hech qanday foydalanuvchi bo'lmasa, dastlabki ADMIN akkaunt avtomatik yaratiladi: **`admin` / `admin123`**. Shundan keyin `/api/users` orqali qo'shimcha foydalanuvchilar (EDITOR/VIEWER) yaratish mumkin.
 
-### 4. Testlarni ishga tushirish
-
+Testlarni ishga tushirish:
 ```bash
 ./gradlew test
 ```
+
+### Sozlamalarni o'zgartirish kerak bo'lsa
+
+Barcha qiymatlar `src/main/resources/application.properties`da, standart bilan birga yozilgan (`${VAR:standart_qiymat}` shaklida). Boshqa qiymat berish uchun shunchaki mos environment variable'ni sozlang:
+
+| Nomi | Standart qiymati |
+|---|---|
+| `DB_URL` | `jdbc:postgresql://localhost:5432/maktab_db` |
+| `DB_USERNAME` | `postgres` |
+| `DB_PASSWORD` | `Aziz0708.` |
+| `JWT_SECRET` | (loyihada tayyor qiymat bor) |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `admin123` |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:9000` |
+
+> **Eslatma:** bu standart qiymatlar faqat lokal/o'rganish maqsadida qulaylik uchun. Loyiha real serverga (production) chiqariladigan bo'lsa, bularni albatta maxfiy, faqat shu muhitga xos qiymatlar bilan almashtirish kerak (environment variable orqali, kodga yozmasdan).
 
 ## Autentifikatsiya
 

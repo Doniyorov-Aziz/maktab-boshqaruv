@@ -1,21 +1,30 @@
 <template>
-  <div
-    class="fullscreen bg-blue text-white text-center q-pa-md flex flex-center"
-  >
-    <div>
-      <div style="font-size: 30vh"> 404 </div>
-
-      <div class="text-h2" style="opacity: 0.4"> Oops. Nothing here... </div>
-
-      <q-btn
-        class="q-mt-xl"
-        color="white"
-        text-color="blue"
-        unelevated
-        to="/"
-        label="Go Home"
-        no-caps
-      />
-    </div>
-  </div>
+  <q-layout>
+    <q-page-container>
+      <q-page
+        class="flex flex-center column text-center q-pa-md"
+        style="min-height: 100vh"
+      >
+        <q-avatar
+          size="88px"
+          class="brand-gradient q-mb-lg"
+          text-color="white"
+          icon="explore_off"
+        />
+        <div class="text-h2 text-weight-bold text-grey-9">404</div>
+        <div class="text-h6 text-grey-7 q-mt-sm q-mb-lg">
+          Bunday sahifa topilmadi
+        </div>
+        <q-btn
+          color="primary"
+          icon="home"
+          label="Bosh sahifaga qaytish"
+          unelevated
+          no-caps
+          class="q-px-md"
+          to="/"
+        />
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>

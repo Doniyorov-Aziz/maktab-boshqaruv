@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.0.1",
   "private": true,
-  "description": "A Quasar Project",
+  "description": "Maktab boshqaruv tizimi uchun admin panel",
   "keywords": [
     "quasar",
     "quasar-app",
@@ -22,11 +22,14 @@
     "postinstall": "quasar prepare --silent"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
     "@quasar/extras": "^2.1.0",
     "axios": "^1.20.0",
+    "chart.js": "^4.5.1",
     "pinia": "^4.0.3",
     "quasar": "^2.32.3",
     "vue": "^3.5.22",
+    "vue-chartjs": "^5.3.4",
     "vue-router": "^5.0.6"
   },
   "devDependencies": {
@@ -39,5 +42,5 @@
   "engines": {
     "node": ">= 26 || ^24 || ^22.12"
   },
-  "productName": "Quasar App"
+  "productName": "Maktab Boshqaruv"
 }

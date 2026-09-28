@@ -1,62 +1,121 @@
 <template>
-  <q-page class="q-pa-md" v-if="module">
-    <div class="row items-center q-mb-md">
-      <div class="text-h5 col">{{ module.title }}</div>
-      <q-btn
-        v-if="canCreate"
-        color="primary"
-        icon="add"
-        label="Yangi qo'shish"
-        unelevated
-        @click="openCreateDialog"
-      />
+  <q-page class="q-pa-md crud-page" v-if="module">
+    <div class="row items-center q-mb-lg q-col-gutter-md">
+      <div class="col-auto">
+        <q-avatar
+          size="48px"
+          class="brand-gradient"
+          text-color="white"
+          :icon="module.icon"
+        />
+      </div>
+      <div class="col">
+        <div class="text-h5 text-weight-bold">{{ module.title }}</div>
+        <div class="text-caption text-grey-6">
+          <q-skeleton v-if="loading" type="text" width="90px" />
+          <template v-else>Jami {{ pagination.rowsNumber }} ta yozuv</template>
+        </div>
+      </div>
+      <div class="col-auto">
+        <q-btn
+          v-if="canCreate"
+          color="primary"
+          icon="add"
+          label="Yangi qo'shish"
+          unelevated
+          no-caps
+          class="q-px-md"
+          @click="openCreateDialog"
+        />
+      </div>
     </div>
 
-    <q-table
-      :rows="rows"
-      :columns="tableColumns"
-      row-key="id"
-      :loading="loading"
-      v-model:pagination="pagination"
-      @request="onRequest"
-      binary-state-sort
-      flat
-      bordered
-    >
-      <template v-slot:body-cell-actions="props">
-        <q-td :props="props" class="q-gutter-x-sm">
-          <q-btn
-            v-if="canEdit"
-            flat
-            dense
-            round
-            icon="edit"
-            color="primary"
-            @click="openEditDialog(props.row)"
-          />
-          <q-btn
-            v-if="canDelete"
-            flat
-            dense
-            round
-            icon="delete"
-            color="negative"
-            @click="confirmDelete(props.row)"
-          />
-        </q-td>
-      </template>
-    </q-table>
+    <div class="brand-card bg-white overflow-hidden">
+      <q-table
+        :rows="rows"
+        :columns="tableColumns"
+        row-key="id"
+        :loading="loading"
+        v-model:pagination="pagination"
+        @request="onRequest"
+        binary-state-sort
+        flat
+        class="brand-table"
+        :rows-per-page-options="[10, 20, 50]"
+      >
+        <template v-slot:loading>
+          <q-inner-loading showing color="primary" />
+        </template>
+
+        <template v-slot:no-data>
+          <div class="full-width column flex-center q-py-xl text-grey-6">
+            <q-icon name="inbox" size="48px" class="q-mb-sm" />
+            <div class="text-subtitle2">Hozircha ma'lumot yo'q</div>
+            <div class="text-caption q-mb-md">
+              Boshlash uchun birinchi yozuvni qo'shing
+            </div>
+            <q-btn
+              v-if="canCreate"
+              outline
+              color="primary"
+              icon="add"
+              label="Yangi qo'shish"
+              no-caps
+              @click="openCreateDialog"
+            />
+          </div>
+        </template>
+
+        <template v-slot:body-cell-actions="props">
+          <q-td :props="props" class="q-gutter-x-xs">
+            <q-btn
+              v-if="canEdit"
+              flat
+              dense
+              round
+              size="sm"
+              icon="edit"
+              color="primary"
+              @click="openEditDialog(props.row)"
+            >
+              <q-tooltip>Tahrirlash</q-tooltip>
+            </q-btn>
+            <q-btn
+              v-if="canDelete"
+              flat
+              dense
+              round
+              size="sm"
+              icon="delete_outline"
+              color="negative"
+              @click="confirmDelete(props.row)"
+            >
+              <q-tooltip>O'chirish</q-tooltip>
+            </q-btn>
+          </q-td>
+        </template>
+      </q-table>
+    </div>
 
     <q-dialog v-model="dialogOpen" persistent>
-      <q-card style="width: 100%; max-width: 480px">
-        <q-card-section>
+      <q-card style="width: 100%; max-width: 480px; border-radius: 18px">
+        <q-card-section class="row items-center q-pb-none">
+          <q-avatar
+            size="40px"
+            :color="isEditing ? 'primary' : 'positive'"
+            text-color="white"
+            :icon="isEditing ? 'edit' : 'add'"
+            class="q-mr-sm"
+          />
           <div class="text-h6">
-            {{ isEditing ? "Tahrirlash" : "Yangi qo'shish" }}
+            {{ isEditing ? 'Tahrirlash' : "Yangi qo'shish" }}
           </div>
+          <q-space />
+          <q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
 
         <q-form @submit.prevent="onSave">
-          <q-card-section class="q-gutter-md">
+          <q-card-section class="q-gutter-md q-pt-md">
             <template v-for="field in module.fields" :key="field.key">
               <q-select
                 v-if="field.type === 'select'"
@@ -67,7 +126,8 @@
                 option-label="label"
                 emit-value
                 map-options
-                filled
+                outlined
+                dense
                 :rules="fieldRules(field)"
               />
               <q-input
@@ -76,19 +136,41 @@
                 :label="field.label"
                 :type="inputType(field)"
                 :hint="field.hint"
-                filled
+                outlined
+                dense
                 :rules="fieldRules(field)"
               />
             </template>
 
-            <div v-if="formError" class="text-negative text-caption">
+            <q-banner
+              v-if="formError"
+              class="bg-red-1 text-negative rounded-borders"
+              dense
+            >
+              <template v-slot:avatar>
+                <q-icon name="error_outline" color="negative" />
+              </template>
               {{ formError }}
-            </div>
+            </q-banner>
           </q-card-section>
 
-          <q-card-actions align="right">
-            <q-btn flat label="Bekor qilish" v-close-popup />
-            <q-btn type="submit" color="primary" label="Saqlash" :loading="saving" />
+          <q-card-actions align="right" class="q-pa-md">
+            <q-btn
+              flat
+              label="Bekor qilish"
+              no-caps
+              color="grey-7"
+              v-close-popup
+            />
+            <q-btn
+              type="submit"
+              color="primary"
+              label="Saqlash"
+              no-caps
+              unelevated
+              class="q-px-md"
+              :loading="saving"
+            />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -117,16 +199,16 @@ const pagination = ref({
   descending: false,
   page: 1,
   rowsPerPage: 10,
-  rowsNumber: 0,
+  rowsNumber: 0
 })
 
 const tableColumns = computed(() => [
   ...module.value.columns,
-  { name: 'actions', label: '', field: 'actions', align: 'right' },
+  { name: 'actions', label: '', field: 'actions', align: 'right' }
 ])
 
 const canCreate = computed(() =>
-  module.value.adminOnly ? authStore.isAdmin : authStore.isEditor,
+  module.value.adminOnly ? authStore.isAdmin : authStore.isEditor
 )
 const canEdit = canCreate
 const canDelete = computed(() => authStore.isAdmin)
@@ -138,7 +220,7 @@ async function fetchRows() {
     const { page, rowsPerPage, sortBy, descending } = pagination.value
     const params = {
       page: page - 1,
-      size: rowsPerPage,
+      size: rowsPerPage
     }
     if (sortBy) {
       params.sort = `${sortBy},${descending ? 'desc' : 'asc'}`
@@ -161,10 +243,16 @@ function onRequest(requestProp) {
 watch(
   () => route.params.moduleKey,
   () => {
-    pagination.value = { sortBy: 'id', descending: false, page: 1, rowsPerPage: 10, rowsNumber: 0 }
+    pagination.value = {
+      sortBy: 'id',
+      descending: false,
+      page: 1,
+      rowsPerPage: 10,
+      rowsNumber: 0
+    }
     fetchRows()
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 const dialogOpen = ref(false)
@@ -185,9 +273,13 @@ function inputType(field) {
 
 function fieldRules(field) {
   const rules = []
-  const isRequired = field.required && !(isEditing.value && field.requiredOnCreateOnly)
+  const isRequired =
+    field.required && !(isEditing.value && field.requiredOnCreateOnly)
   if (isRequired) {
-    rules.push((val) => (val !== null && val !== undefined && val !== '') || 'Majburiy maydon')
+    rules.push(
+      val =>
+        (val !== null && val !== undefined && val !== '') || 'Majburiy maydon'
+    )
   }
   return rules
 }
@@ -197,20 +289,22 @@ async function loadFieldOptions() {
     if (field.type !== 'select') continue
 
     if (field.options) {
-      fieldOptions[field.key] = field.options.map((o) => ({ label: o, value: o }))
+      fieldOptions[field.key] = field.options.map(o => ({ label: o, value: o }))
       continue
     }
 
     if (field.optionsEndpoint) {
       try {
-        const response = await api.get(field.optionsEndpoint, { params: { size: 1000 } })
+        const response = await api.get(field.optionsEndpoint, {
+          params: { size: 1000 }
+        })
         const items = response.data.content
-        fieldOptions[field.key] = items.map((item) => ({
+        fieldOptions[field.key] = items.map(item => ({
           value: item[field.optionValue],
           label:
             typeof field.optionLabel === 'function'
               ? field.optionLabel(item)
-              : item[field.optionLabel],
+              : item[field.optionLabel]
         }))
       } catch {
         fieldOptions[field.key] = []
@@ -223,7 +317,7 @@ async function openCreateDialog() {
   isEditing.value = false
   editingId.value = null
   formError.value = ''
-  Object.keys(formModel).forEach((k) => delete formModel[k])
+  Object.keys(formModel).forEach(k => delete formModel[k])
   await loadFieldOptions()
   dialogOpen.value = true
 }
@@ -233,7 +327,7 @@ async function openEditDialog(row) {
   editingId.value = row.id
   formError.value = ''
   await loadFieldOptions()
-  module.value.fields.forEach((field) => {
+  module.value.fields.forEach(field => {
     formModel[field.key] = field.type === 'password' ? '' : row[field.key]
   })
   dialogOpen.value = true
@@ -255,7 +349,11 @@ async function onSave() {
     }
 
     dialogOpen.value = false
-    $q.notify({ type: 'positive', message: 'Muvaffaqiyatli saqlandi' })
+    $q.notify({
+      type: 'positive',
+      message: 'Muvaffaqiyatli saqlandi',
+      icon: 'check_circle'
+    })
     fetchRows()
   } catch (error) {
     formError.value = extractError(error)
@@ -267,13 +365,29 @@ async function onSave() {
 function confirmDelete(row) {
   $q.dialog({
     title: "O'chirish",
-    message: "Haqiqatan ham o'chirmoqchimisiz?",
-    cancel: true,
-    persistent: true,
+    message:
+      "Haqiqatan ham o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
+    cancel: {
+      flat: true,
+      label: 'Bekor qilish',
+      color: 'grey-7',
+      noCaps: true
+    },
+    ok: {
+      label: "O'chirish",
+      color: 'negative',
+      unelevated: true,
+      noCaps: true
+    },
+    persistent: true
   }).onOk(async () => {
     try {
       await api.delete(`${module.value.endpoint}/${row.id}`)
-      $q.notify({ type: 'positive', message: "Muvaffaqiyatli o'chirildi" })
+      $q.notify({
+        type: 'positive',
+        message: "Muvaffaqiyatli o'chirildi",
+        icon: 'check_circle'
+      })
       fetchRows()
     } catch (error) {
       $q.notify({ type: 'negative', message: extractError(error) })
@@ -285,3 +399,10 @@ function extractError(error) {
   return error.response?.data || 'Xatolik yuz berdi'
 }
 </script>
+
+<style scoped>
+.crud-page {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+</style>

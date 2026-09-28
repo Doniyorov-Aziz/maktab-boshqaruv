@@ -5,7 +5,7 @@ const weekdayOptions = [
   'Payshanba',
   'Juma',
   'Shanba',
-  'Yakshanba',
+  'Yakshanba'
 ]
 
 const roleOptions = ['ADMIN', 'EDITOR', 'VIEWER']
@@ -15,26 +15,45 @@ export const modules = [
     key: 'schools',
     title: 'Maktablar',
     icon: 'school',
+    group: "Ta'lim tuzilmasi",
     endpoint: '/api/schools',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'name', label: 'Nomi', field: 'name', sortable: true, align: 'left' },
-      { name: 'address', label: 'Manzil', field: 'address', align: 'left' },
+      {
+        name: 'name',
+        label: 'Nomi',
+        field: 'name',
+        sortable: true,
+        align: 'left'
+      },
+      { name: 'address', label: 'Manzil', field: 'address', align: 'left' }
     ],
     fields: [
       { key: 'name', label: 'Nomi', type: 'text', required: true },
-      { key: 'address', label: 'Manzil', type: 'text', required: true },
-    ],
+      { key: 'address', label: 'Manzil', type: 'text', required: true }
+    ]
   },
   {
     key: 'buildings',
     title: 'Binolar',
     icon: 'apartment',
+    group: "Ta'lim tuzilmasi",
     endpoint: '/api/buildings',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'name', label: 'Nomi', field: 'name', sortable: true, align: 'left' },
-      { name: 'schoolName', label: 'Maktab', field: 'schoolName', align: 'left' },
+      {
+        name: 'name',
+        label: 'Nomi',
+        field: 'name',
+        sortable: true,
+        align: 'left'
+      },
+      {
+        name: 'schoolName',
+        label: 'Maktab',
+        field: 'schoolName',
+        align: 'left'
+      }
     ],
     fields: [
       { key: 'name', label: 'Nomi', type: 'text', required: true },
@@ -45,20 +64,32 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/schools',
         optionValue: 'id',
-        optionLabel: 'name',
-      },
-    ],
+        optionLabel: 'name'
+      }
+    ]
   },
   {
     key: 'rooms',
     title: 'Xonalar',
     icon: 'meeting_room',
+    group: "Ta'lim tuzilmasi",
     endpoint: '/api/rooms',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'roomNumber', label: 'Xona raqami', field: 'roomNumber', sortable: true, align: 'left' },
+      {
+        name: 'roomNumber',
+        label: 'Xona raqami',
+        field: 'roomNumber',
+        sortable: true,
+        align: 'left'
+      },
       { name: 'capacity', label: "Sig'im", field: 'capacity', align: 'left' },
-      { name: 'buildingName', label: 'Bino', field: 'buildingName', align: 'left' },
+      {
+        name: 'buildingName',
+        label: 'Bino',
+        field: 'buildingName',
+        align: 'left'
+      }
     ],
     fields: [
       { key: 'roomNumber', label: 'Xona raqami', type: 'text', required: true },
@@ -70,25 +101,47 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/buildings',
         optionValue: 'id',
-        optionLabel: 'name',
-      },
-    ],
+        optionLabel: 'name'
+      }
+    ]
   },
   {
     key: 'academic-years',
     title: "O'quv yillari",
     icon: 'event',
+    group: "O'quv jarayoni",
     endpoint: '/api/academic-years',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'title', label: 'Sarlavha', field: 'title', sortable: true, align: 'left' },
-      { name: 'startDate', label: 'Boshlanish', field: 'startDate', align: 'left' },
+      {
+        name: 'title',
+        label: 'Sarlavha',
+        field: 'title',
+        sortable: true,
+        align: 'left'
+      },
+      {
+        name: 'startDate',
+        label: 'Boshlanish',
+        field: 'startDate',
+        align: 'left'
+      },
       { name: 'endDate', label: 'Tugash', field: 'endDate', align: 'left' },
-      { name: 'schoolName', label: 'Maktab', field: 'schoolName', align: 'left' },
+      {
+        name: 'schoolName',
+        label: 'Maktab',
+        field: 'schoolName',
+        align: 'left'
+      }
     ],
     fields: [
       { key: 'title', label: 'Sarlavha', type: 'text', required: true },
-      { key: 'startDate', label: 'Boshlanish sanasi', type: 'date', required: true },
+      {
+        key: 'startDate',
+        label: 'Boshlanish sanasi',
+        type: 'date',
+        required: true
+      },
       { key: 'endDate', label: 'Tugash sanasi', type: 'date', required: true },
       {
         key: 'schoolId',
@@ -97,26 +150,58 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/schools',
         optionValue: 'id',
-        optionLabel: 'name',
-      },
-    ],
+        optionLabel: 'name'
+      }
+    ]
   },
   {
     key: 'school-classes',
     title: 'Sinflar',
     icon: 'groups',
+    group: "O'quv jarayoni",
     endpoint: '/api/school-classes',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'gradeNumber', label: 'Sinf', field: 'gradeNumber', sortable: true, align: 'left' },
-      { name: 'sectionLetter', label: 'Harf', field: 'sectionLetter', align: 'left' },
-      { name: 'maxStudents', label: 'Maks. o\'quvchi', field: 'maxStudents', align: 'left' },
-      { name: 'academicYearTitle', label: "O'quv yili", field: 'academicYearTitle', align: 'left' },
+      {
+        name: 'gradeNumber',
+        label: 'Sinf',
+        field: 'gradeNumber',
+        sortable: true,
+        align: 'left'
+      },
+      {
+        name: 'sectionLetter',
+        label: 'Harf',
+        field: 'sectionLetter',
+        align: 'left'
+      },
+      {
+        name: 'maxStudents',
+        label: "Maks. o'quvchi",
+        field: 'maxStudents',
+        align: 'left'
+      },
+      {
+        name: 'academicYearTitle',
+        label: "O'quv yili",
+        field: 'academicYearTitle',
+        align: 'left'
+      }
     ],
     fields: [
-      { key: 'gradeNumber', label: 'Sinf raqami', type: 'number', required: true },
+      {
+        key: 'gradeNumber',
+        label: 'Sinf raqami',
+        type: 'number',
+        required: true
+      },
       { key: 'sectionLetter', label: 'Harf', type: 'text', required: true },
-      { key: 'maxStudents', label: "Maksimal o'quvchilar soni", type: 'number', required: true },
+      {
+        key: 'maxStudents',
+        label: "Maksimal o'quvchilar soni",
+        type: 'number',
+        required: true
+      },
       {
         key: 'academicYearId',
         label: "O'quv yili",
@@ -124,25 +209,42 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/academic-years',
         optionValue: 'id',
-        optionLabel: 'title',
-      },
-    ],
+        optionLabel: 'title'
+      }
+    ]
   },
   {
     key: 'students',
     title: "O'quvchilar",
     icon: 'face',
+    group: 'Odamlar',
     endpoint: '/api/students',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'fullName', label: "To'liq ism", field: 'fullName', sortable: true, align: 'left' },
-      { name: 'birthDate', label: "Tug'ilgan sana", field: 'birthDate', align: 'left' },
-      { name: 'className', label: 'Sinf', field: 'className', align: 'left' },
+      {
+        name: 'fullName',
+        label: "To'liq ism",
+        field: 'fullName',
+        sortable: true,
+        align: 'left'
+      },
+      {
+        name: 'birthDate',
+        label: "Tug'ilgan sana",
+        field: 'birthDate',
+        align: 'left'
+      },
+      { name: 'className', label: 'Sinf', field: 'className', align: 'left' }
     ],
     fields: [
       { key: 'firstName', label: 'Ism', type: 'text', required: true },
       { key: 'lastName', label: 'Familiya', type: 'text', required: true },
-      { key: 'birthDate', label: "Tug'ilgan sana", type: 'date', required: true },
+      {
+        key: 'birthDate',
+        label: "Tug'ilgan sana",
+        type: 'date',
+        required: true
+      },
       {
         key: 'schoolClassId',
         label: 'Sinf',
@@ -150,42 +252,68 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/school-classes',
         optionValue: 'id',
-        optionLabel: (item) => `${item.gradeNumber}-${item.sectionLetter}`,
-      },
-    ],
+        optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`
+      }
+    ]
   },
   {
     key: 'subjects',
     title: 'Fanlar',
     icon: 'menu_book',
+    group: "O'quv jarayoni",
     endpoint: '/api/subjects',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'name', label: 'Nomi', field: 'name', sortable: true, align: 'left' },
+      {
+        name: 'name',
+        label: 'Nomi',
+        field: 'name',
+        sortable: true,
+        align: 'left'
+      }
     ],
-    fields: [{ key: 'name', label: 'Nomi', type: 'text', required: true }],
+    fields: [{ key: 'name', label: 'Nomi', type: 'text', required: true }]
   },
   {
     key: 'positions',
     title: 'Lavozimlar',
     icon: 'badge',
+    group: 'Odamlar',
     endpoint: '/api/positions',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'title', label: 'Nomi', field: 'title', sortable: true, align: 'left' },
+      {
+        name: 'title',
+        label: 'Nomi',
+        field: 'title',
+        sortable: true,
+        align: 'left'
+      }
     ],
-    fields: [{ key: 'title', label: 'Nomi', type: 'text', required: true }],
+    fields: [{ key: 'title', label: 'Nomi', type: 'text', required: true }]
   },
   {
     key: 'employees',
     title: 'Xodimlar',
     icon: 'work',
+    group: 'Odamlar',
     endpoint: '/api/employees',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'fullName', label: "To'liq ism", field: 'fullName', sortable: true, align: 'left' },
+      {
+        name: 'fullName',
+        label: "To'liq ism",
+        field: 'fullName',
+        sortable: true,
+        align: 'left'
+      },
       { name: 'phone', label: 'Telefon', field: 'phone', align: 'left' },
-      { name: 'positionTitle', label: 'Lavozim', field: 'positionTitle', align: 'left' },
+      {
+        name: 'positionTitle',
+        label: 'Lavozim',
+        field: 'positionTitle',
+        align: 'left'
+      }
     ],
     fields: [
       { key: 'firstName', label: 'Ism', type: 'text', required: true },
@@ -198,24 +326,40 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/positions',
         optionValue: 'id',
-        optionLabel: 'title',
-      },
-    ],
+        optionLabel: 'title'
+      }
+    ]
   },
   {
     key: 'lesson-slots',
     title: 'Dars jadvali',
     icon: 'schedule',
+    group: "O'quv jarayoni",
     endpoint: '/api/lesson-slots',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       { name: 'className', label: 'Sinf', field: 'className', align: 'left' },
-      { name: 'subjectName', label: 'Fan', field: 'subjectName', align: 'left' },
-      { name: 'employeeName', label: "O'qituvchi", field: 'employeeName', align: 'left' },
+      {
+        name: 'subjectName',
+        label: 'Fan',
+        field: 'subjectName',
+        align: 'left'
+      },
+      {
+        name: 'employeeName',
+        label: "O'qituvchi",
+        field: 'employeeName',
+        align: 'left'
+      },
       { name: 'roomNumber', label: 'Xona', field: 'roomNumber', align: 'left' },
       { name: 'weekday', label: 'Kun', field: 'weekday', align: 'left' },
-      { name: 'startTime', label: 'Boshlanish', field: 'startTime', align: 'left' },
-      { name: 'endTime', label: 'Tugash', field: 'endTime', align: 'left' },
+      {
+        name: 'startTime',
+        label: 'Boshlanish',
+        field: 'startTime',
+        align: 'left'
+      },
+      { name: 'endTime', label: 'Tugash', field: 'endTime', align: 'left' }
     ],
     fields: [
       {
@@ -225,7 +369,7 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/school-classes',
         optionValue: 'id',
-        optionLabel: (item) => `${item.gradeNumber}-${item.sectionLetter}`,
+        optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`
       },
       {
         key: 'subjectId',
@@ -234,7 +378,7 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/subjects',
         optionValue: 'id',
-        optionLabel: 'name',
+        optionLabel: 'name'
       },
       {
         key: 'employeeId',
@@ -243,7 +387,7 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/employees',
         optionValue: 'id',
-        optionLabel: 'fullName',
+        optionLabel: 'fullName'
       },
       {
         key: 'roomId',
@@ -252,29 +396,41 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/rooms',
         optionValue: 'id',
-        optionLabel: 'roomNumber',
+        optionLabel: 'roomNumber'
       },
       {
         key: 'weekday',
         label: 'Hafta kuni',
         type: 'select',
         required: true,
-        options: weekdayOptions,
+        options: weekdayOptions
       },
-      { key: 'startTime', label: 'Boshlanish vaqti', type: 'time', required: true },
-      { key: 'endTime', label: 'Tugash vaqti', type: 'time', required: true },
-    ],
+      {
+        key: 'startTime',
+        label: 'Boshlanish vaqti',
+        type: 'time',
+        required: true
+      },
+      { key: 'endTime', label: 'Tugash vaqti', type: 'time', required: true }
+    ]
   },
   {
     key: 'users',
     title: 'Foydalanuvchilar',
     icon: 'manage_accounts',
+    group: 'Boshqaruv',
     endpoint: '/api/users',
     adminOnly: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
-      { name: 'username', label: 'Username', field: 'username', sortable: true, align: 'left' },
-      { name: 'role', label: 'Rol', field: 'role', align: 'left' },
+      {
+        name: 'username',
+        label: 'Username',
+        field: 'username',
+        sortable: true,
+        align: 'left'
+      },
+      { name: 'role', label: 'Rol', field: 'role', align: 'left' }
     ],
     fields: [
       { key: 'username', label: 'Username', type: 'text', required: true },
@@ -284,13 +440,19 @@ export const modules = [
         type: 'password',
         required: true,
         requiredOnCreateOnly: true,
-        hint: 'Tahrirlashda bo\'sh qoldirilsa, eski parol saqlanadi',
+        hint: "Tahrirlashda bo'sh qoldirilsa, eski parol saqlanadi"
       },
-      { key: 'role', label: 'Rol', type: 'select', required: true, options: roleOptions },
-    ],
-  },
+      {
+        key: 'role',
+        label: 'Rol',
+        type: 'select',
+        required: true,
+        options: roleOptions
+      }
+    ]
+  }
 ]
 
 export function getModule(key) {
-  return modules.find((m) => m.key === key)
+  return modules.find(m => m.key === key)
 }

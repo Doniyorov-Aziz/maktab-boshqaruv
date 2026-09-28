@@ -5,6 +5,7 @@ import {
   createWebHashHistory,
   createWebHistory
 } from 'vue-router'
+import { LoadingBar } from 'quasar'
 
 import routes from './routes.js'
 import { useAuthStore } from '@/stores/auth'
@@ -35,7 +36,8 @@ export default defineRouter((/* { store, ssrContext } */) => {
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE)
   })
 
-  Router.beforeEach((to) => {
+  Router.beforeEach(to => {
+    LoadingBar.start()
     const authStore = useAuthStore()
     const isLoginRoute = to.path === '/login'
 
@@ -46,6 +48,10 @@ export default defineRouter((/* { store, ssrContext } */) => {
       return '/'
     }
     return true
+  })
+
+  Router.afterEach(() => {
+    LoadingBar.stop()
   })
 
   return Router

@@ -5,13 +5,13 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token') || null,
     username: localStorage.getItem('username') || null,
-    role: localStorage.getItem('role') || null,
+    role: localStorage.getItem('role') || null
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token,
-    isAdmin: (state) => state.role === 'ADMIN',
-    isEditor: (state) => state.role === 'EDITOR' || state.role === 'ADMIN',
+    isAuthenticated: state => !!state.token,
+    isAdmin: state => state.role === 'ADMIN',
+    isEditor: state => state.role === 'EDITOR' || state.role === 'ADMIN'
   },
 
   actions: {
@@ -33,6 +33,6 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       localStorage.removeItem('role')
-    },
-  },
+    }
+  }
 })

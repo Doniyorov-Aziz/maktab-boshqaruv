@@ -1,1 +1,132 @@
 // app global css
+
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/inter/800.css';
+
+:root {
+  --brand-surface: #{$brand-surface};
+  --brand-border: #{$brand-border};
+  --brand-text-muted: #{$brand-text-muted};
+  --brand-gradient: linear-gradient(135deg, #{$primary} 0%, #6d28d9 100%);
+}
+
+body.body--dark {
+  --brand-surface: #{$brand-surface-dark};
+  --brand-border: #{$brand-border-dark};
+  --brand-text-muted: #{$brand-text-muted-dark};
+}
+
+// Set on body (not `*`) so it cascades through normal CSS inheritance.
+// A universal-selector rule would apply a *direct* declaration to every
+// element — including the inner <span> Quasar's QIcon uses for ligature
+// icon text — which beats inherited values regardless of specificity
+// and silently breaks icon fonts (e.g. "Material Icons") on descendants.
+body {
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  background: var(--brand-surface);
+  letter-spacing: -0.01em;
+}
+
+// Quasar's own .q-icon base CSS already sizes icons at 1em x 1em with
+// flex-shrink:0/nowrap/line-height:1. The one gap: no overflow clipping,
+// so ligature fallback text (e.g. "school" before/if the icon font fails
+// to load) can spill outside the icon's box instead of just being cut
+// off cleanly within it.
+.q-icon {
+  overflow: hidden;
+}
+
+.text-weight-semibold {
+  font-weight: 600;
+}
+
+// Softer, more modern card look throughout the app
+.q-card {
+  border-radius: 14px;
+}
+
+.brand-card {
+  border-radius: 16px;
+  border: 1px solid var(--brand-border);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.brand-card:hover {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.brand-gradient {
+  background: var(--brand-gradient);
+}
+
+// Thin, unobtrusive scrollbars
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+// Table polish shared by every CrudPage instance
+.brand-table {
+  border-radius: 16px;
+  overflow: hidden;
+
+  thead tr th {
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--brand-text-muted);
+  }
+
+  tbody tr {
+    transition: background-color 0.15s ease;
+  }
+
+  tbody tr:nth-child(even) {
+    background: rgba(148, 163, 184, 0.04);
+  }
+
+  tbody tr:hover {
+    background: rgba(79, 70, 229, 0.05);
+  }
+}
+
+.stat-card {
+  border-radius: 18px;
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
