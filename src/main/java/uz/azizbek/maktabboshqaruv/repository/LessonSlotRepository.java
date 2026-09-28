@@ -1,6 +1,8 @@
 package uz.azizbek.maktabboshqaruv.repository;
 
 import uz.azizbek.maktabboshqaruv.entity.LessonSlot;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -8,6 +10,9 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalTime;
 
 public interface LessonSlotRepository extends JpaRepository<LessonSlot, Long> {
+
+    Page<LessonSlot> findBySchoolClassAcademicYearSchoolId(Long schoolId, Pageable pageable);
+    long countBySchoolClassAcademicYearSchoolId(Long schoolId);
 
     @Query("select count(l) > 0 from LessonSlot l where l.room.id = :roomId and l.weekday = :weekday " +
             "and l.startTime < :endTime and l.endTime > :startTime and (:excludeId is null or l.id <> :excludeId)")

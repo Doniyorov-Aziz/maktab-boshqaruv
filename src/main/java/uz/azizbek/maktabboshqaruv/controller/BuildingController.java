@@ -20,8 +20,8 @@ public class BuildingController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<BuildingResponseDto> getAllBuildings(Pageable pageable) {
-        return buildingService.getAllBuildings(pageable);
+    public Page<BuildingResponseDto> getAllBuildings(@RequestParam Long schoolId, Pageable pageable) {
+        return buildingService.getAllBuildings(schoolId, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

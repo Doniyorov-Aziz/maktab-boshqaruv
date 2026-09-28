@@ -20,8 +20,8 @@ public class LessonSlotController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<LessonSlotResponseDto> getAllLessonSlots(Pageable pageable) {
-        return lessonSlotService.getAllLessonSlots(pageable);
+    public Page<LessonSlotResponseDto> getAllLessonSlots(@RequestParam Long schoolId, Pageable pageable) {
+        return lessonSlotService.getAllLessonSlots(schoolId, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

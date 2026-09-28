@@ -20,8 +20,8 @@ public class RoomController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<RoomResponseDto> getAllRooms(Pageable pageable) {
-        return roomService.getAllRooms(pageable);
+    public Page<RoomResponseDto> getAllRooms(@RequestParam Long schoolId, Pageable pageable) {
+        return roomService.getAllRooms(schoolId, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

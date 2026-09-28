@@ -9,6 +9,8 @@ public class EmployeeResponseDto {
     private String phone;
     private Long positionId;
     private String positionTitle;
+    private Long schoolId;
+    private String schoolName;
 
     public Long getId() {
         return id;
@@ -64,5 +66,21 @@ public class EmployeeResponseDto {
 
     public void setPositionTitle(String positionTitle) {
         this.positionTitle = positionTitle;
+    }
+
+    public Long getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(Long schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public String getSchoolName() {
+        return schoolName;
+    }
+
+    public void setSchoolName(String schoolName) {
+        this.schoolName = schoolName;
     }
 }

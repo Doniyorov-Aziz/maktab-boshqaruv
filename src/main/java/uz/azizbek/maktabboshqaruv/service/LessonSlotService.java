@@ -36,8 +36,8 @@ public class LessonSlotService {
     @Autowired
     private RoomRepository roomRepository;
 
-    public Page<LessonSlotResponseDto> getAllLessonSlots(Pageable pageable) {
-        return lessonSlotRepository.findAll(pageable)
+    public Page<LessonSlotResponseDto> getAllLessonSlots(Long schoolId, Pageable pageable) {
+        return lessonSlotRepository.findBySchoolClassAcademicYearSchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
     }
 
@@ -60,6 +60,7 @@ public class LessonSlotService {
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new IllegalStateException("Bunday xona mavjud emas"));
 
+        validateSameSchool(schoolClass, subject, employee, room);
         validateNoConflicts(request, null);
 
         LessonSlot lessonSlot = new LessonSlot();
@@ -91,6 +92,7 @@ public class LessonSlotService {
         Room room = roomRepository.findById(request.getRoomId())
                 .orElseThrow(() -> new IllegalStateException("Bunday xona mavjud emas"));
 
+        validateSameSchool(schoolClass, subject, employee, room);
         validateNoConflicts(request, id);
 
         lessonSlot.setSchoolClass(schoolClass);
@@ -116,6 +118,16 @@ public class LessonSlotService {
     private void validateTimeRange(LessonSlotRequestDto request) {
         if (!request.getStartTime().isBefore(request.getEndTime())) {
             throw new IllegalStateException("Boshlanish vaqti tugash vaqtidan oldin bo'lishi kerak");
+        }
+    }
+
+    private void validateSameSchool(SchoolClass schoolClass, Subject subject, Employee employee, Room room) {
+        Long schoolId = schoolClass.getAcademicYear().getSchool().getId();
+        boolean sameSchool = subject.getSchool() != null && schoolId.equals(subject.getSchool().getId())
+                && employee.getSchool() != null && schoolId.equals(employee.getSchool().getId())
+                && schoolId.equals(room.getBuilding().getSchool().getId());
+        if (!sameSchool) {
+            throw new IllegalStateException("Sinf, fan, o'qituvchi va xona bitta maktabga tegishli bo'lishi kerak");
         }
     }
 

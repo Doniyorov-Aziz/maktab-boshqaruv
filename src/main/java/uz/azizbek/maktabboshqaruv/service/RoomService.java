@@ -21,8 +21,8 @@ public class RoomService {
     @Autowired
     private BuildingRepository buildingRepository;
 
-    public Page<RoomResponseDto> getAllRooms(Pageable pageable) {
-        return roomRepository.findAll(pageable)
+    public Page<RoomResponseDto> getAllRooms(Long schoolId, Pageable pageable) {
+        return roomRepository.findByBuildingSchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
     }
 

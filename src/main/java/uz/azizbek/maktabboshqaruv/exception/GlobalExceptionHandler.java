@@ -2,6 +2,7 @@ package uz.azizbek.maktabboshqaruv.exception;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -11,6 +12,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleIllegalState(IllegalStateException e) {
         return ResponseEntity.status(409).body(e.getMessage());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<String> handleMissingParam(MissingServletRequestParameterException e) {
+        return ResponseEntity.status(400).body(e.getParameterName() + " parametri kiritilishi shart");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

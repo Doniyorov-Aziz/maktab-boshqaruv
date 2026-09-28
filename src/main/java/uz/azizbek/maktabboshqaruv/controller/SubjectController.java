@@ -20,8 +20,8 @@ public class SubjectController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<SubjectResponseDto> getAllSubjects(Pageable pageable) {
-        return subjectService.getAllSubjects(pageable);
+    public Page<SubjectResponseDto> getAllSubjects(@RequestParam Long schoolId, Pageable pageable) {
+        return subjectService.getAllSubjects(schoolId, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

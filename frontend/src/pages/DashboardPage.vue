@@ -6,7 +6,13 @@
           >Xush kelibsiz, {{ authStore.username }} 👋</div
         >
         <div class="text-body2 muted-text q-mt-xs">
-          Tizimning umumiy holati va asosiy ko'rsatkichlar
+          <template v-if="schoolStore.activeSchoolName">
+            {{ schoolStore.activeSchoolName }} bo'yicha umumiy holat va asosiy
+            ko'rsatkichlar
+          </template>
+          <template v-else>
+            Tizimning umumiy holati va asosiy ko'rsatkichlar
+          </template>
         </div>
       </div>
       <q-badge :color="roleColor" outline class="q-px-sm q-py-xs">
@@ -112,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { Bar } from 'vue-chartjs'
@@ -126,6 +132,7 @@ import {
 } from 'chart.js'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
+import { useSchoolStore } from '@/stores/school'
 import { modules } from '@/config/modules'
 
 ChartJS.register(Title, Tooltip, BarElement, CategoryScale, LinearScale)
@@ -133,6 +140,7 @@ ChartJS.register(Title, Tooltip, BarElement, CategoryScale, LinearScale)
 const router = useRouter()
 const $q = useQuasar()
 const authStore = useAuthStore()
+const schoolStore = useSchoolStore()
 const loading = ref(true)
 const counts = ref({})
 
@@ -252,18 +260,30 @@ const valueLabelPlugin = {
   }
 }
 
-onMounted(async () => {
+async function loadCounts() {
+  loading.value = true
   const results = await Promise.all(
-    visibleModules.value.map(m =>
-      api
-        .get(m.endpoint, { params: { size: 1 } })
+    visibleModules.value.map(m => {
+      if (m.schoolScoped && !schoolStore.activeSchoolId) {
+        return Promise.resolve([m.key, 0])
+      }
+      const params = { size: 1 }
+      if (m.schoolScoped) {
+        params.schoolId = schoolStore.activeSchoolId
+      }
+      return api
+        .get(m.endpoint, { params })
         .then(res => [m.key, res.data.totalElements])
         .catch(() => [m.key, 0])
-    )
+    })
   )
   counts.value = Object.fromEntries(results)
   loading.value = false
-})
+}
+
+onMounted(loadCounts)
+
+watch(() => schoolStore.activeSchoolId, loadCounts)
 </script>
 
 <style scoped>

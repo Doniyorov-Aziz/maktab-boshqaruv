@@ -21,8 +21,8 @@ public class AcademicYearService {
     @Autowired
     private SchoolRepository schoolRepository;
 
-    public Page<AcademicYearResponseDto> getAllAcademicYears(Pageable pageable) {
-        return academicYearRepository.findAll(pageable)
+    public Page<AcademicYearResponseDto> getAllAcademicYears(Long schoolId, Pageable pageable) {
+        return academicYearRepository.findBySchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
     }
 

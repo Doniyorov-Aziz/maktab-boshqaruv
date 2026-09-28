@@ -48,11 +48,14 @@ import java.util.stream.Collectors;
  * data (schools, buildings, rooms, staff, classes, students, weekly
  * timetable) so the admin panel has something realistic to look at.
  *
- * Runs once: if any school classes already exist, the whole seeder is
- * skipped. Within that single run, individual lookups (school/position/
- * subject names) are still checked against what is already in the
- * database, so it builds on top of manually-created records instead of
- * duplicating them.
+ * Runs once PER SCHOOL: for each school, if it already has classes tied to
+ * its current academic year, that school's operational data (subjects,
+ * employees, classes, students, timetable) is left untouched and only a
+ * summary is logged. A school with no classes yet gets a full, independent
+ * data set generated for it. This makes the seeder safe to leave enabled
+ * permanently: adding a new school and restarting the app will seed just
+ * that school, without touching or duplicating anything for schools that
+ * already have data.
  */
 @Component
 @Order(2)
@@ -168,92 +171,65 @@ public class DataSeeder implements CommandLineRunner {
         this.passwordEncoder = passwordEncoder;
     }
 
+    private static class SchoolInfra {
+        Building mainBuilding;
+        Building elemBuilding;
+        Building sportBuilding;
+        List<Room> generalRooms;
+        Room computerRoom;
+        List<Room> elemHomeRooms;
+        List<Room> sportRooms;
+        AcademicYear currentYear;
+    }
+
     @Override
     @Transactional
     public void run(String... args) {
-        if (schoolClassRepository.count() > 0) {
-            log.info("DataSeeder: sinflar allaqachon mavjud, seed o'tkazib yuborildi");
-            return;
-        }
-
-        log.info("DataSeeder: test ma'lumotlarini yaratish boshlandi...");
-
         School school1 = findOrCreateSchool("1-maktab", "Toshkent sh., Chilonzor tumani, Bunyodkor ko'chasi 12");
         School school2 = findOrCreateSchool("Toshkent shahar 110-maktab", "Toshkent sh., Yunusobod tumani, Amir Temur ko'chasi 45");
 
-        Building mainBuilding = findOrCreateBuilding(school1, "Asosiy bino");
-        Building elemBuilding = findOrCreateBuilding(school1, "Boshlang'ich sinflar binosi");
-        Building sportBuilding = findOrCreateBuilding(school1, "Sport majmuasi");
-        findOrCreateBuilding(school2, "Asosiy bino");
-        findOrCreateBuilding(school2, "Boshlang'ich sinflar binosi");
-
-        List<Room> generalRooms = findOrCreateRooms(mainBuilding,
-                List.of("101", "102", "103", "104", "105", "106", "107", "108", "109", "110"), 32);
-        Room computerRoom = findOrCreateRoom(mainBuilding, "Kompyuter xonasi", 24);
-        findOrCreateRoom(mainBuilding, "Kutubxona", 40);
-
-        List<Room> elemHomeRooms = findOrCreateRooms(elemBuilding,
-                List.of("201", "202", "203", "204", "205", "206", "207", "208"), 28);
-        findOrCreateRoom(elemBuilding, "Musiqa xonasi", 25);
-        findOrCreateRoom(elemBuilding, "Tasviriy san'at xonasi", 25);
-
-        List<Room> sportRooms = findOrCreateRooms(sportBuilding,
-                List.of("Katta sport zali", "Kichik sport zali"), 50);
-
-        Building school2Main = findOrCreateBuilding(school2, "Asosiy bino");
-        findOrCreateRooms(school2Main, List.of("101", "102", "103", "104", "105", "106", "107", "108"), 30);
-        findOrCreateRoom(school2Main, "Kompyuter xonasi", 24);
-        findOrCreateRoom(school2Main, "Kutubxona", 35);
-        Building school2Elem = findOrCreateBuilding(school2, "Boshlang'ich sinflar binosi");
-        findOrCreateRooms(school2Elem, List.of("201", "202", "203", "204", "205", "206"), 26);
-        findOrCreateRoom(school2Elem, "Musiqa xonasi", 22);
-        findOrCreateRoom(school2Elem, "Sport zali", 40);
-
-        findOrCreateAcademicYear(school1, "2024-2025", LocalDate.of(2024, 9, 2), LocalDate.of(2025, 5, 30));
-        AcademicYear currentYear = findOrCreateAcademicYear(school1, "2025-2026",
-                LocalDate.of(2025, 9, 1), LocalDate.of(2026, 5, 29));
-        findOrCreateAcademicYear(school2, "2024-2025", LocalDate.of(2024, 9, 2), LocalDate.of(2025, 5, 30));
-        findOrCreateAcademicYear(school2, "2025-2026", LocalDate.of(2025, 9, 1), LocalDate.of(2026, 5, 29));
+        // Older rows created before Subject/Employee became school-scoped have a null
+        // school_id; attribute them to school1 (that's where all pre-existing timetable
+        // data actually points) so every row ends up consistently owned by a school.
+        migrateLegacySchoolLinks(school1);
 
         Map<String, Position> positions = findOrCreatePositions();
-        Map<String, Subject> subjects = findOrCreateSubjects();
 
-        List<Employee> leadership = seedLeadershipEmployees(positions);
-        List<Employee> homeroomTeachers = seedHomeroomTeachers(positions);
-        Map<String, List<Employee>> secondaryTeachers = seedSecondaryTeachers(positions);
+        SchoolInfra infra1 = setupInfra(school1);
+        SchoolInfra infra2 = setupInfra(school2);
 
-        List<SchoolClass> elementaryClasses = new ArrayList<>();
-        List<SchoolClass> secondaryClasses = new ArrayList<>();
-        List<SchoolClass> allClasses = seedClasses(currentYear, elementaryClasses, secondaryClasses);
+        log.info("DataSeeder: {} uchun ma'lumotlarni tekshirish...", school1.getName());
+        String summary1 = seedSchoolOperationalData(school1, infra1, positions);
+        log.info("DataSeeder: {} uchun ma'lumotlarni tekshirish...", school2.getName());
+        String summary2 = seedSchoolOperationalData(school2, infra2, positions);
 
-        int totalStudents = seedStudents(elementaryClasses, secondaryClasses);
-
-        Map<Integer, Room> elemClassRoom = new HashMap<>();
-        Map<Integer, Employee> elemClassTeacher = new HashMap<>();
-        for (int i = 0; i < elementaryClasses.size(); i++) {
-            elemClassRoom.put(i, elemHomeRooms.get(i % elemHomeRooms.size()));
-            elemClassTeacher.put(i, homeroomTeachers.get(i % homeroomTeachers.size()));
-        }
-
-        Map<String, List<Employee>> elemSpecialists = new HashMap<>();
-        for (String subj : ELEMENTARY_SPECIALIST_SUBJECTS) {
-            elemSpecialists.put(subj, secondaryTeachers.getOrDefault(subj, List.of()));
-        }
-
-        int lessonCount = seedElementaryLessons(elementaryClasses, elemClassRoom, elemClassTeacher,
-                elemSpecialists, sportRooms);
-        lessonCount += seedSecondaryLessons(secondaryClasses, secondaryTeachers, generalRooms, computerRoom, sportRooms);
-
-        List<String[]> createdUsers = seedUsers(leadership, secondaryTeachers);
+        List<String[]> createdUsers = seedUsers();
 
         log.info("=== DataSeeder yakunlandi ===");
-        log.info("Maktablar: 2, Binolar: {}, Xonalar: {}", buildingRepository.count(), roomRepository.count());
-        log.info("Lavozimlar: {}, Fanlar: {}, Xodimlar: {}", positions.size(), subjects.size(), employeeRepository.count());
-        log.info("Sinflar: {} (elementar {}, katta {})", allClasses.size(), elementaryClasses.size(), secondaryClasses.size());
-        log.info("O'quvchilar: {}", totalStudents);
-        log.info("Dars jadvali yozuvlari: {}", lessonCount);
+        log.info("{}: {}", school1.getName(), summary1);
+        log.info("{}: {}", school2.getName(), summary2);
         for (String[] u : createdUsers) {
             log.info("Login yaratildi: username={} password={} role={}", u[0], u[1], u[2]);
+        }
+    }
+
+    private void migrateLegacySchoolLinks(School school1) {
+        List<Subject> orphanSubjects = subjectRepository.findAll().stream()
+                .filter(s -> s.getSchool() == null)
+                .collect(Collectors.toList());
+        if (!orphanSubjects.isEmpty()) {
+            orphanSubjects.forEach(s -> s.setSchool(school1));
+            subjectRepository.saveAll(orphanSubjects);
+            log.info("Migratsiya: {} ta eski fan '{}' maktabga biriktirildi", orphanSubjects.size(), school1.getName());
+        }
+
+        List<Employee> orphanEmployees = employeeRepository.findAll().stream()
+                .filter(e -> e.getSchool() == null)
+                .collect(Collectors.toList());
+        if (!orphanEmployees.isEmpty()) {
+            orphanEmployees.forEach(e -> e.setSchool(school1));
+            employeeRepository.saveAll(orphanEmployees);
+            log.info("Migratsiya: {} ta eski xodim '{}' maktabga biriktirildi", orphanEmployees.size(), school1.getName());
         }
     }
 
@@ -318,6 +294,32 @@ public class DataSeeder implements CommandLineRunner {
                 });
     }
 
+    private SchoolInfra setupInfra(School school) {
+        SchoolInfra infra = new SchoolInfra();
+        infra.mainBuilding = findOrCreateBuilding(school, "Asosiy bino");
+        infra.elemBuilding = findOrCreateBuilding(school, "Boshlang'ich sinflar binosi");
+        infra.sportBuilding = findOrCreateBuilding(school, "Sport majmuasi");
+
+        infra.generalRooms = findOrCreateRooms(infra.mainBuilding,
+                List.of("101", "102", "103", "104", "105", "106", "107", "108", "109", "110"), 32);
+        infra.computerRoom = findOrCreateRoom(infra.mainBuilding, "Kompyuter xonasi", 24);
+        findOrCreateRoom(infra.mainBuilding, "Kutubxona", 40);
+
+        infra.elemHomeRooms = findOrCreateRooms(infra.elemBuilding,
+                List.of("201", "202", "203", "204", "205", "206", "207", "208"), 28);
+        findOrCreateRoom(infra.elemBuilding, "Musiqa xonasi", 25);
+        findOrCreateRoom(infra.elemBuilding, "Tasviriy san'at xonasi", 25);
+
+        infra.sportRooms = findOrCreateRooms(infra.sportBuilding,
+                List.of("Katta sport zali", "Kichik sport zali"), 50);
+
+        findOrCreateAcademicYear(school, "2024-2025", LocalDate.of(2024, 9, 2), LocalDate.of(2025, 5, 30));
+        infra.currentYear = findOrCreateAcademicYear(school, "2025-2026",
+                LocalDate.of(2025, 9, 1), LocalDate.of(2026, 5, 29));
+
+        return infra;
+    }
+
     // ---------- positions / subjects ----------
 
     private Map<String, Position> findOrCreatePositions() {
@@ -334,13 +336,14 @@ public class DataSeeder implements CommandLineRunner {
         return result;
     }
 
-    private Map<String, Subject> findOrCreateSubjects() {
-        Map<String, Subject> existing = subjectRepository.findAll().stream()
+    private Map<String, Subject> findOrCreateSubjectsForSchool(School school) {
+        Map<String, Subject> existing = subjectRepository.findBySchoolId(school.getId()).stream()
                 .collect(Collectors.toMap(Subject::getName, s -> s, (a, b) -> a));
         Map<String, Subject> result = new HashMap<>(existing);
         for (String name : SUBJECT_NAMES) {
             result.computeIfAbsent(name, n -> {
                 Subject s = new Subject();
+                s.setSchool(school);
                 s.setName(n);
                 return subjectRepository.save(s);
             });
@@ -360,8 +363,9 @@ public class DataSeeder implements CommandLineRunner {
         return phone;
     }
 
-    private Employee createEmployee(String firstName, String lastName, Position position) {
+    private Employee createEmployee(School school, String firstName, String lastName, Position position) {
         Employee e = new Employee();
+        e.setSchool(school);
         e.setFirstName(firstName);
         e.setLastName(lastName);
         e.setPosition(position);
@@ -378,61 +382,112 @@ public class DataSeeder implements CommandLineRunner {
         return new String[]{first, last};
     }
 
-    private List<Employee> seedLeadershipEmployees(Map<String, Position> positions) {
-        // Idempotent per position: reuse whatever already exists for a title (e.g. a
-        // manually-created "Direktor" from earlier testing) and only create what's missing,
-        // instead of skipping all leadership seeding just because someone already exists.
-        Map<String, List<Employee>> byPosition = employeeRepository.findAll().stream()
+    private List<Employee> seedLeadershipEmployees(School school, Map<String, Position> positions) {
+        // Idempotent per (school, position): reuse whatever already exists for a title and
+        // only create what's missing, instead of skipping all leadership seeding just because
+        // someone already exists.
+        Map<String, List<Employee>> byPosition = employeeRepository.findBySchoolId(school.getId()).stream()
                 .collect(Collectors.groupingBy(e -> e.getPosition().getTitle()));
 
-        List<Employee> directors = ensureAtLeastOne(byPosition, "Direktor", positions, true);
-        ensureAtLeastOne(byPosition, "O'quv ishlari bo'yicha direktor o'rinbosari", positions, random.nextBoolean());
-        ensureAtLeastOne(byPosition, "Ma'naviy-ma'rifiy ishlar bo'yicha o'rinbosar", positions, random.nextBoolean());
-        ensureAtLeastOne(byPosition, "Psixolog", positions, false);
-        ensureAtLeastOne(byPosition, "Kutubxonachi", positions, false);
-        ensureAtLeastOne(byPosition, "Hisobchi", positions, false);
+        List<Employee> directors = ensureAtLeastOne(school, byPosition, "Direktor", positions, true);
+        ensureAtLeastOne(school, byPosition, "O'quv ishlari bo'yicha direktor o'rinbosari", positions, random.nextBoolean());
+        ensureAtLeastOne(school, byPosition, "Ma'naviy-ma'rifiy ishlar bo'yicha o'rinbosar", positions, random.nextBoolean());
+        ensureAtLeastOne(school, byPosition, "Psixolog", positions, false);
+        ensureAtLeastOne(school, byPosition, "Kutubxonachi", positions, false);
+        ensureAtLeastOne(school, byPosition, "Hisobchi", positions, false);
         int existingGuards = byPosition.getOrDefault("Qorovul", List.of()).size();
         for (int i = existingGuards; i < 2; i++) {
             String[] guard = randomName(true);
-            createEmployee(guard[0], guard[1], positions.get("Qorovul"));
+            createEmployee(school, guard[0], guard[1], positions.get("Qorovul"));
         }
         return directors;
     }
 
-    private List<Employee> ensureAtLeastOne(Map<String, List<Employee>> byPosition, String positionTitle,
+    private List<Employee> ensureAtLeastOne(School school, Map<String, List<Employee>> byPosition, String positionTitle,
                                              Map<String, Position> positions, boolean male) {
         List<Employee> existing = byPosition.get(positionTitle);
         if (existing != null && !existing.isEmpty()) {
             return existing;
         }
         String[] name = randomName(male);
-        Employee created = createEmployee(name[0], name[1], positions.get(positionTitle));
+        Employee created = createEmployee(school, name[0], name[1], positions.get(positionTitle));
         return List.of(created);
     }
 
-    private List<Employee> seedHomeroomTeachers(Map<String, Position> positions) {
+    private List<Employee> seedHomeroomTeachers(School school, Map<String, Position> positions) {
         List<Employee> result = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
             String[] name = randomName(random.nextBoolean());
-            result.add(createEmployee(name[0], name[1], positions.get("Sinf rahbari")));
+            result.add(createEmployee(school, name[0], name[1], positions.get("Sinf rahbari")));
         }
         return result;
     }
 
-    private Map<String, List<Employee>> seedSecondaryTeachers(Map<String, Position> positions) {
+    private Map<String, List<Employee>> seedSecondaryTeachers(School school, Map<String, Position> positions) {
         Map<String, List<Employee>> result = new HashMap<>();
         Position teacherPosition = positions.get("Fan o'qituvchisi");
         for (Map.Entry<String, Integer> entry : SECONDARY_TEACHERS_PER_SUBJECT.entrySet()) {
             List<Employee> teachers = new ArrayList<>();
             for (int i = 0; i < entry.getValue(); i++) {
                 String[] name = randomName(random.nextBoolean());
-                teachers.add(createEmployee(name[0], name[1], teacherPosition));
+                teachers.add(createEmployee(school, name[0], name[1], teacherPosition));
             }
             result.put(entry.getKey(), teachers);
         }
-        // elementary specialists reuse the same subject-teacher pools where applicable
-        // (Matematika teachers double as elementary math isn't needed - elementary uses homeroom instead)
         return result;
+    }
+
+    // ---------- per-school orchestration ----------
+
+    private String seedSchoolOperationalData(School school, SchoolInfra infra, Map<String, Position> positions) {
+        Map<String, Subject> subjects = findOrCreateSubjectsForSchool(school);
+
+        if (schoolClassRepository.countByAcademicYearSchoolId(school.getId()) > 0) {
+            long classCount = schoolClassRepository.countByAcademicYearSchoolId(school.getId());
+            long studentCount = studentRepository.countBySchoolClassAcademicYearSchoolId(school.getId());
+            long lessonCount = lessonSlotRepository.countBySchoolClassAcademicYearSchoolId(school.getId());
+            long employeeCount = employeeRepository.countBySchoolId(school.getId());
+            log.info("DataSeeder: {} uchun sinflar allaqachon mavjud, operatsion qism o'tkazib yuborildi", school.getName());
+            return String.format(
+                    "allaqachon mavjud (fanlar=%d, xodimlar=%d, sinflar=%d, o'quvchilar=%d, dars jadvali=%d)",
+                    subjects.size(), employeeCount, classCount, studentCount, lessonCount);
+        }
+
+        List<Employee> leadership = seedLeadershipEmployees(school, positions);
+        List<Employee> homeroomTeachers = seedHomeroomTeachers(school, positions);
+        Map<String, List<Employee>> secondaryTeachers = seedSecondaryTeachers(school, positions);
+
+        List<SchoolClass> elementaryClasses = new ArrayList<>();
+        List<SchoolClass> secondaryClasses = new ArrayList<>();
+        List<SchoolClass> allClasses = seedClasses(infra.currentYear, elementaryClasses, secondaryClasses);
+
+        int totalStudents = seedStudents(elementaryClasses, secondaryClasses);
+
+        Map<Integer, Room> elemClassRoom = new HashMap<>();
+        Map<Integer, Employee> elemClassTeacher = new HashMap<>();
+        for (int i = 0; i < elementaryClasses.size(); i++) {
+            elemClassRoom.put(i, infra.elemHomeRooms.get(i % infra.elemHomeRooms.size()));
+            elemClassTeacher.put(i, homeroomTeachers.get(i % homeroomTeachers.size()));
+        }
+
+        Map<String, List<Employee>> elemSpecialists = new HashMap<>();
+        for (String subj : ELEMENTARY_SPECIALIST_SUBJECTS) {
+            elemSpecialists.put(subj, secondaryTeachers.getOrDefault(subj, List.of()));
+        }
+
+        int lessonCount = seedElementaryLessons(elementaryClasses, elemClassRoom, elemClassTeacher,
+                elemSpecialists, infra.sportRooms, subjects);
+        lessonCount += seedSecondaryLessons(secondaryClasses, secondaryTeachers,
+                infra.generalRooms, infra.computerRoom, infra.sportRooms, subjects);
+
+        log.info("DataSeeder: {} uchun yaratildi - lavozimlar={}, fanlar={}, xodimlar={}, sinflar={}, o'quvchilar={}, dars jadvali={}",
+                school.getName(), positions.size(), subjects.size(), employeeRepository.countBySchoolId(school.getId()),
+                allClasses.size(), totalStudents, lessonCount);
+
+        return String.format(
+                "yaratildi (fanlar=%d, xodimlar=%d, sinflar=%d [boshlang'ich=%d, katta=%d], o'quvchilar=%d, dars jadvali=%d, rahbariyat=%d)",
+                subjects.size(), employeeRepository.countBySchoolId(school.getId()), allClasses.size(),
+                elementaryClasses.size(), secondaryClasses.size(), totalStudents, lessonCount, leadership.size());
     }
 
     // ---------- classes / students ----------
@@ -509,7 +564,8 @@ public class DataSeeder implements CommandLineRunner {
 
     private int seedElementaryLessons(List<SchoolClass> classes, Map<Integer, Room> classRoom,
                                        Map<Integer, Employee> classTeacher,
-                                       Map<String, List<Employee>> specialists, List<Room> sportRooms) {
+                                       Map<String, List<Employee>> specialists, List<Room> sportRooms,
+                                       Map<String, Subject> subjects) {
         Set<String> employeeBusy = new HashSet<>();
         Set<String> roomBusy = new HashSet<>();
         List<LessonSlot> batch = new ArrayList<>();
@@ -550,7 +606,7 @@ public class DataSeeder implements CommandLineRunner {
                     employeeBusy.add(teacher.getId() + "|" + weekday + "|" + period);
                     roomBusy.add(room.getId() + "|" + weekday + "|" + period);
 
-                    batch.add(buildLessonSlot(cls, subject, teacher, room, weekday, start, end));
+                    batch.add(buildLessonSlot(cls, subject, teacher, room, weekday, start, end, subjects));
                 }
             }
         }
@@ -559,12 +615,10 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private int seedSecondaryLessons(List<SchoolClass> classes, Map<String, List<Employee>> teachers,
-                                      List<Room> generalRooms, Room computerRoom, List<Room> sportRooms) {
+                                      List<Room> generalRooms, Room computerRoom, List<Room> sportRooms,
+                                      Map<String, Subject> subjects) {
         Set<String> employeeBusy = new HashSet<>();
         Set<String> roomBusy = new HashSet<>();
-        // re-mark whatever elementary already booked isn't relevant here: secondary uses a
-        // disjoint room pool (general classrooms / computer room / sport rooms are shared with
-        // elementary only for sport rooms, so re-check sport bookings already made)
         List<LessonSlot> batch = new ArrayList<>();
 
         for (SchoolClass cls : classes) {
@@ -597,7 +651,7 @@ public class DataSeeder implements CommandLineRunner {
                     employeeBusy.add(teacher.getId() + "|" + weekday + "|" + period);
                     roomBusy.add(room.getId() + "|" + weekday + "|" + period);
 
-                    batch.add(buildLessonSlot(cls, subject, teacher, room, weekday, start, end));
+                    batch.add(buildLessonSlot(cls, subject, teacher, room, weekday, start, end, subjects));
                 }
             }
         }
@@ -625,13 +679,14 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private LessonSlot buildLessonSlot(SchoolClass cls, String subjectName, Employee teacher, Room room,
-                                        String weekday, LocalTime start, LocalTime end) {
+                                        String weekday, LocalTime start, LocalTime end,
+                                        Map<String, Subject> subjects) {
         LessonSlot slot = new LessonSlot();
         slot.setSchoolClass(cls);
-        Subject subject = subjectRepository.findAll().stream()
-                .filter(s -> s.getName().equals(subjectName))
-                .findFirst()
-                .orElseThrow();
+        Subject subject = subjects.get(subjectName);
+        if (subject == null) {
+            throw new IllegalStateException("Fan topilmadi: " + subjectName);
+        }
         slot.setSubject(subject);
         slot.setEmployee(teacher);
         slot.setRoom(room);
@@ -643,7 +698,7 @@ public class DataSeeder implements CommandLineRunner {
 
     // ---------- login accounts ----------
 
-    private List<String[]> seedUsers(List<Employee> leadership, Map<String, List<Employee>> secondaryTeachers) {
+    private List<String[]> seedUsers() {
         List<String[]> created = new ArrayList<>();
         created.add(createUserIfAbsent("direktor", "direktor123", Role.EDITOR));
         created.add(createUserIfAbsent("ustoz1", "ustoz123", Role.VIEWER));

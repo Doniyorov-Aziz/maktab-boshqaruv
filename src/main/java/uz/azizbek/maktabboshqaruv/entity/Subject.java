@@ -10,6 +10,10 @@ public class Subject {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne
+    @JoinColumn(name = "school_id")
+    private School school;
+
     @Column(nullable = false)
     private String name;
 
@@ -19,6 +23,14 @@ public class Subject {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public School getSchool() {
+        return school;
+    }
+
+    public void setSchool(School school) {
+        this.school = school;
     }
 
     public String getName() {

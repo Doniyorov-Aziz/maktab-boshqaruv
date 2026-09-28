@@ -4,8 +4,10 @@ import uz.azizbek.maktabboshqaruv.dto.EmployeeRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.EmployeeResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.Employee;
 import uz.azizbek.maktabboshqaruv.entity.Position;
+import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.repository.EmployeeRepository;
 import uz.azizbek.maktabboshqaruv.repository.PositionRepository;
+import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,8 +23,11 @@ public class EmployeeService {
     @Autowired
     private PositionRepository positionRepository;
 
-    public Page<EmployeeResponseDto> getAllEmployees(Pageable pageable) {
-        return employeeRepository.findAll(pageable)
+    @Autowired
+    private SchoolRepository schoolRepository;
+
+    public Page<EmployeeResponseDto> getAllEmployees(Long schoolId, Pageable pageable) {
+        return employeeRepository.findBySchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
     }
 
@@ -38,10 +43,13 @@ public class EmployeeService {
             throw new IllegalStateException("Bu telefon raqam bilan xodim allaqachon mavjud");
         }
 
+        School school = schoolRepository.findById(request.getSchoolId())
+                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
         Position position = positionRepository.findById(request.getPositionId())
                 .orElseThrow(() -> new IllegalStateException("Bunday lavozim mavjud emas"));
 
         Employee employee = new Employee();
+        employee.setSchool(school);
         employee.setFirstName(request.getFirstName());
         employee.setLastName(request.getLastName());
         employee.setPhone(request.getPhone());
@@ -60,9 +68,12 @@ public class EmployeeService {
             throw new IllegalStateException("Bu telefon raqam bilan xodim allaqachon mavjud");
         }
 
+        School school = schoolRepository.findById(request.getSchoolId())
+                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
         Position position = positionRepository.findById(request.getPositionId())
                 .orElseThrow(() -> new IllegalStateException("Bunday lavozim mavjud emas"));
 
+        employee.setSchool(school);
         employee.setFirstName(request.getFirstName());
         employee.setLastName(request.getLastName());
         employee.setPhone(request.getPhone());
@@ -89,6 +100,10 @@ public class EmployeeService {
         dto.setPhone(employee.getPhone());
         dto.setPositionId(employee.getPosition().getId());
         dto.setPositionTitle(employee.getPosition().getTitle());
+        if (employee.getSchool() != null) {
+            dto.setSchoolId(employee.getSchool().getId());
+            dto.setSchoolName(employee.getSchool().getName());
+        }
         return dto;
     }
 }

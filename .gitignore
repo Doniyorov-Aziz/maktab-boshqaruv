@@ -39,3 +39,6 @@ out/
 ### Local secrets ###
 .env
 application-local.properties
+
+# Local DB backups (contains data, never commit)
+db-backups/

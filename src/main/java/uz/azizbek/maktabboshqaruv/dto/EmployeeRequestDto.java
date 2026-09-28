@@ -1,9 +1,13 @@
 package uz.azizbek.maktabboshqaruv.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 public class EmployeeRequestDto {
+
+    @NotNull(message = "Maktab tanlanishi shart")
+    private Long schoolId;
 
     @NotBlank(message = "Ism kiritilishi shart")
     @Pattern(regexp = "^[A-Za-zА-Яа-яЎўҚқҒғҲҳ'\\s]+$", message = "Ism faqat harflardan iborat bo'lishi kerak")
@@ -18,6 +22,14 @@ public class EmployeeRequestDto {
     private String phone;
 
     private Long positionId;
+
+    public Long getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(Long schoolId) {
+        this.schoolId = schoolId;
+    }
 
     public String getFirstName() {
         return firstName;

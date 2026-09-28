@@ -17,6 +17,7 @@ export const modules = [
     icon: 'school',
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/schools',
+    schoolScoped: false,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -39,6 +40,7 @@ export const modules = [
     icon: 'apartment',
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/buildings',
+    schoolScoped: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -57,15 +59,7 @@ export const modules = [
     ],
     fields: [
       { key: 'name', label: 'Nomi', type: 'text', required: true },
-      {
-        key: 'schoolId',
-        label: 'Maktab',
-        type: 'select',
-        required: true,
-        optionsEndpoint: '/api/schools',
-        optionValue: 'id',
-        optionLabel: 'name'
-      }
+      { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
     ]
   },
   {
@@ -74,6 +68,7 @@ export const modules = [
     icon: 'meeting_room',
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/rooms',
+    schoolScoped: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -99,6 +94,7 @@ export const modules = [
         label: 'Bino',
         type: 'select',
         required: true,
+        schoolScoped: true,
         optionsEndpoint: '/api/buildings',
         optionValue: 'id',
         optionLabel: 'name'
@@ -111,6 +107,7 @@ export const modules = [
     icon: 'event',
     group: "O'quv jarayoni",
     endpoint: '/api/academic-years',
+    schoolScoped: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -143,15 +140,7 @@ export const modules = [
         required: true
       },
       { key: 'endDate', label: 'Tugash sanasi', type: 'date', required: true },
-      {
-        key: 'schoolId',
-        label: 'Maktab',
-        type: 'select',
-        required: true,
-        optionsEndpoint: '/api/schools',
-        optionValue: 'id',
-        optionLabel: 'name'
-      }
+      { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
     ]
   },
   {
@@ -160,6 +149,7 @@ export const modules = [
     icon: 'groups',
     group: "O'quv jarayoni",
     endpoint: '/api/school-classes',
+    schoolScoped: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -207,6 +197,7 @@ export const modules = [
         label: "O'quv yili",
         type: 'select',
         required: true,
+        schoolScoped: true,
         optionsEndpoint: '/api/academic-years',
         optionValue: 'id',
         optionLabel: 'title'
@@ -219,6 +210,7 @@ export const modules = [
     icon: 'face',
     group: 'Odamlar',
     endpoint: '/api/students',
+    schoolScoped: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -250,6 +242,7 @@ export const modules = [
         label: 'Sinf',
         type: 'select',
         required: true,
+        schoolScoped: true,
         optionsEndpoint: '/api/school-classes',
         optionValue: 'id',
         optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`
@@ -262,6 +255,7 @@ export const modules = [
     icon: 'menu_book',
     group: "O'quv jarayoni",
     endpoint: '/api/subjects',
+    schoolScoped: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -272,7 +266,10 @@ export const modules = [
         align: 'left'
       }
     ],
-    fields: [{ key: 'name', label: 'Nomi', type: 'text', required: true }]
+    fields: [
+      { key: 'name', label: 'Nomi', type: 'text', required: true },
+      { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
+    ]
   },
   {
     key: 'positions',
@@ -280,6 +277,7 @@ export const modules = [
     icon: 'badge',
     group: 'Odamlar',
     endpoint: '/api/positions',
+    schoolScoped: false,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -298,6 +296,7 @@ export const modules = [
     icon: 'work',
     group: 'Odamlar',
     endpoint: '/api/employees',
+    schoolScoped: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -327,7 +326,8 @@ export const modules = [
         optionsEndpoint: '/api/positions',
         optionValue: 'id',
         optionLabel: 'title'
-      }
+      },
+      { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
     ]
   },
   {
@@ -336,6 +336,7 @@ export const modules = [
     icon: 'schedule',
     group: "O'quv jarayoni",
     endpoint: '/api/lesson-slots',
+    schoolScoped: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       { name: 'className', label: 'Sinf', field: 'className', align: 'left' },
@@ -367,6 +368,7 @@ export const modules = [
         label: 'Sinf',
         type: 'select',
         required: true,
+        schoolScoped: true,
         optionsEndpoint: '/api/school-classes',
         optionValue: 'id',
         optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`
@@ -376,6 +378,7 @@ export const modules = [
         label: 'Fan',
         type: 'select',
         required: true,
+        schoolScoped: true,
         optionsEndpoint: '/api/subjects',
         optionValue: 'id',
         optionLabel: 'name'
@@ -385,6 +388,7 @@ export const modules = [
         label: "O'qituvchi",
         type: 'select',
         required: true,
+        schoolScoped: true,
         optionsEndpoint: '/api/employees',
         optionValue: 'id',
         optionLabel: 'fullName'
@@ -394,6 +398,7 @@ export const modules = [
         label: 'Xona',
         type: 'select',
         required: true,
+        schoolScoped: true,
         optionsEndpoint: '/api/rooms',
         optionValue: 'id',
         optionLabel: 'roomNumber'
@@ -421,6 +426,7 @@ export const modules = [
     group: 'Boshqaruv',
     endpoint: '/api/users',
     adminOnly: true,
+    schoolScoped: false,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {

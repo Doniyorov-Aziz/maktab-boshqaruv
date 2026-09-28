@@ -26,6 +26,50 @@
         <q-space />
 
         <q-btn
+          v-if="schoolStore.activeSchoolName"
+          flat
+          no-caps
+          dense
+          icon="school"
+          :label="schoolStore.activeSchoolName"
+          class="q-mr-sm school-picker-btn"
+        >
+          <q-icon name="expand_more" size="18px" class="q-ml-xs" />
+          <q-menu anchor="bottom right" self="top right">
+            <q-list style="min-width: 240px">
+              <q-item-label header>Maktabni tanlang</q-item-label>
+              <q-item
+                v-for="s in schoolStore.schools"
+                :key="s.id"
+                clickable
+                v-close-popup
+                :active="s.id === schoolStore.activeSchoolId"
+                active-class="text-primary"
+                @click="onSelectSchool(s)"
+              >
+                <q-item-section avatar>
+                  <q-icon
+                    :name="
+                      s.id === schoolStore.activeSchoolId
+                        ? 'radio_button_checked'
+                        : 'radio_button_unchecked'
+                    "
+                  />
+                </q-item-section>
+                <q-item-section>{{ s.name }}</q-item-section>
+              </q-item>
+              <q-separator />
+              <q-item clickable v-close-popup to="/app/schools">
+                <q-item-section avatar>
+                  <q-icon name="settings" />
+                </q-item-section>
+                <q-item-section>Maktablarni boshqarish</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
+
+        <q-btn
           flat
           round
           dense
@@ -141,17 +185,32 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { modules, getModule } from '@/config/modules'
 import { useAuthStore } from '@/stores/auth'
+import { useSchoolStore } from '@/stores/school'
+import { api } from '@/boot/axios'
 
 const router = useRouter()
 const route = useRoute()
 const $q = useQuasar()
 const authStore = useAuthStore()
+const schoolStore = useSchoolStore()
 const drawerOpen = ref(true)
+
+onMounted(async () => {
+  try {
+    await schoolStore.fetchSchools(api)
+  } catch {
+    // school list couldn't load — header picker just stays hidden
+  }
+})
+
+function onSelectSchool(school) {
+  schoolStore.setActiveSchool(school.id, school.name)
+}
 
 function toggleDarkMode() {
   $q.dark.toggle()
@@ -206,6 +265,26 @@ function onLogout() {
 
 .breadcrumb-muted {
   color: var(--brand-text-muted);
+}
+
+.school-picker-btn {
+  max-width: 220px;
+}
+
+.school-picker-btn :deep(.q-btn__content) {
+  overflow: hidden;
+}
+
+.school-picker-btn :deep(.block) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 599px) {
+  .school-picker-btn {
+    max-width: 120px;
+  }
 }
 
 .nav-group-title {

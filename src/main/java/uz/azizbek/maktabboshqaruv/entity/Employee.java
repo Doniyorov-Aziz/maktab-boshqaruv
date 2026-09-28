@@ -17,6 +17,10 @@ public class Employee {
     @JoinColumn(name = "position_id", nullable = false)
     private Position position;
 
+    @ManyToOne
+    @JoinColumn(name = "school_id")
+    private School school;
+
     @Column(nullable = false)
     private String firstName;
 
@@ -47,6 +51,14 @@ public class Employee {
 
     public void setPosition(Position position) {
         this.position = position;
+    }
+
+    public School getSchool() {
+        return school;
+    }
+
+    public void setSchool(School school) {
+        this.school = school;
     }
 
     public String getFirstName() {

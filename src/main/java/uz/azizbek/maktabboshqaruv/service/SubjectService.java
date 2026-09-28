@@ -2,7 +2,9 @@ package uz.azizbek.maktabboshqaruv.service;
 
 import uz.azizbek.maktabboshqaruv.dto.SubjectRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.SubjectResponseDto;
+import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.entity.Subject;
+import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
 import uz.azizbek.maktabboshqaruv.repository.SubjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -16,8 +18,11 @@ public class SubjectService {
     @Autowired
     private SubjectRepository subjectRepository;
 
-    public Page<SubjectResponseDto> getAllSubjects(Pageable pageable) {
-        return subjectRepository.findAll(pageable)
+    @Autowired
+    private SchoolRepository schoolRepository;
+
+    public Page<SubjectResponseDto> getAllSubjects(Long schoolId, Pageable pageable) {
+        return subjectRepository.findBySchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
     }
 
@@ -29,11 +34,15 @@ public class SubjectService {
 
     @Transactional
     public SubjectResponseDto createSubject(SubjectRequestDto request) {
-        if (subjectRepository.existsByName(request.getName())) {
-            throw new IllegalStateException("Bu fan allaqachon mavjud");
+        School school = schoolRepository.findById(request.getSchoolId())
+                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+
+        if (subjectRepository.existsBySchoolIdAndName(school.getId(), request.getName())) {
+            throw new IllegalStateException("Bu fan ushbu maktabda allaqachon mavjud");
         }
 
         Subject subject = new Subject();
+        subject.setSchool(school);
         subject.setName(request.getName());
 
         Subject saved = subjectRepository.save(subject);
@@ -45,10 +54,17 @@ public class SubjectService {
         Subject subject = subjectRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Bunday fan topilmadi: " + id));
 
-        if (!subject.getName().equals(request.getName()) && subjectRepository.existsByName(request.getName())) {
-            throw new IllegalStateException("Bu fan allaqachon mavjud");
+        School school = schoolRepository.findById(request.getSchoolId())
+                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+
+        boolean changed = !school.getId().equals(subject.getSchool() != null ? subject.getSchool().getId() : null)
+                || !request.getName().equals(subject.getName());
+
+        if (changed && subjectRepository.existsBySchoolIdAndName(school.getId(), request.getName())) {
+            throw new IllegalStateException("Bu fan ushbu maktabda allaqachon mavjud");
         }
 
+        subject.setSchool(school);
         subject.setName(request.getName());
 
         Subject updated = subjectRepository.save(subject);
@@ -67,6 +83,10 @@ public class SubjectService {
         SubjectResponseDto dto = new SubjectResponseDto();
         dto.setId(subject.getId());
         dto.setName(subject.getName());
+        if (subject.getSchool() != null) {
+            dto.setSchoolId(subject.getSchool().getId());
+            dto.setSchoolName(subject.getSchool().getName());
+        }
         return dto;
     }
 }

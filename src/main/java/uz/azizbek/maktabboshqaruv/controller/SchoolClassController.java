@@ -20,8 +20,8 @@ public class SchoolClassController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<SchoolClassResponseDto> getAllSchoolClasses(Pageable pageable) {
-        return schoolClassService.getAllSchoolClasses(pageable);
+    public Page<SchoolClassResponseDto> getAllSchoolClasses(@RequestParam Long schoolId, Pageable pageable) {
+        return schoolClassService.getAllSchoolClasses(schoolId, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

@@ -2,9 +2,12 @@ package uz.azizbek.maktabboshqaruv.service;
 
 import uz.azizbek.maktabboshqaruv.dto.LessonSlotRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.LessonSlotResponseDto;
+import uz.azizbek.maktabboshqaruv.entity.AcademicYear;
+import uz.azizbek.maktabboshqaruv.entity.Building;
 import uz.azizbek.maktabboshqaruv.entity.Employee;
 import uz.azizbek.maktabboshqaruv.entity.LessonSlot;
 import uz.azizbek.maktabboshqaruv.entity.Room;
+import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.entity.SchoolClass;
 import uz.azizbek.maktabboshqaruv.entity.Subject;
 import uz.azizbek.maktabboshqaruv.repository.EmployeeRepository;
@@ -61,11 +64,38 @@ class LessonSlotServiceTest {
         return request;
     }
 
+    private SchoolClass schoolClassForSchool(School school) {
+        AcademicYear academicYear = new AcademicYear();
+        academicYear.setSchool(school);
+        SchoolClass schoolClass = new SchoolClass();
+        schoolClass.setAcademicYear(academicYear);
+        return schoolClass;
+    }
+
+    private Room roomForSchool(School school) {
+        Building building = new Building();
+        building.setSchool(school);
+        Room room = new Room();
+        room.setBuilding(building);
+        return room;
+    }
+
+    // wires SchoolClass/Subject/Employee/Room to the same school (id=1) so
+    // validateSameSchool passes and tests can focus on conflict-checking behavior
     private void stubReferencesFound() {
-        when(schoolClassRepository.findById(1L)).thenReturn(Optional.of(new SchoolClass()));
-        when(subjectRepository.findById(1L)).thenReturn(Optional.of(new Subject()));
-        when(employeeRepository.findById(1L)).thenReturn(Optional.of(new Employee()));
-        when(roomRepository.findById(1L)).thenReturn(Optional.of(new Room()));
+        School school = new School();
+        school.setId(1L);
+
+        Subject subject = new Subject();
+        subject.setSchool(school);
+
+        Employee employee = new Employee();
+        employee.setSchool(school);
+
+        when(schoolClassRepository.findById(1L)).thenReturn(Optional.of(schoolClassForSchool(school)));
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject));
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+        when(roomRepository.findById(1L)).thenReturn(Optional.of(roomForSchool(school)));
     }
 
     @Test
@@ -76,6 +106,32 @@ class LessonSlotServiceTest {
 
         assertThrows(IllegalStateException.class, () -> lessonSlotService.createLessonSlot(request));
         verify(schoolClassRepository, never()).findById(any());
+    }
+
+    @Test
+    void createLessonSlot_crossSchoolReferences_throws() {
+        LessonSlotRequestDto request = validRequest();
+
+        School school1 = new School();
+        school1.setId(1L);
+        School school2 = new School();
+        school2.setId(2L);
+
+        Subject subject = new Subject();
+        subject.setSchool(school1);
+
+        Employee employee = new Employee();
+        employee.setSchool(school2); // belongs to a different school than the class/subject/room
+
+        when(schoolClassRepository.findById(1L)).thenReturn(Optional.of(schoolClassForSchool(school1)));
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject));
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
+        when(roomRepository.findById(1L)).thenReturn(Optional.of(roomForSchool(school1)));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> lessonSlotService.createLessonSlot(request));
+        assertEquals("Sinf, fan, o'qituvchi va xona bitta maktabga tegishli bo'lishi kerak", ex.getMessage());
+        verify(lessonSlotRepository, never()).save(any());
     }
 
     @Test
@@ -118,7 +174,10 @@ class LessonSlotServiceTest {
     void createLessonSlot_noConflicts_saves() {
         LessonSlotRequestDto request = validRequest();
 
-        SchoolClass schoolClass = new SchoolClass();
+        School school = new School();
+        school.setId(1L);
+
+        SchoolClass schoolClass = schoolClassForSchool(school);
         schoolClass.setId(1L);
         schoolClass.setGradeNumber(5);
         schoolClass.setSectionLetter("A");
@@ -126,13 +185,15 @@ class LessonSlotServiceTest {
         Subject subject = new Subject();
         subject.setId(1L);
         subject.setName("Matematika");
+        subject.setSchool(school);
 
         Employee employee = new Employee();
         employee.setId(1L);
         employee.setFirstName("Aziz");
         employee.setLastName("Karimov");
+        employee.setSchool(school);
 
-        Room room = new Room();
+        Room room = roomForSchool(school);
         room.setId(1L);
         room.setRoomNumber("101");
 

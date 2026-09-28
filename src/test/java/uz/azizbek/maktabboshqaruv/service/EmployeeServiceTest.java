@@ -4,8 +4,10 @@ import uz.azizbek.maktabboshqaruv.dto.EmployeeRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.EmployeeResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.Employee;
 import uz.azizbek.maktabboshqaruv.entity.Position;
+import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.repository.EmployeeRepository;
 import uz.azizbek.maktabboshqaruv.repository.PositionRepository;
+import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,11 +32,15 @@ class EmployeeServiceTest {
     @Mock
     private PositionRepository positionRepository;
 
+    @Mock
+    private SchoolRepository schoolRepository;
+
     @InjectMocks
     private EmployeeService employeeService;
 
     private EmployeeRequestDto validRequest() {
         EmployeeRequestDto request = new EmployeeRequestDto();
+        request.setSchoolId(1L);
         request.setFirstName("Aziz");
         request.setLastName("Karimov");
         request.setPhone("+998901234567");
@@ -42,10 +48,29 @@ class EmployeeServiceTest {
         return request;
     }
 
+    private School school() {
+        School school = new School();
+        school.setId(1L);
+        school.setName("Maktab 1");
+        return school;
+    }
+
     @Test
     void createEmployee_duplicatePhone_throws() {
         EmployeeRequestDto request = validRequest();
         when(employeeRepository.existsByPhone(request.getPhone())).thenReturn(true);
+
+        assertThrows(IllegalStateException.class, () -> employeeService.createEmployee(request));
+        verify(schoolRepository, never()).findById(any());
+        verify(positionRepository, never()).findById(any());
+        verify(employeeRepository, never()).save(any());
+    }
+
+    @Test
+    void createEmployee_unknownSchool_throws() {
+        EmployeeRequestDto request = validRequest();
+        when(employeeRepository.existsByPhone(request.getPhone())).thenReturn(false);
+        when(schoolRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> employeeService.createEmployee(request));
         verify(positionRepository, never()).findById(any());
@@ -56,6 +81,7 @@ class EmployeeServiceTest {
     void createEmployee_unknownPosition_throws() {
         EmployeeRequestDto request = validRequest();
         when(employeeRepository.existsByPhone(request.getPhone())).thenReturn(false);
+        when(schoolRepository.findById(1L)).thenReturn(Optional.of(school()));
         when(positionRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> employeeService.createEmployee(request));
@@ -67,6 +93,9 @@ class EmployeeServiceTest {
         EmployeeRequestDto request = validRequest();
         when(employeeRepository.existsByPhone(request.getPhone())).thenReturn(false);
 
+        School school = school();
+        when(schoolRepository.findById(1L)).thenReturn(Optional.of(school));
+
         Position position = new Position();
         position.setId(1L);
         position.setTitle("O'qituvchi");
@@ -74,6 +103,7 @@ class EmployeeServiceTest {
 
         Employee saved = new Employee();
         saved.setId(1L);
+        saved.setSchool(school);
         saved.setFirstName("Aziz");
         saved.setLastName("Karimov");
         saved.setPhone(request.getPhone());
@@ -84,6 +114,7 @@ class EmployeeServiceTest {
 
         assertEquals("Aziz Karimov", result.getFullName());
         assertEquals("O'qituvchi", result.getPositionTitle());
+        assertEquals("Maktab 1", result.getSchoolName());
     }
 
     @Test
@@ -98,6 +129,7 @@ class EmployeeServiceTest {
         existing.setPosition(position);
 
         when(employeeRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(schoolRepository.findById(1L)).thenReturn(Optional.of(school()));
         when(positionRepository.findById(1L)).thenReturn(Optional.of(position));
         when(employeeRepository.save(any(Employee.class))).thenReturn(existing);
 

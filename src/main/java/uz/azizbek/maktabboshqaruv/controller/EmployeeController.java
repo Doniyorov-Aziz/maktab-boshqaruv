@@ -20,8 +20,8 @@ public class EmployeeController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<EmployeeResponseDto> getAllEmployees(Pageable pageable) {
-        return employeeService.getAllEmployees(pageable);
+    public Page<EmployeeResponseDto> getAllEmployees(@RequestParam Long schoolId, Pageable pageable) {
+        return employeeService.getAllEmployees(schoolId, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

@@ -9,8 +9,14 @@
           :icon="module.icon"
         />
       </div>
-      <div class="col">
-        <div class="text-h5 text-weight-bold">{{ module.title }}</div>
+      <div class="col page-title-col">
+        <div class="text-h5 text-weight-bold ellipsis">{{ module.title }}</div>
+        <div
+          v-if="module.schoolScoped && schoolStore.activeSchoolName"
+          class="text-caption muted-text ellipsis"
+        >
+          {{ schoolStore.activeSchoolName }}
+        </div>
         <div class="text-caption muted-text">
           <q-skeleton v-if="loading" type="text" width="90px" />
           <template v-else>Jami {{ pagination.rowsNumber }} ta yozuv</template>
@@ -30,7 +36,18 @@
       </div>
     </div>
 
-    <div class="brand-card overflow-hidden">
+    <q-banner
+      v-if="module.schoolScoped && !schoolStore.activeSchoolId"
+      class="bg-orange-1 text-orange-9 rounded-borders q-mb-md"
+      dense
+    >
+      <template v-slot:avatar>
+        <q-icon name="info" color="warning" />
+      </template>
+      Ma'lumotlarni ko'rish uchun avval maktab tanlang
+    </q-banner>
+
+    <div v-else class="brand-card overflow-hidden">
       <q-table
         :rows="rows"
         :columns="tableColumns"
@@ -41,7 +58,9 @@
         binary-state-sort
         flat
         class="brand-table"
+        :class="{ 'row-clickable': module.key === 'schools' }"
         :rows-per-page-options="[10, 20, 50]"
+        @row-click="onRowClick"
       >
         <template v-slot:loading>
           <q-inner-loading showing color="primary" />
@@ -76,7 +95,7 @@
               size="sm"
               icon="edit"
               color="primary"
-              @click="openEditDialog(props.row)"
+              @click.stop="openEditDialog(props.row)"
             >
               <q-tooltip>Tahrirlash</q-tooltip>
             </q-btn>
@@ -88,7 +107,7 @@
               size="sm"
               icon="delete_outline"
               color="negative"
-              @click="confirmDelete(props.row)"
+              @click.stop="confirmDelete(props.row)"
             >
               <q-tooltip>O'chirish</q-tooltip>
             </q-btn>
@@ -116,9 +135,19 @@
 
         <q-form @submit.prevent="onSave">
           <q-card-section class="q-gutter-md q-pt-md">
+            <q-banner
+              v-if="module.fields.some(f => f.autoSchool)"
+              class="bg-blue-1 text-primary rounded-borders"
+              dense
+            >
+              <template v-slot:avatar>
+                <q-icon name="school" color="primary" />
+              </template>
+              Maktab: {{ schoolStore.activeSchoolName || '—' }}
+            </q-banner>
             <template v-for="field in module.fields" :key="field.key">
               <q-select
-                v-if="field.type === 'select'"
+                v-if="!field.autoSchool && field.type === 'select'"
                 v-model="formModel[field.key]"
                 :label="field.label"
                 :options="fieldOptions[field.key] || []"
@@ -131,7 +160,7 @@
                 :rules="fieldRules(field)"
               />
               <q-input
-                v-else
+                v-else-if="!field.autoSchool"
                 v-model="formModel[field.key]"
                 :label="field.label"
                 :type="inputType(field)"
@@ -184,12 +213,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
+import { useSchoolStore } from '@/stores/school'
 import { getModule } from '@/config/modules'
 
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
 const authStore = useAuthStore()
+const schoolStore = useSchoolStore()
 
 const module = computed(() => getModule(route.params.moduleKey))
 
@@ -216,6 +247,11 @@ const canDelete = computed(() => authStore.isAdmin)
 
 async function fetchRows() {
   if (!module.value) return
+  if (module.value.schoolScoped && !schoolStore.activeSchoolId) {
+    rows.value = []
+    pagination.value.rowsNumber = 0
+    return
+  }
   loading.value = true
   try {
     const { page, rowsPerPage, sortBy, descending } = pagination.value
@@ -225,6 +261,9 @@ async function fetchRows() {
     }
     if (sortBy) {
       params.sort = `${sortBy},${descending ? 'desc' : 'asc'}`
+    }
+    if (module.value.schoolScoped) {
+      params.schoolId = schoolStore.activeSchoolId
     }
     const response = await api.get(module.value.endpoint, { params })
     rows.value = response.data.content
@@ -239,6 +278,12 @@ async function fetchRows() {
 function onRequest(requestProp) {
   pagination.value = requestProp.pagination
   fetchRows()
+}
+
+function onRowClick(evt, row) {
+  if (module.value.key !== 'schools') return
+  schoolStore.setActiveSchool(row.id, row.name)
+  router.push('/')
 }
 
 watch(
@@ -258,6 +303,15 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(
+  () => schoolStore.activeSchoolId,
+  () => {
+    if (!module.value?.schoolScoped) return
+    pagination.value.page = 1
+    fetchRows()
+  }
 )
 
 const dialogOpen = ref(false)
@@ -291,7 +345,7 @@ function fieldRules(field) {
 
 async function loadFieldOptions() {
   for (const field of module.value.fields) {
-    if (field.type !== 'select') continue
+    if (field.autoSchool || field.type !== 'select') continue
 
     if (field.options) {
       fieldOptions[field.key] = field.options.map(o => ({ label: o, value: o }))
@@ -300,9 +354,11 @@ async function loadFieldOptions() {
 
     if (field.optionsEndpoint) {
       try {
-        const response = await api.get(field.optionsEndpoint, {
-          params: { size: 1000 }
-        })
+        const params = { size: 1000 }
+        if (field.schoolScoped) {
+          params.schoolId = schoolStore.activeSchoolId
+        }
+        const response = await api.get(field.optionsEndpoint, { params })
         const items = response.data.content
         fieldOptions[field.key] = items.map(item => ({
           value: item[field.optionValue],
@@ -323,6 +379,11 @@ async function openCreateDialog() {
   editingId.value = null
   formError.value = ''
   Object.keys(formModel).forEach(k => delete formModel[k])
+  module.value.fields.forEach(field => {
+    if (field.autoSchool) {
+      formModel[field.key] = schoolStore.activeSchoolId
+    }
+  })
   await loadFieldOptions()
   dialogOpen.value = true
 }
@@ -359,6 +420,9 @@ async function onSave() {
       message: 'Muvaffaqiyatli saqlandi',
       icon: 'check_circle'
     })
+    if (module.value.key === 'schools') {
+      await schoolStore.fetchSchools(api)
+    }
     fetchRows()
   } catch (error) {
     formError.value = extractError(error)
@@ -393,6 +457,9 @@ function confirmDelete(row) {
         message: "Muvaffaqiyatli o'chirildi",
         icon: 'check_circle'
       })
+      if (module.value.key === 'schools') {
+        await schoolStore.fetchSchools(api)
+      }
       fetchRows()
     } catch (error) {
       $q.notify({ type: 'negative', message: extractError(error) })
@@ -413,5 +480,17 @@ function extractError(error) {
 
 .muted-text {
   color: var(--brand-text-muted);
+}
+
+.page-title-col {
+  min-width: 0;
+}
+
+:deep(.row-clickable tbody tr) {
+  cursor: pointer;
+}
+
+:deep(.row-clickable tbody tr:hover) {
+  background: rgba(79, 70, 229, 0.06);
 }
 </style>

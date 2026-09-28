@@ -4,6 +4,8 @@ public class SubjectResponseDto {
 
     private Long id;
     private String name;
+    private Long schoolId;
+    private String schoolName;
 
     public Long getId() {
         return id;
@@ -19,5 +21,21 @@ public class SubjectResponseDto {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Long getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(Long schoolId) {
+        this.schoolId = schoolId;
+    }
+
+    public String getSchoolName() {
+        return schoolName;
+    }
+
+    public void setSchoolName(String schoolName) {
+        this.schoolName = schoolName;
     }
 }
