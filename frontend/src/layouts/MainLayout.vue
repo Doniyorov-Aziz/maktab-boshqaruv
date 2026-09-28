@@ -1,20 +1,23 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated class="bg-white text-dark header-shadow">
+    <q-header elevated class="app-surface header-shadow">
       <q-toolbar class="q-py-xs">
         <q-btn
           flat
           dense
           round
           icon="menu"
-          color="grey-8"
           aria-label="Menu"
           @click="drawerOpen = !drawerOpen"
         />
 
-        <q-breadcrumbs class="q-ml-sm text-grey-8" active-color="primary">
+        <q-breadcrumbs class="q-ml-sm breadcrumb-muted" active-color="primary">
           <template v-slot:separator>
-            <q-icon size="1.2em" name="chevron_right" color="grey-5" />
+            <q-icon
+              size="1.2em"
+              name="chevron_right"
+              class="breadcrumb-muted"
+            />
           </template>
           <q-breadcrumbs-el label="Maktab Boshqaruv" icon="dashboard" to="/" />
           <q-breadcrumbs-el v-if="currentModule" :label="currentModule.title" />
@@ -27,7 +30,6 @@
           round
           dense
           :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
-          color="grey-8"
           class="q-mr-xs"
           @click="toggleDarkMode"
         >
@@ -72,7 +74,7 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="drawerOpen" show-if-above bordered class="bg-white">
+    <q-drawer v-model="drawerOpen" show-if-above bordered class="app-surface">
       <div class="row items-center q-pa-md q-gutter-sm">
         <q-avatar
           size="38px"
@@ -84,7 +86,7 @@
           <div class="text-subtitle1 text-weight-bold" style="line-height: 1.1">
             Maktab Boshqaruv
           </div>
-          <div class="text-caption text-grey-6">Admin panel</div>
+          <div class="text-caption breadcrumb-muted">Admin panel</div>
         </div>
       </div>
 
@@ -106,7 +108,7 @@
           </q-item>
 
           <template v-for="group in groupedModules" :key="group.name">
-            <q-item-label header class="text-weight-semibold">{{
+            <q-item-label header class="text-weight-semibold nav-group-title">{{
               group.name
             }}</q-item-label>
             <q-item
@@ -131,7 +133,7 @@
     <q-page-container>
       <router-view v-slot="{ Component }">
         <transition name="content-fade" mode="out-in">
-          <component :is="Component" :key="route.fullPath" />
+          <component :is="Component" :key="route.path" />
         </transition>
       </router-view>
     </q-page-container>
@@ -202,10 +204,18 @@ function onLogout() {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
+.breadcrumb-muted {
+  color: var(--brand-text-muted);
+}
+
+.nav-group-title {
+  color: var(--brand-text-muted);
+}
+
 .nav-item {
   border-radius: 10px;
   margin: 2px 8px;
-  color: #475569;
+  color: var(--brand-text-muted);
 }
 
 .nav-item--active {

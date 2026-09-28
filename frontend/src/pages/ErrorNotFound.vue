@@ -11,8 +11,11 @@
           text-color="white"
           icon="explore_off"
         />
-        <div class="text-h2 text-weight-bold text-grey-9">404</div>
-        <div class="text-h6 text-grey-7 q-mt-sm q-mb-lg">
+        <div class="text-h2 text-weight-bold">404</div>
+        <div
+          class="text-h6 q-mt-sm q-mb-lg"
+          style="color: var(--brand-text-muted)"
+        >
           Bunday sahifa topilmadi
         </div>
         <q-btn

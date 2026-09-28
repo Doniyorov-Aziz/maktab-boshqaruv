@@ -6,16 +6,25 @@
 @import '@fontsource/inter/700.css';
 @import '@fontsource/inter/800.css';
 
+// Theme tokens. Every color that needs to flip between light and dark
+// goes through one of these — never a hardcoded #fff/#000 or a Quasar
+// "bg-white"/"text-dark" utility class, which stay fixed regardless of
+// theme and are exactly what caused the dark-mode contrast bug (white
+// cards/sidebar with light, dark-mode-adjusted text on top of them).
 :root {
-  --brand-surface: #{$brand-surface};
+  --page-bg: #{$brand-page-bg};
+  --card-bg: #{$brand-card-bg};
   --brand-border: #{$brand-border};
+  --text-primary: #{$brand-text-primary};
   --brand-text-muted: #{$brand-text-muted};
   --brand-gradient: linear-gradient(135deg, #{$primary} 0%, #6d28d9 100%);
 }
 
 body.body--dark {
-  --brand-surface: #{$brand-surface-dark};
+  --page-bg: #{$brand-page-bg-dark};
+  --card-bg: #{$brand-card-bg-dark};
   --brand-border: #{$brand-border-dark};
+  --text-primary: #{$brand-text-primary-dark};
   --brand-text-muted: #{$brand-text-muted-dark};
 }
 
@@ -31,7 +40,8 @@ body {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  background: var(--brand-surface);
+  background: var(--page-bg);
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
@@ -54,12 +64,21 @@ body {
 }
 
 .brand-card {
+  background: var(--card-bg);
+  color: var(--text-primary);
   border-radius: 16px;
   border: 1px solid var(--brand-border);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition:
     box-shadow 0.2s ease,
     transform 0.2s ease;
+}
+
+// Header / sidebar sit on the same "card" surface as the rest of the UI,
+// so they need to flip with the theme too instead of staying bg-white.
+.app-surface {
+  background: var(--card-bg) !important;
+  color: var(--text-primary);
 }
 
 .brand-card:hover {

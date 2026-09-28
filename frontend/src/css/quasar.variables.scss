@@ -18,9 +18,16 @@ $warning: #f59e0b; // amber-500
 
 // Extra brand tokens used directly in components via CSS custom
 // properties (see app.scss) — not part of Quasar's palette API.
-$brand-surface: #f8fafc;
-$brand-surface-dark: #1e1f2b;
+// "page" = the app background behind cards; "card" = the surface cards/
+// sidebar/header sit on top of. They must differ (page slightly tinted,
+// card flat) so card edges stay visible in both themes.
+$brand-page-bg: #f8fafc;
+$brand-page-bg-dark: #13141a;
+$brand-card-bg: #ffffff;
+$brand-card-bg-dark: #1e1f2b;
 $brand-border: #e2e8f0;
 $brand-border-dark: #2d2e3d;
+$brand-text-primary: #0f172a;
+$brand-text-primary-dark: #f1f5f9;
 $brand-text-muted: #64748b;
 $brand-text-muted-dark: #9497ad;

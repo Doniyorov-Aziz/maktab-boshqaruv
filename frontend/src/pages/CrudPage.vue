@@ -11,7 +11,7 @@
       </div>
       <div class="col">
         <div class="text-h5 text-weight-bold">{{ module.title }}</div>
-        <div class="text-caption text-grey-6">
+        <div class="text-caption muted-text">
           <q-skeleton v-if="loading" type="text" width="90px" />
           <template v-else>Jami {{ pagination.rowsNumber }} ta yozuv</template>
         </div>
@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <div class="brand-card bg-white overflow-hidden">
+    <div class="brand-card overflow-hidden">
       <q-table
         :rows="rows"
         :columns="tableColumns"
@@ -48,7 +48,7 @@
         </template>
 
         <template v-slot:no-data>
-          <div class="full-width column flex-center q-py-xl text-grey-6">
+          <div class="full-width column flex-center q-py-xl muted-text">
             <q-icon name="inbox" size="48px" class="q-mb-sm" />
             <div class="text-subtitle2">Hozircha ma'lumot yo'q</div>
             <div class="text-caption q-mb-md">
@@ -180,13 +180,14 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
 import { getModule } from '@/config/modules'
 
 const route = useRoute()
+const router = useRouter()
 const $q = useQuasar()
 const authStore = useAuthStore()
 
@@ -242,7 +243,7 @@ function onRequest(requestProp) {
 
 watch(
   () => route.params.moduleKey,
-  () => {
+  async () => {
     pagination.value = {
       sortBy: 'id',
       descending: false,
@@ -250,7 +251,11 @@ watch(
       rowsPerPage: 10,
       rowsNumber: 0
     }
-    fetchRows()
+    await fetchRows()
+    if (route.query.create === '1' && canCreate.value) {
+      router.replace({ query: {} })
+      openCreateDialog()
+    }
   },
   { immediate: true }
 )
@@ -404,5 +409,9 @@ function extractError(error) {
 .crud-page {
   max-width: 1280px;
   margin: 0 auto;
+}
+
+.muted-text {
+  color: var(--brand-text-muted);
 }
 </style>
