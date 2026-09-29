@@ -11,6 +11,24 @@ public class StudentResponseDto {
     private LocalDate birthDate;
     private Long schoolClassId;
     private String className;
+    private String guardianName;
+    private String guardianPhone;
+
+    public String getGuardianName() {
+        return guardianName;
+    }
+
+    public void setGuardianName(String guardianName) {
+        this.guardianName = guardianName;
+    }
+
+    public String getGuardianPhone() {
+        return guardianPhone;
+    }
+
+    public void setGuardianPhone(String guardianPhone) {
+        this.guardianPhone = guardianPhone;
+    }
 
     public Long getId() {
         return id;

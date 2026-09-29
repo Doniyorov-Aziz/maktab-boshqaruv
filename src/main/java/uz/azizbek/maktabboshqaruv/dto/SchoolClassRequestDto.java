@@ -23,6 +23,16 @@ public class SchoolClassRequestDto {
     @Positive(message = "Maksimal o'quvchilar soni musbat son bo'lishi kerak")
     private Integer maxStudents;
 
+    private Long classTeacherId;
+
+    public Long getClassTeacherId() {
+        return classTeacherId;
+    }
+
+    public void setClassTeacherId(Long classTeacherId) {
+        this.classTeacherId = classTeacherId;
+    }
+
     public Long getAcademicYearId() {
         return academicYearId;
     }

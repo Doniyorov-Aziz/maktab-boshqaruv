@@ -1,3 +1,7 @@
+import { formatDate } from '@/utils/date'
+
+const dateFormat = val => (val ? formatDate(val) : '')
+
 const weekdayOptions = [
   'Dushanba',
   'Seshanba',
@@ -15,6 +19,7 @@ export const modules = [
     key: 'schools',
     title: 'Maktablar',
     icon: 'school',
+    color: '#4f46e5',
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/schools',
     schoolScoped: false,
@@ -38,6 +43,7 @@ export const modules = [
     key: 'buildings',
     title: 'Binolar',
     icon: 'apartment',
+    color: '#0ea5e9',
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/buildings',
     schoolScoped: true,
@@ -66,6 +72,7 @@ export const modules = [
     key: 'rooms',
     title: 'Xonalar',
     icon: 'meeting_room',
+    color: '#14b8a6',
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/rooms',
     schoolScoped: true,
@@ -105,6 +112,7 @@ export const modules = [
     key: 'academic-years',
     title: "O'quv yillari",
     icon: 'event',
+    color: '#f59e0b',
     group: "O'quv jarayoni",
     endpoint: '/api/academic-years',
     schoolScoped: true,
@@ -121,9 +129,16 @@ export const modules = [
         name: 'startDate',
         label: 'Boshlanish',
         field: 'startDate',
-        align: 'left'
+        align: 'left',
+        format: dateFormat
       },
-      { name: 'endDate', label: 'Tugash', field: 'endDate', align: 'left' },
+      {
+        name: 'endDate',
+        label: 'Tugash',
+        field: 'endDate',
+        align: 'left',
+        format: dateFormat
+      },
       {
         name: 'schoolName',
         label: 'Maktab',
@@ -147,9 +162,11 @@ export const modules = [
     key: 'school-classes',
     title: 'Sinflar',
     icon: 'groups',
+    color: '#8b5cf6',
     group: "O'quv jarayoni",
     endpoint: '/api/school-classes',
     schoolScoped: true,
+    rowLink: 'class',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -176,6 +193,12 @@ export const modules = [
         label: "O'quv yili",
         field: 'academicYearTitle',
         align: 'left'
+      },
+      {
+        name: 'classTeacherName',
+        label: 'Sinf rahbari',
+        field: 'classTeacherName',
+        align: 'left'
       }
     ],
     fields: [
@@ -193,6 +216,16 @@ export const modules = [
         required: true
       },
       {
+        key: 'classTeacherId',
+        label: 'Sinf rahbari',
+        type: 'select',
+        required: false,
+        schoolScoped: true,
+        optionsEndpoint: '/api/employees',
+        optionValue: 'id',
+        optionLabel: 'fullName'
+      },
+      {
         key: 'academicYearId',
         label: "O'quv yili",
         type: 'select',
@@ -208,6 +241,7 @@ export const modules = [
     key: 'students',
     title: "O'quvchilar",
     icon: 'face',
+    color: '#06b6d4',
     group: 'Odamlar',
     endpoint: '/api/students',
     schoolScoped: true,
@@ -218,15 +252,23 @@ export const modules = [
         label: "To'liq ism",
         field: 'fullName',
         sortable: true,
-        align: 'left'
+        align: 'left',
+        link: { type: 'student', idField: 'id' }
       },
       {
         name: 'birthDate',
         label: "Tug'ilgan sana",
         field: 'birthDate',
-        align: 'left'
+        align: 'left',
+        format: dateFormat
       },
-      { name: 'className', label: 'Sinf', field: 'className', align: 'left' }
+      { name: 'className', label: 'Sinf', field: 'className', align: 'left' },
+      {
+        name: 'guardianName',
+        label: 'Ota-ona',
+        field: 'guardianName',
+        align: 'left'
+      }
     ],
     fields: [
       { key: 'firstName', label: 'Ism', type: 'text', required: true },
@@ -246,6 +288,18 @@ export const modules = [
         optionsEndpoint: '/api/school-classes',
         optionValue: 'id',
         optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`
+      },
+      {
+        key: 'guardianName',
+        label: 'Ota-ona F.I.Sh.',
+        type: 'text',
+        required: false
+      },
+      {
+        key: 'guardianPhone',
+        label: 'Ota-ona telefoni',
+        type: 'text',
+        required: false
       }
     ]
   },
@@ -253,6 +307,7 @@ export const modules = [
     key: 'subjects',
     title: 'Fanlar',
     icon: 'menu_book',
+    color: '#10b981',
     group: "O'quv jarayoni",
     endpoint: '/api/subjects',
     schoolScoped: true,
@@ -275,6 +330,7 @@ export const modules = [
     key: 'positions',
     title: 'Lavozimlar',
     icon: 'badge',
+    color: '#64748b',
     group: 'Odamlar',
     endpoint: '/api/positions',
     schoolScoped: false,
@@ -294,6 +350,7 @@ export const modules = [
     key: 'employees',
     title: 'Xodimlar',
     icon: 'work',
+    color: '#ec4899',
     group: 'Odamlar',
     endpoint: '/api/employees',
     schoolScoped: true,
@@ -304,7 +361,8 @@ export const modules = [
         label: "To'liq ism",
         field: 'fullName',
         sortable: true,
-        align: 'left'
+        align: 'left',
+        link: { type: 'teacher', idField: 'id' }
       },
       { name: 'phone', label: 'Telefon', field: 'phone', align: 'left' },
       {
@@ -332,11 +390,13 @@ export const modules = [
   },
   {
     key: 'lesson-slots',
-    title: 'Dars jadvali',
+    title: "Dars jadvali (ro'yxat)",
     icon: 'schedule',
+    color: '#a855f7',
     group: "O'quv jarayoni",
     endpoint: '/api/lesson-slots',
     schoolScoped: true,
+    hidden: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       { name: 'className', label: 'Sinf', field: 'className', align: 'left' },
@@ -420,9 +480,185 @@ export const modules = [
     ]
   },
   {
+    key: 'announcements',
+    title: "E'lonlar",
+    icon: 'campaign',
+    color: '#3b82f6',
+    group: 'Kundalik hayot',
+    endpoint: '/api/announcements',
+    schoolScoped: true,
+    columns: [
+      { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
+      {
+        name: 'title',
+        label: 'Sarlavha',
+        field: 'title',
+        sortable: true,
+        align: 'left'
+      },
+      { name: 'audience', label: 'Kimga', field: 'audience', align: 'left' },
+      {
+        name: 'priority',
+        label: 'Muhimligi',
+        field: 'priority',
+        align: 'left'
+      },
+      {
+        name: 'deadline',
+        label: 'Muddat',
+        field: 'deadline',
+        align: 'left',
+        format: dateFormat
+      }
+    ],
+    fields: [
+      { key: 'title', label: 'Sarlavha', type: 'text', required: true },
+      { key: 'content', label: 'Matn', type: 'textarea', required: true },
+      {
+        key: 'audience',
+        label: 'Kimga',
+        type: 'select',
+        required: true,
+        options: ['ALL', 'TEACHERS', 'CLASS']
+      },
+      {
+        key: 'schoolClassId',
+        label: "Sinf (Kimga: CLASS bo'lsa)",
+        type: 'select',
+        required: false,
+        schoolScoped: true,
+        optionsEndpoint: '/api/school-classes',
+        optionValue: 'id',
+        optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`
+      },
+      {
+        key: 'priority',
+        label: 'Muhimlik darajasi',
+        type: 'select',
+        required: true,
+        options: ['LOW', 'NORMAL', 'HIGH']
+      },
+      { key: 'deadline', label: 'Muddat', type: 'date', required: false },
+      { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
+    ]
+  },
+  {
+    key: 'calendar-events',
+    title: 'Tadbirlar',
+    icon: 'event_available',
+    color: '#22c55e',
+    group: 'Kundalik hayot',
+    endpoint: '/api/calendar-events',
+    schoolScoped: true,
+    columns: [
+      { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
+      {
+        name: 'title',
+        label: 'Nomi',
+        field: 'title',
+        sortable: true,
+        align: 'left'
+      },
+      { name: 'type', label: 'Turi', field: 'type', align: 'left' },
+      {
+        name: 'startDate',
+        label: 'Boshlanish',
+        field: 'startDate',
+        align: 'left',
+        format: dateFormat
+      },
+      {
+        name: 'endDate',
+        label: 'Tugash',
+        field: 'endDate',
+        align: 'left',
+        format: dateFormat
+      }
+    ],
+    fields: [
+      { key: 'title', label: 'Nomi', type: 'text', required: true },
+      {
+        key: 'description',
+        label: 'Tavsif',
+        type: 'textarea',
+        required: false
+      },
+      {
+        key: 'type',
+        label: 'Turi',
+        type: 'select',
+        required: true,
+        options: ['HOLIDAY', 'EXAM', 'PARENT_MEETING', 'VACATION', 'OTHER']
+      },
+      {
+        key: 'startDate',
+        label: 'Boshlanish sanasi',
+        type: 'date',
+        required: true
+      },
+      { key: 'endDate', label: 'Tugash sanasi', type: 'date', required: true },
+      { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
+    ]
+  },
+  {
+    key: 'behavior-records',
+    title: 'Xulq yozuvlari',
+    icon: 'emoji_events',
+    color: '#f43f5e',
+    group: 'Kundalik hayot',
+    endpoint: '/api/behavior-records',
+    schoolScoped: true,
+    columns: [
+      { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
+      {
+        name: 'studentName',
+        label: "O'quvchi",
+        field: 'studentName',
+        align: 'left',
+        link: { type: 'student', idField: 'studentId' }
+      },
+      { name: 'type', label: 'Turi', field: 'type', align: 'left' },
+      {
+        name: 'recordDate',
+        label: 'Sana',
+        field: 'recordDate',
+        align: 'left',
+        format: dateFormat
+      },
+      {
+        name: 'description',
+        label: 'Tavsif',
+        field: 'description',
+        align: 'left'
+      }
+    ],
+    fields: [
+      {
+        key: 'studentId',
+        label: "O'quvchi",
+        type: 'select',
+        required: true,
+        schoolScoped: true,
+        optionsEndpoint: '/api/students',
+        optionValue: 'id',
+        optionLabel: 'fullName'
+      },
+      { key: 'recordDate', label: 'Sana', type: 'date', required: true },
+      {
+        key: 'type',
+        label: 'Turi',
+        type: 'select',
+        required: true,
+        options: ['REWARD', 'WARNING']
+      },
+      { key: 'description', label: 'Tavsif', type: 'text', required: true }
+    ]
+  },
+  {
     key: 'users',
     title: 'Foydalanuvchilar',
     icon: 'manage_accounts',
+    color: '#475569',
     group: 'Boshqaruv',
     endpoint: '/api/users',
     adminOnly: true,

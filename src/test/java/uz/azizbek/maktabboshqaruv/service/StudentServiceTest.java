@@ -2,6 +2,8 @@ package uz.azizbek.maktabboshqaruv.service;
 
 import uz.azizbek.maktabboshqaruv.dto.StudentRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.StudentResponseDto;
+import uz.azizbek.maktabboshqaruv.entity.AcademicYear;
+import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.entity.SchoolClass;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository;
@@ -31,6 +33,9 @@ class StudentServiceTest {
     @Mock
     private SchoolClassRepository schoolClassRepository;
 
+    @Mock
+    private ActivityLogService activityLogService;
+
     @InjectMocks
     private StudentService studentService;
 
@@ -56,10 +61,16 @@ class StudentServiceTest {
     void createStudent_valid_saves() {
         StudentRequestDto request = validRequest();
 
+        School school = new School();
+        school.setId(1L);
+        AcademicYear academicYear = new AcademicYear();
+        academicYear.setSchool(school);
+
         SchoolClass schoolClass = new SchoolClass();
         schoolClass.setId(1L);
         schoolClass.setGradeNumber(5);
         schoolClass.setSectionLetter("A");
+        schoolClass.setAcademicYear(academicYear);
         when(schoolClassRepository.findById(1L)).thenReturn(Optional.of(schoolClass));
 
         Student saved = new Student();

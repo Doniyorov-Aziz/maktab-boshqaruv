@@ -1,12 +1,12 @@
 <template>
-  <q-page class="q-pa-md crud-page" v-if="module">
-    <div class="row items-center q-mb-lg q-col-gutter-md">
+  <page-layout v-if="module" :icon="module.icon" :color="module.color">
+    <template v-slot:header>
       <div class="col-auto">
         <q-avatar
           size="48px"
-          class="brand-gradient"
           text-color="white"
           :icon="module.icon"
+          :style="{ background: module.color || 'var(--brand-gradient)' }"
         />
       </div>
       <div class="col page-title-col">
@@ -22,7 +22,31 @@
           <template v-else>Jami {{ pagination.rowsNumber }} ta yozuv</template>
         </div>
       </div>
-      <div class="col-auto">
+      <div class="col-auto row items-center q-gutter-sm no-wrap">
+        <q-input
+          v-model="searchQuery"
+          dense
+          outlined
+          clearable
+          debounce="250"
+          placeholder="Qidirish..."
+          class="search-input"
+          @update:model-value="onSearchChange"
+        >
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+        <q-btn
+          flat
+          dense
+          round
+          icon="file_download"
+          color="grey-7"
+          @click="exportCsv"
+        >
+          <q-tooltip>CSV eksport</q-tooltip>
+        </q-btn>
         <q-btn
           v-if="canCreate"
           color="primary"
@@ -34,7 +58,7 @@
           @click="openCreateDialog"
         />
       </div>
-    </div>
+    </template>
 
     <q-banner
       v-if="module.schoolScoped && !schoolStore.activeSchoolId"
@@ -49,7 +73,7 @@
 
     <div v-else class="brand-card overflow-hidden">
       <q-table
-        :rows="rows"
+        :rows="displayRows"
         :columns="tableColumns"
         row-key="id"
         :loading="loading"
@@ -58,7 +82,7 @@
         binary-state-sort
         flat
         class="brand-table"
-        :class="{ 'row-clickable': module.key === 'schools' }"
+        :class="{ 'row-clickable': !!module.rowLink }"
         :rows-per-page-options="[10, 20, 50]"
         @row-click="onRowClick"
       >
@@ -69,12 +93,16 @@
         <template v-slot:no-data>
           <div class="full-width column flex-center q-py-xl muted-text">
             <q-icon name="inbox" size="48px" class="q-mb-sm" />
-            <div class="text-subtitle2">Hozircha ma'lumot yo'q</div>
-            <div class="text-caption q-mb-md">
-              Boshlash uchun birinchi yozuvni qo'shing
-            </div>
+            <div class="text-subtitle2">{{
+              searchQuery ? 'Hech narsa topilmadi' : "Hozircha ma'lumot yo'q"
+            }}</div>
+            <div class="text-caption q-mb-md">{{
+              searchQuery
+                ? "Boshqa kalit so'z bilan qidirib ko'ring"
+                : "Boshlash uchun birinchi yozuvni qo'shing"
+            }}</div>
             <q-btn
-              v-if="canCreate"
+              v-if="canCreate && !searchQuery"
               outline
               color="primary"
               icon="add"
@@ -83,6 +111,20 @@
               @click="openCreateDialog"
             />
           </div>
+        </template>
+
+        <template
+          v-for="col in linkColumns"
+          :key="'body-cell-' + col.name"
+          v-slot:[`body-cell-${col.name}`]="props"
+        >
+          <q-td :props="props">
+            <span
+              class="link-cell"
+              @click.stop="goToProfile(col.link, props.row)"
+              >{{ props.value }}</span
+            >
+          </q-td>
         </template>
 
         <template v-slot:body-cell-actions="props">
@@ -160,6 +202,22 @@
                 :rules="fieldRules(field)"
               />
               <q-input
+                v-else-if="!field.autoSchool && field.type === 'textarea'"
+                v-model="formModel[field.key]"
+                :label="field.label"
+                type="textarea"
+                autogrow
+                outlined
+                dense
+                :rules="fieldRules(field)"
+              />
+              <date-field
+                v-else-if="!field.autoSchool && field.type === 'date'"
+                v-model="formModel[field.key]"
+                :label="field.label"
+                :rules="fieldRules(field)"
+              />
+              <q-input
                 v-else-if="!field.autoSchool"
                 v-model="formModel[field.key]"
                 :label="field.label"
@@ -204,7 +262,7 @@
         </q-form>
       </q-card>
     </q-dialog>
-  </q-page>
+  </page-layout>
 </template>
 
 <script setup>
@@ -215,6 +273,8 @@ import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
 import { getModule } from '@/config/modules'
+import PageLayout from '@/components/PageLayout.vue'
+import DateField from '@/components/DateField.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -234,10 +294,29 @@ const pagination = ref({
   rowsNumber: 0
 })
 
+const searchQuery = ref('')
+const searchCache = ref(null)
+const searchLoading = ref(false)
+
 const tableColumns = computed(() => [
   ...module.value.columns,
   { name: 'actions', label: '', field: 'actions', align: 'right' }
 ])
+
+const linkColumns = computed(() => module.value.columns.filter(c => c.link))
+
+const displayRows = computed(() => {
+  if (!searchQuery.value) return rows.value
+  const q = searchQuery.value.toLowerCase()
+  const source = searchCache.value || []
+  return source.filter(row =>
+    module.value.columns.some(col => {
+      if (typeof col.field !== 'string') return false
+      const v = row[col.field]
+      return v != null && String(v).toLowerCase().includes(q)
+    })
+  )
+})
 
 const canCreate = computed(() =>
   module.value.adminOnly ? authStore.isAdmin : authStore.isEditor
@@ -275,15 +354,89 @@ async function fetchRows() {
   }
 }
 
+async function fetchAllForSearch() {
+  if (module.value.schoolScoped && !schoolStore.activeSchoolId) return
+  searchLoading.value = true
+  try {
+    const params = { page: 0, size: 3000 }
+    if (module.value.schoolScoped) {
+      params.schoolId = schoolStore.activeSchoolId
+    }
+    const response = await api.get(module.value.endpoint, { params })
+    searchCache.value = response.data.content
+  } catch {
+    searchCache.value = []
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+function onSearchChange(val) {
+  if (val && !searchCache.value) {
+    fetchAllForSearch()
+  }
+}
+
 function onRequest(requestProp) {
   pagination.value = requestProp.pagination
   fetchRows()
 }
 
 function onRowClick(evt, row) {
-  if (module.value.key !== 'schools') return
-  schoolStore.setActiveSchool(row.id, row.name)
-  router.push('/')
+  if (!module.value.rowLink) return
+  if (module.value.key === 'schools') {
+    schoolStore.setActiveSchool(row.id, row.name)
+    router.push('/')
+    return
+  }
+  router.push(`/profiles/${module.value.rowLink}/${row.id}`)
+}
+
+function goToProfile(link, row) {
+  const id = row[link.idField]
+  if (id != null) {
+    router.push(`/profiles/${link.type}/${id}`)
+  }
+}
+
+async function exportCsv() {
+  if (searchQuery.value) {
+    doExportCsv(displayRows.value)
+    return
+  }
+  if (!searchCache.value) {
+    $q.notify({
+      type: 'info',
+      message: 'Eksport uchun tayyorlanmoqda...',
+      timeout: 800
+    })
+    await fetchAllForSearch()
+  }
+  doExportCsv(searchCache.value || rows.value)
+}
+
+function doExportCsv(source) {
+  const cols = module.value.columns
+  const header = cols.map(c => c.label).join(',')
+  const lines = source.map(row =>
+    cols
+      .map(c => {
+        const v = typeof c.field === 'string' ? row[c.field] : ''
+        const s = v == null ? '' : String(v).replace(/"/g, '""')
+        return `"${s}"`
+      })
+      .join(',')
+  )
+  const csv = [header, ...lines].join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${module.value.key}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 watch(
@@ -296,6 +449,8 @@ watch(
       rowsPerPage: 10,
       rowsNumber: 0
     }
+    searchQuery.value = ''
+    searchCache.value = null
     await fetchRows()
     if (route.query.create === '1' && canCreate.value) {
       router.replace({ query: {} })
@@ -310,7 +465,9 @@ watch(
   () => {
     if (!module.value?.schoolScoped) return
     pagination.value.page = 1
+    searchCache.value = null
     fetchRows()
+    if (searchQuery.value) fetchAllForSearch()
   }
 )
 
@@ -423,6 +580,7 @@ async function onSave() {
     if (module.value.key === 'schools') {
       await schoolStore.fetchSchools(api)
     }
+    searchCache.value = null
     fetchRows()
   } catch (error) {
     formError.value = extractError(error)
@@ -460,6 +618,7 @@ function confirmDelete(row) {
       if (module.value.key === 'schools') {
         await schoolStore.fetchSchools(api)
       }
+      searchCache.value = null
       fetchRows()
     } catch (error) {
       $q.notify({ type: 'negative', message: extractError(error) })
@@ -473,11 +632,6 @@ function extractError(error) {
 </script>
 
 <style scoped>
-.crud-page {
-  max-width: 1280px;
-  margin: 0 auto;
-}
-
 .muted-text {
   color: var(--brand-text-muted);
 }
@@ -486,11 +640,31 @@ function extractError(error) {
   min-width: 0;
 }
 
+.search-input {
+  width: 200px;
+}
+
+.link-cell {
+  color: var(--q-primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.link-cell:hover {
+  text-decoration: underline;
+}
+
 :deep(.row-clickable tbody tr) {
   cursor: pointer;
 }
 
 :deep(.row-clickable tbody tr:hover) {
   background: rgba(79, 70, 229, 0.06);
+}
+
+@media (max-width: 599px) {
+  .search-input {
+    width: 140px;
+  }
 }
 </style>

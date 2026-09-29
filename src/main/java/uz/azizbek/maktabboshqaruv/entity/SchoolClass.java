@@ -22,6 +22,10 @@ public class SchoolClass {
     @Column(nullable = false)
     private Integer maxStudents;
 
+    @ManyToOne
+    @JoinColumn(name = "class_teacher_id")
+    private Employee classTeacher;
+
     public Long getId() {
         return id;
     }
@@ -60,5 +64,13 @@ public class SchoolClass {
 
     public void setMaxStudents(Integer maxStudents) {
         this.maxStudents = maxStudents;
+    }
+
+    public Employee getClassTeacher() {
+        return classTeacher;
+    }
+
+    public void setClassTeacher(Employee classTeacher) {
+        this.classTeacher = classTeacher;
     }
 }

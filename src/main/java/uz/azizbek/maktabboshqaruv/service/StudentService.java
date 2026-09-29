@@ -21,6 +21,9 @@ public class StudentService {
     @Autowired
     private SchoolClassRepository schoolClassRepository;
 
+    @Autowired
+    private ActivityLogService activityLogService;
+
     public Page<StudentResponseDto> getAllStudents(Long schoolId, Pageable pageable) {
         return studentRepository.findBySchoolClassAcademicYearSchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
@@ -42,8 +45,15 @@ public class StudentService {
         student.setFirstName(request.getFirstName());
         student.setLastName(request.getLastName());
         student.setBirthDate(request.getBirthDate());
+        student.setGuardianName(request.getGuardianName());
+        student.setGuardianPhone(request.getGuardianPhone());
 
         Student saved = studentRepository.save(student);
+        activityLogService.record(
+                schoolClass.getAcademicYear().getSchool(),
+                "person_add",
+                student.getFirstName() + " " + student.getLastName() + " " + schoolClass.getGradeNumber()
+                        + "-" + schoolClass.getSectionLetter() + " sinfiga qo'shildi");
         return toResponseDto(saved);
     }
 
@@ -59,6 +69,8 @@ public class StudentService {
         student.setFirstName(request.getFirstName());
         student.setLastName(request.getLastName());
         student.setBirthDate(request.getBirthDate());
+        student.setGuardianName(request.getGuardianName());
+        student.setGuardianPhone(request.getGuardianPhone());
 
         Student updated = studentRepository.save(student);
         return toResponseDto(updated);
@@ -81,6 +93,8 @@ public class StudentService {
         dto.setBirthDate(student.getBirthDate());
         dto.setSchoolClassId(student.getSchoolClass().getId());
         dto.setClassName(student.getSchoolClass().getGradeNumber() + "-" + student.getSchoolClass().getSectionLetter());
+        dto.setGuardianName(student.getGuardianName());
+        dto.setGuardianPhone(student.getGuardianPhone());
         return dto;
     }
 }

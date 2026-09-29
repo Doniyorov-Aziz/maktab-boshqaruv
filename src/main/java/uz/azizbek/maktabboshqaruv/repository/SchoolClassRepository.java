@@ -13,4 +13,5 @@ public interface SchoolClassRepository extends JpaRepository<SchoolClass, Long> 
     Page<SchoolClass> findByAcademicYearSchoolId(Long schoolId, Pageable pageable);
     List<SchoolClass> findByAcademicYearSchoolId(Long schoolId);
     long countByAcademicYearSchoolId(Long schoolId);
+    java.util.Optional<SchoolClass> findByClassTeacherId(Long classTeacherId);
 }

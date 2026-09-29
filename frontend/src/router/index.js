@@ -37,7 +37,6 @@ export default defineRouter((/* { store, ssrContext } */) => {
   })
 
   Router.beforeEach(to => {
-    LoadingBar.start()
     const authStore = useAuthStore()
     const isLoginRoute = to.path === '/login'
 
@@ -47,10 +46,19 @@ export default defineRouter((/* { store, ssrContext } */) => {
     if (authStore.isAuthenticated && isLoginRoute) {
       return '/'
     }
+    // Only start the bar for navigations that actually proceed — starting it
+    // on every intermediate redirect step left it started more times than
+    // afterEach (which only fires once, for the final navigation) could stop,
+    // so it never visually finished and the whole app felt stuck loading.
+    LoadingBar.start()
     return true
   })
 
   Router.afterEach(() => {
+    LoadingBar.stop()
+  })
+
+  Router.onError(() => {
     LoadingBar.stop()
   })
 

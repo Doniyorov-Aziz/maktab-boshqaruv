@@ -2,6 +2,7 @@ package uz.azizbek.maktabboshqaruv.service;
 
 import uz.azizbek.maktabboshqaruv.dto.LessonSlotRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.LessonSlotResponseDto;
+import uz.azizbek.maktabboshqaruv.dto.TimetableEntryDto;
 import uz.azizbek.maktabboshqaruv.entity.Employee;
 import uz.azizbek.maktabboshqaruv.entity.LessonSlot;
 import uz.azizbek.maktabboshqaruv.entity.Room;
@@ -17,6 +18,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class LessonSlotService {
@@ -39,6 +43,37 @@ public class LessonSlotService {
     public Page<LessonSlotResponseDto> getAllLessonSlots(Long schoolId, Pageable pageable) {
         return lessonSlotRepository.findBySchoolClassAcademicYearSchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
+    }
+
+    public List<TimetableEntryDto> getTimetable(Long schoolId, Long schoolClassId, Long employeeId, Long roomId) {
+        List<LessonSlot> lessons;
+        if (schoolClassId != null) {
+            lessons = lessonSlotRepository.findBySchoolClassId(schoolClassId);
+        } else if (employeeId != null) {
+            lessons = lessonSlotRepository.findByEmployeeId(employeeId);
+        } else if (roomId != null) {
+            lessons = lessonSlotRepository.findByRoomId(roomId);
+        } else {
+            lessons = lessonSlotRepository.findBySchoolClassAcademicYearSchoolId(schoolId);
+        }
+        return lessons.stream().map(this::toTimetableEntryDto).collect(Collectors.toList());
+    }
+
+    private TimetableEntryDto toTimetableEntryDto(LessonSlot lessonSlot) {
+        TimetableEntryDto dto = new TimetableEntryDto();
+        dto.setLessonSlotId(lessonSlot.getId());
+        dto.setSchoolClassId(lessonSlot.getSchoolClass().getId());
+        dto.setClassName(lessonSlot.getSchoolClass().getGradeNumber() + "-" + lessonSlot.getSchoolClass().getSectionLetter());
+        dto.setSubjectId(lessonSlot.getSubject().getId());
+        dto.setSubjectName(lessonSlot.getSubject().getName());
+        dto.setTeacherId(lessonSlot.getEmployee().getId());
+        dto.setTeacherName(lessonSlot.getEmployee().getFirstName() + " " + lessonSlot.getEmployee().getLastName());
+        dto.setRoomId(lessonSlot.getRoom().getId());
+        dto.setRoomNumber(lessonSlot.getRoom().getRoomNumber());
+        dto.setWeekday(lessonSlot.getWeekday());
+        dto.setStartTime(lessonSlot.getStartTime());
+        dto.setEndTime(lessonSlot.getEndTime());
+        return dto;
     }
 
     public LessonSlotResponseDto getLessonSlotById(Long id) {

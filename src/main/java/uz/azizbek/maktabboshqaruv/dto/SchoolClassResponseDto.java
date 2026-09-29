@@ -8,6 +8,24 @@ public class SchoolClassResponseDto {
     private Integer maxStudents;
     private Long academicYearId;
     private String academicYearTitle;
+    private Long classTeacherId;
+    private String classTeacherName;
+
+    public Long getClassTeacherId() {
+        return classTeacherId;
+    }
+
+    public void setClassTeacherId(Long classTeacherId) {
+        this.classTeacherId = classTeacherId;
+    }
+
+    public String getClassTeacherName() {
+        return classTeacherName;
+    }
+
+    public void setClassTeacherName(String classTeacherName) {
+        this.classTeacherName = classTeacherName;
+    }
 
     public Long getId() {
         return id;

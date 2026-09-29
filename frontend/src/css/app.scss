@@ -14,18 +14,57 @@
 :root {
   --page-bg: #{$brand-page-bg};
   --card-bg: #{$brand-card-bg};
+  --surface-2: #{$brand-surface-2};
   --brand-border: #{$brand-border};
   --text-primary: #{$brand-text-primary};
   --brand-text-muted: #{$brand-text-muted};
   --brand-gradient: linear-gradient(135deg, #{$primary} 0%, #6d28d9 100%);
+
+  // Semantic colors, aliased from Quasar's own palette so every component
+  // reads colors from one place instead of re-declaring hex values.
+  --color-success: #{$positive};
+  --color-warning: #{$warning};
+  --color-danger: #{$negative};
+  --color-info: #{$info};
+  --color-brand: #{$primary};
+
+  // Radius scale — every card/input/button in the app rounds to one of
+  // these three, never an arbitrary value.
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  // Elevation: a real drop shadow reads fine on a light surface. Kept as
+  // a token so dark mode (below) can swap the mechanism entirely instead
+  // of just dimming it.
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 8px 24px rgba(15, 23, 42, 0.08);
+
+  // Type scale (px). Line-heights are left to each usage since headings
+  // and body text want different ratios, but the sizes themselves are
+  // fixed here so nothing free-hands a random font-size.
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
 }
 
 body.body--dark {
   --page-bg: #{$brand-page-bg-dark};
   --card-bg: #{$brand-card-bg-dark};
+  --surface-2: #{$brand-surface-2-dark};
   --brand-border: #{$brand-border-dark};
   --text-primary: #{$brand-text-primary-dark};
   --brand-text-muted: #{$brand-text-muted-dark};
+
+  // A drop shadow on a dark surface just looks like a smudge — swap to a
+  // hairline border plus a faint inner highlight on hover, which reads as
+  // "lift" without needing a light source to cast against.
+  --shadow-card: none;
+  --shadow-card-hover: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 // Set on body (not `*`) so it cascades through normal CSS inheritance.
@@ -43,6 +82,7 @@ body {
   background: var(--page-bg);
   color: var(--text-primary);
   letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 // Quasar's own .q-icon base CSS already sizes icons at 1em x 1em with
@@ -66,12 +106,22 @@ body {
 .brand-card {
   background: var(--card-bg);
   color: var(--text-primary);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--brand-border);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-card);
   transition:
     box-shadow 0.2s ease,
     transform 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-card {
+    transition: none;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 // Header / sidebar sit on the same "card" surface as the rest of the UI,
@@ -82,7 +132,7 @@ body {
 }
 
 .brand-card:hover {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .brand-gradient {

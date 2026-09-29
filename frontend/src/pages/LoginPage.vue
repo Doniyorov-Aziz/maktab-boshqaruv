@@ -134,12 +134,13 @@ const errorMessage = ref('')
 const showPassword = ref(false)
 
 const brandStats = [
-  { value: '11', label: 'Modul' },
+  { value: '16', label: 'Modul' },
   { value: '3', label: 'Rol darajasi' },
   { value: '100%', label: 'Nazorat' }
 ]
 
 async function onSubmit() {
+  if (loading.value) return // guards against a duplicate submit firing (e.g. Enter + button both resolving)
   errorMessage.value = ''
   loading.value = true
   try {
@@ -149,9 +150,9 @@ async function onSubmit() {
       { responseType: 'text' }
     )
     authStore.setToken(response.data)
-    router.push('/')
+    await router.push('/')
   } catch (error) {
-    errorMessage.value = error.response?.data || 'Kirishda xatolik yuz berdi'
+    errorMessage.value = error.friendlyMessage || 'Kirishda xatolik yuz berdi'
   } finally {
     loading.value = false
   }
@@ -221,6 +222,12 @@ async function onSubmit() {
 @media (max-width: 1023px) {
   .login-page__brand {
     padding: 32px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page__card {
+    animation: none;
   }
 }
 </style>

@@ -12,4 +12,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Page<Employee> findBySchoolId(Long schoolId, Pageable pageable);
     List<Employee> findBySchoolId(Long schoolId);
     long countBySchoolId(Long schoolId);
+    long countBySchoolIdAndPositionTitleIn(Long schoolId, List<String> titles);
+    List<Employee> findBySchoolIdAndPositionTitleIn(Long schoolId, List<String> titles);
 }

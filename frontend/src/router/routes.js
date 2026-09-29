@@ -11,6 +11,34 @@ const routes = [
       {
         path: 'app/:moduleKey',
         component: () => import('@/pages/CrudPage.vue')
+      },
+      {
+        path: 'attendance',
+        component: () => import('@/pages/AttendancePage.vue')
+      },
+      {
+        path: 'gradebook',
+        component: () => import('@/pages/GradebookPage.vue')
+      },
+      {
+        path: 'timetable',
+        component: () => import('@/pages/TimetablePage.vue')
+      },
+      {
+        path: 'calendar',
+        component: () => import('@/pages/CalendarPage.vue')
+      },
+      {
+        path: 'profiles/student/:id',
+        component: () => import('@/pages/StudentProfilePage.vue')
+      },
+      {
+        path: 'profiles/teacher/:id',
+        component: () => import('@/pages/TeacherProfilePage.vue')
+      },
+      {
+        path: 'profiles/class/:id',
+        component: () => import('@/pages/ClassProfilePage.vue')
       }
     ]
   },

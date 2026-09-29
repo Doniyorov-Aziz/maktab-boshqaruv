@@ -3,8 +3,10 @@ package uz.azizbek.maktabboshqaruv.service;
 import uz.azizbek.maktabboshqaruv.dto.SchoolClassRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.SchoolClassResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.AcademicYear;
+import uz.azizbek.maktabboshqaruv.entity.Employee;
 import uz.azizbek.maktabboshqaruv.entity.SchoolClass;
 import uz.azizbek.maktabboshqaruv.repository.AcademicYearRepository;
+import uz.azizbek.maktabboshqaruv.repository.EmployeeRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,6 +22,9 @@ public class SchoolClassService {
 
     @Autowired
     private AcademicYearRepository academicYearRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     public Page<SchoolClassResponseDto> getAllSchoolClasses(Long schoolId, Pageable pageable) {
         return schoolClassRepository.findByAcademicYearSchoolId(schoolId, pageable)
@@ -47,6 +52,7 @@ public class SchoolClassService {
         schoolClass.setGradeNumber(request.getGradeNumber());
         schoolClass.setSectionLetter(request.getSectionLetter());
         schoolClass.setMaxStudents(request.getMaxStudents());
+        schoolClass.setClassTeacher(resolveClassTeacher(request.getClassTeacherId()));
 
         SchoolClass saved = schoolClassRepository.save(schoolClass);
         return toResponseDto(saved);
@@ -73,9 +79,18 @@ public class SchoolClassService {
         schoolClass.setGradeNumber(request.getGradeNumber());
         schoolClass.setSectionLetter(request.getSectionLetter());
         schoolClass.setMaxStudents(request.getMaxStudents());
+        schoolClass.setClassTeacher(resolveClassTeacher(request.getClassTeacherId()));
 
         SchoolClass updated = schoolClassRepository.save(schoolClass);
         return toResponseDto(updated);
+    }
+
+    private Employee resolveClassTeacher(Long classTeacherId) {
+        if (classTeacherId == null) {
+            return null;
+        }
+        return employeeRepository.findById(classTeacherId)
+                .orElseThrow(() -> new IllegalStateException("Bunday xodim mavjud emas"));
     }
 
     @Transactional
@@ -94,6 +109,10 @@ public class SchoolClassService {
         dto.setMaxStudents(schoolClass.getMaxStudents());
         dto.setAcademicYearId(schoolClass.getAcademicYear().getId());
         dto.setAcademicYearTitle(schoolClass.getAcademicYear().getTitle());
+        if (schoolClass.getClassTeacher() != null) {
+            dto.setClassTeacherId(schoolClass.getClassTeacher().getId());
+            dto.setClassTeacherName(schoolClass.getClassTeacher().getFirstName() + " " + schoolClass.getClassTeacher().getLastName());
+        }
         return dto;
     }
 }

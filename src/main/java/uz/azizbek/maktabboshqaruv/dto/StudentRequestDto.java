@@ -24,6 +24,26 @@ public class StudentRequestDto {
     @Past(message = "Tug'ilgan sana o'tmishda bo'lishi kerak")
     private LocalDate birthDate;
 
+    private String guardianName;
+
+    private String guardianPhone;
+
+    public String getGuardianName() {
+        return guardianName;
+    }
+
+    public void setGuardianName(String guardianName) {
+        this.guardianName = guardianName;
+    }
+
+    public String getGuardianPhone() {
+        return guardianPhone;
+    }
+
+    public void setGuardianPhone(String guardianPhone) {
+        this.guardianPhone = guardianPhone;
+    }
+
     public Long getSchoolClassId() {
         return schoolClassId;
     }

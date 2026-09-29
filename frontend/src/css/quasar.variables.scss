@@ -31,3 +31,9 @@ $brand-text-primary: #0f172a;
 $brand-text-primary-dark: #f1f5f9;
 $brand-text-muted: #64748b;
 $brand-text-muted-dark: #9497ad;
+
+// Secondary surface: one step up from the page background, one step down
+// from a card — table stripes, input fills, inset panels. Must stay
+// visually between --page-bg and --card-bg in both themes.
+$brand-surface-2: #f1f5f9;
+$brand-surface-2-dark: #23242f;

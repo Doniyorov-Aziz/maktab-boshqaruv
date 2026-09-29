@@ -1,17 +1,24 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated class="app-surface header-shadow">
+    <q-header class="app-surface app-header">
       <q-toolbar class="q-py-xs">
         <q-btn
           flat
           dense
           round
-          icon="menu"
+          :icon="menuIcon"
           aria-label="Menu"
-          @click="drawerOpen = !drawerOpen"
-        />
+          @click="toggleMenu"
+        >
+          <q-tooltip>{{
+            $q.screen.gt.sm ? "Menyuni yig'ish" : 'Menyu'
+          }}</q-tooltip>
+        </q-btn>
 
-        <q-breadcrumbs class="q-ml-sm breadcrumb-muted" active-color="primary">
+        <q-breadcrumbs
+          class="q-ml-sm breadcrumb-muted gt-xs"
+          active-color="primary"
+        >
           <template v-slot:separator>
             <q-icon
               size="1.2em"
@@ -24,6 +31,45 @@
         </q-breadcrumbs>
 
         <q-space />
+
+        <q-btn
+          flat
+          round
+          dense
+          icon="search"
+          class="q-mr-xs"
+          @click="openSearch"
+        >
+          <q-tooltip>Qidirish (Ctrl+K)</q-tooltip>
+        </q-btn>
+
+        <q-btn flat round dense icon="notifications" class="q-mr-xs">
+          <q-badge v-if="notificationCount" color="negative" floating rounded>{{
+            notificationCount
+          }}</q-badge>
+          <q-menu anchor="bottom right" self="top right">
+            <q-list style="min-width: 300px; max-width: 360px">
+              <q-item-label header>Bildirishnomalar</q-item-label>
+              <q-item v-if="!notifications.length">
+                <q-item-section class="muted-text"
+                  >Yangi bildirishnoma yo'q</q-item-section
+                >
+              </q-item>
+              <q-item
+                v-for="(n, i) in notifications"
+                :key="i"
+                clickable
+                v-close-popup
+                @click="goNotification(n)"
+              >
+                <q-item-section avatar>
+                  <q-icon :name="attentionIcon(n.type)" color="warning" />
+                </q-item-section>
+                <q-item-section>{{ n.description }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </q-btn>
 
         <q-btn
           v-if="schoolStore.activeSchoolName"
@@ -106,6 +152,19 @@
                 </q-item-section>
               </q-item>
               <q-separator />
+              <q-item clickable v-close-popup @click="accountDialogOpen = true">
+                <q-item-section avatar>
+                  <q-icon name="person" />
+                </q-item-section>
+                <q-item-section>Profil</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="accountDialogOpen = true">
+                <q-item-section avatar>
+                  <q-icon name="settings" />
+                </q-item-section>
+                <q-item-section>Sozlamalar</q-item-section>
+              </q-item>
+              <q-separator />
               <q-item clickable v-close-popup @click="onLogout">
                 <q-item-section avatar>
                   <q-icon name="logout" color="negative" />
@@ -118,18 +177,71 @@
       </q-toolbar>
     </q-header>
 
-    <q-drawer v-model="drawerOpen" show-if-above bordered class="app-surface">
-      <div class="row items-center q-pa-md q-gutter-sm">
+    <q-dialog v-model="accountDialogOpen">
+      <q-card style="width: 100%; max-width: 380px; border-radius: 16px">
+        <q-card-section class="row items-center q-gutter-md">
+          <q-avatar
+            size="52px"
+            color="primary"
+            text-color="white"
+            class="text-weight-bold text-h6"
+          >
+            {{ userInitial }}
+          </q-avatar>
+          <div>
+            <div class="text-subtitle1 text-weight-bold">{{
+              authStore.username
+            }}</div>
+            <q-badge :color="roleColor" outline>{{ authStore.role }}</q-badge>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-section>
+          <div class="text-caption muted-text q-mb-xs">Faol maktab</div>
+          <div class="text-body2">{{
+            schoolStore.activeSchoolName || '—'
+          }}</div>
+        </q-card-section>
+        <q-separator />
+        <q-card-section>
+          <div class="row items-center justify-between q-mb-sm">
+            <div class="text-body2">Qorong'u rejim</div>
+            <q-toggle
+              :model-value="$q.dark.isActive"
+              @update:model-value="toggleDarkMode"
+            />
+          </div>
+          <div class="row items-center justify-between">
+            <div class="text-body2">Yig'ilgan menyu</div>
+            <q-toggle :model-value="mini" @update:model-value="toggleMini" />
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat no-caps label="Yopish" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-drawer
+      v-model="drawerOpen"
+      show-if-above
+      bordered
+      class="app-surface"
+      :mini="mini"
+      :width="240"
+      :mini-width="64"
+    >
+      <div class="row items-center q-pa-md q-gutter-sm no-wrap">
         <q-avatar
           size="38px"
           class="brand-gradient"
           text-color="white"
           icon="school"
         />
-        <div>
-          <div class="text-subtitle1 text-weight-bold" style="line-height: 1.1">
-            Maktab Boshqaruv
-          </div>
+        <div v-if="!mini">
+          <div class="text-subtitle1 text-weight-bold" style="line-height: 1.1"
+            >Maktab Boshqaruv</div
+          >
           <div class="text-caption breadcrumb-muted">Admin panel</div>
         </div>
       </div>
@@ -148,13 +260,43 @@
             <q-item-section avatar>
               <q-icon name="dashboard" />
             </q-item-section>
-            <q-item-section>Bosh sahifa</q-item-section>
+            <q-item-section v-if="!mini">Bosh sahifa</q-item-section>
+            <q-tooltip v-if="mini" anchor="center right" self="center left"
+              >Bosh sahifa</q-tooltip
+            >
+          </q-item>
+
+          <q-item-label
+            v-if="!mini"
+            header
+            class="text-weight-semibold nav-group-title"
+            >Kundalik ish</q-item-label
+          >
+          <q-item
+            v-for="item in dailyNavItems"
+            :key="item.path"
+            clickable
+            :to="item.path"
+            exact
+            active-class="nav-item--active"
+            class="nav-item"
+          >
+            <q-item-section avatar>
+              <q-icon :name="item.icon" :style="{ color: item.color }" />
+            </q-item-section>
+            <q-item-section v-if="!mini">{{ item.title }}</q-item-section>
+            <q-tooltip v-if="mini" anchor="center right" self="center left">{{
+              item.title
+            }}</q-tooltip>
           </q-item>
 
           <template v-for="group in groupedModules" :key="group.name">
-            <q-item-label header class="text-weight-semibold nav-group-title">{{
-              group.name
-            }}</q-item-label>
+            <q-item-label
+              v-if="!mini"
+              header
+              class="text-weight-semibold nav-group-title"
+              >{{ group.name }}</q-item-label
+            >
             <q-item
               v-for="item in group.items"
               :key="item.key"
@@ -165,9 +307,12 @@
               class="nav-item"
             >
               <q-item-section avatar>
-                <q-icon :name="item.icon" />
+                <q-icon :name="item.icon" :style="{ color: item.color }" />
               </q-item-section>
-              <q-item-section>{{ item.title }}</q-item-section>
+              <q-item-section v-if="!mini">{{ item.title }}</q-item-section>
+              <q-tooltip v-if="mini" anchor="center right" self="center left">{{
+                item.title
+              }}</q-tooltip>
             </q-item>
           </template>
         </q-list>
@@ -181,11 +326,57 @@
         </transition>
       </router-view>
     </q-page-container>
+
+    <q-dialog v-model="searchOpen" position="top">
+      <q-card style="width: 100%; max-width: 560px; border-radius: 16px">
+        <q-input
+          ref="searchInputRef"
+          v-model="searchQuery"
+          autofocus
+          borderless
+          dense
+          class="q-pa-md"
+          placeholder="O'quvchi, o'qituvchi, sinf yoki sahifa qidiring..."
+          @keydown.down.prevent="moveSelection(1)"
+          @keydown.up.prevent="moveSelection(-1)"
+          @keydown.enter.prevent="selectHighlighted"
+          @keydown.esc="searchOpen = false"
+        >
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+        <q-separator />
+        <q-list style="max-height: 400px; overflow-y: auto">
+          <q-item
+            v-for="(r, i) in searchResults"
+            :key="r.type + r.id"
+            clickable
+            :active="i === highlightedIndex"
+            active-class="search-result--active"
+            @click="selectResult(r)"
+          >
+            <q-item-section avatar>
+              <q-icon :name="r.icon" :color="r.color" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ r.label }}</q-item-label>
+              <q-item-label caption>{{ r.sublabel }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item v-if="searchQuery && !searchResults.length">
+            <q-item-section class="muted-text"
+              >Hech narsa topilmadi</q-item-section
+            >
+          </q-item>
+        </q-list>
+      </q-card>
+    </q-dialog>
   </q-layout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { modules, getModule } from '@/config/modules'
@@ -198,14 +389,69 @@ const route = useRoute()
 const $q = useQuasar()
 const authStore = useAuthStore()
 const schoolStore = useSchoolStore()
-const drawerOpen = ref(true)
+const drawerOpen = ref($q.screen.gt.sm)
+const mini = ref(localStorage.getItem('sidebarMini') === 'true')
+const accountDialogOpen = ref(false)
+
+watch(
+  () => $q.screen.gt.sm,
+  isDesktop => {
+    drawerOpen.value = isDesktop
+  }
+)
 
 onMounted(async () => {
+  const previousSchoolId = schoolStore.activeSchoolId
   try {
     await schoolStore.fetchSchools(api)
   } catch {
     // school list couldn't load — header picker just stays hidden
   }
+  // The watch() below already reacts when fetchSchools() changes the active
+  // school (fresh login, or a stale cached school got replaced). It only
+  // fires on an actual change though, so a returning user whose cached
+  // school was still valid needs this explicit call instead — otherwise
+  // notifications never load for that case, and calling both unconditionally
+  // was firing /api/dashboard/attention twice on every load.
+  if (schoolStore.activeSchoolId === previousSchoolId) {
+    loadNotifications()
+  }
+  window.addEventListener('keydown', onGlobalKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onGlobalKeydown)
+})
+
+function onGlobalKeydown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    openSearch()
+  }
+}
+
+function toggleMini() {
+  mini.value = !mini.value
+  try {
+    localStorage.setItem('sidebarMini', String(mini.value))
+  } catch {
+    // ignore
+  }
+}
+
+// One menu button covers both cases: on mobile it opens/closes the
+// overlay drawer, on desktop it collapses the sidebar to icons-only.
+function toggleMenu() {
+  if ($q.screen.gt.sm) {
+    toggleMini()
+  } else {
+    drawerOpen.value = !drawerOpen.value
+  }
+}
+
+const menuIcon = computed(() => {
+  if ($q.screen.gt.sm) return mini.value ? 'menu_open' : 'menu'
+  return 'menu'
 })
 
 function onSelectSchool(school) {
@@ -221,8 +467,35 @@ function toggleDarkMode() {
   }
 }
 
+const dailyNavItems = [
+  {
+    path: '/attendance',
+    title: 'Davomat olish',
+    icon: 'fact_check',
+    color: '#ef4444'
+  },
+  {
+    path: '/gradebook',
+    title: 'Baholar jurnali',
+    icon: 'grade',
+    color: '#eab308'
+  },
+  {
+    path: '/timetable',
+    title: 'Dars jadvali',
+    icon: 'calendar_view_week',
+    color: '#a855f7'
+  },
+  {
+    path: '/calendar',
+    title: 'Taqvim',
+    icon: 'event_available',
+    color: '#22c55e'
+  }
+]
+
 const visibleModules = computed(() =>
-  modules.filter(m => !m.adminOnly || authStore.isAdmin)
+  modules.filter(m => !m.hidden && (!m.adminOnly || authStore.isAdmin))
 )
 
 const groupedModules = computed(() => {
@@ -247,7 +520,7 @@ const userInitial = computed(
 )
 
 const roleColor = computed(() => {
-  if (authStore.role === 'ADMIN') return 'negative'
+  if (authStore.role === 'ADMIN') return 'grey-7'
   if (authStore.role === 'EDITOR') return 'primary'
   return 'grey-7'
 })
@@ -256,14 +529,210 @@ function onLogout() {
   authStore.logout()
   router.push('/login')
 }
+
+// --- notifications ---
+const notifications = ref([])
+const notificationCount = computed(() => notifications.value.length)
+
+function attentionIcon(type) {
+  return (
+    {
+      CONSECUTIVE_ABSENCE: 'event_busy',
+      LOW_GRADE: 'trending_down',
+      MISSING_ATTENDANCE: 'fact_check'
+    }[type] || 'info'
+  )
+}
+
+async function loadNotifications() {
+  if (!schoolStore.activeSchoolId) return
+  try {
+    const res = await api.get('/api/dashboard/attention', {
+      params: { schoolId: schoolStore.activeSchoolId }
+    })
+    notifications.value = res.data
+  } catch {
+    notifications.value = []
+  }
+}
+
+watch(
+  () => schoolStore.activeSchoolId,
+  () => {
+    loadNotifications()
+    searchCache.value = null
+  }
+)
+
+function goNotification(n) {
+  if (n.linkModule === 'students') router.push(`/profiles/student/${n.linkId}`)
+  else if (n.linkModule === 'attendance-take') router.push('/attendance')
+}
+
+// --- global search ---
+const searchOpen = ref(false)
+const searchQuery = ref('')
+const searchInputRef = ref(null)
+const highlightedIndex = ref(0)
+const searchCache = ref(null)
+
+const pageEntries = [
+  {
+    type: 'page',
+    id: 'dashboard',
+    label: 'Bosh sahifa',
+    sublabel: 'Dashboard',
+    icon: 'dashboard',
+    color: 'primary',
+    path: '/'
+  },
+  {
+    type: 'page',
+    id: 'attendance',
+    label: 'Davomat olish',
+    sublabel: 'Sahifa',
+    icon: 'fact_check',
+    color: 'negative',
+    path: '/attendance'
+  },
+  {
+    type: 'page',
+    id: 'gradebook',
+    label: 'Baholar jurnali',
+    sublabel: 'Sahifa',
+    icon: 'grade',
+    color: 'warning',
+    path: '/gradebook'
+  },
+  {
+    type: 'page',
+    id: 'timetable',
+    label: 'Dars jadvali',
+    sublabel: 'Sahifa',
+    icon: 'calendar_view_week',
+    color: 'purple',
+    path: '/timetable'
+  },
+  {
+    type: 'page',
+    id: 'calendar',
+    label: 'Taqvim',
+    sublabel: 'Sahifa',
+    icon: 'event_available',
+    color: 'positive',
+    path: '/calendar'
+  },
+  ...modules
+    .filter(m => !m.hidden)
+    .map(m => ({
+      type: 'page',
+      id: m.key,
+      label: m.title,
+      sublabel: 'Sahifa',
+      icon: m.icon,
+      color: 'primary',
+      path: `/app/${m.key}`
+    }))
+]
+
+async function openSearch() {
+  searchOpen.value = true
+  searchQuery.value = ''
+  highlightedIndex.value = 0
+  if (!searchCache.value) {
+    await loadSearchCache()
+  }
+  nextTick(() => searchInputRef.value?.focus())
+}
+
+async function loadSearchCache() {
+  if (!schoolStore.activeSchoolId) {
+    searchCache.value = []
+    return
+  }
+  try {
+    const [students, employees, classes] = await Promise.all([
+      api.get('/api/students', {
+        params: { schoolId: schoolStore.activeSchoolId, size: 1000 }
+      }),
+      api.get('/api/employees', {
+        params: { schoolId: schoolStore.activeSchoolId, size: 500 }
+      }),
+      api.get('/api/school-classes', {
+        params: { schoolId: schoolStore.activeSchoolId, size: 100 }
+      })
+    ])
+    searchCache.value = [
+      ...students.data.content.map(s => ({
+        type: 'student',
+        id: s.id,
+        label: s.fullName,
+        sublabel: `O'quvchi · ${s.className}-sinf`,
+        icon: 'face',
+        color: 'cyan',
+        path: `/profiles/student/${s.id}`
+      })),
+      ...employees.data.content.map(e => ({
+        type: 'teacher',
+        id: e.id,
+        label: e.fullName,
+        sublabel: `Xodim · ${e.positionTitle}`,
+        icon: 'work',
+        color: 'pink',
+        path: `/profiles/teacher/${e.id}`
+      })),
+      ...classes.data.content.map(c => ({
+        type: 'class',
+        id: c.id,
+        label: `${c.gradeNumber}-${c.sectionLetter}`,
+        sublabel: 'Sinf',
+        icon: 'groups',
+        color: 'purple',
+        path: `/profiles/class/${c.id}`
+      }))
+    ]
+  } catch {
+    searchCache.value = []
+  }
+}
+
+const searchResults = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return pageEntries.slice(0, 8)
+  const all = [...(searchCache.value || []), ...pageEntries]
+  return all.filter(r => r.label.toLowerCase().includes(q)).slice(0, 20)
+})
+
+function moveSelection(dir) {
+  const len = searchResults.value.length
+  if (!len) return
+  highlightedIndex.value = (highlightedIndex.value + dir + len) % len
+}
+
+function selectHighlighted() {
+  const r = searchResults.value[highlightedIndex.value]
+  if (r) selectResult(r)
+}
+
+function selectResult(r) {
+  searchOpen.value = false
+  router.push(r.path)
+}
 </script>
 
 <style scoped>
-.header-shadow {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+.app-header {
+  border-bottom: 1px solid var(--brand-border);
+  background: var(--card-bg) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
 }
 
 .breadcrumb-muted {
+  color: var(--brand-text-muted);
+}
+
+.muted-text {
   color: var(--brand-text-muted);
 }
 
@@ -289,10 +758,17 @@ function onLogout() {
 
 .nav-group-title {
   color: var(--brand-text-muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-left: 24px;
+  padding-top: 18px;
+  padding-bottom: 4px;
+  min-height: 0;
 }
 
 .nav-item {
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   margin: 2px 8px;
   color: var(--brand-text-muted);
 }
@@ -314,6 +790,10 @@ function onLogout() {
   border-radius: 4px;
   background: var(--q-primary);
 }
+
+.search-result--active {
+  background: rgba(79, 70, 229, 0.1);
+}
 </style>
 
 <style>
@@ -325,5 +805,12 @@ function onLogout() {
 .content-fade-enter-from,
 .content-fade-leave-to {
   opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-fade-enter-active,
+  .content-fade-leave-active {
+    transition: none;
+  }
 }
 </style>
