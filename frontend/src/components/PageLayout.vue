@@ -16,7 +16,7 @@
             {{ subtitle }}
           </div>
         </div>
-        <div class="col-auto row items-center q-gutter-sm no-wrap">
+        <div class="col-auto row items-center q-gutter-sm actions-col">
           <slot name="actions" />
         </div>
       </slot>
@@ -49,5 +49,17 @@ defineProps({
 
 .page-layout__title-col {
   min-width: 0;
+}
+
+.actions-col {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 599px) {
+  .actions-col {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 </style>

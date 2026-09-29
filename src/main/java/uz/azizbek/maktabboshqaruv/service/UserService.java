@@ -3,7 +3,9 @@ package uz.azizbek.maktabboshqaruv.service;
 import uz.azizbek.maktabboshqaruv.dto.UserRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.UserResponseDto;
 import uz.azizbek.maktabboshqaruv.dto.UserUpdateRequestDto;
+import uz.azizbek.maktabboshqaruv.entity.Employee;
 import uz.azizbek.maktabboshqaruv.entity.User;
+import uz.azizbek.maktabboshqaruv.repository.EmployeeRepository;
 import uz.azizbek.maktabboshqaruv.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,6 +20,9 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -43,6 +48,7 @@ public class UserService {
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
+        user.setEmployee(resolveEmployee(request.getEmployeeId()));
 
         User saved = userRepository.save(user);
         return toResponseDto(saved);
@@ -59,6 +65,7 @@ public class UserService {
 
         user.setUsername(request.getUsername());
         user.setRole(request.getRole());
+        user.setEmployee(resolveEmployee(request.getEmployeeId()));
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -66,6 +73,12 @@ public class UserService {
 
         User updated = userRepository.save(user);
         return toResponseDto(updated);
+    }
+
+    private Employee resolveEmployee(Long employeeId) {
+        if (employeeId == null) return null;
+        return employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalStateException("Bunday xodim mavjud emas"));
     }
 
     @Transactional
@@ -86,6 +99,10 @@ public class UserService {
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setRole(user.getRole());
+        if (user.getEmployee() != null) {
+            dto.setEmployeeId(user.getEmployee().getId());
+            dto.setEmployeeName(user.getEmployee().getFirstName() + " " + user.getEmployee().getLastName());
+        }
         return dto;
     }
 }

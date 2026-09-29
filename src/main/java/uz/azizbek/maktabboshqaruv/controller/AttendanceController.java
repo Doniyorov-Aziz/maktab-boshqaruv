@@ -31,6 +31,13 @@ public class AttendanceController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/today-lessons")
+    public List<uz.azizbek.maktabboshqaruv.dto.TodayLessonDto> getTodayLessons(
+            @RequestParam Long schoolId, @RequestParam(required = false) Long employeeId) {
+        return attendanceService.getTodayLessons(schoolId, employeeId);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping("/roster")
     public List<AttendanceRosterEntryDto> getRoster(@RequestParam Long lessonSlotId,
                                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {

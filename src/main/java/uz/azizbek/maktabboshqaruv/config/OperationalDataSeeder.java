@@ -63,9 +63,6 @@ public class OperationalDataSeeder implements CommandLineRunner {
             "Darsda diqqatini jamlay olmagani uchun"
     };
 
-    private static final String[] CALENDAR_TITLES_HOLIDAY = {"Mustaqillik kuni", "Navro'z bayrami", "Xotira va qadrlash kuni"};
-    private static final String[] CALENDAR_TITLES_EXAM = {"Chorak yakuniy nazorat ishlari", "Oraliq baholash", "Fanlar bo'yicha test sinovi"};
-
     private final SchoolRepository schoolRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final StudentRepository studentRepository;
@@ -77,6 +74,8 @@ public class OperationalDataSeeder implements CommandLineRunner {
     private final BehaviorRecordRepository behaviorRecordRepository;
     private final UserRepository userRepository;
     private final ActivityLogRepository activityLogRepository;
+    private final RoomRepository roomRepository;
+    private final EmployeeRepository employeeRepository;
 
     private final Random random = new Random(20260101L);
 
@@ -85,7 +84,8 @@ public class OperationalDataSeeder implements CommandLineRunner {
                                   AttendanceRepository attendanceRepository, GradeRepository gradeRepository,
                                   AnnouncementRepository announcementRepository, CalendarEventRepository calendarEventRepository,
                                   BehaviorRecordRepository behaviorRecordRepository, UserRepository userRepository,
-                                  ActivityLogRepository activityLogRepository) {
+                                  ActivityLogRepository activityLogRepository, RoomRepository roomRepository,
+                                  EmployeeRepository employeeRepository) {
         this.schoolRepository = schoolRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.studentRepository = studentRepository;
@@ -97,6 +97,8 @@ public class OperationalDataSeeder implements CommandLineRunner {
         this.behaviorRecordRepository = behaviorRecordRepository;
         this.userRepository = userRepository;
         this.activityLogRepository = activityLogRepository;
+        this.roomRepository = roomRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     private static final String[] GUARDIAN_MALE_FIRST_NAMES = {
@@ -115,6 +117,7 @@ public class OperationalDataSeeder implements CommandLineRunner {
     public void run(String... args) {
         upgradeTeacherAccountRoles();
         backfillGuardianInfo();
+        backfillRoomTypesAndFloors();
 
         for (School school : schoolRepository.findAll()) {
             List<SchoolClass> classes = schoolClassRepository.findByAcademicYearSchoolId(school.getId());
@@ -124,6 +127,7 @@ public class OperationalDataSeeder implements CommandLineRunner {
 
             assignClassTeachers(classes);
             seedActivityLog(school, classes);
+            seedCalendarEvents(school);
 
             if (attendanceRepository.countBySchoolId(school.getId()) > 0) {
                 log.info("OperationalDataSeeder: {} uchun operatsion ma'lumotlar allaqachon mavjud, o'tkazib yuborildi", school.getName());
@@ -135,20 +139,36 @@ public class OperationalDataSeeder implements CommandLineRunner {
             int[] counts = seedAttendanceAndGrades(classes);
             int behaviorCount = seedBehaviorRecords(classes);
             int announcementCount = seedAnnouncements(school, classes);
-            int eventCount = seedCalendarEvents(school);
 
-            log.info("OperationalDataSeeder: {} - davomat={}, baholar={}, xulq={}, e'lonlar={}, tadbirlar={}",
-                    school.getName(), counts[0], counts[1], behaviorCount, announcementCount, eventCount);
+            log.info("OperationalDataSeeder: {} - davomat={}, baholar={}, xulq={}, e'lonlar={}",
+                    school.getName(), counts[0], counts[1], behaviorCount, announcementCount);
         }
     }
 
     private void upgradeTeacherAccountRoles() {
-        for (String username : List.of("ustoz1", "ustoz2")) {
+        List<String> usernames = List.of("ustoz1", "ustoz2");
+        List<Employee> candidates = employeeRepository.findAll().stream()
+                .filter(e -> e.getPosition() != null && "Fan o'qituvchisi".equals(e.getPosition().getTitle()))
+                .sorted(Comparator.comparing(Employee::getId))
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < usernames.size(); i++) {
+            String username = usernames.get(i);
+            Employee employee = i < candidates.size() ? candidates.get(i) : null;
             userRepository.findByUsername(username).ifPresent(user -> {
+                boolean changed = false;
                 if (user.getRole() != Role.EDITOR) {
                     user.setRole(Role.EDITOR);
+                    changed = true;
+                }
+                if (user.getEmployee() == null && employee != null) {
+                    user.setEmployee(employee);
+                    changed = true;
+                }
+                if (changed) {
                     userRepository.save(user);
-                    log.info("Migratsiya: {} hisobi EDITOR rolига ko'tarildi (davomat/baho kiritish uchun)", username);
+                    log.info("Migratsiya: {} hisobi EDITOR rolига ko'tarildi va {} xodimiga bog'landi (davomat/baho kiritish uchun)",
+                            username, employee != null ? employee.getFirstName() + " " + employee.getLastName() : "-");
                 }
             });
         }
@@ -176,6 +196,23 @@ public class OperationalDataSeeder implements CommandLineRunner {
         }
         studentRepository.saveAll(missing);
         log.info("Migratsiya: {} ta o'quvchi uchun ota-ona kontakt ma'lumotlari to'ldirildi", missing.size());
+    }
+
+    private void backfillRoomTypesAndFloors() {
+        List<Room> missing = roomRepository.findAll().stream()
+                .filter(r -> r.getFloor() == null)
+                .collect(Collectors.toList());
+        if (missing.isEmpty()) {
+            return;
+        }
+        for (Room r : missing) {
+            r.setFloor(DataSeeder.inferFloor(r.getRoomNumber()));
+            if (r.getType() == null) {
+                r.setType(DataSeeder.inferRoomType(r.getRoomNumber()));
+            }
+        }
+        roomRepository.saveAll(missing);
+        log.info("Migratsiya: {} ta xona uchun qavat/tur ma'lumoti to'ldirildi", missing.size());
     }
 
     private void assignClassTeachers(List<SchoolClass> classes) {
@@ -477,55 +514,74 @@ public class OperationalDataSeeder implements CommandLineRunner {
 
     // ---------- calendar events ----------
 
+    /**
+     * Always deletes and recreates the seeder's own events (flagged
+     * {@code seeded=true}, so a user's real events are never touched) with
+     * fixed, calendar-accurate dates for the current Uzbek academic year —
+     * this runs on every boot so a stale/random date from an earlier seed
+     * self-corrects instead of lingering.
+     */
     private int seedCalendarEvents(School school) {
+        calendarEventRepository.deleteSeededBySchoolId(school.getId());
+
         LocalDate today = LocalDate.now();
+        int schoolYearStartYear = today.getMonthValue() >= 9 ? today.getYear() : today.getYear() - 1;
+        int schoolYearEndYear = schoolYearStartYear + 1;
         int count = 0;
 
-        for (String title : CALENDAR_TITLES_HOLIDAY) {
-            CalendarEvent e = new CalendarEvent();
-            e.setSchool(school);
-            e.setTitle(title);
-            e.setType(CalendarEventType.HOLIDAY);
-            LocalDate start = today.plusDays(random.nextInt(120) - 30);
-            e.setStartDate(start);
-            e.setEndDate(start);
-            calendarEventRepository.save(e);
-            count++;
-        }
+        count += addSeeded(school, "Bilimlar kuni", CalendarEventType.HOLIDAY,
+                LocalDate.of(schoolYearStartYear, 9, 1), null);
+        count += addSeeded(school, "Mustaqillik kuni", CalendarEventType.HOLIDAY,
+                LocalDate.of(schoolYearStartYear, 9, 1), null);
+        count += addSeeded(school, "O'qituvchilar va murabbiylar kuni", CalendarEventType.HOLIDAY,
+                LocalDate.of(schoolYearStartYear, 10, 1), null);
+        count += addSeeded(school, "Konstitutsiya kuni", CalendarEventType.HOLIDAY,
+                LocalDate.of(schoolYearStartYear, 12, 8), null);
+        count += addSeeded(school, "Navro'z bayrami", CalendarEventType.HOLIDAY,
+                LocalDate.of(schoolYearEndYear, 3, 21), null);
+        count += addSeeded(school, "Xotira va qadrlash kuni", CalendarEventType.HOLIDAY,
+                LocalDate.of(schoolYearEndYear, 5, 9), null);
 
-        for (String title : CALENDAR_TITLES_EXAM) {
-            CalendarEvent e = new CalendarEvent();
-            e.setSchool(school);
-            e.setTitle(title);
-            e.setType(CalendarEventType.EXAM);
-            LocalDate start = today.plusDays(random.nextInt(60) - 10);
-            e.setStartDate(start);
-            e.setEndDate(start.plusDays(1 + random.nextInt(3)));
-            calendarEventRepository.save(e);
-            count++;
-        }
+        count += addSeeded(school, "Kuzgi ta'til", CalendarEventType.VACATION,
+                LocalDate.of(schoolYearStartYear, 11, 2), LocalDate.of(schoolYearStartYear, 11, 9));
+        count += addSeeded(school, "Qishki ta'til", CalendarEventType.VACATION,
+                LocalDate.of(schoolYearStartYear, 12, 29), LocalDate.of(schoolYearEndYear, 1, 8));
+        count += addSeeded(school, "Bahorgi ta'til", CalendarEventType.VACATION,
+                LocalDate.of(schoolYearEndYear, 3, 22), LocalDate.of(schoolYearEndYear, 3, 29));
 
+        count += addSeeded(school, "I chorak yakuniy nazorat ishlari", CalendarEventType.EXAM,
+                LocalDate.of(schoolYearStartYear, 10, 26), LocalDate.of(schoolYearStartYear, 10, 30));
+        count += addSeeded(school, "Oraliq baholash", CalendarEventType.EXAM,
+                LocalDate.of(schoolYearStartYear, 12, 15), LocalDate.of(schoolYearStartYear, 12, 19));
+        count += addSeeded(school, "Fanlar bo'yicha test sinovi", CalendarEventType.EXAM,
+                LocalDate.of(schoolYearEndYear, 2, 16), LocalDate.of(schoolYearEndYear, 2, 18));
+        count += addSeeded(school, "Chorak yakuniy nazorat ishlari", CalendarEventType.EXAM,
+                LocalDate.of(schoolYearEndYear, 5, 18), LocalDate.of(schoolYearEndYear, 5, 22));
+
+        LocalDate meetingDate = today.plusDays(5 + random.nextInt(15));
         CalendarEvent meeting = new CalendarEvent();
         meeting.setSchool(school);
         meeting.setTitle("Ota-onalar yig'ilishi");
         meeting.setDescription("Barcha sinflar uchun umumiy ota-onalar yig'ilishi.");
         meeting.setType(CalendarEventType.PARENT_MEETING);
-        LocalDate meetingDate = today.plusDays(5 + random.nextInt(15));
         meeting.setStartDate(meetingDate);
         meeting.setEndDate(meetingDate);
+        meeting.setSeeded(true);
         calendarEventRepository.save(meeting);
         count++;
 
-        CalendarEvent vacation = new CalendarEvent();
-        vacation.setSchool(school);
-        vacation.setTitle("Kuzgi ta'til");
-        vacation.setType(CalendarEventType.VACATION);
-        LocalDate vacationStart = today.plusDays(25);
-        vacation.setStartDate(vacationStart);
-        vacation.setEndDate(vacationStart.plusDays(9));
-        calendarEventRepository.save(vacation);
-        count++;
-
         return count;
+    }
+
+    private int addSeeded(School school, String title, CalendarEventType type, LocalDate start, LocalDate end) {
+        CalendarEvent e = new CalendarEvent();
+        e.setSchool(school);
+        e.setTitle(title);
+        e.setType(type);
+        e.setStartDate(start);
+        e.setEndDate(end != null ? end : start);
+        e.setSeeded(true);
+        calendarEventRepository.save(e);
+        return 1;
     }
 }

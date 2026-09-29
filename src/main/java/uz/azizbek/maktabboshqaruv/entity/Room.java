@@ -19,6 +19,13 @@ public  class Room {
     @Column(nullable = false)
     private Integer capacity;
 
+    @Column
+    private Integer floor;
+
+    @Enumerated(EnumType.STRING)
+    @Column
+    private RoomType type = RoomType.CLASSROOM;
+
     public Long getId() {
         return id;
     }
@@ -48,5 +55,21 @@ public  class Room {
 
     public void setCapacity(Integer capacity) {
         this.capacity = capacity;
+    }
+
+    public Integer getFloor() {
+        return floor;
+    }
+
+    public void setFloor(Integer floor) {
+        this.floor = floor;
+    }
+
+    public RoomType getType() {
+        return type;
+    }
+
+    public void setType(RoomType type) {
+        this.type = type;
     }
 }

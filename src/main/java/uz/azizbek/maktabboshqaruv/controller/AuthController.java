@@ -31,7 +31,8 @@ public class AuthController {
             return ResponseEntity.status(401).body("Login yoki parol noto'g'ri");
         }
 
-        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
+        Long employeeId = user.getEmployee() != null ? user.getEmployee().getId() : null;
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), employeeId);
         return ResponseEntity.ok(token);
     }
 

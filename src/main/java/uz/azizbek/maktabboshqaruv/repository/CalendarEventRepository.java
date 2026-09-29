@@ -14,6 +14,10 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
 
     Page<CalendarEvent> findBySchoolId(Long schoolId, Pageable pageable);
 
+    @Query("delete from CalendarEvent e where e.school.id = :schoolId and (e.seeded = true or e.seeded is null)")
+    @org.springframework.data.jpa.repository.Modifying
+    void deleteSeededBySchoolId(@Param("schoolId") Long schoolId);
+
     @Query("select e from CalendarEvent e where e.school.id = :schoolId and e.startDate <= :to and e.endDate >= :from order by e.startDate")
     List<CalendarEvent> findInRange(@Param("schoolId") Long schoolId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 

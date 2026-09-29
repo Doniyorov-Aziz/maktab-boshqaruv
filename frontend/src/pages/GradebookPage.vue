@@ -130,6 +130,21 @@
       </div>
     </div>
 
+    <div
+      v-if="!loading && selectedClassId && selectedSubjectId && grades.length"
+      class="brand-card q-pa-md q-mt-md"
+    >
+      <div class="text-subtitle1 text-weight-semibold q-mb-md"
+        >Sinf bo'yicha baholar taqsimoti</div
+      >
+      <div style="height: 200px">
+        <Bar
+          :data="distributionChartData"
+          :options="distributionChartOptions"
+        />
+      </div>
+    </div>
+
     <q-dialog v-model="dialogOpen" persistent>
       <q-card style="width: 100%; max-width: 420px; border-radius: 18px">
         <q-card-section class="row items-center q-pb-none">
@@ -163,14 +178,26 @@
               label="Sana"
               :rules="[v => !!v || 'Majburiy']"
             />
-            <q-select
-              v-model="gradeForm.score"
-              :options="[2, 3, 4, 5]"
-              outlined
-              dense
-              label="Baho"
-              :rules="[v => !!v || 'Majburiy']"
-            />
+            <div>
+              <div class="text-caption muted-text q-mb-xs">Baho</div>
+              <div class="row q-gutter-sm">
+                <q-btn
+                  v-for="s in [2, 3, 4, 5]"
+                  :key="s"
+                  :label="String(s)"
+                  round
+                  unelevated
+                  class="score-pick-btn"
+                  :style="{
+                    background:
+                      gradeForm.score === s ? scoreColor(s) : 'transparent',
+                    color: gradeForm.score === s ? 'white' : scoreColor(s),
+                    border: '2px solid ' + scoreColor(s)
+                  }"
+                  @click="gradeForm.score = s"
+                />
+              </div>
+            </div>
             <q-select
               v-model="gradeForm.type"
               :options="[
@@ -229,11 +256,22 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useQuasar } from 'quasar'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  BarElement,
+  CategoryScale,
+  LinearScale
+} from 'chart.js'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
 import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
 import { toLocalDateStr } from '@/utils/date'
+
+ChartJS.register(Title, Tooltip, BarElement, CategoryScale, LinearScale)
 
 const $q = useQuasar()
 const schoolStore = useSchoolStore()
@@ -279,6 +317,11 @@ function formatShortDate(d) {
   return `${day}.${m}`
 }
 
+const scoreColors = { 5: '#10b981', 4: '#3b82f6', 3: '#f59e0b', 2: '#ef4444' }
+function scoreColor(score) {
+  return scoreColors[Math.round(score)] || scoreColors[2]
+}
+
 function scoreClass(score) {
   if (score >= 5) return 'score-5'
   if (score >= 4) return 'score-4'
@@ -299,6 +342,9 @@ async function loadClasses() {
     value: c.id,
     label: `${c.gradeNumber}-${c.sectionLetter}`
   }))
+  if (!selectedClassId.value && classOptions.value.length) {
+    selectedClassId.value = classOptions.value[0].value
+  }
 }
 
 async function loadSubjects() {
@@ -310,6 +356,9 @@ async function loadSubjects() {
     value: s.id,
     label: s.name
   }))
+  if (!selectedSubjectId.value && subjectOptions.value.length) {
+    selectedSubjectId.value = subjectOptions.value[0].value
+  }
 }
 
 async function loadGradebook() {
@@ -335,6 +384,49 @@ async function loadGradebook() {
     loading.value = false
   }
 }
+
+const distributionChartData = computed(() => {
+  const counts = { 2: 0, 3: 0, 4: 0, 5: 0 }
+  for (const g of grades.value) {
+    if (counts[g.score] != null) counts[g.score]++
+  }
+  return {
+    labels: ['2', '3', '4', '5'],
+    datasets: [
+      {
+        label: 'Baholar soni',
+        data: [counts[2], counts[3], counts[4], counts[5]],
+        backgroundColor: [
+          scoreColors[2],
+          scoreColors[3],
+          scoreColors[4],
+          scoreColors[5]
+        ],
+        borderRadius: 6,
+        barThickness: 40
+      }
+    ]
+  }
+})
+const distributionChartOptions = computed(() => {
+  const textColor = $q.dark.isActive ? '#f1f5f9' : '#334155'
+  const gridColor = $q.dark.isActive
+    ? 'rgba(148,163,184,0.16)'
+    : 'rgba(148,163,184,0.18)'
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: textColor }, grid: { display: false } },
+      y: {
+        beginAtZero: true,
+        ticks: { color: textColor, precision: 0 },
+        grid: { color: gridColor }
+      }
+    }
+  }
+})
 
 function onCellClick(student, date) {
   const existing = gradeFor(student.studentId, date)
@@ -406,8 +498,13 @@ async function deleteGrade() {
   }
 }
 
-loadClasses()
-loadSubjects()
+async function loadInitial() {
+  await Promise.all([loadClasses(), loadSubjects()])
+  if (selectedClassId.value && selectedSubjectId.value) {
+    loadGradebook()
+  }
+}
+loadInitial()
 </script>
 
 <style scoped>

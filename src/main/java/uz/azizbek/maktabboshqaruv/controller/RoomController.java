@@ -20,14 +20,23 @@ public class RoomController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<RoomResponseDto> getAllRooms(@RequestParam Long schoolId, Pageable pageable) {
-        return roomService.getAllRooms(schoolId, pageable);
+    public Page<RoomResponseDto> getAllRooms(@RequestParam Long schoolId,
+                                              @RequestParam(required = false) Long buildingId,
+                                              @RequestParam(required = false) String type,
+                                              Pageable pageable) {
+        return roomService.getAllRooms(schoolId, buildingId, type, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping("/{id}")
     public ResponseEntity<RoomResponseDto> getRoomById(@PathVariable Long id) {
         return ResponseEntity.ok(roomService.getRoomById(id));
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/{id}/occupancy")
+    public java.util.List<uz.azizbek.maktabboshqaruv.dto.RoomOccupancySlotDto> getOccupancy(@PathVariable Long id) {
+        return roomService.getDayOccupancy(id);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")

@@ -3,7 +3,10 @@ package uz.azizbek.maktabboshqaruv.service;
 import uz.azizbek.maktabboshqaruv.dto.SchoolRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.SchoolResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.School;
+import uz.azizbek.maktabboshqaruv.repository.EmployeeRepository;
+import uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
+import uz.azizbek.maktabboshqaruv.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +18,15 @@ public class SchoolService {
 
     @Autowired
     private SchoolRepository schoolRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private SchoolClassRepository schoolClassRepository;
 
     public Page<SchoolResponseDto> getAllSchools(Pageable pageable) {
         return schoolRepository.findAll(pageable)
@@ -67,6 +79,9 @@ public class SchoolService {
         dto.setId(school.getId());
         dto.setName(school.getName());
         dto.setAddress(school.getAddress());
+        dto.setStudentCount(studentRepository.countBySchoolClassAcademicYearSchoolId(school.getId()));
+        dto.setTeacherCount(employeeRepository.countBySchoolId(school.getId()));
+        dto.setClassCount(schoolClassRepository.countByAcademicYearSchoolId(school.getId()));
         return dto;
     }
 

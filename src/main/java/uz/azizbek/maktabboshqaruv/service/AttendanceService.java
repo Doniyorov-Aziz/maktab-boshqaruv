@@ -4,6 +4,7 @@ import uz.azizbek.maktabboshqaruv.dto.AttendanceBulkRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.AttendanceRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.AttendanceResponseDto;
 import uz.azizbek.maktabboshqaruv.dto.AttendanceRosterEntryDto;
+import uz.azizbek.maktabboshqaruv.dto.TodayLessonDto;
 import uz.azizbek.maktabboshqaruv.entity.Attendance;
 import uz.azizbek.maktabboshqaruv.entity.LessonSlot;
 import uz.azizbek.maktabboshqaruv.entity.Student;
@@ -16,14 +17,24 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AttendanceService {
+
+    private static final ZoneId ZONE = ZoneId.of("Asia/Tashkent");
+
+    private static final Map<DayOfWeek, String> WEEKDAY_NAMES = Map.of(
+            DayOfWeek.MONDAY, "Dushanba", DayOfWeek.TUESDAY, "Seshanba", DayOfWeek.WEDNESDAY, "Chorshanba",
+            DayOfWeek.THURSDAY, "Payshanba", DayOfWeek.FRIDAY, "Juma", DayOfWeek.SATURDAY, "Shanba");
 
     @Autowired
     private AttendanceRepository attendanceRepository;
@@ -39,6 +50,36 @@ public class AttendanceService {
 
     public Page<AttendanceResponseDto> getAllAttendance(Long schoolId, Pageable pageable) {
         return attendanceRepository.findBySchoolId(schoolId, pageable).map(this::toResponseDto);
+    }
+
+    public List<TodayLessonDto> getTodayLessons(Long schoolId, Long employeeId) {
+        LocalDate today = LocalDate.now(ZONE);
+        String weekday = WEEKDAY_NAMES.get(today.getDayOfWeek());
+        if (weekday == null) return List.of();
+
+        LocalTime now = LocalTime.now(ZONE);
+        return lessonSlotRepository.findBySchoolIdAndWeekday(schoolId, weekday).stream()
+                .filter(ls -> employeeId == null || employeeId.equals(ls.getEmployee().getId()))
+                .map(ls -> {
+                    TodayLessonDto dto = new TodayLessonDto();
+                    dto.setLessonSlotId(ls.getId());
+                    dto.setSchoolClassId(ls.getSchoolClass().getId());
+                    dto.setClassName(ls.getSchoolClass().getGradeNumber() + "-" + ls.getSchoolClass().getSectionLetter());
+                    dto.setSubjectName(ls.getSubject().getName());
+                    dto.setTeacherName(ls.getEmployee().getFirstName() + " " + ls.getEmployee().getLastName());
+                    dto.setStartTime(ls.getStartTime().toString());
+                    dto.setEndTime(ls.getEndTime().toString());
+                    if (!now.isBefore(ls.getStartTime()) && now.isBefore(ls.getEndTime())) {
+                        dto.setStatus("HOZIR");
+                    } else if (now.isBefore(ls.getStartTime())) {
+                        dto.setStatus("KEYINGI");
+                    } else {
+                        dto.setStatus("OTGAN");
+                    }
+                    dto.setAttendanceTaken(attendanceRepository.existsByLessonSlotIdAndRecordDate(ls.getId(), today));
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     public List<AttendanceRosterEntryDto> getRoster(Long lessonSlotId, LocalDate date) {

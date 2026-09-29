@@ -268,8 +268,26 @@ public class DataSeeder implements CommandLineRunner {
                     r.setBuilding(building);
                     r.setRoomNumber(roomNumber);
                     r.setCapacity(capacity);
+                    r.setType(inferRoomType(roomNumber));
+                    r.setFloor(inferFloor(roomNumber));
                     return roomRepository.save(r);
                 });
+    }
+
+    static uz.azizbek.maktabboshqaruv.entity.RoomType inferRoomType(String roomNumber) {
+        String n = roomNumber.toLowerCase();
+        if (n.contains("kompyuter")) return uz.azizbek.maktabboshqaruv.entity.RoomType.COMPUTER_LAB;
+        if (n.contains("kutubxona")) return uz.azizbek.maktabboshqaruv.entity.RoomType.LIBRARY;
+        if (n.contains("sport")) return uz.azizbek.maktabboshqaruv.entity.RoomType.GYM;
+        if (n.contains("laborat")) return uz.azizbek.maktabboshqaruv.entity.RoomType.LAB;
+        return uz.azizbek.maktabboshqaruv.entity.RoomType.CLASSROOM;
+    }
+
+    static Integer inferFloor(String roomNumber) {
+        if (roomNumber.matches("\\d{3}")) {
+            return Character.getNumericValue(roomNumber.charAt(0));
+        }
+        return 1;
     }
 
     private List<Room> findOrCreateRooms(Building building, List<String> numbers, int capacity) {

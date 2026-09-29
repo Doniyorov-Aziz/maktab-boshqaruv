@@ -4,6 +4,9 @@ public class SchoolResponseDto {
     private Long id;
     private String name;
     private String address;
+    private Long studentCount;
+    private Long teacherCount;
+    private Long classCount;
 
     public Long getId() {
         return id;
@@ -27,6 +30,30 @@ public class SchoolResponseDto {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public Long getStudentCount() {
+        return studentCount;
+    }
+
+    public void setStudentCount(Long studentCount) {
+        this.studentCount = studentCount;
+    }
+
+    public Long getTeacherCount() {
+        return teacherCount;
+    }
+
+    public void setTeacherCount(Long teacherCount) {
+        this.teacherCount = teacherCount;
+    }
+
+    public Long getClassCount() {
+        return classCount;
+    }
+
+    public void setClassCount(Long classCount) {
+        this.classCount = classCount;
     }
 
 }

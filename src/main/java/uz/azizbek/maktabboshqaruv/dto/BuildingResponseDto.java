@@ -6,6 +6,9 @@ public class BuildingResponseDto {
     private String name;
     private Long schoolId;
     private String schoolName;
+    private Integer floorCount;
+    private Long roomCount;
+    private Double occupiedPercentage;
 
     public Long getId() {
         return id;
@@ -37,5 +40,29 @@ public class BuildingResponseDto {
 
     public void setSchoolName(String schoolName) {
         this.schoolName = schoolName;
+    }
+
+    public Integer getFloorCount() {
+        return floorCount;
+    }
+
+    public void setFloorCount(Integer floorCount) {
+        this.floorCount = floorCount;
+    }
+
+    public Long getRoomCount() {
+        return roomCount;
+    }
+
+    public void setRoomCount(Long roomCount) {
+        this.roomCount = roomCount;
+    }
+
+    public Double getOccupiedPercentage() {
+        return occupiedPercentage;
+    }
+
+    public void setOccupiedPercentage(Double occupiedPercentage) {
+        this.occupiedPercentage = occupiedPercentage;
     }
 }

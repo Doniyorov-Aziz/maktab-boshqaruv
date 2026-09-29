@@ -100,6 +100,13 @@
                   </template>
                 </q-input>
 
+                <q-checkbox
+                  v-model="rememberMe"
+                  label="Eslab qolish"
+                  color="primary"
+                  dense
+                />
+
                 <q-banner
                   v-if="errorMessage"
                   class="bg-red-1 text-negative rounded-borders"
@@ -139,9 +146,10 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const username = ref('')
+const username = ref(localStorage.getItem('rememberedUsername') || '')
 const password = ref('')
 const loading = ref(false)
+const rememberMe = ref(!!localStorage.getItem('rememberedUsername'))
 const errorMessage = ref('')
 const showPassword = ref(false)
 const backendDown = ref(false)
@@ -172,6 +180,11 @@ async function onSubmit() {
     )
     backendDown.value = false
     authStore.setToken(response.data)
+    if (rememberMe.value) {
+      localStorage.setItem('rememberedUsername', username.value)
+    } else {
+      localStorage.removeItem('rememberedUsername')
+    }
     await router.push('/')
   } catch (error) {
     errorMessage.value = error.friendlyMessage || 'Kirishda xatolik yuz berdi'

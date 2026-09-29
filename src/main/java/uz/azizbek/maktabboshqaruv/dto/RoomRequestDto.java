@@ -16,6 +16,10 @@ public class RoomRequestDto {
     @Positive(message = "Sig'im musbat son bo'lishi kerak")
     private Integer capacity;
 
+    private Integer floor;
+
+    private String type;
+
     public Long getBuildingId() {
         return buildingId;
     }
@@ -38,5 +42,21 @@ public class RoomRequestDto {
 
     public void setCapacity(Integer capacity) {
         this.capacity = capacity;
+    }
+
+    public Integer getFloor() {
+        return floor;
+    }
+
+    public void setFloor(Integer floor) {
+        this.floor = floor;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

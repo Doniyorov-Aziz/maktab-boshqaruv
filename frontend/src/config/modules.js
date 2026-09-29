@@ -14,6 +14,21 @@ const weekdayOptions = [
 
 const roleOptions = ['ADMIN', 'EDITOR', 'VIEWER']
 
+const roomTypeLabels = {
+  CLASSROOM: 'Sinfxona',
+  LAB: 'Laboratoriya',
+  COMPUTER_LAB: 'Kompyuter xonasi',
+  GYM: 'Sport zali',
+  LIBRARY: 'Kutubxona'
+}
+const roomTypeColors = {
+  CLASSROOM: '#4f46e5',
+  LAB: '#f59e0b',
+  COMPUTER_LAB: '#0ea5e9',
+  GYM: '#10b981',
+  LIBRARY: '#ec4899'
+}
+
 export const modules = [
   {
     key: 'schools',
@@ -23,6 +38,7 @@ export const modules = [
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/schools',
     schoolScoped: false,
+    viewType: 'cards',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -47,6 +63,7 @@ export const modules = [
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/buildings',
     schoolScoped: true,
+    viewType: 'cards',
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -76,6 +93,24 @@ export const modules = [
     group: "Ta'lim tuzilmasi",
     endpoint: '/api/rooms',
     schoolScoped: true,
+    filters: [
+      {
+        key: 'buildingId',
+        label: 'Bino',
+        optionsEndpoint: '/api/buildings',
+        optionValue: 'id',
+        optionLabel: 'name',
+        schoolScoped: true
+      },
+      {
+        key: 'type',
+        label: 'Turi',
+        options: Object.entries(roomTypeLabels).map(([value, label]) => ({
+          value,
+          label
+        }))
+      }
+    ],
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -85,16 +120,42 @@ export const modules = [
         sortable: true,
         align: 'left'
       },
+      {
+        name: 'type',
+        label: 'Turi',
+        field: 'type',
+        align: 'left',
+        badgeColors: roomTypeColors,
+        badgeLabels: roomTypeLabels
+      },
+      { name: 'floor', label: 'Qavat', field: 'floor', align: 'left' },
       { name: 'capacity', label: "Sig'im", field: 'capacity', align: 'left' },
       {
         name: 'buildingName',
         label: 'Bino',
         field: 'buildingName',
         align: 'left'
+      },
+      {
+        name: 'currentStatus',
+        label: 'Holati',
+        field: 'currentStatus',
+        align: 'left'
       }
     ],
     fields: [
       { key: 'roomNumber', label: 'Xona raqami', type: 'text', required: true },
+      {
+        key: 'type',
+        label: 'Turi',
+        type: 'select',
+        required: true,
+        options: Object.entries(roomTypeLabels).map(([value, label]) => ({
+          value,
+          label
+        }))
+      },
+      { key: 'floor', label: 'Qavat', type: 'number', required: false },
       { key: 'capacity', label: "Sig'im", type: 'number', required: true },
       {
         key: 'buildingId',
@@ -672,7 +733,13 @@ export const modules = [
         sortable: true,
         align: 'left'
       },
-      { name: 'role', label: 'Rol', field: 'role', align: 'left' }
+      { name: 'role', label: 'Rol', field: 'role', align: 'left' },
+      {
+        name: 'employeeName',
+        label: "Bog'langan xodim",
+        field: 'employeeName',
+        align: 'left'
+      }
     ],
     fields: [
       { key: 'username', label: 'Username', type: 'text', required: true },
@@ -690,6 +757,16 @@ export const modules = [
         type: 'select',
         required: true,
         options: roleOptions
+      },
+      {
+        key: 'employeeId',
+        label: "Bog'langan xodim (o'z darslarini ko'rish uchun)",
+        type: 'select',
+        required: false,
+        schoolScoped: true,
+        optionsEndpoint: '/api/employees',
+        optionValue: 'id',
+        optionLabel: 'fullName'
       }
     ]
   }

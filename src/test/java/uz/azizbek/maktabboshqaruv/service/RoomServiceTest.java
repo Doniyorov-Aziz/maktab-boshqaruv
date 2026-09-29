@@ -5,6 +5,7 @@ import uz.azizbek.maktabboshqaruv.dto.RoomResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.Building;
 import uz.azizbek.maktabboshqaruv.entity.Room;
 import uz.azizbek.maktabboshqaruv.repository.BuildingRepository;
+import uz.azizbek.maktabboshqaruv.repository.LessonSlotRepository;
 import uz.azizbek.maktabboshqaruv.repository.RoomRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,9 @@ class RoomServiceTest {
 
     @Mock
     private BuildingRepository buildingRepository;
+
+    @Mock
+    private LessonSlotRepository lessonSlotRepository;
 
     @InjectMocks
     private RoomService roomService;

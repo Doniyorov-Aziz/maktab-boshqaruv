@@ -16,6 +16,16 @@ public class UserUpdateRequestDto {
     @NotNull(message = "Rol tanlanishi shart")
     private Role role;
 
+    private Long employeeId;
+
+    public Long getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
+    }
+
     public String getUsername() {
         return username;
     }

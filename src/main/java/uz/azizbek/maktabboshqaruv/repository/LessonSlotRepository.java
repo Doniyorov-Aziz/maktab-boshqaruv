@@ -44,6 +44,17 @@ public interface LessonSlotRepository extends JpaRepository<LessonSlot, Long> {
                                     @Param("endTime") LocalTime endTime,
                                     @Param("excludeId") Long excludeId);
 
+    @Query("select l from LessonSlot l where l.schoolClass.academicYear.school.id = :schoolId " +
+            "and l.weekday = :weekday order by l.schoolClass.gradeNumber, l.schoolClass.sectionLetter, l.startTime")
+    List<LessonSlot> findBySchoolIdAndWeekday(@Param("schoolId") Long schoolId, @Param("weekday") String weekday);
+
+    @Query("select l from LessonSlot l where l.room.id = :roomId " +
+            "and l.weekday = :weekday and l.startTime <= :time and l.endTime > :time")
+    java.util.Optional<LessonSlot> findCurrentlyInSessionByRoom(@Param("roomId") Long roomId, @Param("weekday") String weekday, @Param("time") LocalTime time);
+
+    @Query("select l from LessonSlot l where l.room.id = :roomId and l.weekday = :weekday order by l.startTime")
+    List<LessonSlot> findByRoomIdAndWeekday(@Param("roomId") Long roomId, @Param("weekday") String weekday);
+
     @Query("select distinct l.startTime, l.endTime from LessonSlot l where l.schoolClass.academicYear.school.id = :schoolId " +
             "and l.weekday = :weekday order by l.startTime")
     List<Object[]> findDistinctPeriodsForWeekday(@Param("schoolId") Long schoolId, @Param("weekday") String weekday);

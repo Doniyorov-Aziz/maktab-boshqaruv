@@ -21,9 +21,17 @@ public class JwtUtil {
     }
 
     public String generateToken(String username, String role) {
-        return Jwts.builder()
+        return generateToken(username, role, null);
+    }
+
+    public String generateToken(String username, String role, Long employeeId) {
+        var builder = Jwts.builder()
                 .subject(username)
-                .claim("role", role)
+                .claim("role", role);
+        if (employeeId != null) {
+            builder.claim("employeeId", employeeId);
+        }
+        return builder
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key)
@@ -36,6 +44,11 @@ public class JwtUtil {
 
     public String extractRole(String token) {
         return extractClaims(token).get("role", String.class);
+    }
+
+    public Long extractEmployeeId(String token) {
+        Object v = extractClaims(token).get("employeeId");
+        return v == null ? null : Long.valueOf(v.toString());
     }
 
     public boolean isTokenValid(String token) {

@@ -5,8 +5,11 @@ public class RoomResponseDto {
     private Long id;
     private String roomNumber;
     private Integer capacity;
+    private Integer floor;
+    private String type;
     private Long buildingId;
     private String buildingName;
+    private String currentStatus;
 
     public Long getId() {
         return id;
@@ -46,5 +49,29 @@ public class RoomResponseDto {
 
     public void setBuildingName(String buildingName) {
         this.buildingName = buildingName;
+    }
+
+    public Integer getFloor() {
+        return floor;
+    }
+
+    public void setFloor(Integer floor) {
+        this.floor = floor;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getCurrentStatus() {
+        return currentStatus;
+    }
+
+    public void setCurrentStatus(String currentStatus) {
+        this.currentStatus = currentStatus;
     }
 }

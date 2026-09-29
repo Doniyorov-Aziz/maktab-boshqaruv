@@ -40,13 +40,12 @@
         <q-btn
           flat
           dense
-          round
+          no-caps
           icon="file_download"
+          label="Excel"
           color="grey-7"
           @click="exportCsv"
-        >
-          <q-tooltip>CSV eksport</q-tooltip>
-        </q-btn>
+        />
         <q-btn
           v-if="canCreate"
           color="primary"
@@ -71,95 +70,383 @@
       Ma'lumotlarni ko'rish uchun avval maktab tanlang
     </q-banner>
 
-    <div v-else class="brand-card overflow-hidden">
-      <q-table
-        :rows="displayRows"
-        :columns="tableColumns"
-        row-key="id"
-        :loading="loading"
-        v-model:pagination="pagination"
-        @request="onRequest"
-        binary-state-sort
-        flat
-        class="brand-table"
-        :class="{ 'row-clickable': !!module.rowLink }"
-        :rows-per-page-options="[10, 20, 50]"
-        @row-click="onRowClick"
+    <template v-else>
+      <div
+        v-if="module.filters && module.filters.length"
+        class="row q-gutter-sm q-mb-md"
       >
-        <template v-slot:loading>
-          <q-inner-loading showing color="primary" />
-        </template>
+        <q-select
+          v-for="f in module.filters"
+          :key="f.key"
+          v-model="activeFilters[f.key]"
+          :options="filterOptionsFor(f)"
+          option-value="value"
+          option-label="label"
+          emit-value
+          map-options
+          dense
+          outlined
+          clearable
+          :label="f.label"
+          style="min-width: 160px"
+          @update:model-value="onFilterChange"
+        />
+      </div>
 
-        <template v-slot:no-data>
-          <div class="full-width column flex-center q-py-xl muted-text">
-            <q-icon name="inbox" size="48px" class="q-mb-sm" />
-            <div class="text-subtitle2">{{
-              searchQuery ? 'Hech narsa topilmadi' : "Hozircha ma'lumot yo'q"
-            }}</div>
-            <div class="text-caption q-mb-md">{{
-              searchQuery
-                ? "Boshqa kalit so'z bilan qidirib ko'ring"
-                : "Boshlash uchun birinchi yozuvni qo'shing"
-            }}</div>
-            <q-btn
-              v-if="canCreate && !searchQuery"
-              outline
-              color="primary"
-              icon="add"
-              label="Yangi qo'shish"
-              no-caps
-              @click="openCreateDialog"
-            />
+      <div
+        v-if="module.viewType === 'cards' && loading"
+        class="row q-col-gutter-md"
+      >
+        <div v-for="i in 6" :key="i" class="col-12 col-sm-6 col-md-4">
+          <q-skeleton type="rect" height="160px" class="rounded-borders" />
+        </div>
+      </div>
+
+      <template v-else-if="module.viewType === 'cards' && displayRows.length">
+        <div class="row q-col-gutter-md">
+          <div
+            v-for="row in displayRows"
+            :key="row.id"
+            class="col-12 col-sm-6 col-md-4"
+          >
+            <div class="brand-card q-pa-md full-height entity-card">
+              <div class="row items-start justify-between no-wrap">
+                <div class="row items-center q-gutter-sm no-wrap">
+                  <q-avatar
+                    :icon="module.icon"
+                    :style="{ background: module.color }"
+                    text-color="white"
+                    size="40px"
+                  />
+                  <div class="text-weight-bold text-subtitle1 ellipsis">{{
+                    row.name
+                  }}</div>
+                </div>
+                <q-badge
+                  v-if="
+                    module.key === 'schools' &&
+                    row.id === schoolStore.activeSchoolId
+                  "
+                  color="positive"
+                  >Faol</q-badge
+                >
+                <div class="row no-wrap">
+                  <q-btn
+                    v-if="canEdit"
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    icon="edit"
+                    color="primary"
+                    @click="openEditDialog(row)"
+                  />
+                  <q-btn
+                    v-if="canDelete"
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    icon="delete_outline"
+                    color="negative"
+                    @click="confirmDelete(row)"
+                  />
+                </div>
+              </div>
+
+              <template v-if="module.key === 'schools'">
+                <div class="text-caption muted-text q-mt-xs ellipsis">{{
+                  row.address
+                }}</div>
+                <div class="row q-mt-md q-col-gutter-sm text-center">
+                  <div class="col-4">
+                    <div class="text-h6 text-weight-bold">{{
+                      row.studentCount ?? 0
+                    }}</div>
+                    <div class="text-caption muted-text">O'quvchilar</div>
+                  </div>
+                  <div class="col-4">
+                    <div class="text-h6 text-weight-bold">{{
+                      row.teacherCount ?? 0
+                    }}</div>
+                    <div class="text-caption muted-text">O'qituvchilar</div>
+                  </div>
+                  <div class="col-4">
+                    <div class="text-h6 text-weight-bold">{{
+                      row.classCount ?? 0
+                    }}</div>
+                    <div class="text-caption muted-text">Sinflar</div>
+                  </div>
+                </div>
+                <q-btn
+                  class="full-width q-mt-md"
+                  outline
+                  no-caps
+                  color="primary"
+                  label="Shu maktabga o'tish"
+                  :disable="row.id === schoolStore.activeSchoolId"
+                  @click="switchToSchool(row)"
+                />
+              </template>
+
+              <template v-else-if="module.key === 'buildings'">
+                <div class="text-caption muted-text q-mt-xs">{{
+                  row.schoolName
+                }}</div>
+                <div class="row q-mt-md q-col-gutter-sm text-center">
+                  <div class="col-4">
+                    <div class="text-h6 text-weight-bold">{{
+                      row.floorCount ?? 1
+                    }}</div>
+                    <div class="text-caption muted-text">Qavat</div>
+                  </div>
+                  <div class="col-4">
+                    <div class="text-h6 text-weight-bold">{{
+                      row.roomCount ?? 0
+                    }}</div>
+                    <div class="text-caption muted-text">Xona</div>
+                  </div>
+                  <div class="col-4">
+                    <div class="text-h6 text-weight-bold"
+                      >{{ row.occupiedPercentage ?? 0 }}%</div
+                    >
+                    <div class="text-caption muted-text">Band</div>
+                  </div>
+                </div>
+              </template>
+            </div>
           </div>
-        </template>
+        </div>
 
-        <template
-          v-for="col in linkColumns"
-          :key="'body-cell-' + col.name"
-          v-slot:[`body-cell-${col.name}`]="props"
+        <div
+          v-if="!searchQuery && !filtersActive"
+          class="row items-center justify-end q-mt-md q-gutter-sm"
         >
-          <q-td :props="props">
-            <span
-              class="link-cell"
-              @click.stop="goToProfile(col.link, props.row)"
-              >{{ props.value }}</span
-            >
-          </q-td>
-        </template>
+          <div class="text-caption muted-text">{{ cardPageLabel }}</div>
+          <q-btn
+            flat
+            dense
+            round
+            icon="chevron_left"
+            :disable="pagination.page <= 1"
+            @click="changeCardPage(-1)"
+          />
+          <q-btn
+            flat
+            dense
+            round
+            icon="chevron_right"
+            :disable="
+              pagination.page * pagination.rowsPerPage >= pagination.rowsNumber
+            "
+            @click="changeCardPage(1)"
+          />
+        </div>
+      </template>
 
-        <template v-slot:body-cell-actions="props">
-          <q-td :props="props" class="q-gutter-x-xs">
-            <q-btn
-              v-if="canEdit"
-              flat
-              dense
-              round
-              size="sm"
-              icon="edit"
-              color="primary"
-              @click.stop="openEditDialog(props.row)"
-            >
-              <q-tooltip>Tahrirlash</q-tooltip>
-            </q-btn>
-            <q-btn
-              v-if="canDelete"
-              flat
-              dense
-              round
-              size="sm"
-              icon="delete_outline"
-              color="negative"
-              @click.stop="confirmDelete(props.row)"
-            >
-              <q-tooltip>O'chirish</q-tooltip>
-            </q-btn>
-          </q-td>
-        </template>
-      </q-table>
-    </div>
+      <div
+        v-else-if="module.viewType === 'cards'"
+        class="brand-card q-pa-xl column flex-center muted-text"
+      >
+        <q-icon name="inbox" size="48px" class="q-mb-sm" />
+        <div class="text-subtitle2">{{
+          searchQuery ? 'Hech narsa topilmadi' : "Hozircha ma'lumot yo'q"
+        }}</div>
+        <q-btn
+          v-if="canCreate && !searchQuery"
+          outline
+          color="primary"
+          icon="add"
+          label="Yangi qo'shish"
+          no-caps
+          class="q-mt-md"
+          @click="openCreateDialog"
+        />
+      </div>
 
-    <q-dialog v-model="dialogOpen" persistent>
-      <q-card style="width: 100%; max-width: 480px; border-radius: 18px">
+      <div v-else class="brand-card overflow-hidden">
+        <q-table
+          :rows="displayRows"
+          :columns="tableColumns"
+          row-key="id"
+          :loading="loading"
+          v-model:pagination="pagination"
+          @request="onRequest"
+          binary-state-sort
+          flat
+          class="brand-table"
+          :class="{ 'row-clickable': !!module.rowLink }"
+          :rows-per-page-options="[10, 20, 50]"
+          @row-click="onRowClick"
+        >
+          <template v-slot:loading>
+            <q-inner-loading showing color="primary" />
+          </template>
+
+          <template v-slot:no-data>
+            <div class="full-width column flex-center q-py-xl muted-text">
+              <q-icon name="inbox" size="48px" class="q-mb-sm" />
+              <div class="text-subtitle2">{{
+                searchQuery ? 'Hech narsa topilmadi' : "Hozircha ma'lumot yo'q"
+              }}</div>
+              <div class="text-caption q-mb-md">{{
+                searchQuery
+                  ? "Boshqa kalit so'z bilan qidirib ko'ring"
+                  : "Boshlash uchun birinchi yozuvni qo'shing"
+              }}</div>
+              <q-btn
+                v-if="canCreate && !searchQuery"
+                outline
+                color="primary"
+                icon="add"
+                label="Yangi qo'shish"
+                no-caps
+                @click="openCreateDialog"
+              />
+            </div>
+          </template>
+
+          <template
+            v-for="col in linkColumns"
+            :key="'body-cell-' + col.name"
+            v-slot:[`body-cell-${col.name}`]="props"
+          >
+            <q-td :props="props">
+              <span
+                class="link-cell"
+                @click.stop="goToProfile(col.link, props.row)"
+                >{{ props.value }}</span
+              >
+            </q-td>
+          </template>
+
+          <template
+            v-if="firstNonLinkColumn"
+            v-slot:[`body-cell-${firstNonLinkColumn}`]="props"
+          >
+            <q-td :props="props" class="text-weight-bold">{{
+              props.value
+            }}</q-td>
+          </template>
+
+          <template
+            v-for="col in badgeColumns"
+            :key="'badge-' + col.name"
+            v-slot:[`body-cell-${col.name}`]="props"
+          >
+            <q-td :props="props">
+              <q-badge
+                :style="{
+                  background: col.badgeColors[props.value] || '#64748b'
+                }"
+                class="q-px-sm q-py-2xs"
+                >{{ col.badgeLabels?.[props.value] || props.value }}</q-badge
+              >
+            </q-td>
+          </template>
+
+          <template
+            v-if="module.key === 'rooms'"
+            v-slot:body-cell-currentStatus="props"
+          >
+            <q-td :props="props">
+              <span
+                class="link-cell"
+                @click.stop="openRoomOccupancy(props.row)"
+                >{{ props.value }}</span
+              >
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props" class="row-actions">
+              <q-btn
+                v-if="canEdit"
+                flat
+                dense
+                round
+                size="sm"
+                icon="edit"
+                color="primary"
+                @click.stop="openEditDialog(props.row)"
+              >
+                <q-tooltip>Tahrirlash</q-tooltip>
+              </q-btn>
+              <q-btn
+                v-if="canDelete"
+                flat
+                dense
+                round
+                size="sm"
+                icon="delete_outline"
+                color="negative"
+                @click.stop="confirmDelete(props.row)"
+              >
+                <q-tooltip>O'chirish</q-tooltip>
+              </q-btn>
+            </q-td>
+          </template>
+        </q-table>
+      </div>
+    </template>
+
+    <q-dialog v-model="roomOccupancyOpen">
+      <q-card style="width: 100%; max-width: 420px; border-radius: 18px">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6"
+            >{{ roomOccupancyRoom?.roomNumber }}-xona — bugungi jadval</div
+          >
+          <q-space />
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-card-section>
+        <q-card-section>
+          <div v-if="roomOccupancyLoading" class="column q-gutter-sm">
+            <q-skeleton v-for="i in 4" :key="i" type="text" height="36px" />
+          </div>
+          <div
+            v-else-if="!roomOccupancySlots.length"
+            class="text-body2 muted-text q-py-md text-center"
+          >
+            Bugun bu xonada dars yo'q
+          </div>
+          <q-list v-else separator>
+            <q-item
+              v-for="(slot, i) in roomOccupancySlots"
+              :key="i"
+              :class="{ 'occupancy-slot--current': slot.current }"
+            >
+              <q-item-section avatar>
+                <q-icon
+                  :name="slot.current ? 'radio_button_checked' : 'schedule'"
+                  :color="slot.current ? 'positive' : 'grey-6'"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label
+                  >{{ slot.startTime.slice(0, 5) }}–{{
+                    slot.endTime.slice(0, 5)
+                  }}
+                  · {{ slot.className }} · {{ slot.subjectName }}</q-item-label
+                >
+                <q-item-label caption>{{ slot.teacherName }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog
+      v-model="dialogOpen"
+      persistent
+      position="right"
+      full-height
+      maximized-mobile
+    >
+      <q-card
+        style="width: 420px; max-width: 100vw"
+        class="form-drawer column full-height no-wrap"
+      >
         <q-card-section class="row items-center q-pb-none">
           <q-avatar
             size="40px"
@@ -175,8 +462,12 @@
           <q-btn flat round dense icon="close" v-close-popup />
         </q-card-section>
 
-        <q-form @submit.prevent="onSave">
-          <q-card-section class="q-gutter-md q-pt-md">
+        <q-form
+          @submit.prevent="onSave"
+          class="column full-height no-wrap"
+          style="min-height: 0"
+        >
+          <q-card-section class="q-gutter-md q-pt-md col scroll">
             <q-banner
               v-if="module.fields.some(f => f.autoSchool)"
               class="bg-blue-1 text-primary rounded-borders"
@@ -297,13 +588,31 @@ const pagination = ref({
 const searchQuery = ref('')
 const searchCache = ref(null)
 const searchLoading = ref(false)
+const activeFilters = reactive({})
+const filterOptionsCache = reactive({})
+
+const visibleColumns = computed(() =>
+  module.value.columns.filter(c => c.name !== 'id')
+)
 
 const tableColumns = computed(() => [
-  ...module.value.columns,
+  ...visibleColumns.value,
   { name: 'actions', label: '', field: 'actions', align: 'right' }
 ])
 
+const firstNonLinkColumn = computed(() => {
+  const first = visibleColumns.value[0]
+  return first && !first.link ? first.name : null
+})
+
 const linkColumns = computed(() => module.value.columns.filter(c => c.link))
+const badgeColumns = computed(() =>
+  module.value.columns.filter(c => c.badgeColors)
+)
+
+const filtersActive = computed(() =>
+  Object.values(activeFilters).some(v => v != null && v !== '')
+)
 
 const displayRows = computed(() => {
   if (!searchQuery.value) return rows.value
@@ -318,11 +627,67 @@ const displayRows = computed(() => {
   )
 })
 
+function filterOptionsFor(f) {
+  if (f.options) return f.options
+  return filterOptionsCache[f.key] || []
+}
+
+async function loadFilterOptionsFor(f) {
+  if (!f.optionsEndpoint || filterOptionsCache[f.key]) return
+  try {
+    const params = { size: 1000 }
+    if (f.schoolScoped) params.schoolId = schoolStore.activeSchoolId
+    const response = await api.get(f.optionsEndpoint, { params })
+    filterOptionsCache[f.key] = response.data.content.map(item => ({
+      value: item[f.optionValue],
+      label:
+        typeof f.optionLabel === 'function'
+          ? f.optionLabel(item)
+          : item[f.optionLabel]
+    }))
+  } catch {
+    filterOptionsCache[f.key] = []
+  }
+}
+
+function onFilterChange() {
+  pagination.value.page = 1
+  fetchRows()
+  if (searchQuery.value) {
+    searchCache.value = null
+    fetchAllForSearch()
+  }
+}
+
+const cardPageLabel = computed(() => {
+  const { page, rowsPerPage, rowsNumber } = pagination.value
+  if (!rowsNumber) return ''
+  const start = (page - 1) * rowsPerPage + 1
+  const end = Math.min(page * rowsPerPage, rowsNumber)
+  return `${start}-${end} / ${rowsNumber}`
+})
+
+function changeCardPage(dir) {
+  pagination.value.page += dir
+  fetchRows()
+}
+
 const canCreate = computed(() =>
   module.value.adminOnly ? authStore.isAdmin : authStore.isEditor
 )
 const canEdit = canCreate
 const canDelete = computed(() => authStore.isAdmin)
+
+function filterParams() {
+  const params = {}
+  if (module.value.schoolScoped) {
+    params.schoolId = schoolStore.activeSchoolId
+  }
+  for (const [key, val] of Object.entries(activeFilters)) {
+    if (val != null && val !== '') params[key] = val
+  }
+  return params
+}
 
 async function fetchRows() {
   if (!module.value) return
@@ -335,14 +700,12 @@ async function fetchRows() {
   try {
     const { page, rowsPerPage, sortBy, descending } = pagination.value
     const params = {
+      ...filterParams(),
       page: page - 1,
       size: rowsPerPage
     }
     if (sortBy) {
       params.sort = `${sortBy},${descending ? 'desc' : 'asc'}`
-    }
-    if (module.value.schoolScoped) {
-      params.schoolId = schoolStore.activeSchoolId
     }
     const response = await api.get(module.value.endpoint, { params })
     rows.value = response.data.content
@@ -358,10 +721,7 @@ async function fetchAllForSearch() {
   if (module.value.schoolScoped && !schoolStore.activeSchoolId) return
   searchLoading.value = true
   try {
-    const params = { page: 0, size: 3000 }
-    if (module.value.schoolScoped) {
-      params.schoolId = schoolStore.activeSchoolId
-    }
+    const params = { ...filterParams(), page: 0, size: 3000 }
     const response = await api.get(module.value.endpoint, { params })
     searchCache.value = response.data.content
   } catch {
@@ -385,11 +745,15 @@ function onRequest(requestProp) {
 function onRowClick(evt, row) {
   if (!module.value.rowLink) return
   if (module.value.key === 'schools') {
-    schoolStore.setActiveSchool(row.id, row.name)
-    router.push('/')
+    switchToSchool(row)
     return
   }
   router.push(`/profiles/${module.value.rowLink}/${row.id}`)
+}
+
+function switchToSchool(row) {
+  schoolStore.setActiveSchool(row.id, row.name)
+  router.push('/')
 }
 
 function goToProfile(link, row) {
@@ -446,11 +810,16 @@ watch(
       sortBy: 'id',
       descending: false,
       page: 1,
-      rowsPerPage: 10,
+      rowsPerPage: module.value?.viewType === 'cards' ? 12 : 10,
       rowsNumber: 0
     }
     searchQuery.value = ''
     searchCache.value = null
+    Object.keys(activeFilters).forEach(k => delete activeFilters[k])
+    Object.keys(filterOptionsCache).forEach(k => delete filterOptionsCache[k])
+    if (module.value?.filters) {
+      module.value.filters.forEach(loadFilterOptionsFor)
+    }
     await fetchRows()
     if (route.query.create === '1' && canCreate.value) {
       router.replace({ query: {} })
@@ -470,6 +839,25 @@ watch(
     if (searchQuery.value) fetchAllForSearch()
   }
 )
+
+const roomOccupancyOpen = ref(false)
+const roomOccupancyRoom = ref(null)
+const roomOccupancySlots = ref([])
+const roomOccupancyLoading = ref(false)
+
+async function openRoomOccupancy(row) {
+  roomOccupancyRoom.value = row
+  roomOccupancyOpen.value = true
+  roomOccupancyLoading.value = true
+  try {
+    const res = await api.get(`/api/rooms/${row.id}/occupancy`)
+    roomOccupancySlots.value = res.data
+  } catch {
+    roomOccupancySlots.value = []
+  } finally {
+    roomOccupancyLoading.value = false
+  }
+}
 
 const dialogOpen = ref(false)
 const isEditing = ref(false)
@@ -505,7 +893,9 @@ async function loadFieldOptions() {
     if (field.autoSchool || field.type !== 'select') continue
 
     if (field.options) {
-      fieldOptions[field.key] = field.options.map(o => ({ label: o, value: o }))
+      fieldOptions[field.key] = field.options.map(o =>
+        typeof o === 'object' ? o : { label: o, value: o }
+      )
       continue
     }
 
@@ -660,6 +1050,35 @@ function extractError(error) {
 
 :deep(.row-clickable tbody tr:hover) {
   background: rgba(79, 70, 229, 0.06);
+}
+
+.row-actions {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+:deep(tbody tr:hover) .row-actions,
+:deep(tbody tr:focus-within) .row-actions {
+  opacity: 1;
+}
+
+.form-drawer {
+  border-radius: 0;
+}
+
+.entity-card {
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.entity-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.occupancy-slot--current {
+  background: rgba(34, 197, 94, 0.08);
+  border-radius: var(--radius-sm);
 }
 
 @media (max-width: 599px) {

@@ -5,6 +5,57 @@
     title="Davomat olish"
     :subtitle="schoolStore.activeSchoolName"
   >
+    <div v-if="todayLessons.length || myEmployeeId" class="q-mb-md">
+      <div class="row items-center justify-between q-mb-sm">
+        <div class="text-subtitle2 text-weight-semibold">Bugungi darslar</div>
+        <q-btn-toggle
+          v-if="myEmployeeId"
+          v-model="onlyMyLessons"
+          dense
+          no-caps
+          size="sm"
+          toggle-color="primary"
+          :options="[
+            { label: 'Mening darslarim', value: true },
+            { label: 'Barchasi', value: false }
+          ]"
+          @update:model-value="loadTodayLessons"
+        />
+      </div>
+      <div v-if="!todayLessons.length" class="text-caption muted-text q-pb-sm"
+        >Bugun dars yo'q</div
+      >
+      <div v-else class="today-lessons-scroll">
+        <div
+          v-for="l in todayLessons"
+          :key="l.lessonSlotId"
+          class="today-lesson-card"
+          :class="{
+            'today-lesson-card--active': selectedLessonId === l.lessonSlotId,
+            'today-lesson-card--live': l.status === 'HOZIR'
+          }"
+          @click="selectTodayLesson(l)"
+        >
+          <div class="row items-center justify-between no-wrap">
+            <span class="text-weight-bold">{{ l.className }}</span>
+            <q-icon
+              v-if="l.attendanceTaken"
+              name="check_circle"
+              color="positive"
+              size="18px"
+            />
+            <q-badge v-else-if="l.status === 'HOZIR'" color="positive" rounded
+              >hozir</q-badge
+            >
+          </div>
+          <div class="text-caption ellipsis">{{ l.subjectName }}</div>
+          <div class="text-caption muted-text"
+            >{{ l.startTime.slice(0, 5) }}–{{ l.endTime.slice(0, 5) }}</div
+          >
+        </div>
+      </div>
+    </div>
+
     <div class="brand-card q-pa-md q-mb-md">
       <div class="row q-col-gutter-md items-end">
         <div class="col-12 col-sm-3">
@@ -46,9 +97,9 @@
         <div class="col-12 col-sm-2">
           <q-btn
             color="primary"
-            outline
+            unelevated
             no-caps
-            class="full-width"
+            class="full-width mark-all-btn"
             icon="done_all"
             label="Hammasi keldi"
             :disable="!roster.length"
@@ -79,12 +130,30 @@
     </div>
 
     <div v-else class="brand-card overflow-hidden">
+      <div class="row items-center justify-between live-count-bar">
+        <div class="text-body1">
+          <span class="text-weight-bold text-positive">{{ presentCount }}</span>
+          keldi ·
+          <span class="text-weight-bold text-negative">{{ absentCount }}</span>
+          kelmadi ·
+          <span class="text-weight-bold text-warning">{{ lateCount }}</span>
+          kechikdi ·
+          <span class="text-weight-bold">{{ excusedCount }}</span> sababli
+        </div>
+        <div class="text-caption muted-text gt-xs"
+          >1=Keldi · 2=Kelmadi · 3=Kechikdi · 4=Sababli · ↑↓ o'tish</div
+        >
+      </div>
+      <q-separator />
       <q-list separator>
         <transition-group name="roster-row">
           <q-item
             v-for="(entry, idx) in roster"
             :key="entry.studentId"
+            :ref="el => (rowRefs[idx] = el)"
             class="roster-item"
+            tabindex="0"
+            @keydown="onRowKeydown($event, idx)"
           >
             <q-item-section avatar>
               <q-avatar
@@ -115,11 +184,7 @@
         </transition-group>
       </q-list>
 
-      <div class="row justify-between items-center q-pa-md">
-        <div class="text-caption muted-text">
-          {{ presentCount }} keldi · {{ absentCount }} kelmadi ·
-          {{ lateCount }} kechikdi · {{ excusedCount }} sababli
-        </div>
+      <div class="row justify-end items-center q-pa-md">
         <q-btn
           color="primary"
           unelevated
@@ -141,10 +206,14 @@ import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
 import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
+import { useAuthStore } from '@/stores/auth'
 import { todayStr } from '@/utils/date'
 
 const $q = useQuasar()
 const schoolStore = useSchoolStore()
+const authStore = useAuthStore()
+const myEmployeeId = computed(() => authStore.employeeId)
+const onlyMyLessons = ref(true)
 
 const classOptions = ref([])
 const lessonOptions = ref([])
@@ -154,6 +223,8 @@ const selectedDate = ref(todayStr())
 const roster = ref([])
 const loadingRoster = ref(false)
 const saving = ref(false)
+const todayLessons = ref([])
+const rowRefs = ref([])
 
 const statusOptions = [
   { label: 'Keldi', value: 'PRESENT' },
@@ -161,6 +232,54 @@ const statusOptions = [
   { label: 'Kechikdi', value: 'LATE' },
   { label: 'Sababli', value: 'EXCUSED' }
 ]
+
+const statusByKey = {
+  1: 'PRESENT',
+  2: 'ABSENT',
+  3: 'LATE',
+  4: 'EXCUSED'
+}
+
+function onRowKeydown(evt, idx) {
+  if (statusByKey[evt.key]) {
+    roster.value[idx].status = statusByKey[evt.key]
+    evt.preventDefault()
+    return
+  }
+  if (evt.key === 'ArrowDown') {
+    evt.preventDefault()
+    focusRow(idx + 1)
+  } else if (evt.key === 'ArrowUp') {
+    evt.preventDefault()
+    focusRow(idx - 1)
+  }
+}
+
+function focusRow(idx) {
+  const el = rowRefs.value[idx]
+  const domEl = el?.$el || el
+  domEl?.focus?.()
+}
+
+async function loadTodayLessons() {
+  if (!schoolStore.activeSchoolId) return
+  try {
+    const params = { schoolId: schoolStore.activeSchoolId }
+    if (myEmployeeId.value && onlyMyLessons.value) {
+      params.employeeId = myEmployeeId.value
+    }
+    const res = await api.get('/api/attendance/today-lessons', { params })
+    todayLessons.value = res.data
+  } catch {
+    todayLessons.value = []
+  }
+}
+
+function selectTodayLesson(lesson) {
+  selectedClassId.value = lesson.schoolClassId
+  selectedLessonId.value = lesson.lessonSlotId
+  onClassChange(true)
+}
 
 const presentCount = computed(
   () => roster.value.filter(r => r.status === 'PRESENT').length
@@ -219,8 +338,9 @@ async function loadClasses() {
   }
 }
 
-async function onClassChange() {
-  selectedLessonId.value = null
+async function onClassChange(keepLesson) {
+  const preserveLessonId = keepLesson ? selectedLessonId.value : null
+  if (!keepLesson) selectedLessonId.value = null
   roster.value = []
   if (!selectedClassId.value) {
     lessonOptions.value = []
@@ -243,6 +363,10 @@ async function onClassChange() {
         value: l.lessonSlotId,
         label: `${l.weekday} · ${l.startTime.slice(0, 5)}-${l.endTime.slice(0, 5)} · ${l.subjectName} (${l.teacherName})`
       }))
+    if (preserveLessonId) {
+      selectedLessonId.value = preserveLessonId
+      loadRoster()
+    }
   } catch {
     lessonOptions.value = []
   }
@@ -293,6 +417,7 @@ async function saveAttendance() {
       message: 'Davomat saqlandi',
       icon: 'check_circle'
     })
+    loadTodayLessons()
   } catch (error) {
     $q.notify({
       type: 'negative',
@@ -310,15 +435,66 @@ watch(
     selectedLessonId.value = null
     roster.value = []
     loadClasses()
+    loadTodayLessons()
   }
 )
 
 loadClasses()
+loadTodayLessons()
 </script>
 
 <style scoped>
 .muted-text {
   color: var(--brand-text-muted);
+}
+
+.today-lessons-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.today-lesson-card {
+  flex: 0 0 auto;
+  min-width: 140px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  cursor: pointer;
+  background: var(--card-bg);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.today-lesson-card:hover {
+  border-color: var(--q-primary);
+}
+
+.today-lesson-card--active {
+  border-color: var(--q-primary);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.today-lesson-card--live {
+  border-color: var(--color-success);
+}
+
+.mark-all-btn {
+  font-weight: 600;
+}
+
+.live-count-bar {
+  padding: 12px 16px;
+}
+
+.roster-item {
+  outline: none;
+}
+
+.roster-item:focus-visible {
+  background: rgba(79, 70, 229, 0.08);
 }
 
 .status-toggle {

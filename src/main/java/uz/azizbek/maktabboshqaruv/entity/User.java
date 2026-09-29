@@ -20,6 +20,11 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    /** Optional link to the teacher's own Employee record, so "my lessons" views can filter to just them. */
+    @ManyToOne
+    @JoinColumn(name = "employee_id")
+    private Employee employee;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -31,4 +36,7 @@ public class User {
 
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+
+    public Employee getEmployee() { return employee; }
+    public void setEmployee(Employee employee) { this.employee = employee; }
 }

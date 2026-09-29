@@ -3,7 +3,10 @@ package uz.azizbek.maktabboshqaruv.service;
 import uz.azizbek.maktabboshqaruv.dto.SchoolRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.SchoolResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.School;
+import uz.azizbek.maktabboshqaruv.repository.EmployeeRepository;
+import uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
+import uz.azizbek.maktabboshqaruv.repository.StudentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +32,15 @@ class SchoolServiceTest {
 
     @Mock
     private SchoolRepository schoolRepository;
+
+    @Mock
+    private StudentRepository studentRepository;
+
+    @Mock
+    private EmployeeRepository employeeRepository;
+
+    @Mock
+    private SchoolClassRepository schoolClassRepository;
 
     @InjectMocks
     private SchoolService schoolService;

@@ -36,6 +36,10 @@ public class CalendarEvent {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
+    /** True for events the demo seeder created (so a reseed can safely replace only those, never a user's own). */
+    @Column
+    private boolean seeded = false;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdDate;
@@ -98,5 +102,13 @@ public class CalendarEvent {
 
     public LocalDateTime getCreatedDate() {
         return createdDate;
+    }
+
+    public boolean isSeeded() {
+        return seeded;
+    }
+
+    public void setSeeded(boolean seeded) {
+        this.seeded = seeded;
     }
 }
