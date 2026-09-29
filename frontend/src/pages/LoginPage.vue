@@ -57,6 +57,18 @@
 
             <q-card-section>
               <q-form class="q-gutter-md" @submit.prevent="onSubmit">
+                <q-banner
+                  v-if="backendDown"
+                  class="bg-orange-1 text-orange-9 rounded-borders"
+                  dense
+                >
+                  <template v-slot:avatar>
+                    <q-icon name="warning_amber" color="orange-9" />
+                  </template>
+                  Backend serverga ulanib bo'lmadi. Server ishga tushirilganini
+                  tekshiring.
+                </q-banner>
+
                 <q-input
                   v-model="username"
                   label="Username"
@@ -119,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
@@ -132,6 +144,15 @@ const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 const showPassword = ref(false)
+const backendDown = ref(false)
+
+onMounted(async () => {
+  try {
+    await api.get('/api/health', { timeout: 4000 })
+  } catch {
+    backendDown.value = true
+  }
+})
 
 const brandStats = [
   { value: '16', label: 'Modul' },
@@ -149,10 +170,12 @@ async function onSubmit() {
       { username: username.value, password: password.value },
       { responseType: 'text' }
     )
+    backendDown.value = false
     authStore.setToken(response.data)
     await router.push('/')
   } catch (error) {
     errorMessage.value = error.friendlyMessage || 'Kirishda xatolik yuz berdi'
+    if (!error.response) backendDown.value = true
   } finally {
     loading.value = false
   }

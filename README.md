@@ -23,6 +23,17 @@ Hech qanday sozlash shart emas — standart qiymatlar bilan darhol ishga tushadi
 ./gradlew bootRun
 ```
 
+### Backend va frontend'ni birga ishga tushirish
+
+Ikkalasini alohida terminalda ishga tushirish shart emas — loyiha ildizida:
+
+```bash
+./start.sh        # Git Bash / macOS / Linux — Ctrl+C ikkalasini ham to'xtatadi
+start.bat         # Windows — ikkita alohida oynada ochadi
+```
+
+Backend `http://localhost:8080`, frontend `http://localhost:9000` da ko'tariladi. Backend tayyorligini `GET /api/health` orqali tekshirish mumkin (autentifikatsiyasiz) — login sahifasi ham shu endpoint orqali backend ishlab turganini avtomatik tekshiradi va aks holda ogohlantirish ko'rsatadi.
+
 Birinchi marta ishga tushirilganda, bazada hech qanday foydalanuvchi bo'lmasa, dastlabki ADMIN akkaunt avtomatik yaratiladi: **`admin` / `admin123`**. Shundan keyin `/api/users` orqali qo'shimcha foydalanuvchilar (EDITOR/VIEWER) yaratish mumkin.
 
 Testlarni ishga tushirish:
