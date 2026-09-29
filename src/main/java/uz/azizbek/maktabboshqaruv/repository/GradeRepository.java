@@ -42,6 +42,10 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
             "where sc.academicYear.school.id = :schoolId group by sc.id")
     List<Object[]> averageScoreByClass(@Param("schoolId") Long schoolId);
 
+    @Query("select sc.id as classId, avg(g.score) as avgScore from Grade g join g.student.schoolClass sc " +
+            "where sc.academicYear.school.id = :schoolId and g.gradeDate between :from and :to group by sc.id")
+    List<Object[]> averageScoreByClassBetween(@Param("schoolId") Long schoolId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     @Query("select g.student.id as studentId, avg(g.score) as avgScore from Grade g " +
             "where g.student.schoolClass.academicYear.school.id = :schoolId group by g.student.id")
     List<Object[]> averageScoreByStudent(@Param("schoolId") Long schoolId);

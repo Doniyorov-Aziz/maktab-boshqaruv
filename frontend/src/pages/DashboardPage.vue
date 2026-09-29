@@ -235,38 +235,7 @@
         </div>
       </div>
       <div class="col-12 col-md-5">
-        <div class="brand-card q-pa-md full-height">
-          <div class="text-subtitle1 text-weight-semibold q-mb-md"
-            >Sinflar reytingi (30 kun)</div
-          >
-          <div v-if="!rankings.length" class="muted-text text-body2"
-            >Ma'lumot yo'q</div
-          >
-          <div v-else class="q-gutter-y-xs">
-            <div
-              v-for="c in rankings"
-              :key="c.schoolClassId"
-              class="rank-row"
-              @click="goClass(c.schoolClassId)"
-            >
-              <div class="row items-center justify-between">
-                <span class="ellipsis text-weight-medium">{{
-                  c.className
-                }}</span>
-                <span class="text-weight-bold tabular-nums"
-                  >{{ c.attendanceRate ?? '—' }}%</span
-                >
-              </div>
-              <q-linear-progress
-                :value="(c.attendanceRate ?? 0) / 100"
-                :color="rankColor(c.attendanceRate)"
-                rounded
-                size="5px"
-                class="q-mt-2xs"
-              />
-            </div>
-          </div>
-        </div>
+        <class-ranking-card :rankings="rankings" :loading="loading" />
       </div>
     </div>
 
@@ -499,6 +468,7 @@ import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
 import PageLayout from '@/components/PageLayout.vue'
+import ClassRankingCard from '@/components/ClassRankingCard.vue'
 import {
   formatDate,
   formatShortDate,
@@ -626,17 +596,6 @@ function lessonProgress(l) {
   if (duration <= 0) return 0
   const elapsed = duration - l.minutesUntilOrRemaining
   return Math.min(100, Math.max(0, Math.round((elapsed / duration) * 100)))
-}
-
-function goClass(id) {
-  router.push(`/profiles/class/${id}`)
-}
-
-function rankColor(rate) {
-  if (rate == null) return 'grey-6'
-  if (rate >= 90) return 'positive'
-  if (rate >= 75) return 'warning'
-  return 'negative'
 }
 
 // --- attention panel ---
@@ -1126,17 +1085,6 @@ watch(() => schoolStore.activeSchoolId, loadAll)
 
 .ll-col-progress {
   min-width: 120px;
-}
-
-.rank-row {
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: var(--text-sm);
-}
-
-.rank-row:hover {
-  background: rgba(79, 70, 229, 0.08);
 }
 
 .attention-subitem {

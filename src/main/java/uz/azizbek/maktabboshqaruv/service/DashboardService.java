@@ -281,35 +281,80 @@ public class DashboardService {
         return result;
     }
 
-    public List<ClassRankingDto> getClassRankings(Long schoolId) {
-        LocalDate today = LocalDate.now(ZONE);
-        LocalDate from = today.minusDays(30);
+    private static final double GRADE_SCALE_MIN = 2.0;
+    private static final double GRADE_SCALE_MAX = 5.0;
 
-        Map<Long, String> classNames = schoolClassRepository.findByAcademicYearSchoolId(schoolId).stream()
-                .collect(Collectors.toMap(SchoolClass::getId, c -> c.getGradeNumber() + "-" + c.getSectionLetter()));
-
-        Map<Long, Double> attendanceByClass = new HashMap<>();
-        for (Object[] row : attendanceRepository.attendanceRateByClass(schoolId, from, today)) {
+    private Map<Long, Double> attendanceRateMap(Long schoolId, LocalDate from, LocalDate to) {
+        Map<Long, Double> byClass = new HashMap<>();
+        for (Object[] row : attendanceRepository.attendanceRateByClass(schoolId, from, to)) {
             Long classId = ((Number) row[0]).longValue();
             long present = ((Number) row[1]).longValue();
             long total = ((Number) row[2]).longValue();
-            attendanceByClass.put(classId, total == 0 ? 0 : Math.round(present * 1000.0 / total) / 10.0);
+            byClass.put(classId, total == 0 ? null : Math.round(present * 1000.0 / total) / 10.0);
         }
+        return byClass;
+    }
 
-        Map<Long, Double> gradeByClass = new HashMap<>();
-        for (Object[] row : gradeRepository.averageScoreByClass(schoolId)) {
+    private Map<Long, Double> gradeAverageMap(Long schoolId, LocalDate from, LocalDate to) {
+        Map<Long, Double> byClass = new HashMap<>();
+        for (Object[] row : gradeRepository.averageScoreByClassBetween(schoolId, from, to)) {
             Long classId = ((Number) row[0]).longValue();
             Double avg = (Double) row[1];
-            gradeByClass.put(classId, avg == null ? null : Math.round(avg * 100) / 100.0);
+            byClass.put(classId, avg == null ? null : Math.round(avg * 100) / 100.0);
         }
+        return byClass;
+    }
+
+    private Double normalizeGrade(Double grade) {
+        if (grade == null) return null;
+        double clamped = Math.max(GRADE_SCALE_MIN, Math.min(GRADE_SCALE_MAX, grade));
+        return (clamped - GRADE_SCALE_MIN) / (GRADE_SCALE_MAX - GRADE_SCALE_MIN) * 100.0;
+    }
+
+    private Double overallScore(Double attendanceRate, Double averageGrade) {
+        if (attendanceRate == null && averageGrade == null) return null;
+        Double normalizedGrade = normalizeGrade(averageGrade);
+        double attendancePart = attendanceRate != null ? attendanceRate : normalizedGrade;
+        double gradePart = normalizedGrade != null ? normalizedGrade : attendanceRate;
+        return Math.round((attendancePart * 0.5 + gradePart * 0.5) * 10) / 10.0;
+    }
+
+    private Double delta(Double current, Double previous) {
+        if (current == null || previous == null) return null;
+        return Math.round((current - previous) * 100) / 100.0;
+    }
+
+    public List<ClassRankingDto> getClassRankings(Long schoolId) {
+        LocalDate today = LocalDate.now(ZONE);
+        LocalDate from = today.minusDays(30);
+        LocalDate prevFrom = from.minusDays(30);
+
+        List<SchoolClass> classes = schoolClassRepository.findByAcademicYearSchoolId(schoolId);
+
+        Map<Long, Double> attendanceCurrent = attendanceRateMap(schoolId, from, today);
+        Map<Long, Double> attendancePrevious = attendanceRateMap(schoolId, prevFrom, from.minusDays(1));
+        Map<Long, Double> gradeCurrent = gradeAverageMap(schoolId, from, today);
+        Map<Long, Double> gradePrevious = gradeAverageMap(schoolId, prevFrom, from.minusDays(1));
 
         List<ClassRankingDto> result = new ArrayList<>();
-        for (Map.Entry<Long, String> e : classNames.entrySet()) {
+        for (SchoolClass c : classes) {
+            Long classId = c.getId();
+            Double attendanceRate = attendanceCurrent.get(classId);
+            Double averageGrade = gradeCurrent.get(classId);
+            Double overall = overallScore(attendanceRate, averageGrade);
+            Double overallPrev = overallScore(attendancePrevious.get(classId), gradePrevious.get(classId));
+
             ClassRankingDto dto = new ClassRankingDto();
-            dto.setSchoolClassId(e.getKey());
-            dto.setClassName(e.getValue());
-            dto.setAttendanceRate(attendanceByClass.getOrDefault(e.getKey(), null));
-            dto.setAverageGrade(gradeByClass.get(e.getKey()));
+            dto.setSchoolClassId(classId);
+            dto.setClassName(c.getGradeNumber() + "-" + c.getSectionLetter());
+            dto.setHomeroomTeacherName(c.getClassTeacher() == null ? null
+                    : c.getClassTeacher().getFirstName() + " " + c.getClassTeacher().getLastName());
+            dto.setAttendanceRate(attendanceRate);
+            dto.setAttendanceRateDelta(delta(attendanceRate, attendancePrevious.get(classId)));
+            dto.setAverageGrade(averageGrade);
+            dto.setAverageGradeDelta(delta(averageGrade, gradePrevious.get(classId)));
+            dto.setOverallScore(overall);
+            dto.setOverallScoreDelta(delta(overall, overallPrev));
             result.add(dto);
         }
         result.sort((a, b) -> {
