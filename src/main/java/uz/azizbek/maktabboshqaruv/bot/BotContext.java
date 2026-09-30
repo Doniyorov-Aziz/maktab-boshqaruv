@@ -126,9 +126,14 @@ public final class BotContext {
     public List<InlineButton> pagerRow(CallbackData base, int page, int pages) {
         if (pages <= 1) return List.of();
         List<InlineButton> row = new ArrayList<>();
-        row.add(page > 0 ? btn(t("common.prev"), base.with("p", page - 1)) : btn(" ", CallbackData.of("noop")));
+        row.add(page > 0 ? btn(t("common.prev"), base.with("p", page - 1)) : blank());
         row.add(btn((page + 1) + "/" + pages, CallbackData.of("noop")));
-        row.add(page < pages - 1 ? btn(t("common.next"), base.with("p", page + 1)) : btn(" ", CallbackData.of("noop")));
+        row.add(page < pages - 1 ? btn(t("common.next"), base.with("p", page + 1)) : blank());
         return row;
+    }
+
+    /** Inert placeholder keeping a 3-button navigation row symmetric (Telegram rejects empty button text). */
+    public InlineButton blank() {
+        return btn("·", CallbackData.of("noop"));
     }
 }

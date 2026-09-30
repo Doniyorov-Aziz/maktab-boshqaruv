@@ -22,6 +22,9 @@ public class AbsenceRequestController {
     @Autowired
     private AbsenceRequestService absenceRequestService;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.telegram.TelegramClient telegramClient;
+
     @GetMapping
     public Page<AbsenceRequestDto> list(@RequestParam Long schoolId,
                                         @RequestParam(required = false) AbsenceStatus status,
@@ -32,6 +35,12 @@ public class AbsenceRequestController {
     @GetMapping("/count-pending")
     public long countPending(@RequestParam Long schoolId) {
         return absenceRequestService.countPending(schoolId);
+    }
+
+    /** The doctor's note photo, streamed from Telegram. */
+    @GetMapping("/{id}/photo")
+    public org.springframework.http.ResponseEntity<byte[]> photo(@PathVariable Long id) {
+        return PhotoResponses.of(telegramClient, absenceRequestService.get(id).getPhotoFileId());
     }
 
     @PostMapping("/{id}/approve")

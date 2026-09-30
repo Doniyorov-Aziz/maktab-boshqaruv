@@ -22,6 +22,9 @@ public class ParentMessageController {
     @Autowired
     private ParentMessageService parentMessageService;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.telegram.TelegramClient telegramClient;
+
     @GetMapping
     public Page<ParentMessageDto> list(@RequestParam Long schoolId,
                                        @RequestParam(required = false) ParentMessageStatus status,
@@ -32,6 +35,13 @@ public class ParentMessageController {
     @GetMapping("/count-new")
     public long countNew(@RequestParam Long schoolId) {
         return parentMessageService.countNew(schoolId);
+    }
+
+    /** The photo the parent attached, streamed from Telegram (the file id itself is never exposed). */
+    @GetMapping("/{id}/photo")
+    public org.springframework.http.ResponseEntity<byte[]> photo(@PathVariable Long id) {
+        String fileId = parentMessageService.get(id).getPhotoFileId();
+        return PhotoResponses.of(telegramClient, fileId);
     }
 
     @PostMapping("/{id}/reply")

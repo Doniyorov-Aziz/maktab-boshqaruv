@@ -120,6 +120,18 @@ public class TelegramController {
         return mock.since(before, request.getChatId());
     }
 
+    /**
+     * telegram.mock=true only: everything sent to a chat since position {@code from}
+     * — including automatic notifications delivered later by the outbox sender.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/mock/messages")
+    public java.util.Map<String, Object> mockMessages(@RequestParam Long chatId, @RequestParam(defaultValue = "0") int from) {
+        MockTelegramClient mock = requireMock();
+        int next = mock.size();
+        return java.util.Map.of("next", next, "messages", mock.since(from, chatId));
+    }
+
     /** telegram.mock=true only: a PNG the bot "sent", so the demo can show it. */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/mock/photos/{fileId}")

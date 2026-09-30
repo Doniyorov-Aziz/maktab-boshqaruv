@@ -28,7 +28,7 @@ SIMPLE = {
     "u": "у", "v": "в", "x": "х", "y": "й", "z": "з", "c": "с", "w": "в",
 }
 APOS = "'‘ʻ’`"
-SKIP = re.compile(r"(<[^>]*>|\{[^}]*\}|&[a-z]+;|/[a-z_]+|\\[nt ]|https?://\S+)")
+SKIP = re.compile(r"(<[^>]*>|\{[^}]*\}|&[a-z]+;|/[a-z_]+|\\u[0-9a-fA-F]{4}|\\[nt ]|https?://\S+)")
 WORD = re.compile(r"[A-Za-z" + APOS + r"]+")
 
 

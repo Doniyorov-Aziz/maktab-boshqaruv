@@ -198,30 +198,38 @@ public class ParentDataService {
                 .stream().map(this::toGradeView).toList();
     }
 
-    /** Current school year's averages per subject, with the month-over-month trend. */
+    /**
+     * Averages per subject over the current school year (the same set the
+     * subject detail page lists), with the trend of this month vs the previous
+     * one — taken from all grades, so September still compares with August.
+     */
     public List<SubjectAverage> subjectAverages(Student s) {
         LocalDate today = today();
         LocalDate[] year = ParentStats.schoolYearRange(today);
-        List<Grade> grades = gradeRepository.findByStudentIdAndGradeDateBetweenOrderByGradeDateDescIdDesc(s.getId(), year[0], year[1]);
+        List<Grade> all = gradeRepository.findByStudentIdOrderByGradeDateDesc(s.getId());
         YearMonth thisMonth = YearMonth.from(today);
         YearMonth previous = thisMonth.minusMonths(1);
-        Map<Long, List<Grade>> bySubject = grades.stream().collect(Collectors.groupingBy(g -> g.getSubject().getId(),
+        Map<Long, List<Grade>> bySubject = all.stream().collect(Collectors.groupingBy(g -> g.getSubject().getId(),
                 LinkedHashMap::new, Collectors.toList()));
         List<SubjectAverage> result = new ArrayList<>();
         for (List<Grade> list : bySubject.values()) {
+            List<Grade> thisYear = list.stream().filter(g -> inRange(g.getGradeDate(), year)).toList();
+            if (thisYear.isEmpty()) continue;
             Subject subject = list.get(0).getSubject();
-            Double avg = ParentStats.average(list.stream().map(Grade::getScore).toList());
+            Double avg = ParentStats.average(thisYear.stream().map(Grade::getScore).toList());
             Double now = ParentStats.average(list.stream().filter(g -> YearMonth.from(g.getGradeDate()).equals(thisMonth)).map(Grade::getScore).toList());
             Double before = ParentStats.average(list.stream().filter(g -> YearMonth.from(g.getGradeDate()).equals(previous)).map(Grade::getScore).toList());
-            result.add(new SubjectAverage(subject.getId(), subject.getName(), avg, list.size(), ParentStats.trend(now, before)));
+            result.add(new SubjectAverage(subject.getId(), subject.getName(), avg, thisYear.size(), ParentStats.trend(now, before)));
         }
         result.sort(Comparator.comparingDouble(SubjectAverage::average).reversed().thenComparing(SubjectAverage::subject));
         return result;
     }
 
+    /** All of the current school year's grades in one subject, with its teacher. */
     public SubjectDetail subjectDetail(Student s, Long subjectId) {
+        LocalDate[] year = ParentStats.schoolYearRange(today());
         List<Grade> grades = gradeRepository.findByStudentIdOrderByGradeDateDesc(s.getId()).stream()
-                .filter(g -> g.getSubject().getId().equals(subjectId)).toList();
+                .filter(g -> g.getSubject().getId().equals(subjectId) && inRange(g.getGradeDate(), year)).toList();
         String subjectName = grades.isEmpty() ? null : grades.get(0).getSubject().getName();
         String teacher = null;
         for (LessonSlot slot : lessonSlotRepository.findBySchoolClassId(s.getSchoolClass().getId())) {
@@ -399,6 +407,10 @@ public class ParentDataService {
     }
 
     // ----------------------------------------------------------------- helpers
+
+    private static boolean inRange(LocalDate d, LocalDate[] range) {
+        return !d.isBefore(range[0]) && !d.isAfter(range[1]);
+    }
 
     private GradeView toGradeView(Grade g) {
         return new GradeView(g.getId(), g.getGradeDate(), g.getSubject().getId(), g.getSubject().getName(),

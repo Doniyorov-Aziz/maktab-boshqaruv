@@ -63,7 +63,7 @@ public class BehaviorScreen implements Screen {
         InlineKeyboardMarkup kb = InlineKeyboardMarkup.builder()
                 .row(ctx.btn("◀️ " + ctx.t("month." + prev.getMonthValue()), base.with("m", prev.toString())),
                         ctx.btn(monthLabel, CallbackData.of("noop")),
-                        next.isAfter(thisMonth) ? ctx.btn(" ", CallbackData.of("noop"))
+                        next.isAfter(thisMonth) ? ctx.blank()
                                 : ctx.btn(ctx.t("month." + next.getMonthValue()) + " ▶️", base.with("m", next.toString())))
                 .row(ctx.switchRow("beh").toArray(new InlineButton[0]))
                 .row(ctx.navRow(null).toArray(new InlineButton[0]))

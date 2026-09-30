@@ -43,6 +43,9 @@ public class AbsenceRequestService {
     private LessonSlotRepository lessonSlotRepository;
 
     @Autowired
+    private uz.azizbek.maktabboshqaruv.repository.CalendarEventRepository calendarEventRepository;
+
+    @Autowired
     private NotificationService notificationService;
 
     @Autowired
@@ -112,12 +115,19 @@ public class AbsenceRequestService {
         return toDto(r);
     }
 
-    /** Sets every lesson of the requested days to EXCUSED; returns how many lesson records it touched. */
+    /**
+     * Sets every lesson of the requested days to EXCUSED; returns how many lesson
+     * records it touched. Holidays and vacations are skipped — there are no lessons to excuse.
+     */
     int excuse(AbsenceRequest r) {
         Student student = r.getStudent();
         List<LessonSlot> slots = lessonSlotRepository.findBySchoolClassId(student.getSchoolClass().getId());
+        List<CalendarEvent> daysOff = calendarEventRepository.findInRange(r.getSchool().getId(), r.getDateFrom(), r.getDateTo())
+                .stream().filter(e -> e.getType() == CalendarEventType.HOLIDAY || e.getType() == CalendarEventType.VACATION).toList();
         int count = 0;
         for (LocalDate d = r.getDateFrom(); !d.isAfter(r.getDateTo()); d = d.plusDays(1)) {
+            LocalDate day0 = d;
+            if (daysOff.stream().anyMatch(e -> !day0.isBefore(e.getStartDate()) && !day0.isAfter(e.getEndDate()))) continue;
             String weekday = ParentStats.WEEKDAY_UZ.get(d.getDayOfWeek());
             for (LessonSlot slot : slots) {
                 if (!slot.getWeekday().equals(weekday)) continue;

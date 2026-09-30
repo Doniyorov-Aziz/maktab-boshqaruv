@@ -92,12 +92,12 @@ public class AttendanceScreen implements Screen {
             YearMonth next = month.plusMonths(1);
             kb.row(ctx.btn("◀️ " + ctx.t("month." + prev.getMonthValue()), base.with("m", prev.toString())),
                     ctx.btn(ctx.i18n().monthYear(ctx.lang(), month.getMonthValue(), month.getYear()), CallbackData.of("noop")),
-                    next.isAfter(thisMonth) ? ctx.btn(" ", CallbackData.of("noop"))
+                    next.isAfter(thisMonth) ? ctx.blank()
                             : ctx.btn(ctx.t("month." + next.getMonthValue()) + " ▶️", base.with("m", next.toString())));
         } else if ("q".equals(kind)) {
-            kb.row(quarter > 1 ? ctx.btn("◀️ " + ctx.t("att.period.quarter", "n", quarter - 1), base.with("q", quarter - 1)) : ctx.btn(" ", CallbackData.of("noop")),
+            kb.row(quarter > 1 ? ctx.btn("◀️ " + ctx.t("att.period.quarter", "n", quarter - 1), base.with("q", quarter - 1)) : ctx.blank(),
                     ctx.btn(ctx.t("att.period.quarter", "n", quarter), CallbackData.of("noop")),
-                    quarter < 4 ? ctx.btn(ctx.t("att.period.quarter", "n", quarter + 1) + " ▶️", base.with("q", quarter + 1)) : ctx.btn(" ", CallbackData.of("noop")));
+                    quarter < 4 ? ctx.btn(ctx.t("att.period.quarter", "n", quarter + 1) + " ▶️", base.with("q", quarter + 1)) : ctx.blank());
         }
         kb.row(ctx.btn(ctx.t("att.btn.calendar"), base.with("v", "cal")), ctx.btn(ctx.t("att.btn.details"), base.with("v", "det")));
         kb.row(ctx.btn(ctx.t("att.btn.subjects"), base.with("v", "sub")),
