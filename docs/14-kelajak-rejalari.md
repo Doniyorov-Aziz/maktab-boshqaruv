@@ -1,9 +1,10 @@
 # 14 — Kelajak rejalari
 
-[← 13 — Lug'at](13-lugat.md) · [Hujjatlar ro'yxatiga →](../README.md)
+[← 13 — Lug'at](13-lugat.md) · Keyingisi: [15 — Telegram bot →](15-telegram-bot.md)
 
 ## Mundarija
 - [Hozirgi cheklovlar](#hozirgi-cheklovlar)
+- [Bajarildi](#bajarildi)
 - [Rejalashtirilgan takomillashtirishlar](#rejalashtirilgan-takomillashtirishlar)
 
 ## Hozirgi cheklovlar
@@ -23,18 +24,28 @@ Bu loyiha qasddan **oddiy va o'rganish uchun tushunarli** qilib qurilgan — quy
 - **Foydalanuvchilar maktabga bog'lanmagan — maktablararo ruxsat izolyatsiyasi yo'q.** `User` entity'sida `School` maydoni yo'q (faqat ixtiyoriy `employee`), `schoolId` esa frontend yuboradigan oddiy so'rov parametri. Natijada istalgan `EDITOR`/`VIEWER` `schoolId`ni almashtirib, **boshqa maktab** ma'lumotlarini ko'ra oladi (`EDITOR` esa o'zgartira ham oladi). Haqiqiy ko'p maktabli foydalanish uchun `User`ni maktabga bog'lash va backend'da har bir so'rovda `schoolId`ni shu bog'lanish bo'yicha tekshirish kerak.
 - **N+1 so'rov xavfi** — barcha 23 ta `@ManyToOne` bog'lanish `fetch` ko'rsatilmagan, ya'ni JPA standarti bo'yicha `EAGER`. Ro'yxat qaytaruvchi so'rovlarda Hibernate har bir qatorning bog'langan obyektlarini (masalan `LessonSlot` → sinf, fan, xodim, xona) alohida `SELECT`lar bilan yuklashi mumkin — ma'lumot ko'paygan sari sekinlashadi. Yechim: `@ManyToOne(fetch = FetchType.LAZY)` va kerakli joylarda `JOIN FETCH`/`@EntityGraph`.
 
+## Bajarildi
+
+### Telegram bot — ota-onalarga bildirishnoma ✅
+
+**Bajarildi (30.09.2026).** Ota-onalar Telegram orqali quyidagi xabarlarni oladi:
+- **davomat** — kelmadi/kechikdi;
+- **baho** — yangi yoki o'zgartirilgan;
+- **e'lonlar** — maktab bo'yicha yoki sinf bo'yicha.
+
+Bog'lash ikki yo'l bilan qilinadi: deep link/QR kod yoki telefon raqamini ulashish. Bot long polling rejimida ishlaydi (ochiq manzil kerak emas). Xabarlar outbox (`notification_log`) orqali ishonchli yuboriladi: dedup, Telegram limitlari, 429/403 ishlovi, tinch soatlar. Admin panelda o'quvchi profilidagi Telegram bloki, sinf uchun QR varaq va «Xabarnomalar» sahifasi bor. Token faqat lokal faylda yoki muhit o'zgaruvchisida saqlanadi.
+
+To'liq tavsif va administrator yo'riqnomasi: [15-telegram-bot.md](15-telegram-bot.md).
+
+Dastlabki rejadan farqlar:
+- `Student`da bitta `telegramChatId` o'rniga alohida `ParentTelegramLink` jadvali ishlatildi — bir o'quvchiga bir nechta ota-ona bog'lanishi mumkin.
+- Tadbirlar (`CalendarEvent`) haqida eslatmalar hozircha yuborilmaydi; bu qism quyidagi rejalarga o'tkazildi.
+
 ## Rejalashtirilgan takomillashtirishlar
 
-### Telegram bot — ota-onalarga bildirishnoma
-
-**Rejalashtirilgan, hali boshlanmagan.** Maqsad: `Student.guardianPhone`ga bog'langan ota-onalarga Telegram orqali avtomatik xabar yuborish. Kelishilgan qamrov — uchala turi ham:
-- **Davomat** — bola darsga kelmagan/kech qolganida.
-- **Yangi baho** — o'qituvchi baho qo'yganda.
-- **E'lonlar va tadbirlar** — yangi e'lon yoki yaqinlashayotgan tadbir haqida.
-
-Texnik yondashuv (taklif): `Student`ga `telegramChatId` va bir martalik ulash kodi (`telegramLinkCode`) maydonlari qo'shiladi; ota-ona botga `/start <kod>` yuborib o'z akkauntini bog'laydi; backend'da yangi `TelegramBotService` (uzun-polling rejimida, alohida ochiq HTTP manzil talab qilmaydi) `AttendanceService`, `GradeService`, `AnnouncementService`/`CalendarEventService`ga ilova qilinadi. Bot tokeni — foydalanuvchi @BotFather orqali o'zi yaratib berishi kerak bo'ladi (bu loyihaga tashqi maxfiy qiymat).
-
 ### Boshqa yo'nalishlar
+
+- **Tadbir eslatmalari Telegram orqali** — yaqinlashayotgan tadbir (masalan, ota-onalar yig'ilishi) haqida bir kun oldin xabar yuborish. Mavjud outbox va `NotificationType` kengaytiriladi.
 
 - **Boyroq PDF hisobotlar** — hozirgi print-CSS asosidagi chop etishdan tashqari, haqiqiy `jsPDF`/server-side PDF generatsiyasi, davomat/baho tabellari uchun.
 - **Rollarni kengaytirish** — masalan alohida "ota-ona" roli (faqat o'z farzandi ma'lumotlarini ko'radigan), yoki sinf rahbariga maxsus huquqlar.
@@ -45,4 +56,4 @@ Texnik yondashuv (taklif): `Student`ga `telegramChatId` va bir martalik ulash ko
 - **Migratsiya vositasiga o'tish** — loyiha kattalashsa, Flyway'ga o'tish (har bir sxema o'zgarishi versiyalangan SQL fayl sifatida saqlanadi, jamoada ishlash osonlashadi).
 
 ---
-[← 13 — Lug'at](13-lugat.md) · [Hujjatlar ro'yxatiga →](../README.md)
+Keyingisi: [15 — Telegram bot →](15-telegram-bot.md)

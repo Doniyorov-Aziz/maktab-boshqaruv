@@ -13,6 +13,7 @@
 - [Baholar](#baholar-apigrades)
 - [Odamlar: Students / Positions / Employees](#odamlar-students-positions-employees)
 - [Kundalik hayot: Announcements / Calendar Events / Behavior Records](#kundalik-hayot-announcements-calendar-events-behavior-records)
+- [Telegram va xabarnomalar](#telegram-va-xabarnomalar-apitelegram-apinotifications)
 - [Foydalanuvchilar](#foydalanuvchilar-apiusers)
 - [Health](#health-apihealth)
 - [Swagger/OpenAPI](#swaggeropenapi)
@@ -219,6 +220,40 @@ curl "http://localhost:8080/api/students?schoolId=1&page=0&size=20&sort=lastName
 ```bash
 curl "http://localhost:8080/api/calendar-events/range?schoolId=1&from=2026-09-01&to=2026-09-30" \
   -H "Authorization: Bearer $TOKEN"
+```
+
+## Telegram va xabarnomalar — `/api/telegram`, `/api/notifications`
+
+Ota-onalar uchun Telegram bot (batafsil: [15-telegram-bot.md](15-telegram-bot.md)). Bog'lash kodlari bolaning ma'lumotiga obuna bo'lish imkonini beradi, shuning uchun ular `VIEWER`ga ochilmagan.
+
+### `/api/telegram`
+
+| Metod | URL | Vazifa | Rol |
+|---|---|---|---|
+| GET | `/api/telegram/status` | Bot holati: `mode` (`LIVE`/`MOCK`/`DISABLED`/`NO_TOKEN`), `active`, `tokenConfigured`, `botUsername`, `lastError`. Tokenning o'zi hech qachon qaytarilmaydi | A/E/V |
+| GET | `/api/telegram/students/{studentId}` | O'quvchining bog'lash kodi, deep link, ulangan ota-onalar ro'yxati (`links[]`: `id`, `firstName`, `telegramUsername`, `linkedAt`) | A/E |
+| POST | `/api/telegram/students/{studentId}/regenerate-code` | Yangi kod yaratadi (eskisi bekor bo'ladi, bog'lanishlar saqlanadi) | A/E |
+| DELETE | `/api/telegram/links/{linkId}` | Ota-onani uzish (`active=false`) | A/E |
+| GET | `/api/telegram/classes/{schoolClassId}/codes` | Sinfning barcha o'quvchilari uchun kod + deep link (QR varaq uchun) | A/E |
+| POST | `/api/telegram/mock/updates` | **Faqat `telegram.mock=true`**: ota-onaning botga yozgan xabarini simulyatsiya qiladi, botning javoblarini qaytaradi. Body: `chatId`, `text` yoki `contactPhone` (+ ixtiyoriy `firstName`, `username`, `contactUserId`) | A |
+
+### `/api/notifications` (`schoolId` majburiy)
+
+| Metod | URL | Vazifa | Rol | Qo'shimcha parametrlar |
+|---|---|---|---|---|
+| GET | `/api/notifications` | Xabarnomalar jurnali (outbox), yangilari birinchi, pagination | A/E | `type` (`ATTENDANCE_ABSENT`, `ATTENDANCE_LATE`, `GRADE_NEW`, `GRADE_UPDATED`, `ANNOUNCEMENT`), `status` (`PENDING`, `SENT`, `FAILED`, `SKIPPED`), `from`, `to` (`YYYY-MM-DD`, `createdAt` bo'yicha) — barchasi ixtiyoriy |
+| GET | `/api/notifications/stats` | `sentToday`, `failedToday`, `failedTotal`, `pending`, `skippedToday`, `linkedStudents`, `totalStudents`, `linkedPercent`, `parentCount` | A/E | — |
+| POST | `/api/notifications/{id}/retry` | `FAILED` xabarni qayta navbatga qo'yadi (`attempts=0`). Boshqa holatda — 409 | A/E | — |
+| GET | `/api/notifications/settings` | Maktab sozlamalari (yozuv bo'lmasa — standart qiymatlar) | A/E | — |
+| PUT | `/api/notifications/settings` | Sozlamalarni saqlash. Body: `attendanceEnabled`, `gradeEnabled`, `announcementEnabled`, `quietHoursEnabled`, `quietHoursStart`, `quietHoursEnd` (`HH:mm`) | A | — |
+
+```bash
+curl "http://localhost:8080/api/notifications?schoolId=1&status=FAILED&from=2026-09-01" \
+  -H "Authorization: Bearer $TOKEN"
+
+curl -X PUT "http://localhost:8080/api/notifications/settings?schoolId=1" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"attendanceEnabled":true,"gradeEnabled":true,"announcementEnabled":false,"quietHoursEnabled":true,"quietHoursStart":"22:00","quietHoursEnd":"07:00"}'
 ```
 
 ## Foydalanuvchilar — `/api/users`

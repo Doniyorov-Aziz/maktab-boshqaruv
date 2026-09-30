@@ -11,6 +11,10 @@ Maktab (yoki bir nechta maktab) uchun kundalik boshqaruv tizimi: sinflar va o'qu
 - **Baholar jurnali** — sinf+fan+davr bo'yicha jadval ko'rinishida baho kiritish.
 - **Dars jadvali** — xona/o'qituvchi/sinf to'qnashuvini avtomatik tekshiruvchi tuzuvchi, jonli vaqt chizig'i, PDF chop etish.
 - **Taqvim** — bayram/imtihon/ota-onalar yig'ilishi kabi tadbirlar, oylik/haftalik ko'rinish.
+- **Ota-onalar uchun Telegram bot**:
+  - farzand darsga kelmasa yoki kechiksa, yangi baho qo'yilsa va maktab/sinf e'loni chiqsa, ota-onaga avtomatik xabar boradi;
+  - ota-ona QR kod yoki telefon raqami orqali ulanadi;
+  - «Xabarnomalar» sahifasida jurnal, statistika va sozlamalar (tinch soatlar ham) bor.
 - **14 ta CRUD modul** (Maktablar, Binolar, Xonalar, O'quv yillari, Sinflar, O'quvchilar, Fanlar, Lavozimlar, Xodimlar, E'lonlar, Tadbirlar, Xulq yozuvlari, Foydalanuvchilar) — barchasi **bitta universal komponent** orqali, alohida sahifa kodi yozmasdan.
 - **Dark/light** tema, to'liq responsiv (mobil qurilmada ham ishlaydi).
 
@@ -27,6 +31,10 @@ Maktab (yoki bir nechta maktab) uchun kundalik boshqaruv tizimi: sinflar va o'qu
 | Xonalar (CRUD modul) | Kirish sahifasi |
 |---|---|
 | ![Rooms](docs/images/rooms.png) | ![Login](docs/images/login.png) |
+
+| Telegram xabarnomalari | O'quvchi profilidagi Telegram bloki |
+|---|---|
+| ![Notifications](docs/images/telegram-notifications.png) | ![Telegram block](docs/images/telegram-student.png) |
 
 ## Tezkor ishga tushirish
 
@@ -49,6 +57,16 @@ Backend `http://localhost:8080`, frontend `http://localhost:9000` da ko'tariladi
 
 DB paroli va JWT secret kodda saqlanmaydi: lokalda `application-local.properties`dan (`local` profil), serverda `DB_PASSWORD`/`JWT_SECRET` environment variable'laridan olinadi — ular berilmasa backend ishga tushmaydi. Faqat backend'ni sinab ko'rmoqchi bo'lsangiz: `SPRING_PROFILES_ACTIVE=local ./gradlew bootRun` yoki IntelliJ'da `MaktabBoshqaruvApplication (local)`. Batafsil: [10 — 3-qadam](docs/10-ornatish-va-ishga-tushirish.md#3-qadam-sozlamalar-maxfiy-qiymatlar-va-environment-variablelar).
 
+**Telegram bot (ixtiyoriy).** Standart holatda bot o'chiq (`TELEGRAM_ENABLED=false`): ilova to'liq ishlaydi, xabarnomalar esa `SKIPPED` bo'lib jurnalga yoziladi. Yoqish uchun @BotFather'da bot yarating va tokenni **faqat** `application-local.properties`ga yozing:
+
+```properties
+telegram.enabled=true
+telegram.bot-token=<BotFather bergan token>
+telegram.bot-username=<bot_username>
+```
+
+Tokensiz sinash uchun `telegram.mock=true` ishlating — xabarlar faqat logga va bazaga yoziladi. Qadam-baqadam yo'riqnoma: [docs/15-telegram-bot.md — Administrator uchun yo'riqnoma](docs/15-telegram-bot.md#administrator-uchun-yoriqnoma).
+
 ## Hujjatlar
 
 To'liq, batafsil hujjatlashtirish `docs/` papkasida (yoki hammasi birlashtirilgan holda: [docs/TOLIQ-DOKUMENTATSIYA.md](docs/TOLIQ-DOKUMENTATSIYA.md)):
@@ -68,7 +86,8 @@ To'liq, batafsil hujjatlashtirish `docs/` papkasida (yoki hammasi birlashtirilga
 | 11 | [Muammolar va yechimlar](docs/11-muammolar-va-yechimlar.md) | Tez-tez uchraydigan xatolar |
 | 12 | [Yangi modul qo'shish](docs/12-yangi-modul-qoshish.md) | Amaliy qadam-baqadam qo'llanma |
 | 13 | [Lug'at](docs/13-lugat.md) | Barcha texnik atamalar, oddiy tilda |
-| 14 | [Kelajak rejalari](docs/14-kelajak-rejalari.md) | Cheklovlar va rejalashtirilgan takomillashtirishlar |
+| 14 | [Kelajak rejalari](docs/14-kelajak-rejalari.md) | Cheklovlar, bajarilgan va rejalashtirilgan takomillashtirishlar |
+| 15 | [Telegram bot](docs/15-telegram-bot.md) | Ota-onalar uchun xabarnomalar: arxitektura, bog'lash, xavfsizlik, administrator yo'riqnomasi |
 
 ## Litsenziya
 
