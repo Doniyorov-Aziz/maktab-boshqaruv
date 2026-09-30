@@ -25,6 +25,14 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     boolean existsByLessonSlotIdAndStudentIdAndRecordDate(Long lessonSlotId, Long studentId, LocalDate recordDate);
 
+    java.util.Optional<Attendance> findByLessonSlotIdAndStudentIdAndRecordDate(Long lessonSlotId, Long studentId, LocalDate recordDate);
+
+    /** [present-or-late, total] for a whole class in a date range — the "sinf o'rtachasi" comparison. */
+    @Query("select " +
+            "sum(case when a.status in (uz.azizbek.maktabboshqaruv.entity.AttendanceStatus.PRESENT, uz.azizbek.maktabboshqaruv.entity.AttendanceStatus.LATE) then 1 else 0 end), " +
+            "count(a) from Attendance a where a.lessonSlot.schoolClass.id = :classId and a.recordDate between :from and :to")
+    List<Object[]> classAttendanceTotals(@Param("classId") Long classId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     boolean existsByLessonSlotIdAndRecordDate(Long lessonSlotId, LocalDate recordDate);
 
     @Query("select count(a) from Attendance a where a.lessonSlot.schoolClass.academicYear.school.id = :schoolId and a.recordDate = :date")

@@ -19,5 +19,7 @@ public interface BehaviorRecordRepository extends JpaRepository<BehaviorRecord, 
 
     List<BehaviorRecord> findByStudentIdOrderByRecordDateDesc(Long studentId);
 
+    List<BehaviorRecord> findByStudentIdAndRecordDateBetweenOrderByRecordDateDesc(Long studentId, java.time.LocalDate from, java.time.LocalDate to);
+
     long countByStudentIdAndType(Long studentId, uz.azizbek.maktabboshqaruv.entity.BehaviorType type);
 }

@@ -95,7 +95,7 @@ public class NotificationSender {
     boolean deliver(NotificationLog n) {
         // The parent may have sent /stop (or been unlinked) after this was queued.
         // An announcement row names just one of the parent's children, so any active link counts.
-        boolean stillSubscribed = n.getType() == NotificationType.ANNOUNCEMENT
+        boolean stillSubscribed = n.getType() == NotificationType.ANNOUNCEMENT || n.getType() == NotificationType.BROADCAST
                 ? !linkRepository.findByChatIdAndActiveTrue(n.getChatId()).isEmpty()
                 : linkRepository.findByStudentIdAndChatId(n.getStudent().getId(), n.getChatId())
                 .map(l -> Boolean.TRUE.equals(l.getActive()))
@@ -108,7 +108,7 @@ public class NotificationSender {
         }
 
         try {
-            telegramClient.sendMessage(n.getChatId(), n.getText(), null);
+            telegramClient.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
             lastSendMillis = clock.millis();
             lastSentPerChat.put(n.getChatId(), lastSendMillis);
             n.setAttempts(n.getAttempts() + 1);

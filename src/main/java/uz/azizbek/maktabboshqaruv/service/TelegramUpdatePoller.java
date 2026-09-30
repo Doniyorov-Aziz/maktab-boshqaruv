@@ -2,6 +2,7 @@ package uz.azizbek.maktabboshqaruv.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uz.azizbek.maktabboshqaruv.bot.BotRouter;
 import uz.azizbek.maktabboshqaruv.telegram.TelegramApiException;
 import uz.azizbek.maktabboshqaruv.telegram.TelegramClient;
 import uz.azizbek.maktabboshqaruv.telegram.TelegramModels;
@@ -29,7 +30,7 @@ public class TelegramUpdatePoller {
     private TelegramClient telegramClient;
 
     @Autowired
-    private TelegramBotService botService;
+    private BotRouter router;
 
     @Autowired
     private TelegramProperties telegramProperties;
@@ -59,7 +60,7 @@ public class TelegramUpdatePoller {
             // Advance first: a message that crashes the handler must not be re-delivered forever.
             offset = Math.max(offset, update.updateId() + 1);
             try {
-                botService.handleUpdate(update);
+                router.handle(update);
             } catch (Exception e) {
                 log.warn("Telegram update #{} ni qayta ishlashda xato: {}", update.updateId(), TokenMasker.mask(e.getMessage()));
             }

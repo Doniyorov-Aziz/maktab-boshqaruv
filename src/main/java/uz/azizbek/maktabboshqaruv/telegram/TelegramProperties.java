@@ -24,6 +24,51 @@ public class TelegramProperties {
     private int maxAttempts = 3;
     private LocalTime quietHoursStart = LocalTime.of(22, 0);
     private LocalTime quietHoursEnd = LocalTime.of(7, 0);
+    /** HTTPS address of the Mini App ("Farzandim kundaligi"); empty = no Mini App button. */
+    private String webappUrl = "";
+    /** How old a Mini App initData may be before it is rejected. */
+    private long initDataMaxAgeSeconds = 86400;
+    /** Per-chat request budget (updates per second) before the bot asks the parent to slow down. */
+    private int chatRatePerSecond = 2;
+
+    /** Mini App URL only when it is a usable HTTPS address — Telegram rejects anything else. */
+    public String webappUrlIfValid() {
+        return webappUrl != null && webappUrl.startsWith("https://") ? webappUrl : null;
+    }
+
+    /**
+     * Key used to verify Mini App initData. Telegram signs it with the bot token;
+     * in mock mode (no token) a fixed development key is used so the Mini App
+     * can be exercised locally — mock mode never talks to real Telegram.
+     */
+    public String initDataSigningToken() {
+        if (hasToken()) return botToken;
+        return mock ? "mock-mode-dev-token" : null;
+    }
+
+    public String getWebappUrl() {
+        return webappUrl;
+    }
+
+    public void setWebappUrl(String webappUrl) {
+        this.webappUrl = webappUrl == null ? "" : webappUrl.trim();
+    }
+
+    public long getInitDataMaxAgeSeconds() {
+        return initDataMaxAgeSeconds;
+    }
+
+    public void setInitDataMaxAgeSeconds(long initDataMaxAgeSeconds) {
+        this.initDataMaxAgeSeconds = initDataMaxAgeSeconds;
+    }
+
+    public int getChatRatePerSecond() {
+        return chatRatePerSecond;
+    }
+
+    public void setChatRatePerSecond(int chatRatePerSecond) {
+        this.chatRatePerSecond = chatRatePerSecond;
+    }
 
     public Mode mode() {
         if (mock) return Mode.MOCK;

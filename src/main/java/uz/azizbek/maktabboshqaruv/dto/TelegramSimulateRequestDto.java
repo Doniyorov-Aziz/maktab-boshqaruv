@@ -16,6 +16,45 @@ public class TelegramSimulateRequestDto {
     private String contactPhone;
     /** Owner of the shared contact; defaults to chatId (i.e. the sender's own number). */
     private Long contactUserId;
+    /** Simulates tapping an inline button with this callback_data. */
+    private String callbackData;
+    /** The message the tapped button belongs to (as returned by a previous simulate call). */
+    private Long messageId;
+    /** Simulates sending a photo (base64 PNG/JPEG); text becomes its caption. */
+    private String photoBase64;
+    private String languageCode;
+
+    public String getCallbackData() {
+        return callbackData;
+    }
+
+    public void setCallbackData(String callbackData) {
+        this.callbackData = callbackData;
+    }
+
+    public Long getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(Long messageId) {
+        this.messageId = messageId;
+    }
+
+    public String getPhotoBase64() {
+        return photoBase64;
+    }
+
+    public void setPhotoBase64(String photoBase64) {
+        this.photoBase64 = photoBase64;
+    }
+
+    public String getLanguageCode() {
+        return languageCode;
+    }
+
+    public void setLanguageCode(String languageCode) {
+        this.languageCode = languageCode;
+    }
 
     public Long getChatId() {
         return chatId;

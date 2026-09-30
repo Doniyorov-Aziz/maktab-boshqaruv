@@ -4,10 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The small slice of the Bot API this project uses, as plain records. Unknown
+ * The slice of the Bot API this project uses, as plain records. Unknown
  * fields are ignored so new Telegram fields never break deserialization.
  */
 public final class TelegramModels {
@@ -29,7 +30,11 @@ public final class TelegramModels {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Update(@JsonProperty("update_id") long updateId, Message message) {
+    public record Update(@JsonProperty("update_id") long updateId, Message message,
+                         @JsonProperty("callback_query") CallbackQuery callbackQuery) {
+        public Update(long updateId, Message message) {
+            this(updateId, message, null);
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -38,12 +43,31 @@ public final class TelegramModels {
             User from,
             Chat chat,
             String text,
-            Contact contact) {
+            Contact contact,
+            List<PhotoSize> photo,
+            String caption) {
+        public Message(Long messageId, User from, Chat chat, String text, Contact contact) {
+            this(messageId, from, chat, text, contact, null, null);
+        }
+
+        /** file_id of the largest photo size, or null. */
+        public String largestPhotoId() {
+            if (photo == null || photo.isEmpty()) return null;
+            return photo.get(photo.size() - 1).fileId();
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record CallbackQuery(String id, User from, Message message, String data) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record User(Long id, @JsonProperty("is_bot") Boolean isBot,
-                       @JsonProperty("first_name") String firstName, String username) {
+                       @JsonProperty("first_name") String firstName, String username,
+                       @JsonProperty("language_code") String languageCode) {
+        public User(Long id, Boolean isBot, String firstName, String username) {
+            this(id, isBot, firstName, username, null);
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -54,6 +78,14 @@ public final class TelegramModels {
     public record Contact(@JsonProperty("phone_number") String phoneNumber,
                           @JsonProperty("first_name") String firstName,
                           @JsonProperty("user_id") Long userId) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record PhotoSize(@JsonProperty("file_id") String fileId, Integer width, Integer height) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record TgFile(@JsonProperty("file_id") String fileId, @JsonProperty("file_path") String filePath) {
     }
 
     // ---- outgoing ----
@@ -67,7 +99,11 @@ public final class TelegramModels {
             @JsonProperty("reply_markup") Object replyMarkup) {
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record KeyboardButton(String text, @JsonProperty("request_contact") Boolean requestContact) {
+        public static KeyboardButton of(String text) {
+            return new KeyboardButton(text, null);
+        }
     }
 
     public record ReplyKeyboardMarkup(
@@ -79,9 +115,89 @@ public final class TelegramModels {
     public record ReplyKeyboardRemove(@JsonProperty("remove_keyboard") Boolean removeKeyboard) {
     }
 
-    public static ReplyKeyboardMarkup shareContactKeyboard() {
+    public record WebAppInfo(String url) {
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record InlineButton(String text,
+                               @JsonProperty("callback_data") String callbackData,
+                               String url,
+                               @JsonProperty("web_app") WebAppInfo webApp) {
+        public static InlineButton callback(String text, String data) {
+            return new InlineButton(text, null == data ? "noop" : data, null, null);
+        }
+
+        public static InlineButton webApp(String text, String url) {
+            return new InlineButton(text, null, null, new WebAppInfo(url));
+        }
+    }
+
+    public record InlineKeyboardMarkup(@JsonProperty("inline_keyboard") List<List<InlineButton>> inlineKeyboard) {
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        public static final class Builder {
+            private final List<List<InlineButton>> rows = new ArrayList<>();
+
+            public Builder row(InlineButton... buttons) {
+                List<InlineButton> row = new ArrayList<>();
+                for (InlineButton b : buttons) {
+                    if (b != null) row.add(b);
+                }
+                if (!row.isEmpty()) rows.add(row);
+                return this;
+            }
+
+            public Builder rows(List<List<InlineButton>> more) {
+                for (List<InlineButton> r : more) {
+                    if (!r.isEmpty()) rows.add(r);
+                }
+                return this;
+            }
+
+            /** Lays buttons out in rows of {@code perRow}. */
+            public Builder grid(List<InlineButton> buttons, int perRow) {
+                List<InlineButton> row = new ArrayList<>();
+                for (InlineButton b : buttons) {
+                    row.add(b);
+                    if (row.size() == perRow) {
+                        rows.add(row);
+                        row = new ArrayList<>();
+                    }
+                }
+                if (!row.isEmpty()) rows.add(row);
+                return this;
+            }
+
+            public InlineKeyboardMarkup build() {
+                return new InlineKeyboardMarkup(rows);
+            }
+        }
+    }
+
+    public record BotCommand(String command, String description) {
+    }
+
+    public record MenuButtonWebApp(String type, String text, @JsonProperty("web_app") WebAppInfo webApp) {
+        public MenuButtonWebApp(String text, String url) {
+            this("web_app", text, new WebAppInfo(url));
+        }
+    }
+
+    public record MenuButtonCommands(String type) {
+        public MenuButtonCommands() {
+            this("commands");
+        }
+    }
+
+    public static ReplyKeyboardMarkup shareContactKeyboard(String label) {
         return new ReplyKeyboardMarkup(
-                List.of(List.of(new KeyboardButton("📱 Raqamni ulashish", true))), true, true);
+                List.of(List.of(new KeyboardButton(label, true))), true, true);
+    }
+
+    public static ReplyKeyboardMarkup shareContactKeyboard() {
+        return shareContactKeyboard("📱 Raqamni ulashish");
     }
 
     public static ReplyKeyboardRemove removeKeyboard() {

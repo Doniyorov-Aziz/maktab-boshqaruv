@@ -69,6 +69,18 @@ public class NotificationLog {
 
     private LocalDateTime sentAt;
 
+    /** Optional inline keyboard (JSON) sent with the message, e.g. "✍️ O'qituvchiga yozish". */
+    @Column(columnDefinition = "TEXT")
+    private String replyMarkup;
+
+    public String getReplyMarkup() {
+        return replyMarkup;
+    }
+
+    public void setReplyMarkup(String replyMarkup) {
+        this.replyMarkup = replyMarkup;
+    }
+
     public Long getId() {
         return id;
     }

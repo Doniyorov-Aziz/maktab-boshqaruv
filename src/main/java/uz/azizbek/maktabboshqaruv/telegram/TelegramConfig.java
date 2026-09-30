@@ -47,7 +47,7 @@ public class TelegramConfig {
         }
         return new TelegramClient() {
             @Override
-            public void sendMessage(long chatId, String html, Object replyMarkup) {
+            public Long sendMessage(long chatId, String html, Object replyMarkup) {
                 throw new TelegramApiException(0, "Telegram bot sozlanmagan", null);
             }
 

@@ -15,4 +15,11 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
 
     @Query("select a from Announcement a where a.school.id = :schoolId order by a.createdDate desc")
     List<Announcement> findLatestBySchoolId(@Param("schoolId") Long schoolId, Pageable pageable);
+
+    /** What a parent of a pupil in {@code classId} may see: school-wide ones plus their own class's. */
+    @Query("select a from Announcement a where a.school.id = :schoolId and " +
+            "(a.audience = uz.azizbek.maktabboshqaruv.entity.AnnouncementAudience.ALL or " +
+            "(a.audience = uz.azizbek.maktabboshqaruv.entity.AnnouncementAudience.CLASS and a.schoolClass.id = :classId)) " +
+            "order by a.createdDate desc, a.id desc")
+    List<Announcement> findForParents(@Param("schoolId") Long schoolId, @Param("classId") Long classId);
 }

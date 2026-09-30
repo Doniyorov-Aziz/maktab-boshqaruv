@@ -53,8 +53,11 @@ public class NotificationSettings {
     public boolean isTypeEnabled(NotificationType type) {
         return switch (type) {
             case ATTENDANCE_ABSENT, ATTENDANCE_LATE -> Boolean.TRUE.equals(attendanceEnabled);
-            case GRADE_NEW, GRADE_UPDATED -> Boolean.TRUE.equals(gradeEnabled);
+            case GRADE_NEW, GRADE_UPDATED, GRADE_LOW -> Boolean.TRUE.equals(gradeEnabled);
             case ANNOUNCEMENT -> Boolean.TRUE.equals(announcementEnabled);
+            // Scheduled digests are switched per parent in the bot; replies,
+            // decisions and admin broadcasts are always delivered.
+            case TOMORROW_SCHEDULE, WEEKLY_REPORT, EVENT_REMINDER, MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST -> true;
         };
     }
 

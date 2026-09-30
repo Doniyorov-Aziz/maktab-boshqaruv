@@ -5,7 +5,7 @@ import uz.azizbek.maktabboshqaruv.entity.*;
 import uz.azizbek.maktabboshqaruv.repository.*;
 import uz.azizbek.maktabboshqaruv.service.AttendanceService;
 import uz.azizbek.maktabboshqaruv.service.NotificationSender;
-import uz.azizbek.maktabboshqaruv.service.TelegramBotService;
+import uz.azizbek.maktabboshqaruv.bot.BotRouter;
 import uz.azizbek.maktabboshqaruv.telegram.TelegramModels;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +54,7 @@ class TelegramMockFlowIntegrationTest {
     @Autowired
     private AttendanceService attendanceService;
     @Autowired
-    private TelegramBotService botService;
+    private BotRouter botService;
     @Autowired
     private NotificationSender sender;
 
@@ -93,7 +93,7 @@ class TelegramMockFlowIntegrationTest {
     }
 
     private void parentOpensDeepLink() {
-        botService.handleUpdate(new TelegramModels.Update(1, new TelegramModels.Message(1L,
+        botService.handle(new TelegramModels.Update(1, new TelegramModels.Message(1L,
                 new TelegramModels.User(chatId, false, "Test ota", "test_ota"),
                 new TelegramModels.Chat(chatId, "private"), "/start " + student.getTelegramLinkCode(), null)));
         assertTrue(linkRepository.findByStudentIdAndChatId(student.getId(), chatId).orElseThrow().getActive());

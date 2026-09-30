@@ -48,6 +48,12 @@ class NotificationServiceTest {
     @Mock
     private NotificationSettingsService settingsService;
 
+    @Mock
+    private ParentSessionRepository sessionRepository;
+
+    @Mock
+    private BotSettingService botSettingService;
+
     @InjectMocks
     private NotificationService notificationService;
 
@@ -244,6 +250,7 @@ class NotificationServiceTest {
         g.setType(GradeType.CURRENT);
         g.setGradeDate(LocalDate.of(2026, 9, 30));
         when(gradeRepository.findById(77L)).thenReturn(Optional.of(g));
+        when(botSettingService.getOrDefault(school)).thenReturn(BotSetting.defaults(school));
         defaultSettings();
         when(linkRepository.findByStudentIdAndActiveTrueOrderByLinkedAtAsc(100L)).thenReturn(List.of(link(alisher, 11L)));
 

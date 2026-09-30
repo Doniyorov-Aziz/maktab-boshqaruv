@@ -6,30 +6,73 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * telegram.mock=true: nothing leaves the machine. Messages are only logged
- * (the sender still marks outbox rows SENT, so the database shows the full
- * flow). Bot replies are also kept in memory so the simulate endpoint can
- * show what the parent would have seen.
+ * telegram.mock=true: nothing leaves the machine. Every outgoing operation
+ * (send, edit, photo, delete, callback answer) is logged and kept in memory,
+ * so the simulate endpoint and the demo script can show exactly what a parent
+ * would see — text, buttons and rendered images.
  */
 public class MockTelegramClient implements TelegramClient {
 
     private static final Logger log = LoggerFactory.getLogger(MockTelegramClient.class);
-    private static final int KEEP = 200;
+    private static final int KEEP = 500;
 
-    public record SentMessage(long chatId, String text, boolean hasKeyboard) {
+    /** One recorded outgoing operation. {@code keyboard} is the JSON of the reply markup, if any. */
+    public record SentMessage(long chatId, String text, boolean hasKeyboard, String op, Long messageId,
+                              String keyboard, String photoId) {
+        public SentMessage(long chatId, String text, boolean hasKeyboard) {
+            this(chatId, text, hasKeyboard, "send", null, null, null);
+        }
     }
 
     private final List<SentMessage> sent = Collections.synchronizedList(new ArrayList<>());
+    private final Map<String, byte[]> files = new ConcurrentHashMap<>();
+    private final AtomicLong messageIds = new AtomicLong(1000);
+    private final AtomicLong fileIds = new AtomicLong(1);
 
     @Override
-    public void sendMessage(long chatId, String html, Object replyMarkup) {
+    public Long sendMessage(long chatId, String html, Object replyMarkup) {
+        long id = messageIds.incrementAndGet();
         log.info("[MOCK TELEGRAM] chat={} -> {}", chatId, html.replace("\n", " ⏎ "));
-        sent.add(new SentMessage(chatId, html, replyMarkup != null));
-        while (sent.size() > KEEP) {
-            sent.remove(0);
-        }
+        record(new SentMessage(chatId, html, replyMarkup != null, "send", id, TelegramJson.write(replyMarkup), null));
+        return id;
+    }
+
+    @Override
+    public void editMessageText(long chatId, long messageId, String html, Object replyMarkup) {
+        log.info("[MOCK TELEGRAM] chat={} edit #{} -> {}", chatId, messageId, html.replace("\n", " ⏎ "));
+        record(new SentMessage(chatId, html, replyMarkup != null, "edit", messageId, TelegramJson.write(replyMarkup), null));
+    }
+
+    @Override
+    public SentPhoto sendPhoto(long chatId, byte[] png, String fileName, String captionHtml, Object replyMarkup) {
+        String fileId = "mock-photo-" + fileIds.getAndIncrement();
+        files.put(fileId, png);
+        long id = messageIds.incrementAndGet();
+        log.info("[MOCK TELEGRAM] chat={} photo {} ({} bayt) {}", chatId, fileName, png.length, captionHtml);
+        record(new SentMessage(chatId, captionHtml, replyMarkup != null, "photo", id, TelegramJson.write(replyMarkup), fileId));
+        return new SentPhoto(id, fileId);
+    }
+
+    @Override
+    public SentPhoto sendPhotoById(long chatId, String fileId, String captionHtml, Object replyMarkup) {
+        long id = messageIds.incrementAndGet();
+        record(new SentMessage(chatId, captionHtml, replyMarkup != null, "photo", id, TelegramJson.write(replyMarkup), fileId));
+        return new SentPhoto(id, fileId);
+    }
+
+    @Override
+    public void deleteMessage(long chatId, long messageId) {
+        record(new SentMessage(chatId, null, false, "delete", messageId, null, null));
+    }
+
+    @Override
+    public void answerCallbackQuery(String callbackQueryId, String text, boolean showAlert) {
+        if (text != null) log.info("[MOCK TELEGRAM] callback {} -> {}", callbackQueryId, text);
     }
 
     @Override
@@ -37,7 +80,28 @@ public class MockTelegramClient implements TelegramClient {
         return List.of();
     }
 
-    /** Messages sent to a chat after the given index — used to return the bot's reply to a simulated update. */
+    @Override
+    public byte[] downloadFile(String fileId) {
+        byte[] bytes = files.get(fileId);
+        if (bytes == null) throw new TelegramApiException(404, "Fayl topilmadi", null);
+        return bytes;
+    }
+
+    /** Simulates a parent uploading a photo; returns the file_id the bot will see. */
+    public String storeIncomingFile(byte[] bytes) {
+        String fileId = "mock-upload-" + fileIds.getAndIncrement();
+        files.put(fileId, bytes);
+        return fileId;
+    }
+
+    private void record(SentMessage m) {
+        sent.add(m);
+        synchronized (sent) {
+            while (sent.size() > KEEP) sent.remove(0);
+        }
+    }
+
+    /** Operations for a chat after the given index — the bot's reaction to one simulated update. */
     public List<SentMessage> since(int index, long chatId) {
         synchronized (sent) {
             List<SentMessage> result = new ArrayList<>();

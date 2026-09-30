@@ -34,6 +34,18 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
 
     long countBySchoolIdAndStatus(Long schoolId, NotificationStatus status);
 
+    boolean existsByChatIdAndTypeAndReferenceIdAndRecordDate(Long chatId, NotificationType type, Long referenceId, LocalDate recordDate);
+
+    long countByTypeAndReferenceIdAndStatus(NotificationType type, Long referenceId, NotificationStatus status);
+
+    long countByTypeAndReferenceId(NotificationType type, Long referenceId);
+
+    /** [day, count] of SENT messages per day — the chart on "Bot statistikasi". */
+    @Query("select cast(n.sentAt as LocalDate), count(n) from NotificationLog n where n.school.id = :schoolId " +
+            "and n.status = uz.azizbek.maktabboshqaruv.entity.NotificationStatus.SENT and n.sentAt >= :since " +
+            "group by cast(n.sentAt as LocalDate) order by cast(n.sentAt as LocalDate)")
+    List<Object[]> sentPerDay(@Param("schoolId") Long schoolId, @Param("since") LocalDateTime since);
+
     /** After a 403 there is no point delivering the rest of that chat's queue. */
     @Transactional
     @Modifying
