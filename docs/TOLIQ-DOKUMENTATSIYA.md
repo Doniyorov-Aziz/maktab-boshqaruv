@@ -4,28 +4,26 @@
 
 ## Mundarija
 
-- [01 — Umumiy ko'rinish](#01--umumiy-korinish)
-- [02 — Arxitektura](#02--arxitektura)
-- [03 — Texnologiyalar](#03--texnologiyalar)
-- [04 — Papkalar tuzilishi](#04--papkalar-tuzilishi)
-- [05 — Ma'lumotlar bazasi](#05--malumotlar-bazasi)
-- [06 — Backend chuqur tahlili](#06--backend-chuqur-tahlili)
-- [07 — API endpoint'lar](#07--api-endpointlar)
-- [08 — Frontend](#08--frontend)
-- [09 — Asosiy jarayonlar](#09--asosiy-jarayonlar)
-- [10 — O'rnatish va ishga tushirish](#10--ornatish-va-ishga-tushirish)
-- [11 — Muammolar va yechimlar](#11--muammolar-va-yechimlar)
-- [12 — Yangi modul qo'shish](#12--yangi-modul-qoshish)
-- [13 — Lug'at](#13--lugat)
-- [14 — Kelajak rejalari](#14--kelajak-rejalari)
-
+1. [01 — Umumiy ko'rinish](#01--umumiy-korinish)
+2. [02 — Arxitektura](#02--arxitektura)
+3. [03 — Texnologiyalar](#03--texnologiyalar)
+4. [04 — Papkalar tuzilishi](#04--papkalar-tuzilishi)
+5. [05 — Ma'lumotlar bazasi](#05--malumotlar-bazasi)
+6. [06 — Backend chuqur tahlili](#06--backend-chuqur-tahlili)
+7. [07 — API endpoint'lar](#07--api-endpointlar)
+8. [08 — Frontend](#08--frontend)
+9. [09 — Asosiy jarayonlar](#09--asosiy-jarayonlar)
+10. [10 — O'rnatish va ishga tushirish](#10--ornatish-va-ishga-tushirish)
+11. [11 — Muammolar va yechimlar](#11--muammolar-va-yechimlar)
+12. [12 — Yangi modul qo'shish](#12--yangi-modul-qoshish)
+13. [13 — Lug'at](#13--lugat)
+14. [14 — Kelajak rejalari](#14--kelajak-rejalari)
 
 ---
 
 # 01 — Umumiy ko'rinish
 
-
-## Mundarija
+**Mundarija**
 - [Loyiha nima qiladi](#loyiha-nima-qiladi)
 - [Kimlar uchun](#kimlar-uchun)
 - [Foydalanuvchi rollari](#foydalanuvchi-rollari)
@@ -95,13 +93,11 @@ Chap menyudagi barcha modullar (guruhlar bo'yicha, `frontend/src/config/modules.
 
 Har bir modulning aniq ustunlari, forma maydonlari va API endpoint'i uchun: [07-api.md](#07--api-endpointlar) va [08-frontend.md](#08--frontend).
 
-
 ---
 
 # 02 — Arxitektura
 
-
-## Mundarija
+**Mundarija**
 - [Umumiy sxema](#umumiy-sxema)
 - [Backend qatlamlari](#backend-qatlamlari)
 - [Bitta so'rovning to'liq yo'li: "Davomatni saqlash"](#bitta-sorovning-toliq-yoli-davomatni-saqlash)
@@ -221,13 +217,11 @@ Bu yerda `a.lessonSlot.schoolClass.academicYear.school.id` — Hibernate buni av
 
 `Position` va `Room`(turi bo'yicha filtrlar) kabi ba'zi modullar `schoolScoped: false` — chunki lavozimlar barcha maktablar uchun umumiy ro'yxat.
 
-
 ---
 
 # 03 — Texnologiyalar
 
-
-## Mundarija
+**Mundarija**
 - [Texnologiyalar jadvali](#texnologiyalar-jadvali)
 - [Backend texnologiyalari batafsil](#backend-texnologiyalari-batafsil)
 - [Frontend texnologiyalari batafsil](#frontend-texnologiyalari-batafsil)
@@ -497,13 +491,11 @@ import { Chart as ChartJS, ... } from 'chart.js'
 spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/maktab_db}
 ```
 
-
 ---
 
 # 04 — Papkalar tuzilishi
 
-
-## Mundarija
+**Mundarija**
 - [Backend papka daraxti](#backend-papka-daraxti)
 - [Frontend papka daraxti](#frontend-papka-daraxti)
 
@@ -620,16 +612,14 @@ frontend/
 
 `CrudPage.vue`ning "universal" bo'lishi — bitta komponent `config/modules.js`dagi konfiguratsiyaga qarab 14 xil modulni (Maktablar, Binolar, Xonalar, ...) ko'rsata olishi — bu loyihaning eng muhim frontend arxitektura qarori. Batafsil: [08-frontend.md — CrudPage: universal komponent](#crudpage-universal-komponent) va [12-yangi-modul-qoshish.md](#12--yangi-modul-qoshish).
 
-
 ---
 
 # 05 — Ma'lumotlar bazasi
 
-
-## Mundarija
+**Mundarija**
 - [ER diagramma](#er-diagramma)
 - [Jadvallar batafsil](#jadvallar-batafsil)
-- [Entity ↔ jadval bog'lanishi](#entity-jadval-boglanishi)
+- [Entity ↔ jadval bog'lanishi](#entity--jadval-boglanishi)
 - [Migratsiyalar: bu loyihada qanday ishlaydi](#migratsiyalar-bu-loyihada-qanday-ishlaydi)
 - [Seed ma'lumotlar](#seed-malumotlar)
 - [JPA metodlari qanday SQL'ga aylanadi](#jpa-metodlari-qanday-sqlga-aylanadi)
@@ -1129,13 +1119,11 @@ Page<Room> findFiltered(@Param("schoolId") Long schoolId, @Param("buildingId") L
 
 `Pageable` parametri (Controller'dan `?page=0&size=20&sort=name,asc` orqali avtomatik to'ldiriladi) Hibernate tomonidan SQL'ning `LIMIT`/`OFFSET`/`ORDER BY` qismlariga aylantiriladi, va natija oddiy ro'yxat emas, balki `Page<Room>` obyekti — u umumiy elementlar soni va sahifalar sonini ham o'zida saqlaydi (frontend buni sahifalash paneli uchun ishlatadi).
 
-
 ---
 
 # 06 — Backend chuqur tahlili
 
-
-## Mundarija
+**Mundarija**
 - [application.properties](#applicationproperties)
 - [Entity, DTO va Mapper](#entity-dto-va-mapper)
 - [Repository](#repository)
@@ -1180,7 +1168,7 @@ jwt.secret=<base64-jwt-secret>
 | `spring.datasource.url/username/password` | PostgreSQL'ga ulanish manzili. URL va foydalanuvchi nomining standart qiymati lokal ishlab chiqish uchun; parolning standarti yo'q — lokalda `application-local.properties`dan, production'da `DB_PASSWORD` environment variable'dan olinadi |
 | `spring.jpa.hibernate.ddl-auto=update` | Jadval sxemasini avtomatik yaratish/yangilash rejimi — batafsil: [05-malumotlar-bazasi.md — Migratsiyalar](#migratsiyalar-bu-loyihada-qanday-ishlaydi) |
 | `spring.jpa.show-sql=true` | Har bir generatsiya qilingan SQL so'rovi konsolga chiqariladi — o'rganish/debug qilish uchun juda foydali, production'da odatda o'chiriladi (log hajmi ko'payadi) |
-| `spring.jpa.open-in-view=false` | **Muhim sozlama.** Standart holatda Spring Boot "Open Session in View" degan naqshni yoqib qo'yadi — bu HTTP so'rov tugagunga qadar baza ulanishini ochiq saqlaydi, shunday qilib Controller/JSON-serializatsiya bosqichida ham lazy-yuklangan maydonlarga kirish mumkin bo'ladi. Bu loyihada bu **o'chirilgan** — ya'ni barcha kerakli ma'lumot Service qatlamida, tranzaksiya hali ochiq paytida, DTO'ga o'tkazilishi shart. Sababi va oqibati: [13-lugat.md — LazyInitializationException](#lazyinitializationexception) va [11-muammolar-va-yechimlar.md](#11--muammolar-va-yechimlar) |
+| `spring.jpa.open-in-view=false` | **Muhim sozlama.** Standart holatda Spring Boot "Open Session in View" degan naqshni yoqib qo'yadi — bu HTTP so'rov tugagunga qadar baza ulanishini ochiq saqlaydi, shunday qilib Controller/JSON-serializatsiya bosqichida ham lazy-yuklangan maydonlarga kirish mumkin bo'ladi. Bu loyihada bu **o'chirilgan** — ya'ni barcha kerakli ma'lumot Service qatlamida, tranzaksiya hali ochiq paytida, DTO'ga o'tkazilishi shart. Sababi va oqibati: [13-lugat.md — LazyInitializationException](#lazyinitializationexception-1) va [11-muammolar-va-yechimlar.md](#11--muammolar-va-yechimlar) |
 | `jwt.secret` | JWT tokenlarni imzolash uchun maxfiy kalit (kamida 32 baytning Base64 ko'rinishi). Standart qiymati yo'q — lokalda `application-local.properties`dan, production'da `JWT_SECRET`dan olinadi. Generatsiya: `openssl rand -base64 64` |
 | `admin.seed.username/password` | Birinchi ADMIN foydalanuvchi yaratilganda ishlatiladigan login/parol |
 | `cors.allowed-origins` | Qaysi manzillardan (frontend) so'rov qabul qilinishi (vergul bilan bir nechtasi mumkin) |
@@ -1427,25 +1415,23 @@ To'liq endpoint-rol jadvali: [07-api.md](#07--api-endpointlar).
 - **Spring Boot Actuator**: loyihada **ishlatilmagan** (`build.gradle`da yo'q) — `/api/health` qo'lda yozilgan oddiy endpoint, Actuator'ning `/actuator/health`i emas.
 - **`@Scheduled` (rejalashtirilgan vazifalar)**: loyihada **yo'q** — hech qanday fon vazifasi (masalan "har kuni yarim tunda eslatma yuborish") mavjud emas.
 
-
 ---
 
 # 07 — API endpoint'lar
 
-
-## Mundarija
+**Mundarija**
 - [Umumiy qoidalar](#umumiy-qoidalar)
-- [Auth](#auth-apiauth)
-- [Dashboard](#dashboard-apidashboard)
-- [Profillar](#profillar-apiprofiles)
-- [Ta'lim tuzilmasi: Schools / Buildings / Rooms](#talim-tuzilmasi-schools-buildings-rooms)
-- [O'quv jarayoni: Academic Years / School Classes / Subjects / Lesson Slots](#oquv-jarayoni-academic-years-school-classes-subjects-lesson-slots)
-- [Davomat](#davomat-apiattendance)
-- [Baholar](#baholar-apigrades)
-- [Odamlar: Students / Positions / Employees](#odamlar-students-positions-employees)
-- [Kundalik hayot: Announcements / Calendar Events / Behavior Records](#kundalik-hayot-announcements-calendar-events-behavior-records)
-- [Foydalanuvchilar](#foydalanuvchilar-apiusers)
-- [Health](#health-apihealth)
+- [Auth](#auth--apiauth)
+- [Dashboard](#dashboard--apidashboard)
+- [Profillar](#profillar--apiprofiles)
+- [Ta'lim tuzilmasi: Schools / Buildings / Rooms](#talim-tuzilmasi-schools--buildings--rooms)
+- [O'quv jarayoni: Academic Years / School Classes / Subjects / Lesson Slots](#oquv-jarayoni-academic-years--school-classes--subjects--lesson-slots)
+- [Davomat](#davomat--apiattendance)
+- [Baholar](#baholar--apigrades)
+- [Odamlar: Students / Positions / Employees](#odamlar-students--positions--employees)
+- [Kundalik hayot: Announcements / Calendar Events / Behavior Records](#kundalik-hayot-announcements--calendar-events--behavior-records)
+- [Foydalanuvchilar](#foydalanuvchilar--apiusers)
+- [Health](#health--apihealth)
 - [Swagger/OpenAPI](#swaggeropenapi)
 
 ## Umumiy qoidalar
@@ -1674,14 +1660,12 @@ Klass darajasida `@PreAuthorize("hasRole('ADMIN')")` — **barcha** 5 ta endpoin
 
 Loyihada springdoc/Swagger **ulanmagan** — interaktiv API hujjat sahifasi (masalan `/swagger-ui.html`) mavjud emas. Barcha endpoint'lar shu fayldagi jadvallar orqali hujjatlashtirilgan. Kelajakda qo'shish haqida: [14-kelajak-rejalari.md](#14--kelajak-rejalari).
 
-
 ---
 
 # 08 — Frontend
 
-
-## Mundarija
-- [Vue asoslari — loyihadagi misollar bilan](#vue-asoslari-loyihadagi-misollar-bilan)
+**Mundarija**
+- [Vue asoslari — loyihadagi misollar bilan](#vue-asoslari--loyihadagi-misollar-bilan)
 - [Layout: MainLayout va PageLayout](#layout-mainlayout-va-pagelayout)
 - [Router va himoyalangan sahifalar](#router-va-himoyalangan-sahifalar)
 - [Store (Pinia)](#store-pinia)
@@ -1740,7 +1724,7 @@ watch(() => schoolStore.activeSchoolId, loadAll) // maktab almashtirilsa, qayta 
 
 ## Router va himoyalangan sahifalar
 
-`router/routes.js` — barcha marshrutlar ro'yxati (to'liq ro'yxat: [04-papkalar-tuzilishi.md](#pages-har-bir-sahifa)). `CrudPage.vue`ning `path: 'app/:moduleKey'` — bitta dinamik marshrut orqali barcha 14 modulga xizmat qiladi (`:moduleKey` — masalan `rooms`, `students`).
+`router/routes.js` — barcha marshrutlar ro'yxati (to'liq ro'yxat: [04-papkalar-tuzilishi.md](#pages--har-bir-sahifa)). `CrudPage.vue`ning `path: 'app/:moduleKey'` — bitta dinamik marshrut orqali barcha 14 modulga xizmat qiladi (`:moduleKey` — masalan `rooms`, `students`).
 
 **Himoyalangan sahifalar** — loyihada har bir marshrutga alohida `meta: { requiresAuth: true }` yozish o'rniga, **bitta global guard** ishlatiladi (`router/index.js`):
 
@@ -1923,13 +1907,11 @@ onMounted(() => {
 - **Shrift**: Inter (`@fontsource/inter`) — loyihaning o'zida joylashtirilgan (`node_modules` orqali build vaqtida qo'shiladi), tashqi Google Fonts CDN'ga bog'liq emas, shu sabab internet aloqasi bo'lmasa ham to'g'ri ko'rinadi.
 - **Til**: bitta til — o'zbekcha. `lang/uz.js` — faqat Quasar'ning o'z ichki komponentlari (masalan sana tanlagich, sahifalash) uchun tarjima; ilovaning o'z matnlari (tugma nomlari, sarlavhalar) har bir `.vue` faylda to'g'ridan-to'g'ri o'zbekcha yozilgan — alohida i18n (`vue-i18n`) kutubxonasi ishlatilmagan.
 
-
 ---
 
 # 09 — Asosiy jarayonlar
 
-
-## Mundarija
+**Mundarija**
 - [Tizimga kirish va maktab tanlash](#tizimga-kirish-va-maktab-tanlash)
 - [Davomat olish](#davomat-olish)
 - [Baho qo'yish](#baho-qoyish)
@@ -2029,13 +2011,11 @@ Har bir ko'rsatkich uchun **oldingi** 30 kunlik davr bilan solishtirilgan o'zgar
 
 Har bir fan uchun shu fandan qo'yilgan barcha baholarning o'rtachasi (`GradeRepository.averageScoreBySubject`), kamayish tartibida saralanadi.
 
-
 ---
 
 # 10 — O'rnatish va ishga tushirish
 
-
-## Mundarija
+**Mundarija**
 - [Talablar](#talablar)
 - [1-qadam: repozitoriyni olish](#1-qadam-repozitoriyni-olish)
 - [2-qadam: bazani tayyorlash](#2-qadam-bazani-tayyorlash)
@@ -2187,13 +2167,11 @@ npm run lint
 npm run build
 ```
 
-
 ---
 
 # 11 — Muammolar va yechimlar
 
-
-## Mundarija
+**Mundarija**
 - [Login cheksiz aylanadi](#login-cheksiz-aylanadi)
 - [Login bosilganda IntelliJ debugger'da to'xtab qoladi](#login-bosilganda-intellij-debuggerda-toxtab-qoladi)
 - [8080-port band](#8080-port-band)
@@ -2293,7 +2271,7 @@ Agar shunga o'xshash "ustun topilmadi" (`column ... does not exist`) xatosi chiq
 
 ## LazyInitializationException
 
-**Bu xato haqida**: [13-lugat.md — LazyInitializationException](#lazyinitializationexception)da tushuntirilgan.
+**Bu xato haqida**: [13-lugat.md — LazyInitializationException](#lazyinitializationexception-1)da tushuntirilgan.
 
 **Bu loyihada nega kamdan-kam uchraydi**: ikkita sabab bor:
 1. Barcha `@ManyToOne` bog'lanishlar standart holatda **EAGER** (darhol yuklanadi) — loyihada hech qayerda `fetch = FetchType.LAZY` qo'lda yozilmagan.
@@ -2317,21 +2295,19 @@ Agar shunga o'xshash "ustun topilmadi" (`column ... does not exist`) xatosi chiq
 
 **Yechim**: loyihaning qat'iy qoidasi — har qanday rang **faqat** `css/app.scss`da e'lon qilingan CSS custom property (`var(--card-bg)`, `var(--text-primary)`, `var(--brand-border)`, `var(--brand-text-muted)` va h.k.) orqali yozilishi kerak, hech qachon qattiq hex qiymat yoki Quasar'ning `bg-*`/`text-*` fiksatsiya qiluvchi utility klasslari orqali emas. Yangi komponent yozganda mavjud tokenlar ro'yxati uchun: [08-frontend.md — Tema tizimi](#tema-tizimi-darklight-dizayn-tokenlari).
 
-
 ---
 
 # 12 — Yangi modul qo'shish
 
-
-## Mundarija
+**Mundarija**
 - [Misol: "Kutubxona kitoblari" moduli](#misol-kutubxona-kitoblari-moduli)
 - [1. Entity](#1-entity)
 - [2. Repository](#2-repository)
 - [3. DTO](#3-dto)
 - [4. Service](#4-service)
 - [5. Controller (xavfsizlik va ruxsatlar shu yerda)](#5-controller-xavfsizlik-va-ruxsatlar-shu-yerda)
-- [6. Frontend: modules.js — bitta konfiguratsiya, yangi sahifa kerak emas](#6-frontend-modulesjs-bitta-konfiguratsiya-yangi-sahifa-kerak-emas)
-- [7. Router va sidebar — hech narsa qilish shart emas](#7-router-va-sidebar-hech-narsa-qilish-shart-emas)
+- [6. Frontend: modules.js — bitta konfiguratsiya, yangi sahifa kerak emas](#6-frontend-modulesjs--bitta-konfiguratsiya-yangi-sahifa-kerak-emas)
+- [7. Router va sidebar — hech narsa qilish shart emas](#7-router-va-sidebar--hech-narsa-qilish-shart-emas)
 - [8. Seed (ixtiyoriy)](#8-seed-ixtiyoriy)
 - [9. Test](#9-test)
 - [Tekshirish ro'yxati](#tekshirish-royxati)
@@ -2706,15 +2682,13 @@ class LibraryBookServiceTest {
 | Test | `test/.../service/LibraryBookServiceTest.java` | ☐ |
 | `./gradlew test`, `npm run lint`, `npm run build` xatosiz o'tishi | — | ☐ |
 
-
 ---
 
 # 13 — Lug'at
 
-
 Barcha atamalar oddiy tilda, alifbo tartibida (lotin harflari bo'yicha).
 
-## Mundarija
+**Mundarija**
 A · B · C · D · E · F · G · H · I · J · L · M · N · O · P · R · S · T
 
 ---
@@ -2741,7 +2715,7 @@ Loyiha manba kodini ishga tayyor holatga keltirish jarayoni (backend'da: kompily
 
 ### Component (komponent)
 
-Vue'da: mustaqil, qayta ishlatiladigan UI bo'lagi (bitta `.vue` fayl). Batafsil: [08-frontend.md — Vue asoslari](#vue-asoslari-loyihadagi-misollar-bilan).
+Vue'da: mustaqil, qayta ishlatiladigan UI bo'lagi (bitta `.vue` fayl). Batafsil: [08-frontend.md — Vue asoslari](#vue-asoslari--loyihadagi-misollar-bilan).
 
 ### Controller
 
@@ -2837,7 +2811,7 @@ Katta ro'yxatni bir vaqtda to'liq emas, kichik "sahifalar" (masalan 20 tadan) qi
 
 ### Props
 
-Vue'da: ota-komponentdan bola-komponentga uzatiladigan ma'lumot (bir tomonlama, yuqoridan pastga). Batafsil: [08-frontend.md — Vue asoslari](#vue-asoslari-loyihadagi-misollar-bilan).
+Vue'da: ota-komponentdan bola-komponentga uzatiladigan ma'lumot (bir tomonlama, yuqoridan pastga). Batafsil: [08-frontend.md — Vue asoslari](#vue-asoslari--loyihadagi-misollar-bilan).
 
 ### Repository
 
@@ -2871,13 +2845,11 @@ Vue ilovasida bir nechta komponent orasida umumiy holatni (masalan "kim tizimga 
 
 Bir nechta baza amalini "bitta bo'lak" qilib bog'lash: yoki hammasi muvaffaqiyatli bajariladi, yoki (xato chiqsa) hammasi bekor qilinadi. Spring'da `@Transactional` annotatsiyasi orqali. Batafsil: [06-backend.md — Service va @Transactional](#service-va-transactional).
 
-
 ---
 
 # 14 — Kelajak rejalari
 
-
-## Mundarija
+**Mundarija**
 - [Hozirgi cheklovlar](#hozirgi-cheklovlar)
 - [Rejalashtirilgan takomillashtirishlar](#rejalashtirilgan-takomillashtirishlar)
 
