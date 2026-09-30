@@ -1,96 +1,75 @@
 # Maktab Boshqaruv
 
-Maktab boshqaruv tizimi uchun REST API. Spring Boot + PostgreSQL asosida qurilgan, JWT orqali autentifikatsiya va rol-based avtorizatsiyani qo'llab-quvvatlaydi.
+Maktab (yoki bir nechta maktab) uchun kundalik boshqaruv tizimi: sinflar va o'quvchilar, dars jadvali, davomat, baholar jurnali, xulq-atvor yozuvlari, e'lonlar va tadbirlar taqvimi — bitta admin panelda. Backend — Java 21 + Spring Boot 4.1 (REST API + PostgreSQL), frontend — Vue 3 + Quasar (SPA).
 
-## Texnologiyalar
+## Asosiy imkoniyatlar
 
-- Java 21
-- Spring Boot 4.1 (Web, Data JPA, Security, Validation)
-- PostgreSQL
-- JWT (jjwt)
-- Gradle
-- JUnit 5 + Mockito
+- **Ko'p maktabli** — bitta tizim bir nechta maktabga xizmat qiladi, har biri o'z binolari/sinflari/xodimlari bilan mustaqil.
+- **Rol-based** kirish: `ADMIN` / `EDITOR` / `VIEWER`, JWT autentifikatsiya.
+- **Dashboard** — real vaqtdagi KPI kartalar, 30 kunlik davomat grafigi, sinflar reytingi (davomat/baho/umumiy ball — uch tabli, dinamik shkala), "e'tibor talab qiladi" avtomatik ro'yxati.
+- **Davomat olish** — sinf/dars tanlab bir zumda belgilash, o'qituvchi uchun "faqat mening darslarim" filtri.
+- **Baholar jurnali** — sinf+fan+davr bo'yicha jadval ko'rinishida baho kiritish.
+- **Dars jadvali** — xona/o'qituvchi/sinf to'qnashuvini avtomatik tekshiruvchi tuzuvchi, jonli vaqt chizig'i, PDF chop etish.
+- **Taqvim** — bayram/imtihon/ota-onalar yig'ilishi kabi tadbirlar, oylik/haftalik ko'rinish.
+- **14 ta CRUD modul** (Maktablar, Binolar, Xonalar, O'quv yillari, Sinflar, O'quvchilar, Fanlar, Lavozimlar, Xodimlar, E'lonlar, Tadbirlar, Xulq yozuvlari, Foydalanuvchilar) — barchasi **bitta universal komponent** orqali, alohida sahifa kodi yozmasdan.
+- **Dark/light** tema, to'liq responsiv (mobil qurilmada ham ishlaydi).
 
-## Domen modeli
+## Skrinshotlar
 
-`School` → `Building` → `Room`, `School` → `AcademicYear` → `SchoolClass` → `Student`, `Subject`, `Employee`/`Position`, va bularning barchasini bog'lovchi `LessonSlot` (dars jadvali). Foydalanuvchilar `User` (rollar: `ADMIN`, `EDITOR`, `VIEWER`) orqali boshqariladi.
-
-## Ishga tushirish (lokal/o'rganish uchun)
-
-Hech qanday sozlash shart emas — standart qiymatlar bilan darhol ishga tushadi:
-
-```bash
-./gradlew bootRun
-```
-
-### Backend va frontend'ni birga ishga tushirish
-
-Ikkalasini alohida terminalda ishga tushirish shart emas — loyiha ildizida:
-
-```bash
-./start.sh        # Git Bash / macOS / Linux — Ctrl+C ikkalasini ham to'xtatadi
-start.bat         # Windows — ikkita alohida oynada ochadi
-```
-
-Backend `http://localhost:8080`, frontend `http://localhost:9000` da ko'tariladi. Backend tayyorligini `GET /api/health` orqali tekshirish mumkin (autentifikatsiyasiz) — login sahifasi ham shu endpoint orqali backend ishlab turganini avtomatik tekshiradi va aks holda ogohlantirish ko'rsatadi.
-
-Birinchi marta ishga tushirilganda, bazada hech qanday foydalanuvchi bo'lmasa, dastlabki ADMIN akkaunt avtomatik yaratiladi: **`admin` / `admin123`**. Shundan keyin `/api/users` orqali qo'shimcha foydalanuvchilar (EDITOR/VIEWER) yaratish mumkin.
-
-Testlarni ishga tushirish:
-```bash
-./gradlew test
-```
-
-### Sozlamalarni o'zgartirish kerak bo'lsa
-
-Barcha qiymatlar `src/main/resources/application.properties`da, standart bilan birga yozilgan (`${VAR:standart_qiymat}` shaklida). Boshqa qiymat berish uchun shunchaki mos environment variable'ni sozlang:
-
-| Nomi | Standart qiymati |
+| Bosh sahifa | Davomat olish |
 |---|---|
-| `DB_URL` | `jdbc:postgresql://localhost:5432/maktab_db` |
-| `DB_USERNAME` | `postgres` |
-| `DB_PASSWORD` | `Aziz0708.` |
-| `JWT_SECRET` | (loyihada tayyor qiymat bor) |
-| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `admin123` |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:9000` |
+| ![Dashboard](docs/images/dashboard.png) | ![Attendance](docs/images/attendance.png) |
 
-> **Eslatma:** bu standart qiymatlar faqat lokal/o'rganish maqsadida qulaylik uchun. Loyiha real serverga (production) chiqariladigan bo'lsa, bularni albatta maxfiy, faqat shu muhitga xos qiymatlar bilan almashtirish kerak (environment variable orqali, kodga yozmasdan).
+| Dars jadvali | Taqvim |
+|---|---|
+| ![Timetable](docs/images/timetable.png) | ![Calendar](docs/images/calendar.png) |
 
-## Autentifikatsiya
+| Xonalar (CRUD modul) | Kirish sahifasi |
+|---|---|
+| ![Rooms](docs/images/rooms.png) | ![Login](docs/images/login.png) |
 
-```
-POST /api/auth/login
-{
-  "username": "admin",
-  "password": "..."
-}
-```
+## Tezkor ishga tushirish
 
-Javobda qaytgan JWT tokenni keyingi so'rovlarda `Authorization: Bearer <token>` header orqali yuborish kerak.
-
-## Rollar
-
-- **ADMIN** — barcha amallar, jumladan o'chirish va foydalanuvchilarni boshqarish
-- **EDITOR** — ko'rish, yaratish, yangilash (o'chira olmaydi)
-- **VIEWER** — faqat ko'rish
-
-## API modullari
-
-`/api/schools`, `/api/buildings`, `/api/rooms`, `/api/academic-years`, `/api/school-classes`, `/api/students`, `/api/subjects`, `/api/employees`, `/api/positions`, `/api/lesson-slots`, `/api/users` — barchasi bir xil CRUD patternga ega.
-
-Ro'yxat endpoint'lari (`GET` ko'plik) pagination'ni qo'llab-quvvatlaydi: `?page=0&size=20&sort=name,asc`.
-
-## Frontend
-
-`frontend/` papkasida Quasar (Vue 3) admin panel joylashgan — login sahifasi va barcha 11 modul uchun jadval/forma CRUD ekranlari, bitta universal komponent (`src/pages/CrudPage.vue`) orqali `src/config/modules.js` konfiguratsiyasidan generatsiya qilinadi.
-
-### Ishga tushirish
+Talab: JDK 21, PostgreSQL, Node.js (`>= 22.12`). To'liq qo'llanma: [docs/10-ornatish-va-ishga-tushirish.md](docs/10-ornatish-va-ishga-tushirish.md).
 
 ```bash
-cd frontend
-npm install
-cp .env.example .env   # kerak bo'lsa QCLI_API_BASE_URL'ni o'zgartiring
-npm run dev
+# 1) Baza
+createdb maktab_db   # yoki: psql -c "CREATE DATABASE maktab_db;"
+
+# 2) Lokal maxfiy sozlamalar (DB paroli, JWT secret) — fayl .gitignore'da
+cp src/main/resources/application-local.properties.example src/main/resources/application-local.properties
+#    so'ng ichidagi "o'zgartiring" yozuvlarini to'ldiring (JWT secret: openssl rand -base64 64)
+
+# 3) Backend + frontend'ni birga ishga tushirish ("local" profil bilan)
+./start.sh            # Git Bash / macOS / Linux
+start.bat              # Windows
 ```
 
-Standart holatda `http://localhost:9000` da ochiladi va backend'ga `http://localhost:8080` orqali ulanadi. Backend'ning `CORS_ALLOWED_ORIGINS` shu manzilga mos bo'lishi kerak (default qiymat mos keladi).
+Backend `http://localhost:8080`, frontend `http://localhost:9000` da ko'tariladi. Birinchi marta ishga tushirilganda dastlabki ADMIN akkaunt avtomatik yaratiladi: **`admin` / `admin123`** (boshqa test akkauntlar: [10-ornatish-va-ishga-tushirish.md — Test foydalanuvchilar](docs/10-ornatish-va-ishga-tushirish.md#test-foydalanuvchilar)).
+
+DB paroli va JWT secret kodda saqlanmaydi: lokalda `application-local.properties`dan (`local` profil), serverda `DB_PASSWORD`/`JWT_SECRET` environment variable'laridan olinadi — ular berilmasa backend ishga tushmaydi. Faqat backend'ni sinab ko'rmoqchi bo'lsangiz: `SPRING_PROFILES_ACTIVE=local ./gradlew bootRun` yoki IntelliJ'da `MaktabBoshqaruvApplication (local)`. Batafsil: [10 — 3-qadam](docs/10-ornatish-va-ishga-tushirish.md#3-qadam-sozlamalar-maxfiy-qiymatlar-va-environment-variablelar).
+
+## Hujjatlar
+
+To'liq, batafsil hujjatlashtirish `docs/` papkasida (yoki hammasi birlashtirilgan holda: [docs/TOLIQ-DOKUMENTATSIYA.md](docs/TOLIQ-DOKUMENTATSIYA.md)):
+
+| # | Hujjat | Nima haqida |
+|---|---|---|
+| 01 | [Umumiy ko'rinish](docs/01-umumiy-korinish.md) | Loyiha maqsadi, foydalanuvchi rollari, barcha modullar |
+| 02 | [Arxitektura](docs/02-arxitektura.md) | Qatlamlar, to'liq so'rov yo'li, ko'p maktablilik |
+| 03 | [Texnologiyalar](docs/03-texnologiyalar.md) | Har bir kutubxona: nima/nega/qanday ishlatilgan |
+| 04 | [Papkalar tuzilishi](docs/04-papkalar-tuzilishi.md) | Backend va frontend papka daraxti |
+| 05 | [Ma'lumotlar bazasi](docs/05-malumotlar-bazasi.md) | ER diagramma, jadvallar, migratsiya, seed, JPA→SQL |
+| 06 | [Backend](docs/06-backend.md) | Sozlamalar, xavfsizlik, xato boshqaruv, JWT oqimi |
+| 07 | [API](docs/07-api.md) | Barcha endpoint'lar jadvali, curl misollari |
+| 08 | [Frontend](docs/08-frontend.md) | Vue/Quasar tuzilishi, router, store, CrudPage |
+| 09 | [Asosiy jarayonlar](docs/09-asosiy-jarayonlar.md) | Login, davomat, baho, jadval, dashboard formulalari |
+| 10 | [O'rnatish va ishga tushirish](docs/10-ornatish-va-ishga-tushirish.md) | Noldan to'liq sozlash qo'llanmasi |
+| 11 | [Muammolar va yechimlar](docs/11-muammolar-va-yechimlar.md) | Tez-tez uchraydigan xatolar |
+| 12 | [Yangi modul qo'shish](docs/12-yangi-modul-qoshish.md) | Amaliy qadam-baqadam qo'llanma |
+| 13 | [Lug'at](docs/13-lugat.md) | Barcha texnik atamalar, oddiy tilda |
+| 14 | [Kelajak rejalari](docs/14-kelajak-rejalari.md) | Cheklovlar va rejalashtirilgan takomillashtirishlar |
+
+## Litsenziya
+
+Ichki loyiha — litsenziya belgilanmagan.

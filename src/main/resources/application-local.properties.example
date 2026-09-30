@@ -1,0 +1,13 @@
+# Lokal ishlab chiqish sozlamalari shabloni (profil: local).
+# 1) Shu faylni shu papkaga "application-local.properties" nomi bilan nusxalang
+#    (u .gitignore'da - hech qachon commit qilinmaydi).
+# 2) Qiymatlarni o'zingiznikiga almashtiring.
+# 3) Backend'ni "local" profil bilan ishga tushiring: start.sh / start.bat yoki
+#    IntelliJ'dagi "MaktabBoshqaruvApplication (local)" konfiguratsiyasi.
+#
+# JWT secret - kamida 32 baytlik tasodifiy qiymatning Base64 ko'rinishi. Generatsiya:
+#   openssl rand -base64 64
+#   PowerShell: [Convert]::ToBase64String((1..64 | ForEach-Object { Get-Random -Maximum 256 }) -as [byte[]])
+
+spring.datasource.password=o'zgartiring
+jwt.secret=o'zgartiring

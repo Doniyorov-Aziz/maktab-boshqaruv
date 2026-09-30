@@ -4,7 +4,16 @@
 set -e
 cd "$(dirname "$0")"
 
-echo "Backend ishga tushirilmoqda (http://localhost:8080)..."
+# DB paroli va JWT secret src/main/resources/application-local.properties da
+# (gitignore'da) turadi va faqat "local" profilda yuklanadi.
+export SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-local}"
+if [ "$SPRING_PROFILES_ACTIVE" = "local" ] && [ ! -f src/main/resources/application-local.properties ]; then
+  echo "src/main/resources/application-local.properties topilmadi." >&2
+  echo "application-local.properties.example dan nusxa olib, qiymatlarni to'ldiring." >&2
+  exit 1
+fi
+
+echo "Backend ishga tushirilmoqda (http://localhost:8080, profil: $SPRING_PROFILES_ACTIVE)..."
 ./gradlew bootRun &
 BACKEND_PID=$!
 
