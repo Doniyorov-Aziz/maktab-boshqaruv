@@ -109,7 +109,7 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
         <div class="brand-card stat-card">
           <div class="row items-center no-wrap">
             <div
-              class="stat-card__icon q-mr-md"
+              class="stat-card__icon q-mr-md gt-xs"
               :style="{ background: `${k.color}1f`, color: k.color }"
             >
               <q-icon :name="k.icon" size="24px" />
@@ -119,10 +119,10 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
                 <q-skeleton v-if="!stats" type="text" width="48px" />
                 <template v-else>{{ k.value }}</template>
               </div>
-              <div class="text-caption muted-text ellipsis">{{ k.label }}</div>
+              <div class="text-caption muted-text kpi-label">{{ k.label }}</div>
               <div
                 v-if="stats && k.hint"
-                class="text-caption muted-text ellipsis"
+                class="text-caption muted-text kpi-label"
               >
                 {{ k.hint }}
               </div>
@@ -132,288 +132,290 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
       </div>
     </div>
 
-    <div class="row q-col-gutter-md">
-      <!-- Log table -->
-      <div class="col-12 col-lg-8 col-xl-9">
-        <div class="brand-card q-pa-md q-mb-md">
-          <div class="row q-col-gutter-sm items-end">
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-select
-                v-model="filters.type"
-                :options="typeOptions"
-                emit-value
-                map-options
-                clearable
-                outlined
-                dense
-                label="Turi"
-                @update:model-value="reload"
-              />
-            </div>
-            <div class="col-12 col-sm-6 col-md-3">
-              <q-select
-                v-model="filters.status"
-                :options="statusOptions"
-                emit-value
-                map-options
-                clearable
-                outlined
-                dense
-                label="Holati"
-                @update:model-value="reload"
-              />
-            </div>
-            <div class="col-6 col-md-2">
-              <date-field
-                v-model="filters.from"
-                label="Dan"
-                @update:model-value="reload"
-              />
-            </div>
-            <div class="col-6 col-md-2">
-              <date-field
-                v-model="filters.to"
-                label="Gacha"
-                @update:model-value="reload"
-              />
-            </div>
-            <div class="col-12 col-md-2">
-              <q-btn
-                flat
-                no-caps
-                class="full-width"
-                icon="filter_alt_off"
-                label="Tozalash"
-                :disable="!hasFilters"
-                @click="clearFilters"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="brand-card overflow-hidden">
-          <q-table
-            :rows="rows"
-            :columns="columns"
-            row-key="id"
-            :loading="loading"
-            v-model:pagination="pagination"
-            @request="onRequest"
-            flat
-            class="brand-table"
-            :rows-per-page-options="[10, 20, 50]"
-          >
-            <template v-slot:loading>
-              <q-inner-loading showing color="primary" />
-            </template>
-
-            <template v-slot:no-data>
-              <div class="full-width column flex-center q-py-xl muted-text">
-                <q-icon name="mark_email_read" size="48px" class="q-mb-sm" />
-                <div class="text-subtitle2">Hozircha xabarnomalar yo'q</div>
-                <div class="text-caption">
-                  Davomat, baho yoki e'lon saqlanganda ota-onalarga xabar shu
-                  yerda paydo bo'ladi.
-                </div>
+    <!-- Settings: one compact full-width strip so the log table below keeps the full width -->
+    <div class="brand-card q-pa-md q-mb-md">
+      <div class="row items-center q-col-gutter-md">
+        <div class="col-12 col-lg-auto">
+          <div class="row items-center no-wrap">
+            <q-icon name="tune" size="22px" class="q-mr-sm" />
+            <div>
+              <div class="text-subtitle1 text-weight-semibold">Sozlamalar</div>
+              <div class="text-caption muted-text">
+                Maktab bo'yicha qaysi xabarlar yuborilishi<template
+                  v-if="!authStore.isAdmin"
+                >
+                  · faqat administrator o'zgartira oladi</template
+                >
               </div>
-            </template>
-
-            <template v-slot:body-cell-createdAt="props">
-              <q-td :props="props" class="tabular-nums">
-                {{ formatDateTime(props.row.createdAt) }}
-                <div
-                  v-if="
-                    props.row.status === 'PENDING' &&
-                    isFuture(props.row.scheduledAt)
-                  "
-                  class="text-caption muted-text"
-                >
-                  <q-icon name="bedtime" size="12px" />
-                  {{ formatDateTime(props.row.scheduledAt).slice(11) }} da
-                </div>
-              </q-td>
-            </template>
-
-            <template v-slot:body-cell-type="props">
-              <q-td :props="props">
-                <span
-                  class="type-pill"
-                  :style="{
-                    color: notificationTypes[props.row.type]?.color,
-                    background: `${notificationTypes[props.row.type]?.color}1a`
-                  }"
-                >
-                  <q-icon
-                    :name="notificationTypes[props.row.type]?.icon"
-                    size="14px"
-                  />
-                  {{ notificationTypes[props.row.type]?.label }}
-                </span>
-              </q-td>
-            </template>
-
-            <template v-slot:body-cell-student="props">
-              <q-td :props="props">
-                <router-link
-                  :to="`/profiles/student/${props.row.studentId}`"
-                  class="student-link"
-                  >{{ props.row.studentName }}</router-link
-                >
-                <div class="text-caption muted-text">{{
-                  props.row.className
-                }}</div>
-              </q-td>
-            </template>
-
-            <template v-slot:body-cell-status="props">
-              <q-td :props="props">
-                <q-badge
-                  :color="notificationStatuses[props.row.status]?.color"
-                  class="status-badge"
-                >
-                  <q-icon
-                    :name="notificationStatuses[props.row.status]?.icon"
-                    size="12px"
-                    class="q-mr-xs"
-                  />
-                  {{ notificationStatuses[props.row.status]?.label }}
-                </q-badge>
-              </q-td>
-            </template>
-
-            <template v-slot:body-cell-lastError="props">
-              <q-td :props="props" class="error-cell">
-                <span v-if="props.row.lastError" class="ellipsis block">
-                  {{ props.row.lastError }}
-                  <q-tooltip max-width="360px">{{
-                    props.row.lastError
-                  }}</q-tooltip>
-                </span>
-                <span v-else class="muted-text">—</span>
-              </q-td>
-            </template>
-
-            <template v-slot:body-cell-actions="props">
-              <q-td :props="props" class="text-right no-wrap">
-                <q-btn
-                  flat
-                  round
-                  dense
-                  size="sm"
-                  icon="visibility"
-                  aria-label="Matnni ko'rish"
-                  @click="preview = props.row"
-                >
-                  <q-tooltip>Matnni ko'rish</q-tooltip>
-                </q-btn>
-                <q-btn
-                  v-if="props.row.status === 'FAILED'"
-                  flat
-                  dense
-                  no-caps
-                  size="sm"
-                  color="primary"
-                  icon="replay"
-                  label="Qayta yuborish"
-                  :loading="retrying === props.row.id"
-                  @click="retry(props.row)"
-                />
-              </q-td>
-            </template>
-          </q-table>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Settings -->
-      <div class="col-12 col-lg-4 col-xl-3">
-        <div class="brand-card q-pa-md">
-          <div class="row items-center q-mb-sm">
-            <q-icon name="tune" size="20px" class="q-mr-sm" />
-            <div class="text-subtitle1 text-weight-semibold">Sozlamalar</div>
-          </div>
-          <div class="text-caption muted-text q-mb-md">
-            Maktab bo'yicha qaysi xabarlar yuborilishi.
-            <template v-if="!authStore.isAdmin">
-              Faqat administrator o'zgartira oladi.</template
-            >
-          </div>
-
-          <template v-if="settings">
-            <q-list dense class="q-mb-md">
-              <q-item
+        <template v-if="settings">
+          <div class="col-12 col-md">
+            <div class="row items-center q-gutter-x-md q-gutter-y-xs">
+              <q-toggle
                 v-for="t in settingToggles"
                 :key="t.key"
-                tag="label"
-                class="q-px-none"
+                v-model="settings[t.key]"
+                color="primary"
+                :disable="!authStore.isAdmin"
               >
-                <q-item-section avatar>
-                  <q-icon :name="t.icon" :style="{ color: t.color }" />
-                </q-item-section>
-                <q-item-section>
-                  <q-item-label>{{ t.label }}</q-item-label>
-                  <q-item-label caption>{{ t.caption }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-toggle
-                    v-model="settings[t.key]"
-                    color="primary"
-                    :disable="!authStore.isAdmin"
-                  />
-                </q-item-section>
-              </q-item>
-            </q-list>
-
-            <q-separator class="q-mb-md" />
-
-            <q-toggle
-              v-model="settings.quietHoursEnabled"
-              label="Tinch soatlar"
-              color="primary"
-              :disable="!authStore.isAdmin"
-            />
-            <div class="text-caption muted-text q-mb-sm">
-              Bu oraliqda yaratilgan xabarlar tugash vaqtida yuboriladi
-              (Toshkent vaqti).
-            </div>
-            <div class="row q-col-gutter-sm q-mb-md">
-              <div class="col-6">
-                <q-input
-                  v-model="settings.quietHoursStart"
-                  type="time"
-                  outlined
-                  dense
-                  label="Boshlanishi"
-                  :disable="!authStore.isAdmin || !settings.quietHoursEnabled"
+                <q-icon
+                  :name="t.icon"
+                  :style="{ color: t.color }"
+                  size="18px"
                 />
-              </div>
-              <div class="col-6">
-                <q-input
-                  v-model="settings.quietHoursEnd"
-                  type="time"
-                  outlined
-                  dense
-                  label="Tugashi"
-                  :disable="!authStore.isAdmin || !settings.quietHoursEnabled"
-                />
-              </div>
+                {{ t.label }}
+                <q-tooltip>{{ t.caption }}</q-tooltip>
+              </q-toggle>
+              <q-toggle
+                v-model="settings.quietHoursEnabled"
+                color="primary"
+                :disable="!authStore.isAdmin"
+              >
+                <q-icon name="bedtime" color="indigo-4" size="18px" />
+                Tinch soatlar
+                <q-tooltip
+                  >Bu oraliqda yaratilgan xabarlar tugash vaqtida yuboriladi
+                  (Toshkent vaqti)</q-tooltip
+                >
+              </q-toggle>
             </div>
-
+          </div>
+          <div class="col-12 col-sm-auto">
+            <div class="row items-center no-wrap q-gutter-sm">
+              <q-input
+                v-for="f in quietFields"
+                :key="f.key"
+                v-model="settings[f.key]"
+                outlined
+                dense
+                mask="time"
+                :rules="['time']"
+                hide-bottom-space
+                :label="f.label"
+                class="time-input"
+                :disable="!authStore.isAdmin || !settings.quietHoursEnabled"
+              >
+                <template v-slot:append>
+                  <q-icon name="schedule" class="cursor-pointer">
+                    <q-popup-proxy
+                      cover
+                      transition-show="scale"
+                      transition-hide="scale"
+                    >
+                      <q-time v-model="settings[f.key]" format24h />
+                    </q-popup-proxy>
+                  </q-icon>
+                </template>
+              </q-input>
+            </div>
+          </div>
+          <div v-if="authStore.isAdmin" class="col-12 col-sm-auto">
             <q-btn
-              v-if="authStore.isAdmin"
               unelevated
               no-caps
               color="primary"
-              class="full-width"
               icon="save"
               label="Saqlash"
               :loading="savingSettings"
               @click="saveSettings"
             />
-          </template>
-          <div v-else class="column q-gutter-sm">
-            <q-skeleton v-for="i in 4" :key="i" type="text" height="36px" />
+          </div>
+        </template>
+        <div v-else class="col">
+          <q-skeleton type="QInput" />
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="brand-card q-pa-md q-mb-md">
+        <div class="row q-col-gutter-sm items-end">
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select
+              v-model="filters.type"
+              :options="typeOptions"
+              emit-value
+              map-options
+              clearable
+              outlined
+              dense
+              label="Turi"
+              @update:model-value="reload"
+            />
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <q-select
+              v-model="filters.status"
+              :options="statusOptions"
+              emit-value
+              map-options
+              clearable
+              outlined
+              dense
+              label="Holati"
+              @update:model-value="reload"
+            />
+          </div>
+          <div class="col-6 col-md-2">
+            <date-field
+              v-model="filters.from"
+              label="Dan"
+              @update:model-value="reload"
+            />
+          </div>
+          <div class="col-6 col-md-2">
+            <date-field
+              v-model="filters.to"
+              label="Gacha"
+              @update:model-value="reload"
+            />
+          </div>
+          <div class="col-12 col-md-2">
+            <q-btn
+              flat
+              no-caps
+              class="full-width"
+              icon="filter_alt_off"
+              label="Tozalash"
+              :disable="!hasFilters"
+              @click="clearFilters"
+            />
           </div>
         </div>
+      </div>
+
+      <div class="brand-card overflow-hidden">
+        <q-table
+          :rows="rows"
+          :columns="columns"
+          row-key="id"
+          :loading="loading"
+          v-model:pagination="pagination"
+          @request="onRequest"
+          flat
+          class="brand-table"
+          :rows-per-page-options="[10, 20, 50]"
+        >
+          <template v-slot:loading>
+            <q-inner-loading showing color="primary" />
+          </template>
+
+          <template v-slot:no-data>
+            <div class="full-width column flex-center q-py-xl muted-text">
+              <q-icon name="mark_email_read" size="48px" class="q-mb-sm" />
+              <div class="text-subtitle2">Hozircha xabarnomalar yo'q</div>
+              <div class="text-caption">
+                Davomat, baho yoki e'lon saqlanganda ota-onalarga xabar shu
+                yerda paydo bo'ladi.
+              </div>
+            </div>
+          </template>
+
+          <template v-slot:body-cell-createdAt="props">
+            <q-td :props="props" class="tabular-nums">
+              {{ formatDateTime(props.row.createdAt) }}
+              <div
+                v-if="
+                  props.row.status === 'PENDING' &&
+                  isFuture(props.row.scheduledAt)
+                "
+                class="text-caption muted-text"
+              >
+                <q-icon name="bedtime" size="12px" />
+                {{ formatDateTime(props.row.scheduledAt).slice(11) }} da
+              </div>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-type="props">
+            <q-td :props="props">
+              <span
+                class="type-pill"
+                :style="{
+                  color: notificationTypes[props.row.type]?.color,
+                  background: `${notificationTypes[props.row.type]?.color}1a`
+                }"
+              >
+                <q-icon
+                  :name="notificationTypes[props.row.type]?.icon"
+                  size="14px"
+                />
+                {{ notificationTypes[props.row.type]?.label }}
+              </span>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-student="props">
+            <q-td :props="props">
+              <router-link
+                :to="`/profiles/student/${props.row.studentId}`"
+                class="student-link"
+                >{{ props.row.studentName }}</router-link
+              >
+              <div class="text-caption muted-text">{{
+                props.row.className
+              }}</div>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-status="props">
+            <q-td :props="props">
+              <q-badge
+                :color="notificationStatuses[props.row.status]?.color"
+                class="status-badge"
+              >
+                <q-icon
+                  :name="notificationStatuses[props.row.status]?.icon"
+                  size="12px"
+                  class="q-mr-xs"
+                />
+                {{ notificationStatuses[props.row.status]?.label }}
+              </q-badge>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-lastError="props">
+            <q-td :props="props" class="error-cell">
+              <span v-if="props.row.lastError" class="error-text">
+                {{ props.row.lastError }}
+                <q-tooltip max-width="360px">{{
+                  props.row.lastError
+                }}</q-tooltip>
+              </span>
+              <span v-else class="muted-text">—</span>
+            </q-td>
+          </template>
+
+          <template v-slot:body-cell-actions="props">
+            <q-td :props="props" class="text-right no-wrap">
+              <q-btn
+                flat
+                round
+                dense
+                size="sm"
+                icon="visibility"
+                aria-label="Matnni ko'rish"
+                @click="preview = props.row"
+              >
+                <q-tooltip>Matnni ko'rish</q-tooltip>
+              </q-btn>
+              <q-btn
+                v-if="props.row.status === 'FAILED'"
+                flat
+                dense
+                no-caps
+                color="primary"
+                icon="replay"
+                label="Qayta yuborish"
+                :loading="retrying === props.row.id"
+                @click="retry(props.row)"
+              />
+            </q-td>
+          </template>
+        </q-table>
       </div>
     </div>
 
@@ -528,6 +530,11 @@ const settingToggles = [
     icon: 'campaign',
     color: '#10b981'
   }
+]
+
+const quietFields = [
+  { key: 'quietHoursStart', label: 'Boshlanishi' },
+  { key: 'quietHoursEnd', label: 'Tugashi' }
 ]
 
 const kpis = computed(() => {
@@ -761,8 +768,20 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
   text-decoration: underline;
 }
 
-.error-cell {
-  max-width: 240px;
+.error-text {
+  display: block;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time-input {
+  width: 128px;
+}
+
+.kpi-label {
+  line-height: 1.3;
 }
 
 .preview-card {
