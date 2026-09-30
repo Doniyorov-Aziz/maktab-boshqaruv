@@ -11,3 +11,11 @@
 
 spring.datasource.password=o'zgartiring
 jwt.secret=o'zgartiring
+
+# Telegram bot (ixtiyoriy). @BotFather'dan olingan tokenni shu yerga yozing - bu fayl
+# commit qilinmaydi. Batafsil yo'riqnoma: docs/15-telegram-bot.md
+# telegram.enabled=true
+# telegram.bot-token=<BotFather bergan token>
+# telegram.bot-username=<bot_username, @ belgisisiz>
+# Tokensiz sinash uchun: xabarlar faqat logga va bazaga yoziladi
+# telegram.mock=true

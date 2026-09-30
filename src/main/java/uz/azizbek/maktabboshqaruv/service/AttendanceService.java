@@ -6,6 +6,9 @@ import uz.azizbek.maktabboshqaruv.dto.AttendanceResponseDto;
 import uz.azizbek.maktabboshqaruv.dto.AttendanceRosterEntryDto;
 import uz.azizbek.maktabboshqaruv.dto.TodayLessonDto;
 import uz.azizbek.maktabboshqaruv.entity.Attendance;
+import uz.azizbek.maktabboshqaruv.entity.AttendanceStatus;
+import uz.azizbek.maktabboshqaruv.event.AttendanceMarkedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import uz.azizbek.maktabboshqaruv.entity.LessonSlot;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.repository.AttendanceRepository;
@@ -47,6 +50,9 @@ public class AttendanceService {
 
     @Autowired
     private ActivityLogService activityLogService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     public Page<AttendanceResponseDto> getAllAttendance(Long schoolId, Pageable pageable) {
         return attendanceRepository.findBySchoolId(schoolId, pageable).map(this::toResponseDto);
@@ -134,9 +140,11 @@ public class AttendanceService {
                 attendance.setStudent(student);
                 attendance.setRecordDate(request.getRecordDate());
             }
+            AttendanceStatus previousStatus = attendance.getStatus();
             attendance.setStatus(entry.getStatus());
             attendance.setComment(entry.getComment());
-            attendanceRepository.save(attendance);
+            Attendance saved = attendanceRepository.save(attendance);
+            publishIfNotifiable(saved, previousStatus);
         }
 
         String className = lessonSlot.getSchoolClass().getGradeNumber() + "-" + lessonSlot.getSchoolClass().getSectionLetter();
@@ -171,6 +179,7 @@ public class AttendanceService {
         attendance.setComment(request.getComment());
 
         Attendance saved = attendanceRepository.save(attendance);
+        publishIfNotifiable(saved, null);
         return toResponseDto(saved);
     }
 
@@ -179,11 +188,21 @@ public class AttendanceService {
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Bunday davomat yozuvi topilmadi: " + id));
 
+        AttendanceStatus previousStatus = attendance.getStatus();
         attendance.setStatus(request.getStatus());
         attendance.setComment(request.getComment());
 
         Attendance updated = attendanceRepository.save(attendance);
+        publishIfNotifiable(updated, previousStatus);
         return toResponseDto(updated);
+    }
+
+    // Re-saving a roster with unchanged statuses must not re-notify parents;
+    // only a change into ABSENT/LATE (e.g. PRESENT -> ABSENT) does.
+    private void publishIfNotifiable(Attendance attendance, AttendanceStatus previousStatus) {
+        if (AttendanceMarkedEvent.isNotifiable(previousStatus, attendance.getStatus())) {
+            eventPublisher.publishEvent(new AttendanceMarkedEvent(attendance.getId(), previousStatus, attendance.getStatus()));
+        }
     }
 
     @Transactional

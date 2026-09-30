@@ -6,6 +6,8 @@ import uz.azizbek.maktabboshqaruv.entity.Announcement;
 import uz.azizbek.maktabboshqaruv.entity.AnnouncementAudience;
 import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.entity.SchoolClass;
+import uz.azizbek.maktabboshqaruv.event.AnnouncementCreatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import uz.azizbek.maktabboshqaruv.repository.AnnouncementRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
@@ -34,6 +36,9 @@ public class AnnouncementService {
     @Autowired
     private ActivityLogService activityLogService;
 
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
     public Page<AnnouncementResponseDto> getAllAnnouncements(Long schoolId, Pageable pageable) {
         return announcementRepository.findBySchoolId(schoolId, pageable).map(this::toResponseDto);
     }
@@ -61,6 +66,7 @@ public class AnnouncementService {
 
         Announcement saved = announcementRepository.save(announcement);
         activityLogService.record(school, "campaign", "\"" + announcement.getTitle() + "\" e'loni joylandi");
+        eventPublisher.publishEvent(new AnnouncementCreatedEvent(saved.getId()));
         return toResponseDto(saved);
     }
 

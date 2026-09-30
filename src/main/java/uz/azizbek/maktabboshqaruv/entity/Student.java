@@ -27,6 +27,27 @@ public class Student {
 
     private String guardianPhone;
 
+    // Nullable on purpose: ddl-auto=update can only add a nullable column to a
+    // table that already has rows. Existing students get a code from
+    // TelegramLinkCodeBackfill at startup; new ones from @PrePersist below.
+    @Column(name = "telegram_link_code", unique = true, length = 32)
+    private String telegramLinkCode;
+
+    @PrePersist
+    void assignTelegramLinkCode() {
+        if (telegramLinkCode == null) {
+            telegramLinkCode = uz.azizbek.maktabboshqaruv.telegram.LinkCodeGenerator.generate();
+        }
+    }
+
+    public String getTelegramLinkCode() {
+        return telegramLinkCode;
+    }
+
+    public void setTelegramLinkCode(String telegramLinkCode) {
+        this.telegramLinkCode = telegramLinkCode;
+    }
+
     public Long getId() {
         return id;
     }

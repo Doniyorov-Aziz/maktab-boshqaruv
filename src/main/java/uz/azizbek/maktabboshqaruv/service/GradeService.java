@@ -6,6 +6,8 @@ import uz.azizbek.maktabboshqaruv.dto.GradebookResponseDto;
 import uz.azizbek.maktabboshqaruv.entity.Grade;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.entity.Subject;
+import uz.azizbek.maktabboshqaruv.event.GradeSavedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import uz.azizbek.maktabboshqaruv.repository.GradeRepository;
 import uz.azizbek.maktabboshqaruv.repository.StudentRepository;
 import uz.azizbek.maktabboshqaruv.repository.SubjectRepository;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +37,9 @@ public class GradeService {
 
     @Autowired
     private ActivityLogService activityLogService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     public Page<GradeResponseDto> getAllGrades(Long schoolId, Pageable pageable) {
         return gradeRepository.findBySchoolId(schoolId, pageable).map(this::toResponseDto);
@@ -83,6 +89,7 @@ public class GradeService {
                 "grade",
                 student.getFirstName() + " " + student.getLastName() + "ga " + subject.getName()
                         + " fanidan " + request.getScore() + " baho qo'yildi");
+        eventPublisher.publishEvent(new GradeSavedEvent(saved.getId(), true));
         return toResponseDto(saved);
     }
 
@@ -98,6 +105,12 @@ public class GradeService {
 
         validateSameSchool(student, subject);
 
+        // Only a change parents care about re-notifies — a comment edit does not.
+        boolean meaningfulChange = !Objects.equals(grade.getScore(), request.getScore())
+                || !Objects.equals(grade.getSubject().getId(), subject.getId())
+                || grade.getType() != request.getType()
+                || !Objects.equals(grade.getStudent().getId(), student.getId());
+
         grade.setStudent(student);
         grade.setSubject(subject);
         grade.setGradeDate(request.getGradeDate());
@@ -106,6 +119,9 @@ public class GradeService {
         grade.setComment(request.getComment());
 
         Grade updated = gradeRepository.save(grade);
+        if (meaningfulChange) {
+            eventPublisher.publishEvent(new GradeSavedEvent(updated.getId(), false));
+        }
         return toResponseDto(updated);
     }
 
