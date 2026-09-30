@@ -261,6 +261,90 @@ class NotificationServiceTest {
         assertTrue(row.getText().startsWith("📘 <b>Alisher Karimov</b> Fizika fanidan <b>5</b> baho oldi (joriy baho, 30.09.2026)."));
     }
 
+    // --- per-parent personalisation ---
+
+    private ParentSession session(long chatId, String lang) {
+        ParentSession s = new ParentSession();
+        s.setChatId(chatId);
+        s.setLanguage(lang);
+        return s;
+    }
+
+    @Test
+    void attendance_parentSwitchedAbsenceOff_rowSkippedForThatParentOnly() {
+        absentAttendance();
+        defaultSettings();
+        when(linkRepository.findByStudentIdAndActiveTrueOrderByLinkedAtAsc(100L))
+                .thenReturn(List.of(link(alisher, 11L), link(alisher, 22L)));
+        ParentSession off = session(22L, "uz");
+        off.setNotifyAbsence(false);
+        when(sessionRepository.findByChatIdIn(any())).thenReturn(List.of(off));
+
+        notificationService.enqueueAttendance(new AttendanceMarkedEvent(500L, null, AttendanceStatus.ABSENT));
+
+        List<NotificationLog> rows = savedRows(2);
+        assertEquals(NotificationStatus.PENDING, rows.get(0).getStatus());
+        assertEquals(NotificationStatus.SKIPPED, rows.get(1).getStatus());
+        assertTrue(rows.get(1).getLastError().contains("Ota-ona"));
+    }
+
+    @Test
+    void attendance_isWrittenInEachParentsLanguage() {
+        absentAttendance();
+        defaultSettings();
+        when(linkRepository.findByStudentIdAndActiveTrueOrderByLinkedAtAsc(100L))
+                .thenReturn(List.of(link(alisher, 11L), link(alisher, 22L), link(alisher, 33L)));
+        when(sessionRepository.findByChatIdIn(any())).thenReturn(List.of(session(22L, "ru"), session(33L, "cy")));
+
+        notificationService.enqueueAttendance(new AttendanceMarkedEvent(500L, null, AttendanceStatus.ABSENT));
+
+        List<NotificationLog> rows = savedRows(3);
+        assertTrue(rows.get(0).getText().contains("kelmadi"), rows.get(0).getText());
+        assertTrue(rows.get(1).getText().contains("отсутствовал(а) на 2-м уроке"), rows.get(1).getText());
+        assertTrue(rows.get(2).getText().contains("келмади"), rows.get(2).getText());
+    }
+
+    @Test
+    void parentsOwnQuietHoursOff_beatsSchoolQuietHours() {
+        useClock(LocalDateTime.of(2026, 9, 30, 23, 0));
+        absentAttendance();
+        defaultSettings();
+        when(linkRepository.findByStudentIdAndActiveTrueOrderByLinkedAtAsc(100L)).thenReturn(List.of(link(alisher, 11L)));
+        ParentSession night = session(11L, "uz");
+        night.setQuietHoursEnabled(false);
+        when(sessionRepository.findByChatIdIn(any())).thenReturn(List.of(night));
+
+        notificationService.enqueueAttendance(new AttendanceMarkedEvent(500L, null, AttendanceStatus.ABSENT));
+
+        assertEquals(LocalDateTime.of(2026, 9, 30, 23, 0), savedRows(1).get(0).getScheduledAt());
+    }
+
+    @Test
+    void lowGrade_gentleMessageWithWriteToTeacherButton() {
+        Subject physics = new Subject();
+        physics.setName("Fizika");
+        Grade g = new Grade();
+        g.setId(78L);
+        g.setStudent(alisher);
+        g.setSubject(physics);
+        g.setScore(2);
+        g.setType(GradeType.CURRENT);
+        g.setGradeDate(LocalDate.of(2026, 9, 30));
+        when(gradeRepository.findById(78L)).thenReturn(Optional.of(g));
+        when(botSettingService.getOrDefault(school)).thenReturn(BotSetting.defaults(school));
+        defaultSettings();
+        when(linkRepository.findByStudentIdAndActiveTrueOrderByLinkedAtAsc(100L)).thenReturn(List.of(link(alisher, 11L)));
+
+        notificationService.enqueueGrade(new GradeSavedEvent(78L, true));
+
+        NotificationLog row = savedRows(1).get(0);
+        assertEquals(NotificationType.GRADE_LOW, row.getType());
+        assertTrue(row.getText().startsWith("💛 <b>Alisher Karimov</b> Fizika fanidan <b>2</b> baho oldi"));
+        assertTrue(row.getText().contains("<blockquote>"));
+        assertTrue(row.getReplyMarkup().contains("O'qituvchiga yozish"));
+        assertTrue(row.getReplyMarkup().contains("msg:a:to:to:CT:s:100:n:1"));
+    }
+
     // --- announcements: audience ---
 
     @Test

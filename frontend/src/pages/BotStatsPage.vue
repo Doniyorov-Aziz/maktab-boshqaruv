@@ -117,7 +117,7 @@
               <q-linear-progress
                 :value="(props.row.percent || 0) / 100"
                 :color="coverageColor(props.row.percent)"
-                track-color="grey-4"
+                :track-color="$q.dark.isActive ? 'grey-9' : 'grey-3'"
                 rounded
                 size="10px"
                 class="col"

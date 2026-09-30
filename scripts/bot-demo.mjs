@@ -92,7 +92,8 @@ async function renderOps(ops) {
     if (op.op === 'edit') out.push('✏️ _(shu xabar tahrirlandi)_', '')
     if (op.op === 'photo') {
       imageNo++
-      const name = `${String(imageNo).padStart(2, '0')}-${op.photoId}.png`
+      const label = ['davomat-kalendar', 'baholar-grafik', 'hisobot-kartochka'][imageNo - 1] || op.photoId
+      const name = `${String(imageNo).padStart(2, '0')}-${label}.png`
       const res = await fetch(`${API}/api/telegram/mock/photos/${op.photoId}`, { headers: { Authorization: `Bearer ${token}` } })
       fs.writeFileSync(path.join(IMG_DIR, name), Buffer.from(await res.arrayBuffer()))
       out.push(`![rasm](images/bot/${name})`, '')

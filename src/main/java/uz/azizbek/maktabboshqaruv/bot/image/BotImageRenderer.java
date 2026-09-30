@@ -98,7 +98,7 @@ public final class BotImageRenderer {
 
         BufferedImage img = new BufferedImage(W, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = graphics(img);
-        header(g, in.title(), in.subtitle(), 220);
+        header(g, in.title(), in.subtitle(), 220, true);
         rateBadge(g, in.rate(), in.rateLabel());
 
         g.setFont(SEMIBOLD.deriveFont(26f));
@@ -147,7 +147,7 @@ public final class BotImageRenderer {
         int height = top + rows * rowH + 120;
         BufferedImage img = new BufferedImage(W, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = graphics(img);
-        header(g, in.title(), in.subtitle(), 220);
+        header(g, in.title(), in.subtitle(), 220, false);
 
         if (in.bars().isEmpty()) {
             g.setColor(MUTED);
@@ -194,7 +194,7 @@ public final class BotImageRenderer {
         int height = 1320;
         BufferedImage img = new BufferedImage(W, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = graphics(img);
-        header(g, in.title(), in.period(), 220);
+        header(g, in.title(), in.period(), 220, false);
 
         g.setColor(TEXT);
         g.setFont(BOLD.deriveFont(52f));
@@ -234,15 +234,22 @@ public final class BotImageRenderer {
         return g;
     }
 
-    private static void header(Graphics2D g, String title, String subtitle, int h) {
+    private static void header(Graphics2D g, String title, String subtitle, int h, boolean badge) {
         g.setPaint(new GradientPaint(0, 0, INDIGO, W, h, VIOLET));
         g.fillRect(0, 0, W, h);
+        int maxW = badge ? W - 330 : W - 120;
         g.setColor(Color.WHITE);
-        g.setFont(BOLD.deriveFont(52f));
-        g.drawString(fit(g, title, W - 330), 60, 100);
+        // Long titles (e.g. in Russian) get a smaller font before being shortened.
+        float size = 52f;
+        g.setFont(BOLD.deriveFont(size));
+        while (size > 38f && g.getFontMetrics().stringWidth(title == null ? "" : title) > maxW) {
+            size -= 2f;
+            g.setFont(BOLD.deriveFont(size));
+        }
+        g.drawString(fit(g, title, maxW), 60, 100);
         g.setColor(new Color(255, 255, 255, 215));
         g.setFont(SEMIBOLD.deriveFont(32f));
-        g.drawString(fit(g, subtitle, W - 330), 60, 152);
+        g.drawString(fit(g, subtitle, maxW), 60, 152);
     }
 
     private static void rateBadge(Graphics2D g, Double rate, String label) {
@@ -314,8 +321,12 @@ public final class BotImageRenderer {
         y += 26;
         int x = 60;
         g.setFont(SEMIBOLD.deriveFont(28f));
-        List<String> list = items == null || items.isEmpty() ? List.of(noneText) : items;
-        for (String item : list) {
+        if (items == null || items.isEmpty()) {
+            g.setColor(MUTED);
+            g.drawString(noneText == null ? "—" : noneText, x, y + 36);
+            return y + 66;
+        }
+        for (String item : items) {
             String t = fit(g, item, W - 200);
             int w = g.getFontMetrics().stringWidth(t) + 44;
             if (x + w > W - 60) {

@@ -171,7 +171,10 @@
 
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-right no-wrap">
-            <template v-if="props.row.status === 'PENDING'">
+            <div
+              v-if="props.row.status === 'PENDING'"
+              class="column items-stretch action-stack"
+            >
               <q-btn
                 unelevated
                 dense
@@ -179,7 +182,7 @@
                 color="positive"
                 icon="check"
                 label="Tasdiqlash"
-                class="q-mr-xs action-btn"
+                class="action-btn"
                 :loading="busy === props.row.id"
                 @click="approve(props.row)"
               />
@@ -193,7 +196,7 @@
                 class="action-btn"
                 @click="openReject(props.row)"
               />
-            </template>
+            </div>
             <span v-else class="text-caption muted-text">
               {{ props.row.decidedBy }} ·
               {{ formatDateTime(props.row.decidedAt) }}
@@ -462,6 +465,11 @@ watch(() => schoolStore.activeSchoolId, reload, { immediate: true })
 
 .action-btn {
   padding: 2px 10px;
+}
+
+.action-stack {
+  gap: 6px;
+  min-width: 128px;
 }
 
 .dialog-card {
