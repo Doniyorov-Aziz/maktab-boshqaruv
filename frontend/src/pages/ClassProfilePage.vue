@@ -37,6 +37,16 @@
               {{ profile.classTeacherName }}
             </div>
           </div>
+          <div v-if="authStore.isEditor" class="col-12 col-sm-auto">
+            <q-btn
+              outline
+              no-caps
+              color="primary"
+              icon="qr_code_2"
+              label="Ota-onalar uchun QR kodlar"
+              :to="`/print/class-qr/${profile.id}`"
+            />
+          </div>
         </div>
       </div>
 
@@ -141,9 +151,11 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const profile = ref(null)
 const loading = ref(true)

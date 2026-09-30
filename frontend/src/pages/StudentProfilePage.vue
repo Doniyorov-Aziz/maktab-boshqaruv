@@ -102,6 +102,14 @@
               </div>
             </div>
           </div>
+
+          <!-- Link codes let the holder subscribe to this child's data, so the
+               block is only shown to staff who can manage it (ADMIN/EDITOR). -->
+          <telegram-student-card
+            v-if="authStore.isEditor"
+            :student-id="profile.id"
+            class="q-mt-md"
+          />
         </q-tab-panel>
 
         <q-tab-panel name="grades" class="q-pa-none">
@@ -229,9 +237,12 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
+import TelegramStudentCard from '@/components/TelegramStudentCard.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const profile = ref(null)
 const loading = ref(true)

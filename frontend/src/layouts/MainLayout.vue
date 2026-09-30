@@ -301,7 +301,7 @@
               v-for="item in group.items"
               :key="item.key"
               clickable
-              :to="`/app/${item.key}`"
+              :to="item.path || `/app/${item.key}`"
               exact
               active-class="nav-item--active"
               class="nav-item"
@@ -507,6 +507,21 @@ const groupedModules = computed(() => {
       groups.push(group)
     }
     group.items.push(item)
+  }
+  // Dedicated (non-CRUD) admin pages that still belong in the "Boshqaruv" group.
+  if (authStore.isEditor) {
+    let admin = groups.find(g => g.name === 'Boshqaruv')
+    if (!admin) {
+      admin = { name: 'Boshqaruv', items: [] }
+      groups.push(admin)
+    }
+    admin.items.push({
+      key: 'notifications',
+      path: '/notifications',
+      title: 'Xabarnomalar',
+      icon: 'notifications_active',
+      color: '#229ed9'
+    })
   }
   return groups
 })

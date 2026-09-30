@@ -46,6 +46,9 @@ export default defineRouter((/* { store, ssrContext } */) => {
     if (authStore.isAuthenticated && isLoginRoute) {
       return '/'
     }
+    if (to.meta.editorOnly && !authStore.isEditor) {
+      return '/'
+    }
     // Only start the bar for navigations that actually proceed — starting it
     // on every intermediate redirect step left it started more times than
     // afterEach (which only fires once, for the final navigation) could stop,

@@ -4,6 +4,12 @@ const routes = [
     component: () => import('@/pages/LoginPage.vue')
   },
   {
+    // Outside MainLayout on purpose: a clean page with no header/drawer prints as-is.
+    path: '/print/class-qr/:id',
+    component: () => import('@/pages/ClassQrPrintPage.vue'),
+    meta: { editorOnly: true }
+  },
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
@@ -27,6 +33,11 @@ const routes = [
       {
         path: 'calendar',
         component: () => import('@/pages/CalendarPage.vue')
+      },
+      {
+        path: 'notifications',
+        component: () => import('@/pages/NotificationsPage.vue'),
+        meta: { editorOnly: true }
       },
       {
         path: 'profiles/student/:id',
