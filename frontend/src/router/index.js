@@ -40,6 +40,12 @@ export default defineRouter((/* { store, ssrContext } */) => {
     const authStore = useAuthStore()
     const isLoginRoute = to.path === '/login'
 
+    // The Telegram Mini App authenticates with Telegram's signed initData, not the admin login.
+    if (to.meta.public) {
+      LoadingBar.start()
+      return true
+    }
+
     if (!authStore.isAuthenticated && !isLoginRoute) {
       return '/login'
     }
@@ -47,6 +53,9 @@ export default defineRouter((/* { store, ssrContext } */) => {
       return '/'
     }
     if (to.meta.editorOnly && !authStore.isEditor) {
+      return '/'
+    }
+    if (to.meta.adminOnly && !authStore.isAdmin) {
       return '/'
     }
     // Only start the bar for navigations that actually proceed — starting it

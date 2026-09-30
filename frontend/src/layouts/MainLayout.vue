@@ -310,6 +310,16 @@
                 <q-icon :name="item.icon" :style="{ color: item.color }" />
               </q-item-section>
               <q-item-section v-if="!mini">{{ item.title }}</q-item-section>
+              <q-item-section v-if="!mini && item.badge" side>
+                <q-badge rounded color="negative">{{ item.badge }}</q-badge>
+              </q-item-section>
+              <q-badge
+                v-if="mini && item.badge"
+                rounded
+                floating
+                color="negative"
+                >{{ item.badge }}</q-badge
+              >
               <q-tooltip v-if="mini" anchor="center right" self="center left">{{
                 item.title
               }}</q-tooltip>
@@ -515,16 +525,77 @@ const groupedModules = computed(() => {
       admin = { name: 'Boshqaruv', items: [] }
       groups.push(admin)
     }
-    admin.items.push({
-      key: 'notifications',
-      path: '/notifications',
-      title: 'Xabarnomalar',
-      icon: 'notifications_active',
-      color: '#229ed9'
-    })
+    admin.items.push(
+      {
+        key: 'notifications',
+        path: '/notifications',
+        title: 'Xabarnomalar',
+        icon: 'notifications_active',
+        color: '#229ed9'
+      },
+      {
+        key: 'parent-messages',
+        path: '/parent-messages',
+        title: 'Murojaatlar',
+        icon: 'forum',
+        color: '#0ea5e9',
+        badge: botCounts.value.messages || null
+      },
+      {
+        key: 'absence-requests',
+        path: '/absence-requests',
+        title: 'Sababli arizalar',
+        icon: 'medical_information',
+        color: '#f59e0b',
+        badge: botCounts.value.absences || null
+      },
+      ...(authStore.isAdmin
+        ? [
+            {
+              key: 'broadcasts',
+              path: '/broadcasts',
+              title: 'Ota-onalarga xabar',
+              icon: 'campaign',
+              color: '#ec4899'
+            }
+          ]
+        : []),
+      {
+        key: 'bot-stats',
+        path: '/bot-stats',
+        title: 'Bot statistikasi',
+        icon: 'insights',
+        color: '#8b5cf6'
+      },
+      {
+        key: 'bot-settings',
+        path: '/bot-settings',
+        title: 'Bot sozlamalari',
+        icon: 'smart_toy',
+        color: '#64748b'
+      }
+    )
   }
   return groups
 })
+
+// Unanswered parent messages / undecided absence requests, shown as sidebar badges.
+const botCounts = ref({ messages: 0, absences: 0 })
+
+async function loadBotCounts() {
+  if (!schoolStore.activeSchoolId || !authStore.isEditor) return
+  try {
+    const params = { schoolId: schoolStore.activeSchoolId }
+    const [m, a] = await Promise.all([
+      api.get('/api/parent-messages/count-new', { params }),
+      api.get('/api/absence-requests/count-pending', { params })
+    ])
+    botCounts.value = { messages: m.data, absences: a.data }
+  } catch {
+    botCounts.value = { messages: 0, absences: 0 }
+  }
+}
+loadBotCounts()
 
 const currentModule = computed(() =>
   route.params.moduleKey ? getModule(route.params.moduleKey) : null
@@ -575,9 +646,13 @@ watch(
   () => schoolStore.activeSchoolId,
   () => {
     loadNotifications()
+    loadBotCounts()
     searchCache.value = null
   }
 )
+
+// Refresh the badges whenever the admin moves between pages (e.g. after answering).
+watch(() => route.path, loadBotCounts)
 
 function goNotification(n) {
   if (n.linkModule === 'students') router.push(`/profiles/student/${n.linkId}`)

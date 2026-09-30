@@ -4,6 +4,39 @@ const routes = [
     component: () => import('@/pages/LoginPage.vue')
   },
   {
+    // Telegram Mini App "Farzandim kundaligi" — public route, authenticated by Telegram initData.
+    path: '/webapp',
+    component: () => import('@/layouts/WebAppLayout.vue'),
+    meta: { public: true },
+    children: [
+      {
+        path: '',
+        component: () => import('@/pages/webapp/WebTodayPage.vue'),
+        meta: { public: true }
+      },
+      {
+        path: 'schedule',
+        component: () => import('@/pages/webapp/WebSchedulePage.vue'),
+        meta: { public: true }
+      },
+      {
+        path: 'attendance',
+        component: () => import('@/pages/webapp/WebAttendancePage.vue'),
+        meta: { public: true }
+      },
+      {
+        path: 'grades',
+        component: () => import('@/pages/webapp/WebGradesPage.vue'),
+        meta: { public: true }
+      },
+      {
+        path: 'announcements',
+        component: () => import('@/pages/webapp/WebAnnouncementsPage.vue'),
+        meta: { public: true }
+      }
+    ]
+  },
+  {
     // Outside MainLayout on purpose: a clean page with no header/drawer prints as-is.
     path: '/print/class-qr/:id',
     component: () => import('@/pages/ClassQrPrintPage.vue'),
@@ -37,6 +70,31 @@ const routes = [
       {
         path: 'notifications',
         component: () => import('@/pages/NotificationsPage.vue'),
+        meta: { editorOnly: true }
+      },
+      {
+        path: 'parent-messages',
+        component: () => import('@/pages/ParentMessagesPage.vue'),
+        meta: { editorOnly: true }
+      },
+      {
+        path: 'absence-requests',
+        component: () => import('@/pages/AbsenceRequestsPage.vue'),
+        meta: { editorOnly: true }
+      },
+      {
+        path: 'broadcasts',
+        component: () => import('@/pages/BroadcastPage.vue'),
+        meta: { adminOnly: true }
+      },
+      {
+        path: 'bot-stats',
+        component: () => import('@/pages/BotStatsPage.vue'),
+        meta: { editorOnly: true }
+      },
+      {
+        path: 'bot-settings',
+        component: () => import('@/pages/BotSettingsPage.vue'),
         meta: { editorOnly: true }
       },
       {
