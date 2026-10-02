@@ -30,6 +30,20 @@ public interface TelegramClient {
         throw new TelegramApiException(0, "sendPhoto qo'llab-quvvatlanmaydi", null);
     }
 
+    /**
+     * Replaces the photo of an existing photo message (and its caption/buttons) in place.
+     * Uploads {@code png} when {@code fileId} is null; returns the new photo's file_id.
+     */
+    default SentPhoto editMessageMedia(long chatId, long messageId, String fileId, byte[] png, String fileName,
+                                       String captionHtml, Object replyMarkup) {
+        throw new TelegramApiException(0, "editMessageMedia qo'llab-quvvatlanmaydi", null);
+    }
+
+    /** Changes only the caption and buttons of a photo message. */
+    default void editMessageCaption(long chatId, long messageId, String captionHtml, Object replyMarkup) {
+        throw new TelegramApiException(0, "editMessageCaption qo'llab-quvvatlanmaydi", null);
+    }
+
     default void deleteMessage(long chatId, long messageId) {
     }
 

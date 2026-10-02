@@ -34,6 +34,8 @@ public class BotProfileInitializer {
 
     @EventListener(ApplicationReadyEvent.class)
     public void apply() {
+        // The bottom menu shows "📱 Kundalikni ochish" only when a valid https Mini App address is set.
+        Keyboards.setWebAppUrl(properties.webappUrlIfValid());
         if (properties.mode() != TelegramProperties.Mode.LIVE) return;
         try {
             BotI18n i18n = BotI18n.get();

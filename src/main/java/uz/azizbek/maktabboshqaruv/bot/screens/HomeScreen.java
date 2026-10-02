@@ -73,6 +73,14 @@ public class HomeScreen implements Screen {
             sb.append(ctx.t("home.next_event", "title", e(t.nextEvent().title()),
                     "date", ctx.dateShort(t.nextEvent().startDate()))).append("\n");
         }
+        DaySchedule tomorrow = data.day(ctx.student(), t.date().plusDays(1));
+        if (tomorrow.hasLessons()) {
+            LessonView first = tomorrow.lessons().get(0);
+            sb.append(ctx.t("home.tomorrow_first", "start", first.start(),
+                    "emoji", SubjectIcons.subject(first.subject()), "subject", e(first.subject()))).append("\n");
+        } else {
+            sb.append(ctx.t("home.tomorrow_none")).append("\n");
+        }
         sb.append("\n").append(ctx.t("home.pick_section"));
 
         InlineKeyboardMarkup.Builder kb = InlineKeyboardMarkup.builder();
@@ -81,14 +89,18 @@ public class HomeScreen implements Screen {
             kb.row(InlineButton.webApp(ctx.t("menu.webapp"), webapp));
         }
         kb.grid(List.of(
-                ctx.btn(ctx.t("kb.schedule"), "sch"), ctx.btn(ctx.t("kb.attendance"), "att"),
-                ctx.btn(ctx.t("kb.grades"), "gr"), ctx.btn(ctx.t("kb.report"), "rep"),
-                ctx.btn(ctx.t("menu.behavior"), "beh"), ctx.btn(ctx.t("kb.announcements"), "ann"),
-                ctx.btn(ctx.t("kb.events"), "ev"), ctx.btn(ctx.t("kb.teachers"), "tch"),
-                ctx.btn(ctx.t("kb.write"), "msg"), ctx.btn(ctx.t("menu.absence"), "abs"),
-                ctx.btn(ctx.t("menu.school"), "info"), ctx.btn(ctx.t("kb.settings"), "set")), 2);
-        kb.row(ctx.btn(ctx.t("kb.children"), "ch"));
+                section(ctx, "kb.schedule", "sch"), section(ctx, "kb.attendance", "att"),
+                section(ctx, "kb.grades", "gr"), section(ctx, "kb.report", "rep"),
+                section(ctx, "menu.behavior", "beh"), section(ctx, "kb.announcements", "ann"),
+                section(ctx, "kb.events", "ev"), section(ctx, "kb.teachers", "tch"),
+                section(ctx, "kb.write", "msg"), ctx.btn(ctx.t("menu.absence"), "abs").styled("danger"),
+                section(ctx, "menu.school", "info"), section(ctx, "kb.settings", "set")), 2);
+        kb.row(section(ctx, "kb.children", "ch"));
         kb.row(ctx.switchRow("home").toArray(new InlineButton[0]));
         return BotView.of(sb.toString(), kb.build()).section("home");
+    }
+
+    private static InlineButton section(BotContext ctx, String labelKey, String screen) {
+        return ctx.btn(ctx.t(labelKey), screen).styled("primary");
     }
 }

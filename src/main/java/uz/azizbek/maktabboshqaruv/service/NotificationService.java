@@ -109,7 +109,8 @@ public class NotificationService {
                 : MessageFormatter.attendanceLate(lang, fullName(student), className(student), lessonNumber,
                 slot.getSubject().getName(), slot.getStartTime(), attendance.getRecordDate(), today, school.getName());
 
-        return createRows(school, type, attendance.getId(), attendance.getRecordDate(), recipientsOf(student), text, null);
+        return createRows(school, type, attendance.getId(), attendance.getRecordDate(), recipientsOf(student), text,
+                details("att:s:" + student.getId() + ":n:1"));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -140,7 +141,8 @@ public class NotificationService {
 
         int threshold = botSettingService.getOrDefault(school).getLowGradeThreshold();
         if (!event.created() || grade.getScore() > threshold || recipients.isEmpty()) {
-            return createRows(school, type, grade.getId(), recordDate, recipients, normalText, null);
+            return createRows(school, type, grade.getId(), recordDate, recipients, normalText,
+                    details("gr:s:" + student.getId() + ":n:1"));
         }
 
         // Low grade: parents who keep the "past baho" switch on get the gentle
@@ -157,7 +159,8 @@ public class NotificationService {
                         grade.getGradeDate(), school.getName()),
                 lang -> InlineKeyboardMarkup.builder().row(InlineButton.callback(BotI18n.get().t(lang, "notif.btn.write_teacher"),
                         "msg:a:to:to:CT:s:" + student.getId() + ":n:1")).build());
-        created += createRows(school, type, grade.getId(), recordDate, normal, normalText, null);
+        created += createRows(school, type, grade.getId(), recordDate, normal, normalText,
+                details("gr:s:" + student.getId() + ":n:1"));
         return created;
     }
 
@@ -187,7 +190,7 @@ public class NotificationService {
                 ? announcement.getCreatedDate().toLocalDate() : LocalDate.now(clock);
         return createRows(school, NotificationType.ANNOUNCEMENT, announcement.getId(), recordDate, oncePerChat(links),
                 lang -> MessageFormatter.announcement(lang, announcement.getTitle(), announcement.getContent(), label, school.getName()),
-                null);
+                details("ann:id:" + announcement.getId() + ":n:1"));
     }
 
     /**
@@ -201,6 +204,13 @@ public class NotificationService {
             return 0;
         }
         return createRows(school, type, referenceId, recordDate, List.of(new Recipient(student, chatId)), text, markup);
+    }
+
+    /** "🔎 Batafsil" button under an automatic message: opens the matching bot page as a new card. */
+    static Function<String, Object> details(String callbackData) {
+        return lang -> InlineKeyboardMarkup.builder()
+                .row(InlineButton.callback(BotI18n.get().t(lang, "notif.btn.details"), callbackData).styled("primary"))
+                .build();
     }
 
     /** A parent with two children in the same audience gets one message, not two. */

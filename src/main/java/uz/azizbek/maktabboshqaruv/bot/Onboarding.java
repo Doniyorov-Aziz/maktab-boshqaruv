@@ -29,8 +29,27 @@ public class Onboarding {
 
     public BotView welcome(BotContext ctx) {
         return BotView.of(ctx.t("start.welcome", "app", ctx.t("app.name")), null)
-                .withReplyKeyboard(TelegramModels.shareContactKeyboard(ctx.t("start.share_button")))
+                .withReplyKeyboard(welcomeKeyboard(ctx))
                 .section("welcome");
+    }
+
+    /** "🔑 Kod kiritish" was tapped: explain where the code is; the next typed code links the child. */
+    public BotView codePrompt(BotContext ctx) {
+        return BotView.of(ctx.t("start.code_prompt"), null)
+                .withReplyKeyboard(welcomeKeyboard(ctx))
+                .section("welcome_code");
+    }
+
+    public static boolean isCodeButton(BotContext ctx, String text) {
+        return text != null && !text.isBlank() && Keyboards.normalize(text).equals(Keyboards.normalize(ctx.t("start.code_button")));
+    }
+
+    /** Two big buttons for a parent who is not linked yet: share the phone number, or type the code. */
+    public static TelegramModels.ReplyKeyboardMarkup welcomeKeyboard(BotContext ctx) {
+        return new TelegramModels.ReplyKeyboardMarkup(List.of(
+                List.of(new TelegramModels.KeyboardButton(ctx.t("start.share_button"), true, null, "success")),
+                List.of(TelegramModels.KeyboardButton.styled(ctx.t("start.code_button"), "primary"))),
+                true, false, true, ctx.t("start.placeholder"));
     }
 
     public BotView linked(BotContext ctx, List<Student> linked) {

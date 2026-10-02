@@ -44,6 +44,13 @@ public class BotImageService {
         if (fileId != null) fileIds.put(key, fileId);
     }
 
+    /** Section banner, drawn once per distinct content. */
+    public Rendered banner(String section, BannerRenderer.Banner banner) {
+        String key = "banner:" + section + ":" + banner.hashCode();
+        byte[] png = images.computeIfAbsent(key, k -> BannerRenderer.render(banner));
+        return new Rendered(key, png, "banner-" + section + ".png");
+    }
+
     public Rendered attendanceCalendar(String lang, ChildInfo child, AttendanceSummary summary, int year, int month,
                                        LocalDate today) {
         List<String> statuses = summary.days().stream().map(AttendanceDay::status).toList();

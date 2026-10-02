@@ -118,6 +118,58 @@ public class HttpTelegramClient implements TelegramClient {
     }
 
     @Override
+    public SentPhoto editMessageMedia(long chatId, long messageId, String fileId, byte[] png, String fileName,
+                                      String captionHtml, Object replyMarkup) {
+        Map<String, Object> media = new HashMap<>();
+        media.put("type", "photo");
+        media.put("media", fileId != null ? fileId : "attach://banner");
+        if (captionHtml != null) {
+            media.put("caption", captionHtml);
+            media.put("parse_mode", "HTML");
+        }
+        TelegramModels.Message m;
+        if (fileId != null) {
+            Map<String, Object> body = new HashMap<>();
+            body.put("chat_id", chatId);
+            body.put("message_id", messageId);
+            body.put("media", media);
+            if (replyMarkup != null) body.put("reply_markup", replyMarkup);
+            m = postJson("/editMessageMedia", body, MESSAGE_TYPE).result();
+        } else {
+            MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+            form.add("chat_id", String.valueOf(chatId));
+            form.add("message_id", String.valueOf(messageId));
+            form.add("media", TelegramJson.write(media));
+            form.add("banner", new ByteArrayResource(png) {
+                @Override
+                public String getFilename() {
+                    return fileName;
+                }
+            });
+            if (replyMarkup != null) form.add("reply_markup", TelegramJson.write(replyMarkup));
+            m = call(() -> restClient.post().uri("/editMessageMedia")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(form)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> { /* parsed from body */ })
+                    .body(MESSAGE_TYPE)).result();
+        }
+        SentPhoto sent = toSentPhoto(m);
+        return new SentPhoto(messageId, sent.fileId() != null ? sent.fileId() : fileId);
+    }
+
+    @Override
+    public void editMessageCaption(long chatId, long messageId, String captionHtml, Object replyMarkup) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("chat_id", chatId);
+        body.put("message_id", messageId);
+        body.put("caption", captionHtml);
+        body.put("parse_mode", "HTML");
+        if (replyMarkup != null) body.put("reply_markup", replyMarkup);
+        postJson("/editMessageCaption", body, ANY_TYPE);
+    }
+
+    @Override
     public void deleteMessage(long chatId, long messageId) {
         postJson("/deleteMessage", Map.of("chat_id", chatId, "message_id", messageId), ANY_TYPE);
     }

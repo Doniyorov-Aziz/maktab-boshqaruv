@@ -99,17 +99,40 @@ public final class TelegramModels {
             @JsonProperty("reply_markup") Object replyMarkup) {
     }
 
+    /**
+     * Bottom-keyboard button. {@code style} (Bot API 9.4): "primary" (blue), "success" (green) or
+     * "danger" (red); older Telegram apps ignore it and show a plain button.
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record KeyboardButton(String text, @JsonProperty("request_contact") Boolean requestContact) {
+    public record KeyboardButton(String text, @JsonProperty("request_contact") Boolean requestContact,
+                                 @JsonProperty("web_app") WebAppInfo webApp, String style) {
+        public KeyboardButton(String text, Boolean requestContact) {
+            this(text, requestContact, null, null);
+        }
+
         public static KeyboardButton of(String text) {
             return new KeyboardButton(text, null);
         }
+
+        public static KeyboardButton styled(String text, String style) {
+            return new KeyboardButton(text, null, null, style);
+        }
+
+        public static KeyboardButton webApp(String text, String url) {
+            return new KeyboardButton(text, null, new WebAppInfo(url), "primary");
+        }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ReplyKeyboardMarkup(
             List<List<KeyboardButton>> keyboard,
             @JsonProperty("resize_keyboard") Boolean resizeKeyboard,
-            @JsonProperty("one_time_keyboard") Boolean oneTimeKeyboard) {
+            @JsonProperty("one_time_keyboard") Boolean oneTimeKeyboard,
+            @JsonProperty("is_persistent") Boolean isPersistent,
+            @JsonProperty("input_field_placeholder") String inputFieldPlaceholder) {
+        public ReplyKeyboardMarkup(List<List<KeyboardButton>> keyboard, Boolean resizeKeyboard, Boolean oneTimeKeyboard) {
+            this(keyboard, resizeKeyboard, oneTimeKeyboard, null, null);
+        }
     }
 
     public record ReplyKeyboardRemove(@JsonProperty("remove_keyboard") Boolean removeKeyboard) {
@@ -122,13 +145,23 @@ public final class TelegramModels {
     public record InlineButton(String text,
                                @JsonProperty("callback_data") String callbackData,
                                String url,
-                               @JsonProperty("web_app") WebAppInfo webApp) {
+                               @JsonProperty("web_app") WebAppInfo webApp,
+                               String style) {
+        public InlineButton(String text, String callbackData, String url, WebAppInfo webApp) {
+            this(text, callbackData, url, webApp, null);
+        }
+
         public static InlineButton callback(String text, String data) {
             return new InlineButton(text, null == data ? "noop" : data, null, null);
         }
 
         public static InlineButton webApp(String text, String url) {
-            return new InlineButton(text, null, null, new WebAppInfo(url));
+            return new InlineButton(text, null, null, new WebAppInfo(url), "primary");
+        }
+
+        /** Same button with a Bot API 9.4 color style ("primary", "success", "danger"). */
+        public InlineButton styled(String style) {
+            return new InlineButton(text, callbackData, url, webApp, style);
         }
     }
 

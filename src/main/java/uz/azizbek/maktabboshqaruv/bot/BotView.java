@@ -13,6 +13,7 @@ public final class BotView {
     private final String text;
     private final TelegramModels.InlineKeyboardMarkup keyboard;
     private BotImageService.Rendered photo;
+    private BotImageService.Rendered banner;
     private boolean newMessage;
     private String section;
     private String toast;
@@ -101,6 +102,16 @@ public final class BotView {
 
     public BotImageService.Rendered photo() {
         return photo;
+    }
+
+    /** Section banner: the page is shown as a card — banner photo with the text as its caption. */
+    public BotView banner(BotImageService.Rendered banner) {
+        this.banner = banner;
+        return this;
+    }
+
+    public BotImageService.Rendered banner() {
+        return banner;
     }
 
     public boolean newMessage() {

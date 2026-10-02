@@ -2,6 +2,7 @@ package uz.azizbek.maktabboshqaruv.bot;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uz.azizbek.maktabboshqaruv.bot.image.BannerService;
 import uz.azizbek.maktabboshqaruv.entity.ParentSession;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.service.BotUsageService;
@@ -60,6 +61,8 @@ public class BotRouter {
     private BotUsageService usage;
     @Autowired
     private Clock clock;
+    @Autowired
+    private BannerService banners;
 
     public BotRouter(List<Screen> screenBeans, List<InputHandler> inputHandlers) {
         for (Screen s : screenBeans) screens.put(s.code(), s);
@@ -106,7 +109,7 @@ public class BotRouter {
             if (students.isEmpty()) {
                 answer(cq.id(), null, false);
                 BotContext ctx = new BotContext(chatId, null, session, null, students, cq.from());
-                responder.deliver(chatId, null, onboarding.welcome(ctx));
+                responder.deliver(chatId, null, decorate(ctx, onboarding.welcome(ctx), null));
                 return;
             }
             Student student = data.get("s") != null
@@ -127,9 +130,9 @@ public class BotRouter {
             // Buttons under an automatic notification open a new page instead of overwriting the notification.
             Long messageId = "1".equals(data.get("n")) ? null : cq.message().messageId();
             BotContext ctx = new BotContext(chatId, messageId, session, student, students, cq.from());
-            BotView view = render(ctx, screen, data);
+            BotView view = decorate(ctx, render(ctx, screen, data), data);
             if (!heavy) answer(cq.id(), view.toast(), false);
-            responder.deliver(chatId, messageId, view);
+            responder.deliver(chatId, messageId, view, messageId != null && cq.message().photo() != null);
             usage.record(chatId, ctx.student(), view.section());
         } catch (ParentAccessService.AccessDenied denied) {
             answer(cq.id(), BotI18n.get().t(session == null ? "uz" : session.lang(), "common.denied"), true);
@@ -149,6 +152,22 @@ public class BotRouter {
             return redirected.toast(view.toast());
         }
         return view;
+    }
+
+    /**
+     * Turns a page into a card by attaching its section banner. A banner failure
+     * never breaks the page — it is simply shown as text.
+     */
+    private BotView decorate(BotContext ctx, BotView view, CallbackData data) {
+        if (view == null || view.photo() != null || view.text() == null || view.banner() != null) return view;
+        String section = "onboarding".equals(view.section()) ? "home" : view.section();
+        if (section == null || !BannerService.SECTIONS.contains(section)) return view;
+        try {
+            return view.banner(banners.banner(ctx, section, data));
+        } catch (Exception e) {
+            log.warn("Banner yaratilmadi (section={}): {}", section, TokenMasker.mask(e.toString()));
+            return view;
+        }
     }
 
     private static boolean isHeavy(CallbackData data) {
@@ -182,7 +201,7 @@ public class BotRouter {
 
             BotView view = route(ctx, m);
             if (view != null) {
-                responder.deliver(chatId, null, view.asNewMessage());
+                responder.deliver(chatId, null, decorate(ctx, view, null).asNewMessage());
                 usage.record(chatId, ctx.student(), view.section());
             }
         } catch (ParentAccessService.AccessDenied denied) {
@@ -235,6 +254,7 @@ public class BotRouter {
 
         if (ctx.students().isEmpty()) {
             // Not linked yet: a typed code is accepted as if it came through the deep link.
+            if (Onboarding.isCodeButton(ctx, text)) return onboarding.codePrompt(ctx);
             if (LinkCodeGenerator.looksValid(text)) {
                 LinkingService.Result result = linking.byCode(ctx.chatId(), ctx.from(), text);
                 return result.ok() ? onboarding.linked(ctx, result.linked()) : error(ctx, result.errorKey());
@@ -258,7 +278,7 @@ public class BotRouter {
 
     private BotView error(BotContext ctx, String key) {
         Object keyboard = ctx.students().isEmpty()
-                ? TelegramModels.shareContactKeyboard(ctx.t("start.share_button"))
+                ? Onboarding.welcomeKeyboard(ctx)
                 : Keyboards.main(ctx.lang());
         return BotView.of(ctx.t(key), null).withReplyKeyboard(keyboard).section("link_error");
     }

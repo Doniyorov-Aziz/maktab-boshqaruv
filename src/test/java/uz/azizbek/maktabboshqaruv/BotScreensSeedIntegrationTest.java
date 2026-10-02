@@ -158,6 +158,46 @@ class BotScreensSeedIntegrationTest {
     }
 
     @Test
+    void everySectionOpensAsACard_bannerPhotoWithCaption() throws Exception {
+        send("/start " + student.getTelegramLinkCode());
+        for (String code : new String[]{"home", "sch", "att", "gr", "rep", "beh", "ann", "ev", "tch", "msg", "abs", "info", "set", "ch"}) {
+            List<MockTelegramClient.SentMessage> ops = tap(code);
+            MockTelegramClient.SentMessage last = ops.get(ops.size() - 1);
+            assertTrue("photo".equals(last.op()) || "media".equals(last.op()), code + ": karta emas, op=" + last.op());
+            assertNotNull(last.photoId(), code);
+            assertNotNull(last.keyboard(), code + ": tugmalar yo'q");
+            assertFalse(last.text().isBlank(), code + ": caption bo'sh");
+            java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(mock.downloadFile(last.photoId())));
+            assertEquals(1280, img.getWidth(), code);
+            assertEquals(640, img.getHeight(), code);
+        }
+        // Moving between cards edits the same message instead of sending a new one.
+        List<MockTelegramClient.SentMessage> ops = tap("att:k:m:v:cal");
+        assertTrue(ops.stream().noneMatch(o -> "send".equals(o.op()) || "photo".equals(o.op()))
+                || ops.stream().anyMatch(o -> "delete".equals(o.op())), "yangi xabar ortiqcha: " + ops);
+    }
+
+    @Test
+    void welcomeForAnUnlinkedParent_hasBannerAndTwoBigButtons() {
+        List<MockTelegramClient.SentMessage> ops = send("/start");
+        MockTelegramClient.SentMessage last = ops.get(ops.size() - 1);
+        assertEquals("photo", last.op());
+        assertTrue(last.keyboard().contains("request_contact"), last.keyboard());
+        assertTrue(last.keyboard().contains("🔑 Kod kiritish"), last.keyboard());
+        List<MockTelegramClient.SentMessage> prompt = send("🔑 Kod kiritish");
+        assertTrue(prompt.get(prompt.size() - 1).text().contains("Kodni yuboring"));
+    }
+
+    @Test
+    void typedSectionNames_openTheSection() {
+        send("/start " + student.getTelegramLinkCode());
+        List<MockTelegramClient.SentMessage> ops = send("davomat");
+        assertTrue(ops.get(ops.size() - 1).text().contains("Davomat"), ops.toString());
+        ops = send("/menu");
+        assertTrue(ops.stream().anyMatch(o -> o.keyboard() != null && o.keyboard().contains("is_persistent")), ops.toString());
+    }
+
+    @Test
     void pagesRenderInAllThreeLanguages() {
         send("/start " + student.getTelegramLinkCode());
         tap("set:a:lg:l:cy");

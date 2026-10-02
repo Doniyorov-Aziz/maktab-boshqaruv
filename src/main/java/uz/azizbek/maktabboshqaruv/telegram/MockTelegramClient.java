@@ -66,6 +66,24 @@ public class MockTelegramClient implements TelegramClient {
     }
 
     @Override
+    public SentPhoto editMessageMedia(long chatId, long messageId, String fileId, byte[] png, String fileName,
+                                      String captionHtml, Object replyMarkup) {
+        String id = fileId;
+        if (id == null) {
+            id = "mock-photo-" + fileIds.getAndIncrement();
+            files.put(id, png);
+        }
+        log.info("[MOCK TELEGRAM] chat={} media #{} -> {} {}", chatId, messageId, id, captionHtml);
+        record(new SentMessage(chatId, captionHtml, replyMarkup != null, "media", messageId, TelegramJson.write(replyMarkup), id));
+        return new SentPhoto(messageId, id);
+    }
+
+    @Override
+    public void editMessageCaption(long chatId, long messageId, String captionHtml, Object replyMarkup) {
+        record(new SentMessage(chatId, captionHtml, replyMarkup != null, "caption", messageId, TelegramJson.write(replyMarkup), null));
+    }
+
+    @Override
     public void deleteMessage(long chatId, long messageId) {
         record(new SentMessage(chatId, null, false, "delete", messageId, null, null));
     }
