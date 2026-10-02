@@ -40,7 +40,7 @@ Maktab (yoki bir nechta maktab) uchun kundalik boshqaruv tizimi: sinflar va o'qu
 
 | Bot: davomat kalendari | Mini App «Farzandim kundaligi» |
 |---|---|
-| ![Bot calendar](docs/images/bot/01-davomat-kalendar.png) | ![Mini App](docs/images/bot/miniapp-bugun.png) |
+| ![Bot calendar](docs/images/bot/rasm-davomat-kalendar.png) | ![Mini App](docs/images/bot/miniapp-bugun.png) |
 
 ## Tezkor ishga tushirish
 

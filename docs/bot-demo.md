@@ -1,8 +1,9 @@
 # Ota-onalar boti — to'liq demo
 
-> Bu fayl `scripts/bot-demo.mjs` tomonidan avtomatik yaratildi (30/09/2026, 15:33:59),
+> Bu fayl `scripts/bot-demo.mjs` tomonidan avtomatik yaratildi (02/10/2026, 09:39:44),
 > backend `telegram.mock=true` rejimida, seed ma'lumot bilan. Har bir 👤 qadam — ota-onaning harakati,
-> 🤖 — bot javobi, `[...]` — inline tugmalar, ✏️ — xabar yangisi yuborilmay, o'rnida tahrirlangani.
+> 🤖 — bot javobi, `[...]` — inline tugmalar, ✏️ — xabar yangisi yuborilmay, o'rnida tahrirlangani,
+> 🔄 — kartochka (banner rasmi + matn + tugmalar) shu xabarning o'zida almashtirilgani. Har sahifa tepasidagi rasm — bo'lim banneri.
 > Botni Telegram'da ochmasdan turib barcha sahifalarni shu yerda ko'rish mumkin.
 
 **Mundarija:** 
@@ -16,23 +17,25 @@
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/01-kutib-olish-va-ulanish.png)
+>
 > 👋 **Assalomu alaykum!**
 >
-> Men — **Maktab Boshqaruv** boti, farzandingizning maktabdagi yordamchisiman.
+> Men — **Maktab Boshqaruv** boti, farzandingizning maktabdagi yordamchisiman:
 >
 > 📅 Dars jadvali va ertangi darslar
 > ✅ Davomat — kelmasa yoki kechiksa, darhol xabar
-> 📘 Baholar va haftalik hisobot
-> 📢 Maktab e'lonlari va tadbirlar
+> 📘 Baholar, hisobot va maktab e'lonlari
 > 💬 Maktabga to'g'ridan-to'g'ri yozish
 >
-> **Qanday ulanaman?**
-> 1️⃣ Sinf rahbari bergan **QR kodni** telefon kamerasi bilan skanerlang
-> 2️⃣ Yoki maktab yuborgan **taklif havolasini** oching
-> 3️⃣ Yoki pastdagi **«📱 Raqamni ulashish»** tugmasini bosing — maktabda yozilgan raqamingiz bo'yicha farzandingizni topaman
+> **Ulanish uchun** pastdagi tugmalardan birini bosing 👇
+> 📱 **Telefon raqamni ulashish** — maktabda yozilgan raqamingiz bo'yicha
+> 🔑 **Kod kiritish** — sinf rahbari bergan kartochkadagi kod
+> _QR kodni skanerlasangiz, ulanish o'zi bo'ladi._
 >
 > ⌨️ _Pastki klaviatura:_
-> `📱 Raqamni ulashish`
+> `📱 Telefon raqamni ulashish`
+> `🔑 Kod kiritish`
 
 ### 1.2. Sinf rahbari bergan QR kod / havola orqali ulanish
 
@@ -48,25 +51,30 @@
 > 3️⃣ «⚙️ Sozlamalar»da qaysi xabarlar va qachon kelishini tanlaysiz
 >
 > ⌨️ _Pastki klaviatura:_
+> `📱 Kundalikni ochish`
 > `📅 Dars jadvali` `✅ Davomat`
 > `📘 Baholar` `📊 Hisobot`
 > `📢 E'lonlar` `🗓 Tadbirlar`
 > `👩‍🏫 O'qituvchilar` `💬 Maktabga yozish`
-> `⚙️ Sozlamalar` `👨‍👩‍👧 Farzandlarim`
+> `🤒 Sababli ariza` `⚙️ Sozlamalar`
+> `👨‍👩‍👧 Farzandlarim`
 
 🤖 **Bot:**
 
-> 🏠 **Bosh menyu** · 30-sentabr, chorshanba
+> ![rasm](images/bot/02-kutib-olish-va-ulanish.png)
+>
+> 🏠 **Bosh menyu** · 2-oktabr, juma
 >
 > 👤 **Elyor Berdiyev** · 1-A sinf
 > 👩‍🏫 Sinf rahbari: Zebo Ne'matova
 >
 > **Bugun:**
 > 📚 5 ta dars · 08:30–13:25
-> 🔴 2 ta darsga kelmadi
-> 📘 Bugungi baholar: 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🟢 **5** Ona tili
+> 🔴 1 ta darsga kelmadi
+> 📘 Bugungi baholar: 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili
 > 📢 Yangi e'lonlar: **7**
-> 🗓 Yaqin tadbir: **O'qituvchilar va murabbiylar kuni** — 1-oktabr
+> 🗓 Yaqin tadbir: **Ota-onalar yig'ilishi** — 8-oktabr
+> 📅 Ertaga 1-dars: **08:30** · 🔢 Matematika
 >
 > Bo'limni tanlang 👇
 >
@@ -88,11 +96,13 @@
 > ❌ Kod topilmadi. Havolani sinf rahbaringizdan qayta so'rang yoki /start bosib raqamingizni ulashing.
 >
 > ⌨️ _Pastki klaviatura:_
+> `📱 Kundalikni ochish`
 > `📅 Dars jadvali` `✅ Davomat`
 > `📘 Baholar` `📊 Hisobot`
 > `📢 E'lonlar` `🗓 Tadbirlar`
 > `👩‍🏫 O'qituvchilar` `💬 Maktabga yozish`
-> `⚙️ Sozlamalar` `👨‍👩‍👧 Farzandlarim`
+> `🤒 Sababli ariza` `⚙️ Sozlamalar`
+> `👨‍👩‍👧 Farzandlarim`
 
 ## 2. Bosh menyu — "Bugun"
 
@@ -102,19 +112,20 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/02-kutib-olish-va-ulanish.png)
 >
-> 🏠 **Bosh menyu** · 30-sentabr, chorshanba
+> 🏠 **Bosh menyu** · 2-oktabr, juma
 >
 > 👤 **Elyor Berdiyev** · 1-A sinf
 > 👩‍🏫 Sinf rahbari: Zebo Ne'matova
 >
 > **Bugun:**
 > 📚 5 ta dars · 08:30–13:25
-> 🔴 2 ta darsga kelmadi
-> 📘 Bugungi baholar: 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🟢 **5** Ona tili
+> 🔴 1 ta darsga kelmadi
+> 📘 Bugungi baholar: 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili
 > 📢 Yangi e'lonlar: **7**
-> 🗓 Yaqin tadbir: **O'qituvchilar va murabbiylar kuni** — 1-oktabr
+> 🗓 Yaqin tadbir: **Ota-onalar yig'ilishi** — 8-oktabr
+> 📅 Ertaga 1-dars: **08:30** · 🔢 Matematika
 >
 > Bo'limni tanlang 👇
 >
@@ -135,26 +146,28 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/03-dars-jadvali.png)
 >
 > 🏠 › 📅 Jadval › Bugun
 >
-> **30-sentabr, chorshanba**
+> **2-oktabr, juma**
 >
-> **1.** 08:30–09:15 · 📖 **O'zbek adabiyoti**
+> **1.** 08:30–09:15 · 🔢 **Matematika**
 >       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
 >       ☕ _Tanaffus 10 daqiqa_
-> **2.** 09:25–10:10 · 🎵 **Musiqa**
->       👩‍🏫 Bekzod Islomov · 🚪 201-xona
->       ☕ _Tanaffus 10 daqiqa_
-> **3.** 10:20–11:05 · 📝 **Ona tili**
+> ▶️ **2.** 09:25–10:10 · 🔢 **Matematika**
 >       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
 >       ☕ _Tanaffus 10 daqiqa_
-> **4.** 11:15–12:00 · 📝 **Ona tili**
+> **3.** 10:20–11:05 · 🔢 **Matematika**
 >       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
+>       ☕ _Tanaffus 10 daqiqa_
+> **4.** 11:15–12:00 · 🛠 **Texnologiya**
+>       👩‍🏫 Robiya Yoqubova · 🚪 201-xona
 >       ☕ _Tanaffus 40 daqiqa_
-> **5.** 12:40–13:25 · 📝 **Ona tili**
+> **5.** 12:40–13:25 · 📖 **O'zbek adabiyoti**
 >       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
+>
+>> ▶️ — hozir ketayotgan dars
 >
 > `[• Bugun •]` `[Ertaga]` `[Hafta]`
 > `[🏠 Bosh menyu]`
@@ -165,13 +178,23 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/03-dars-jadvali.png)
 >
 > 🏠 › 📅 Jadval › Ertaga
 >
-> **1-oktabr, payshanba**
+> **3-oktabr, shanba**
 >
-> 🎉 Ertaga O'qituvchilar va murabbiylar kuni — dars yo'q
+> **1.** 08:30–09:15 · 🔢 **Matematika**
+>       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
+>       ☕ _Tanaffus 10 daqiqa_
+> **2.** 09:25–10:10 · 🤝 **Tarbiya**
+>       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
+>       ☕ _Tanaffus 10 daqiqa_
+> **3.** 10:20–11:05 · 🛠 **Texnologiya**
+>       👩‍🏫 Robiya Yoqubova · 🚪 201-xona
+>       ☕ _Tanaffus 10 daqiqa_
+> **4.** 11:15–12:00 · 🔢 **Matematika**
+>       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
 >
 > `[Bugun]` `[• Ertaga •]` `[Hafta]`
 > `[🏠 Bosh menyu]`
@@ -182,7 +205,7 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/03-dars-jadvali.png)
 >
 > 🏠 › 📅 Jadval › Hafta
 >
@@ -212,7 +235,7 @@
 >
 > **Juma, 2-oktabr** · 5 ta dars · 08:30–13:25
 >    1. 🔢 Matematika
->    2. 🔢 Matematika
+>    2. 🔢 Matematika ▶️
 >    3. 🔢 Matematika
 >    4. 🛠 Texnologiya
 >    5. 📖 O'zbek adabiyoti
@@ -232,24 +255,28 @@
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/03-dars-jadvali.png)
+>
 > 🏠 › 📅 Jadval › Bugun
 >
-> **30-sentabr, chorshanba**
+> **2-oktabr, juma**
 >
-> **1.** 08:30–09:15 · 📖 **O'zbek adabiyoti**
+> **1.** 08:30–09:15 · 🔢 **Matematika**
 >       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
 >       ☕ _Tanaffus 10 daqiqa_
-> **2.** 09:25–10:10 · 🎵 **Musiqa**
->       👩‍🏫 Bekzod Islomov · 🚪 201-xona
->       ☕ _Tanaffus 10 daqiqa_
-> **3.** 10:20–11:05 · 📝 **Ona tili**
+> ▶️ **2.** 09:25–10:10 · 🔢 **Matematika**
 >       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
 >       ☕ _Tanaffus 10 daqiqa_
-> **4.** 11:15–12:00 · 📝 **Ona tili**
+> **3.** 10:20–11:05 · 🔢 **Matematika**
 >       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
+>       ☕ _Tanaffus 10 daqiqa_
+> **4.** 11:15–12:00 · 🛠 **Texnologiya**
+>       👩‍🏫 Robiya Yoqubova · 🚪 201-xona
 >       ☕ _Tanaffus 40 daqiqa_
-> **5.** 12:40–13:25 · 📝 **Ona tili**
+> **5.** 12:40–13:25 · 📖 **O'zbek adabiyoti**
 >       👩‍🏫 Zebo Ne'matova · 🚪 201-xona
+>
+>> ▶️ — hozir ketayotgan dars
 >
 > `[• Bugun •]` `[Ertaga]` `[Hafta]`
 > `[🏠 Bosh menyu]`
@@ -262,7 +289,34 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/04-davomat.png)
+>
+> 🏠 › ✅ Davomat › Oktabr 2026
+>
+> **Oktabr 2026**
+>
+> 📚 Jami darslar: **14**
+> ✅ Kelgan: **0**
+> 🟡 Kechikkan: **1**
+> 🔴 Kelmagan: **1**
+> 🔵 Sababli: **12**
+>
+> ▰▱▱▱▱▱▱▱▱▱ **7.1%**
+>> Sinf o'rtachasi: 7.1% — o'rtacha darajada
+>
+> `[◀️ Sentabr]` `[Oktabr 2026]` `[·]`
+> `[🗓 Kalendar]` `[📋 Batafsil]`
+> `[📚 Fanlar bo'yicha]` `[🖼 Rasm ko'rinishida]`
+> `[• 🗓 Oy •]` `[🏷 Chorak]` `[🎓 O'quv yili]`
+> `[🏠 Bosh menyu]`
+
+### 4.2. Oldingi oy
+
+👤 **Ota-ona:** tugmani bosdi `[◀️ Sentabr]`
+
+🤖 **Bot:**
+
+> ![rasm](images/bot/05-davomat.png)
 >
 > 🏠 › ✅ Davomat › Sentabr 2026
 >
@@ -277,34 +331,7 @@
 > ▰▰▰▰▰▰▰▰▱▱ **82.1%**
 >> Sinf o'rtachasi: 94.2% — o'rtachadan pastroq, e'tibor bering
 >
-> `[◀️ Avgust]` `[Sentabr 2026]` `[·]`
-> `[🗓 Kalendar]` `[📋 Batafsil]`
-> `[📚 Fanlar bo'yicha]` `[🖼 Rasm ko'rinishida]`
-> `[• 🗓 Oy •]` `[🏷 Chorak]` `[🎓 O'quv yili]`
-> `[🏠 Bosh menyu]`
-
-### 4.2. Oldingi oy
-
-👤 **Ota-ona:** tugmani bosdi `[◀️ Avgust]`
-
-🤖 **Bot:**
-
-> ✏️ _(shu xabar tahrirlandi)_
->
-> 🏠 › ✅ Davomat › Avgust 2026
->
-> **Avgust 2026**
->
-> 📚 Jami darslar: **25**
-> ✅ Kelgan: **20**
-> 🟡 Kechikkan: **0**
-> 🔴 Kelmagan: **3**
-> 🔵 Sababli: **2**
->
-> ▰▰▰▰▰▰▰▰▱▱ **80%**
->> Sinf o'rtachasi: 91.8% — o'rtachadan pastroq, e'tibor bering
->
-> `[◀️ Iyul]` `[Avgust 2026]` `[Sentabr ▶️]`
+> `[◀️ Avgust]` `[Sentabr 2026]` `[Oktabr ▶️]`
 > `[🗓 Kalendar]` `[📋 Batafsil]`
 > `[📚 Fanlar bo'yicha]` `[🖼 Rasm ko'rinishida]`
 > `[• 🗓 Oy •]` `[🏷 Chorak]` `[🎓 O'quv yili]`
@@ -316,17 +343,17 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/04-davomat.png)
 >
-> 🏠 › ✅ Davomat › Sentabr 2026 › 🗓 Kalendar
+> 🏠 › ✅ Davomat › Oktabr 2026 › 🗓 Kalendar
 >
-> **Sentabr 2026** · kalendar
+> **Oktabr 2026** · kalendar
 >
-> `01–06` ▫️🟩🟩🟩🟩🟩⬜
-> `07–13` 🟩🟦🟩🟥🟩🟩⬜
-> `14–20` 🟨🟩🟥🟩🟩🟩⬜
-> `21–27` 🟩🟩🟩🟩🟩🟩⬜
-> `28–30` 🟩🟩🟥
+> `01–04` ▫️▫️▫️🟦🟥🟦⬜
+> `05–11` ⬜⬜⬜⬜⬜⬜⬜
+> `12–18` ⬜⬜⬜⬜⬜⬜⬜
+> `19–25` ⬜⬜⬜⬜⬜⬜⬜
+> `26–31` ⬜⬜⬜⬜⬜⬜
 >
 > 🟩 keldi · 🟨 kechikdi · 🟥 kelmadi · 🟦 sababli · ⬜ dars yo'q
 >
@@ -339,18 +366,14 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/04-davomat.png)
 >
-> 🏠 › ✅ Davomat › Sentabr 2026 › 📋 Batafsil
+> 🏠 › ✅ Davomat › Oktabr 2026 › 📋 Batafsil
 >
-> **Kelmagan va kechikkan darslar** · Sentabr 2026
+> **Kelmagan va kechikkan darslar** · Oktabr 2026
 >
-> 🔴 **30-sentabr, chorshanba** · 1-dars · O'zbek adabiyoti
-> 🟡 **30-sentabr, chorshanba** · 2-dars · Musiqa
-> 🔴 **30-sentabr, chorshanba** · 3-dars · Ona tili
-> 🔴 **16-sentabr, chorshanba** · 1-dars · O'zbek adabiyoti
-> 🟡 **14-sentabr, dushanba** · 1-dars · Matematika
-> 🔴 **10-sentabr, payshanba** · 1-dars · Tasviriy san'at
+> 🔴 **2-oktabr, juma** · 1-dars · Matematika
+> 🟡 **2-oktabr, juma** · 2-dars · Matematika
 >
 > `[⬅️ Orqaga]` `[🏠 Bosh menyu]`
 
@@ -360,17 +383,13 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/04-davomat.png)
 >
-> 🏠 › ✅ Davomat › Sentabr 2026 › 📚 Fanlar bo'yicha
+> 🏠 › ✅ Davomat › Oktabr 2026 › 📚 Fanlar bo'yicha
 >
-> **Fanlar bo'yicha** · Sentabr 2026
+> **Fanlar bo'yicha** · Oktabr 2026
 >
-> 📖 O'zbek adabiyoti: 🔴 2 · 🟡 0
-> 📝 Ona tili: 🔴 1 · 🟡 0
-> 🎨 Tasviriy san'at: 🔴 1 · 🟡 0
-> 🔢 Matematika: 🔴 0 · 🟡 1
-> 🎵 Musiqa: 🔴 0 · 🟡 1
+> 🔢 Matematika: 🔴 1 · 🟡 1
 >
 > `[⬅️ Orqaga]` `[🏠 Bosh menyu]`
 
@@ -380,9 +399,9 @@
 
 🤖 **Bot:**
 
-> ![rasm](images/bot/01-davomat-kalendar.png)
+> ![rasm](images/bot/06-davomat.png)
 >
-> 🗓 **Elyor Berdiyev** · Sentabr 2026
+> 🗓 **Elyor Berdiyev** · Oktabr 2026
 >
 > `[⬅️ Orqaga]` `[🏠 Bosh menyu]`
 
@@ -392,20 +411,20 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/04-davomat.png)
 >
 > 🏠 › ✅ Davomat › 1-chorak
 >
 > **1-chorak**
 >
-> 📚 Jami darslar: **38**
+> 📚 Jami darslar: **42**
 > ✅ Kelgan: **21**
-> 🟡 Kechikkan: **2**
-> 🔴 Kelmagan: **4**
-> 🔵 Sababli: **11**
+> 🟡 Kechikkan: **3**
+> 🔴 Kelmagan: **5**
+> 🔵 Sababli: **13**
 >
-> ▰▰▰▰▰▰▱▱▱▱ **60.5%**
->> Sinf o'rtachasi: 92.5% — o'rtachadan pastroq, e'tibor bering
+> ▰▰▰▰▰▰▱▱▱▱ **57.1%**
+>> Sinf o'rtachasi: 92% — o'rtachadan pastroq, e'tibor bering
 >
 > `[·]` `[1-chorak]` `[2-chorak ▶️]`
 > `[🗓 Kalendar]` `[📋 Batafsil]`
@@ -419,20 +438,20 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/04-davomat.png)
 >
 > 🏠 › ✅ Davomat › 2026–2027 o'quv yili
 >
 > **2026–2027 o'quv yili**
 >
-> 📚 Jami darslar: **38**
+> 📚 Jami darslar: **42**
 > ✅ Kelgan: **21**
-> 🟡 Kechikkan: **2**
-> 🔴 Kelmagan: **4**
-> 🔵 Sababli: **11**
+> 🟡 Kechikkan: **3**
+> 🔴 Kelmagan: **5**
+> 🔵 Sababli: **13**
 >
-> ▰▰▰▰▰▰▱▱▱▱ **60.5%**
->> Sinf o'rtachasi: 92.5% — o'rtachadan pastroq, e'tibor bering
+> ▰▰▰▰▰▰▱▱▱▱ **57.1%**
+>> Sinf o'rtachasi: 92% — o'rtachadan pastroq, e'tibor bering
 >
 > `[🗓 Kalendar]` `[📋 Batafsil]`
 > `[📚 Fanlar bo'yicha]`
@@ -447,31 +466,31 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/07-baholar.png)
 >
 > 🏠 › 📘 Baholar › 🕘 So'nggi
 >
 > **So'nggi baholar**
 >
-> 🟢 **5** · Ona tili · 30-sentabr
+> 🟢 **5** · Ona tili · 2-oktabr
 >       _joriy_
-> 🔴 **2** · O'zbek adabiyoti · 30-sentabr
+> 🔴 **2** · O'zbek adabiyoti · 2-oktabr
 >       _joriy_ — «Uy vazifasi bajarilmagan»
-> 🟢 **5** · Ona tili · 30-sentabr
+> 🟢 **5** · Ona tili · 2-oktabr
 >       _joriy_
-> 🔴 **2** · O'zbek adabiyoti · 30-sentabr
+> 🔴 **2** · O'zbek adabiyoti · 2-oktabr
 >       _joriy_ — «Uy vazifasi bajarilmagan»
-> 🟢 **5** · Ona tili · 30-sentabr
+> 🟢 **5** · Ona tili · 2-oktabr
 >       _joriy_
-> 🔴 **2** · O'zbek adabiyoti · 30-sentabr
+> 🔴 **2** · O'zbek adabiyoti · 2-oktabr
 >       _joriy_ — «Uy vazifasi bajarilmagan»
-> 🟢 **5** · Ona tili · 30-sentabr
+> 🟢 **5** · Ona tili · 2-oktabr
 >       _joriy_
-> 🟢 **5** · Tasviriy san'at · 29-sentabr
->       _joriy_
+> 🔴 **2** · O'zbek adabiyoti · 2-oktabr
+>       _joriy_ — «Uy vazifasi bajarilmagan»
 >
 > `[• 🕘 So'nggi •]` `[📚 Fanlar]` `[🏅 Chorak]`
-> `[·]` `[1/4]` `[▶️]`
+> `[·]` `[1/6]` `[▶️]`
 > `[🏠 Bosh menyu]`
 
 ### 5.2. Fanlar bo'yicha o'rtacha (tendensiya bilan)
@@ -480,16 +499,16 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/07-baholar.png)
 >
 > 🏠 › 📘 Baholar › 📚 Fanlar
 >
 > **Fanlar bo'yicha o'rtacha**
 >
-> 📘 Ona tili **4.4** ▰▰▰▰▱ ↑
-> 📘 Tasviriy san'at **4.3** ▰▰▰▰▱ ↓
-> 📙 Musiqa **3.0** ▰▰▰▱▱ ↓
-> 📙 O'zbek adabiyoti **2.6** ▰▰▰▱▱ ↓
+> 📗 Ona tili **4.7** ▰▰▰▰▰ ↑
+> 📘 Tasviriy san'at **4.3** ▰▰▰▰▱ 
+> 📙 Musiqa **3.0** ▰▰▰▱▱ 
+> 📕 O'zbek adabiyoti **2.3** ▰▰▱▱▱ ↓
 >
 >> ↑ ↓ — o'tgan oyga nisbatan o'zgarish. Fanni bosing — barcha baholar ochiladi.
 >
@@ -505,22 +524,24 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/07-baholar.png)
 >
 > 🏠 › 📘 Baholar › Ona tili
 >
 > 📝 **Ona tili**
 > 👩‍🏫 O'qituvchi: Zebo Ne'matova
-> 📈 O'rtacha: **4.43** · 7 ta baho
+> 📈 O'rtacha: **4.69** · 13 ta baho
 >
+> 🟢 **5** · 2-oktabr, juma · _joriy_
+> 🟢 **5** · 2-oktabr, juma · _joriy_
+> 🟢 **5** · 2-oktabr, juma · _joriy_
+> 🟢 **5** · 2-oktabr, juma · _joriy_
+> 🟢 **5** · 2-oktabr, juma · _joriy_
 > 🟢 **5** · 30-sentabr, chorshanba · _joriy_
 > 🟢 **5** · 30-sentabr, chorshanba · _joriy_
 > 🟢 **5** · 30-sentabr, chorshanba · _joriy_
-> 🟢 **5** · 30-sentabr, chorshanba · _joriy_
-> 🔴 **2** · 19-sentabr, shanba · _imtihon_
-> 🔵 **4** · 8-sentabr, seshanba · _imtihon_
-> 🟢 **5** · 6-sentabr, yakshanba · _imtihon_
 >
+> `[·]` `[1/2]` `[▶️]`
 > `[💬 Maktabga yozish]`
 > `[⬅️ Orqaga]` `[🏠 Bosh menyu]`
 
@@ -530,7 +551,7 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/07-baholar.png)
 >
 > 🏠 › 📘 Baholar › 🏅 Chorak
 >
@@ -547,7 +568,7 @@
 
 🤖 **Bot:**
 
-> ![rasm](images/bot/02-baholar-grafik.png)
+> ![rasm](images/bot/08-baholar.png)
 >
 > 📈 **Elyor Berdiyev** · fanlar bo'yicha o'rtacha baholar
 >
@@ -561,14 +582,14 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/09-hisobot.png)
 >
 > 🏠 › 📊 Hisobot › 🗓 Hafta
 >
-> **28-sentabr – 30-sentabr**
+> **28-sentabr – 2-oktabr**
 >
-> ✅ **Davomat:** 60% (3/5) · 🔴 2 · 🟡 1
-> 📘 **Baholar:** 8 ta, o'rtacha **3.88**
+> ✅ **Davomat:** 26.7% (4/15) · 🔴 3 · 🟡 2
+> 📘 **Baholar:** 20 ta, o'rtacha **3.65**
 > ⭐ **Xulq:** 🌟 0 rag'bat · ⚠️ 0 ogohlantirish
 >
 > 💪 **Kuchli fanlar:** 📝 Ona tili, 🎨 Tasviriy san'at
@@ -584,18 +605,18 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/09-hisobot.png)
 >
 > 🏠 › 📊 Hisobot › 📆 Oy
 >
-> **Sentabr 2026**
+> **Oktabr 2026**
 >
-> ✅ **Davomat:** 82.1% (23/28) · 🔴 4 · 🟡 2
-> 📘 **Baholar:** 16 ta, o'rtacha **3.75**
+> ✅ **Davomat:** 10% (1/10) · 🔴 1 · 🟡 1
+> 📘 **Baholar:** 10 ta, o'rtacha **3.50**
 > ⭐ **Xulq:** 🌟 0 rag'bat · ⚠️ 0 ogohlantirish
 >
-> 💪 **Kuchli fanlar:** —
-> 🎯 **E'tibor talab qiladi:** 🎵 Musiqa, 📖 O'zbek adabiyoti
+> 💪 **Kuchli fanlar:** 📝 Ona tili
+> 🎯 **E'tibor talab qiladi:** 📖 O'zbek adabiyoti
 >
 > `[🗓 Hafta]` `[• 📆 Oy •]`
 > `[🖼 Rasm ko'rinishida]`
@@ -607,9 +628,9 @@
 
 🤖 **Bot:**
 
-> ![rasm](images/bot/03-hisobot-kartochka.png)
+> ![rasm](images/bot/10-hisobot.png)
 >
-> 📊 **Elyor Berdiyev** · Sentabr 2026
+> 📊 **Elyor Berdiyev** · Oktabr 2026
 >
 > `[⬅️ Orqaga]` `[🏠 Bosh menyu]`
 
@@ -621,7 +642,24 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/11-xulq.png)
+>
+> 🏠 › ⭐ Xulq › Oktabr 2026
+>
+> **Oktabr 2026**: 🌟 0 ta rag'bat · ⚠️ 0 ta ogohlantirish
+>
+> Hozircha xulq yozuvlari yo'q 🙂
+>
+> `[◀️ Sentabr]` `[Oktabr 2026]` `[·]`
+> `[🏠 Bosh menyu]`
+
+### 7.2. Oldingi oy
+
+👤 **Ota-ona:** tugmani bosdi `[◀️ Sentabr]`
+
+🤖 **Bot:**
+
+> ![rasm](images/bot/12-xulq.png)
 >
 > 🏠 › ⭐ Xulq › Sentabr 2026
 >
@@ -629,24 +667,7 @@
 >
 > Hozircha xulq yozuvlari yo'q 🙂
 >
-> `[◀️ Avgust]` `[Sentabr 2026]` `[·]`
-> `[🏠 Bosh menyu]`
-
-### 7.2. Oldingi oy
-
-👤 **Ota-ona:** tugmani bosdi `[◀️ Avgust]`
-
-🤖 **Bot:**
-
-> ✏️ _(shu xabar tahrirlandi)_
->
-> 🏠 › ⭐ Xulq › Avgust 2026
->
-> **Avgust 2026**: 🌟 0 ta rag'bat · ⚠️ 0 ta ogohlantirish
->
-> Hozircha xulq yozuvlari yo'q 🙂
->
-> `[◀️ Iyul]` `[Avgust 2026]` `[Sentabr ▶️]`
+> `[◀️ Avgust]` `[Sentabr 2026]` `[Oktabr ▶️]`
 > `[🏠 Bosh menyu]`
 
 ## 8. E'lonlar
@@ -657,28 +678,28 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/13-elonlar.png)
 >
 > 🏠 › 📢 E'lonlar
 >
-> **E'lonlar** · 10 ta
+> **E'lonlar** · 16 ta
 >
-> 🆕 🔴 **Kuzgi sport musobaqasi** · 30-sentabr
+> 🆕 🔴 **Kuzgi sport musobaqasi** · 2-oktabr
+> 🔴 **Kuzgi sport musobaqasi** · 2-oktabr
+> 🔴 **Kuzgi sport musobaqasi** · 2-oktabr
+> 🔴 **Kuzgi sport musobaqasi** · 2-oktabr
+> 🔴 **Kuzgi sport musobaqasi** · 2-oktabr
 > 🔴 **Kuzgi sport musobaqasi** · 30-sentabr
-> 🔴 **Kuzgi sport musobaqasi** · 30-sentabr
-> **Ota-onalar yigilishi** · 30-sentabr
-> 🆕 **Iqtidorli o'quvchilar uchun to'garaklar** · 30-sentabr
-> 🆕 **Maktab oshxonasi menyusi yangilandi** · 30-sentabr
 >
 >> 🆕 — yangi · 🔴 — muhim
 >
 > `[🆕 🔴 Kuzgi sport musobaqasi]`
 > `[🔴 Kuzgi sport musobaqasi]`
 > `[🔴 Kuzgi sport musobaqasi]`
-> `[Ota-onalar yigilishi]`
-> `[🆕 Iqtidorli o'quvchilar uchun to'garaklar]`
-> `[🆕 Maktab oshxonasi menyusi yangilandi]`
-> `[·]` `[1/2]` `[▶️]`
+> `[🔴 Kuzgi sport musobaqasi]`
+> `[🔴 Kuzgi sport musobaqasi]`
+> `[🔴 Kuzgi sport musobaqasi]`
+> `[·]` `[1/3]` `[▶️]`
 > `[🏠 Bosh menyu]`
 
 ### 8.2. To'liq matn
@@ -687,12 +708,12 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/14-elonlar.png)
 >
 > 🏠 › 📢 E'lonlar › Kuzgi sport musobaqasi
 >
 > 🔴 **Kuzgi sport musobaqasi**
-> _30-sentabr, chorshanba_
+> _2-oktabr, juma_
 >
 > Shanba kuni soat 10:00 da maktab stadionida «Sog'lom avlod» sport musobaqasi bo'lib o'tadi. Farzandingizga sport kiyimini olib kelishni unutmang!
 >
@@ -706,20 +727,18 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/15-tadbirlar.png)
 >
 > 🏠 › 🗓 Tadbirlar
 >
 > **Yaqinlashayotgan tadbirlar**
 >
-> 🎉 **O'qituvchilar va murabbiylar kuni**
->       1-oktabr, payshanba · _ertaga_
 > 👨‍👩‍👧 **Ota-onalar yig'ilishi**
->       6-oktabr, seshanba · _6 kundan keyin_
+>       8-oktabr, payshanba · _6 kundan keyin_
 > 📝 **I chorak yakuniy nazorat ishlari**
->       26-oktabr – 30-oktabr · _26 kundan keyin_
+>       26-oktabr – 30-oktabr · _24 kundan keyin_
 > 🏖 **Kuzgi ta'til**
->       2-noyabr – 9-noyabr · _33 kundan keyin_
+>       2-noyabr – 9-noyabr · _31 kundan keyin_
 >
 >> 🔔 Har bir tadbirdan 1 kun oldin eslatib qo'yaman
 >
@@ -733,7 +752,7 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/16-oqituvchilar.png)
 >
 > 🏠 › 👩‍🏫 O'qituvchilar
 >
@@ -764,7 +783,7 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/17-maktabga-yozish.png)
 >
 > 🏠 › 💬 Murojaat
 >
@@ -774,14 +793,14 @@
 > **Kimga yozasiz?**
 >
 > **Oxirgi murojaatlar**
-> ✅ 30-sentabr · 👩‍🏫 Sinf rahbariga
-> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi, 3-darsdan keyin oli…»_
+> ✅ 2-oktabr · 👩‍🏫 Sinf rahbariga
+> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi,…»_
 > ↪️ **Javob:** Va alaykum assalom! Albatta, 3-darsdan so'ng olib ketishingiz mumkin. Sinf rahbari.
-> ✅ 30-sentabr · 👩‍🏫 Sinf rahbariga
-> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi, 3-darsdan keyin oli…»_
+> ✅ 2-oktabr · 👩‍🏫 Sinf rahbariga
+> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi,…»_
 > ↪️ **Javob:** Va alaykum assalom! Albatta, 3-darsdan so'ng olib ketishingiz mumkin. Sinf rahbari.
-> ✅ 30-sentabr · 👩‍🏫 Sinf rahbariga
-> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi, 3-darsdan keyin oli…»_
+> ✅ 2-oktabr · 👩‍🏫 Sinf rahbariga
+> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi,…»_
 > ↪️ **Javob:** Va alaykum assalom! Albatta, 3-darsdan so'ng olib ketishingiz mumkin. Sinf rahbari.
 >
 > `[👩‍🏫 Sinf rahbariga]` `[🏢 Ma'muriyatga]`
@@ -793,7 +812,7 @@
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/17-maktabga-yozish.png)
 >
 > 🏠 › 💬 Murojaat › 👩‍🏫 Sinf rahbariga
 >
@@ -806,6 +825,8 @@
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/18-maktabga-yozish.png)
+>
 > ✅ Xabaringiz yuborildi! Javob kelishi bilan shu yerda xabar beraman.
 >
 > 🏠 › 💬 Murojaat
@@ -816,16 +837,13 @@
 > **Kimga yozasiz?**
 >
 > **Oxirgi murojaatlar**
-> ⏳ 30-sentabr · 👩‍🏫 Sinf rahbariga
-> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi, 3-darsdan keyin oli…»_
-> ✅ 30-sentabr · 👩‍🏫 Sinf rahbariga
-> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi, 3-darsdan keyin oli…»_
+> ⏳ 2-oktabr · 👩‍🏫 Sinf rahbariga
+> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi,…»_
+> ✅ 2-oktabr · 👩‍🏫 Sinf rahbariga
+> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi,…»_
 > ↪️ **Javob:** Va alaykum assalom! Albatta, 3-darsdan so'ng olib ketishingiz mumkin. Sinf rahbari.
-> ✅ 30-sentabr · 👩‍🏫 Sinf rahbariga
-> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi, 3-darsdan keyin oli…»_
-> ↪️ **Javob:** Va alaykum assalom! Albatta, 3-darsdan so'ng olib ketishingiz mumkin. Sinf rahbari.
-> ✅ 30-sentabr · 👩‍🏫 Sinf rahbariga
-> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi, 3-darsdan keyin oli…»_
+> ✅ 2-oktabr · 👩‍🏫 Sinf rahbariga
+> _«Assalomu alaykum! Ertaga farzandim tish shifokoriga boradi,…»_
 > ↪️ **Javob:** Va alaykum assalom! Albatta, 3-darsdan so'ng olib ketishingiz mumkin. Sinf rahbari.
 >
 > `[👩‍🏫 Sinf rahbariga]` `[🏢 Ma'muriyatga]`
@@ -853,7 +871,7 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/19-sababli-ariza.png)
 >
 > 🏠 › 🤒 Sababli ariza
 >
@@ -863,13 +881,15 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 > **Qaysi kundan boshlab?**
 >
 > **Oldingi arizalar**
-> ✅ Qabul qilindi · 1-oktabr – 2-oktabr · 🤒 Kasallik
-> ✅ Qabul qilindi · 1-oktabr – 2-oktabr · 🤒 Kasallik
-> ✅ Qabul qilindi · 1-oktabr – 2-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
 >
 > `[Bugun]` `[Ertaga]`
-> `[2-oktabr, Ju]` `[3-oktabr, Sh]`
 > `[5-oktabr, Du]` `[6-oktabr, Se]`
+> `[7-oktabr, Ch]` `[8-oktabr, Pa]`
 > `[🏠 Bosh menyu]`
 
 ### 12.2. Necha kun?
@@ -878,12 +898,12 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/19-sababli-ariza.png)
 >
 > 🏠 › 🤒 Sababli ariza
 >
 > **Necha kun?**
-> 📅 Boshlanish: 1-oktabr, payshanba
+> 📅 Boshlanish: 3-oktabr, shanba
 >
 > `[1 kun]` `[2 kun]` `[3 kun]`
 > `[5 kun]` `[7 kun]`
@@ -895,7 +915,7 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/19-sababli-ariza.png)
 >
 > 🏠 › 🤒 Sababli ariza
 >
@@ -912,7 +932,7 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/19-sababli-ariza.png)
 >
 > 🏠 › 🤒 Sababli ariza
 >
@@ -925,6 +945,8 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/19-sababli-ariza.png)
+>
 > 🏠 › 🤒 Sababli ariza
 >
 > 📎 Shifokor ma'lumotnomasi bo'lsa, rasmini yuboring. Bo'lmasa — «O'tkazib yuborish».
@@ -938,11 +960,13 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/19-sababli-ariza.png)
+>
 > 🏠 › 🤒 Sababli ariza
 >
 > **Arizani tekshiring:**
 > 👤 Elyor Berdiyev
-> 📅 1-oktabr, payshanba – 2-oktabr, juma (2 kun)
+> 📅 3-oktabr, shanba – 4-oktabr, yakshanba (2 kun)
 > 📝 🤒 Kasallik
 > 💬 Isitmasi bor, shifokor 2 kun uyda dam olishni buyurdi
 > 📎 Rasm biriktirildi
@@ -958,7 +982,7 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/20-sababli-ariza.png)
 >
 > ✅ Ariza yuborildi! Sinf rahbari ko'rib chiqishi bilan xabar beraman.
 >
@@ -970,28 +994,29 @@ _(bir necha soniyadan so'ng botdan avtomatik xabar keldi)_
 > **Qaysi kundan boshlab?**
 >
 > **Oldingi arizalar**
-> ⏳ Ko'rib chiqilmoqda · 1-oktabr – 2-oktabr · 🤒 Kasallik
-> ✅ Qabul qilindi · 1-oktabr – 2-oktabr · 🤒 Kasallik
-> ✅ Qabul qilindi · 1-oktabr – 2-oktabr · 🤒 Kasallik
-> ✅ Qabul qilindi · 1-oktabr – 2-oktabr · 🤒 Kasallik
+> ⏳ Ko'rib chiqilmoqda · 3-oktabr – 4-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
+> ✅ Qabul qilindi · 3-oktabr – 4-oktabr · 🤒 Kasallik
 >
 > `[Bugun]` `[Ertaga]`
-> `[2-oktabr, Ju]` `[3-oktabr, Sh]`
 > `[5-oktabr, Du]` `[6-oktabr, Se]`
+> `[7-oktabr, Ch]` `[8-oktabr, Pa]`
 > `[🏠 Bosh menyu]`
 
 ### 12.7. Sinf rahbari arizani tasdiqladi
 
 🏫 **Maktab (admin panel):** «Sababli arizalar» sahifasida «Tasdiqlash»ni bosdi — o'sha kunlarning davomati avtomatik «sababli» bo'ldi
 
-> _Admin panel: 5 ta dars «sababli» (EXCUSED) deb belgilandi._
+> _Admin panel: 4 ta dars «sababli» (EXCUSED) deb belgilandi._
 
 _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
 > ✅ **Arizangiz qabul qilindi**
-> 👤 Elyor Berdiyev · 01.10.2026 – 02.10.2026
+> 👤 Elyor Berdiyev · 03.10.2026 – 04.10.2026
 > Bu kunlardagi darslar sababli deb belgilandi. Tezroq sog'ayib keting! 🌷
 >
 > 🏫 _1-maktab_
@@ -1004,7 +1029,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/21-maktab-haqida.png)
 >
 > 🏠 › 🏫 Maktab
 >
@@ -1030,7 +1055,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/22-sozlamalar-3-til.png)
 >
 > 🏠 › ⚙️ Sozlamalar
 >
@@ -1058,7 +1083,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/23-sozlamalar-3-til.png)
 >
 > 🏠 › ⚙️ Sozlamalar
 >
@@ -1084,7 +1109,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/22-sozlamalar-3-til.png)
 >
 > 🏠 › ⚙️ Sozlamalar
 >
@@ -1112,7 +1137,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/22-sozlamalar-3-til.png)
 >
 > 🏠 › ⚙️ Sozlamalar › ⏰ Vaqtlar
 >
@@ -1132,7 +1157,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/24-sozlamalar-3-til.png)
 >
 > 🏠 › ⚙️ Sozlamalar › ⏰ Vaqtlar
 >
@@ -1152,7 +1177,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/22-sozlamalar-3-til.png)
 >
 > 🏠 › ⚙️ Sozlamalar › ⏰ Vaqtlar
 >
@@ -1174,7 +1199,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/22-sozlamalar-3-til.png)
 >
 > 🏠 › ⚙️ Sozlamalar › 🌐 Til / Язык
 >
@@ -1194,14 +1219,18 @@ _(botdan avtomatik xabar)_
 > ✅ Тил ўзгартирилди
 >
 > ⌨️ _Pastki klaviatura:_
+> `📱 Кундаликни очиш`
 > `📅 Дарс жадвали` `✅ Давомат`
 > `📘 Баҳолар` `📊 Ҳисобот`
 > `📢 Эълонлар` `🗓 Тадбирлар`
 > `👩‍🏫 Ўқитувчилар` `💬 Мактабга ёзиш`
-> `⚙️ Созламалар` `👨‍👩‍👧 Фарзандларим`
+> `🤒 Сабабли ариза` `⚙️ Созламалар`
+> `👨‍👩‍👧 Фарзандларим`
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/25-sozlamalar-3-til.png)
+>
 > 🏠 › ⚙️ Созламалар
 >
 > **Созламалар**
@@ -1226,19 +1255,20 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/26-sozlamalar-3-til.png)
 >
-> 🏠 **Бош меню** · 30-сентябр, чоршанба
+> 🏠 **Бош меню** · 2-октябр, жума
 >
 > 👤 **Elyor Berdiyev** · 1-A синф
 > 👩‍🏫 Синф раҳбари: Zebo Ne'matova
 >
 > **Бугун:**
 > 📚 5 та дарс · 08:30–13:25
-> 🔴 2 та дарсга келмади
-> 📘 Бугунги баҳолар: 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🟢 **5** Ona tili
+> 🔴 1 та дарсга келмади
+> 📘 Бугунги баҳолар: 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili
 > 📢 Янги эълонлар: **6**
-> 🗓 Яқин тадбир: **O'qituvchilar va murabbiylar kuni** — 1-октябр
+> 🗓 Яқин тадбир: **Ota-onalar yig'ilishi** — 8-октябр
+> 📅 Эртага 1-дарс: **08:30** · 🔢 Matematika
 >
 > Бўлимни танланг 👇
 >
@@ -1260,14 +1290,18 @@ _(botdan avtomatik xabar)_
 > ✅ Язык изменён
 >
 > ⌨️ _Pastki klaviatura:_
+> `📱 Открыть дневник`
 > `📅 Расписание` `✅ Посещаемость`
 > `📘 Оценки` `📊 Отчёт`
 > `📢 Объявления` `🗓 События`
 > `👩‍🏫 Учителя` `💬 Написать в школу`
-> `⚙️ Настройки` `👨‍👩‍👧 Мои дети`
+> `🤒 Заявление` `⚙️ Настройки`
+> `👨‍👩‍👧 Мои дети`
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/27-sozlamalar-3-til.png)
+>
 > 🏠 › ⚙️ Настройки
 >
 > **Настройки**
@@ -1292,22 +1326,22 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/28-sozlamalar-3-til.png)
 >
-> 🏠 › ✅ Посещаемость › Сентябрь 2026
+> 🏠 › ✅ Посещаемость › Октябрь 2026
 >
-> **Сентябрь 2026**
+> **Октябрь 2026**
 >
-> 📚 Всего уроков: **28**
-> ✅ Присутствовал(а): **21**
-> 🟡 Опоздания: **2**
-> 🔴 Пропуски: **4**
-> 🔵 По уважительной: **1**
+> 📚 Всего уроков: **14**
+> ✅ Присутствовал(а): **0**
+> 🟡 Опоздания: **1**
+> 🔴 Пропуски: **1**
+> 🔵 По уважительной: **12**
 >
-> ▰▰▰▰▰▰▰▰▱▱ **82.1%**
->> Среднее по классу: 94.2% — ниже среднего, обратите внимание
+> ▰▱▱▱▱▱▱▱▱▱ **7.1%**
+>> Среднее по классу: 7.1% — на среднем уровне
 >
-> `[◀️ Август]` `[Сентябрь 2026]` `[·]`
+> `[◀️ Сентябрь]` `[Октябрь 2026]` `[·]`
 > `[🗓 Календарь]` `[📋 Подробно]`
 > `[📚 По предметам]` `[🖼 В виде картинки]`
 > `[• 🗓 Месяц •]` `[🏷 Четверть]` `[🎓 Учебный год]`
@@ -1322,14 +1356,18 @@ _(botdan avtomatik xabar)_
 > ✅ Til o'zgartirildi
 >
 > ⌨️ _Pastki klaviatura:_
+> `📱 Kundalikni ochish`
 > `📅 Dars jadvali` `✅ Davomat`
 > `📘 Baholar` `📊 Hisobot`
 > `📢 E'lonlar` `🗓 Tadbirlar`
 > `👩‍🏫 O'qituvchilar` `💬 Maktabga yozish`
-> `⚙️ Sozlamalar` `👨‍👩‍👧 Farzandlarim`
+> `🤒 Sababli ariza` `⚙️ Sozlamalar`
+> `👨‍👩‍👧 Farzandlarim`
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/22-sozlamalar-3-til.png)
+>
 > 🏠 › ⚙️ Sozlamalar
 >
 > **Sozlamalar**
@@ -1358,7 +1396,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/29-farzandlarim.png)
 >
 > 🏠 › 👨‍👩‍👧 Farzandlarim
 >
@@ -1379,10 +1417,12 @@ _(botdan avtomatik xabar)_
 > ➕ Farzand qo'shish
 >
 > ⌨️ _Pastki klaviatura:_
-> `📱 Raqamni ulashish`
+> `📱 Telefon raqamni ulashish`
 
 🤖 **Bot:**
 
+> ![rasm](images/bot/29-farzandlarim.png)
+>
 > 🏠 › 👨‍👩‍👧 Farzandlarim › ➕ Farzand qo'shish
 >
 > **Farzand qo'shish**
@@ -1403,25 +1443,30 @@ _(botdan avtomatik xabar)_
 > 3️⃣ «⚙️ Sozlamalar»da qaysi xabarlar va qachon kelishini tanlaysiz
 >
 > ⌨️ _Pastki klaviatura:_
+> `📱 Kundalikni ochish`
 > `📅 Dars jadvali` `✅ Davomat`
 > `📘 Baholar` `📊 Hisobot`
 > `📢 E'lonlar` `🗓 Tadbirlar`
 > `👩‍🏫 O'qituvchilar` `💬 Maktabga yozish`
-> `⚙️ Sozlamalar` `👨‍👩‍👧 Farzandlarim`
+> `🤒 Sababli ariza` `⚙️ Sozlamalar`
+> `👨‍👩‍👧 Farzandlarim`
 
 🤖 **Bot:**
 
-> 🏠 **Bosh menyu** · 30-sentabr, chorshanba
+> ![rasm](images/bot/30-farzandlarim.png)
+>
+> 🏠 **Bosh menyu** · 2-oktabr, juma
 >
 > 👤 **Jasur Berdiyev** · 1-A sinf
 > 👩‍🏫 Sinf rahbari: Zebo Ne'matova
 >
 > **Bugun:**
 > 📚 5 ta dars · 08:30–13:25
-> 🟡 2 ta darsga kechikdi
-> 📘 Bugungi baholar: 🟢 **5** Tarbiya, 🔵 **4** Musiqa
+> ⏳ Davomat hali belgilanmagan
+> 📘 Bugun baho hali yo'q
 > 📢 Yangi e'lonlar: **6**
-> 🗓 Yaqin tadbir: **O'qituvchilar va murabbiylar kuni** — 1-oktabr
+> 🗓 Yaqin tadbir: **Ota-onalar yig'ilishi** — 8-oktabr
+> 📅 Ertaga 1-dars: **08:30** · 🔢 Matematika
 >
 > Bo'limni tanlang 👇
 >
@@ -1441,7 +1486,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/31-farzandlarim.png)
 >
 > 🏠 › 👨‍👩‍👧 Farzandlarim
 >
@@ -1461,19 +1506,20 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/30-farzandlarim.png)
 >
-> 🏠 **Bosh menyu** · 30-sentabr, chorshanba
+> 🏠 **Bosh menyu** · 2-oktabr, juma
 >
 > 👤 **Elyor Berdiyev** · 1-A sinf
 > 👩‍🏫 Sinf rahbari: Zebo Ne'matova
 >
 > **Bugun:**
 > 📚 5 ta dars · 08:30–13:25
-> 🔴 2 ta darsga kelmadi
-> 📘 Bugungi baholar: 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🟢 **5** Ona tili
+> 🔴 1 ta darsga kelmadi
+> 📘 Bugungi baholar: 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili, 🔴 **2** O'zbek adabiyoti, 🟢 **5** Ona tili
 > 📢 Yangi e'lonlar: **6**
-> 🗓 Yaqin tadbir: **O'qituvchilar va murabbiylar kuni** — 1-oktabr
+> 🗓 Yaqin tadbir: **Ota-onalar yig'ilishi** — 8-oktabr
+> 📅 Ertaga 1-dars: **08:30** · 🔢 Matematika
 >
 > Bo'limni tanlang 👇
 >
@@ -1493,32 +1539,32 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/07-baholar.png)
 >
 > 🏠 › 📘 Baholar › 🕘 So'nggi
 > 👤 **Elyor Berdiyev** · 1-A sinf
 >
 > **So'nggi baholar**
 >
-> 🟢 **5** · Ona tili · 30-sentabr
+> 🟢 **5** · Ona tili · 2-oktabr
 >       _joriy_
-> 🔴 **2** · O'zbek adabiyoti · 30-sentabr
+> 🔴 **2** · O'zbek adabiyoti · 2-oktabr
 >       _joriy_ — «Uy vazifasi bajarilmagan»
-> 🟢 **5** · Ona tili · 30-sentabr
+> 🟢 **5** · Ona tili · 2-oktabr
 >       _joriy_
-> 🔴 **2** · O'zbek adabiyoti · 30-sentabr
+> 🔴 **2** · O'zbek adabiyoti · 2-oktabr
 >       _joriy_ — «Uy vazifasi bajarilmagan»
-> 🟢 **5** · Ona tili · 30-sentabr
+> 🟢 **5** · Ona tili · 2-oktabr
 >       _joriy_
-> 🔴 **2** · O'zbek adabiyoti · 30-sentabr
+> 🔴 **2** · O'zbek adabiyoti · 2-oktabr
 >       _joriy_ — «Uy vazifasi bajarilmagan»
-> 🟢 **5** · Ona tili · 30-sentabr
+> 🟢 **5** · Ona tili · 2-oktabr
 >       _joriy_
-> 🟢 **5** · Tasviriy san'at · 29-sentabr
->       _joriy_
+> 🔴 **2** · O'zbek adabiyoti · 2-oktabr
+>       _joriy_ — «Uy vazifasi bajarilmagan»
 >
 > `[• 🕘 So'nggi •]` `[📚 Fanlar]` `[🏅 Chorak]`
-> `[·]` `[1/4]` `[▶️]`
+> `[·]` `[1/6]` `[▶️]`
 > `[🔄 Farzandni almashtirish]`
 > `[🏠 Bosh menyu]`
 
@@ -1526,7 +1572,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/31-farzandlarim.png)
 >
 > 🏠 › 👨‍👩‍👧 Farzandlarim
 >
@@ -1548,7 +1594,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/31-farzandlarim.png)
 >
 > 🏠 › 👨‍👩‍👧 Farzandlarim
 >
@@ -1561,7 +1607,7 @@ _(botdan avtomatik xabar)_
 
 🤖 **Bot:**
 
-> ✏️ _(shu xabar tahrirlandi)_
+> ![rasm](images/bot/31-farzandlarim.png)
 >
 > 🏠 › 👨‍👩‍👧 Farzandlarim
 >
@@ -1592,11 +1638,13 @@ _(botdan avtomatik xabar)_
 > 🤔 Tushunmadim. Pastdagi tugmalardan foydalaning yoki /yordam yozing.
 >
 > ⌨️ _Pastki klaviatura:_
+> `📱 Kundalikni ochish`
 > `📅 Dars jadvali` `✅ Davomat`
 > `📘 Baholar` `📊 Hisobot`
 > `📢 E'lonlar` `🗓 Tadbirlar`
 > `👩‍🏫 O'qituvchilar` `💬 Maktabga yozish`
-> `⚙️ Sozlamalar` `👨‍👩‍👧 Farzandlarim`
+> `🤒 Sababli ariza` `⚙️ Sozlamalar`
+> `👨‍👩‍👧 Farzandlarim`
 
 👤 **Ota-ona:** `/yordam`
 
@@ -1612,11 +1660,13 @@ _(botdan avtomatik xabar)_
 > Pastdagi tugmalar orqali istalgan bo'limga o'ting 👇
 >
 > ⌨️ _Pastki klaviatura:_
+> `📱 Kundalikni ochish`
 > `📅 Dars jadvali` `✅ Davomat`
 > `📘 Baholar` `📊 Hisobot`
 > `📢 E'lonlar` `🗓 Tadbirlar`
 > `👩‍🏫 O'qituvchilar` `💬 Maktabga yozish`
-> `⚙️ Sozlamalar` `👨‍👩‍👧 Farzandlarim`
+> `🤒 Sababli ariza` `⚙️ Sozlamalar`
+> `👨‍👩‍👧 Farzandlarim`
 
 ## 17. Avtomatik xabarlar
 
@@ -1624,11 +1674,11 @@ Quyidagi xabarlarni ota-ona hech narsa bosmasdan oladi — ular outbox (Notifica
 
 ### 17.1. Farzand darsga kelmadi
 
-🏫 **Maktab (admin panel):** o'qituvchi O'zbek adabiyoti darsida davomat oldi: Elyor Berdiyev — «Kelmadi»
+🏫 **Maktab (admin panel):** o'qituvchi Matematika darsida davomat oldi: Elyor Berdiyev — «Kelmadi»
 
 ### 17.2. Farzand kechikdi
 
-🏫 **Maktab (admin panel):** Musiqa darsida — «Kechikdi»
+🏫 **Maktab (admin panel):** Matematika darsida — «Kechikdi»
 
 ### 17.3. Yangi baho
 
@@ -1636,9 +1686,11 @@ Quyidagi xabarlarni ota-ona hech narsa bosmasdan oladi — ular outbox (Notifica
 
 🤖 **Bot:**
 
-> 📘 **Elyor Berdiyev** Ona tili fanidan **5** baho oldi (joriy baho, 30.09.2026).
+> 📘 **Elyor Berdiyev** Ona tili fanidan **5** baho oldi (joriy baho, 02.10.2026).
 >
 > 🏫 _1-maktab_
+>
+> `[🔎 Batafsil]`
 
 ### 17.4. Past baho — alohida, mehribon ohangdagi xabar
 
@@ -1646,7 +1698,7 @@ Quyidagi xabarlarni ota-ona hech narsa bosmasdan oladi — ular outbox (Notifica
 
 🤖 **Bot:**
 
-> 💛 **Elyor Berdiyev** O'zbek adabiyoti fanidan **2** baho oldi (30.09.2026).
+> 💛 **Elyor Berdiyev** O'zbek adabiyoti fanidan **2** baho oldi (02.10.2026).
 >> Xavotir olmang — har bir bola ba'zan qiynaladi. Farzandingiz bilan mehr bilan gaplashib, qaysi mavzu qiyin bo'lganini so'rang. Kerak bo'lsa, o'qituvchi bilan maslahatlashing 🤝
 >
 > 🏫 _1-maktab_
@@ -1663,17 +1715,12 @@ Quyidagi xabarlarni ota-ona hech narsa bosmasdan oladi — ular outbox (Notifica
 > Shanba kuni soat 10:00 da maktab stadionida «Sog'lom avlod» sport musobaqasi bo'lib o'tadi. Farzandingizga sport kiyimini olib kelishni unutmang!
 >
 > 🏫 _1-maktab_
+>
+> `[🔎 Batafsil]`
 
 ### 17.6. Ertangi dars jadvali, haftalik hisobot va tadbir eslatmasi
 
 🏫 **Maktab (admin panel):** rejalashtirilgan vazifalar ishga tushdi (odatda: har kuni 19:00, shanba 18:00, tadbirdan 1 kun oldin 18:00)
-
-🤖 **Bot:**
-
-> 🔔 **Eslatma:** ertaga — 🎉 **O'qituvchilar va murabbiylar kuni**
-> 📅 1-oktabr, payshanba
->
-> 🏫 _1-maktab_
 
 ### 17.7. Ota-onalarga umumiy xabar (broadcast)
 

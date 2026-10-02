@@ -1,5 +1,6 @@
 package uz.azizbek.maktabboshqaruv.bot;
 
+import uz.azizbek.maktabboshqaruv.bot.image.BannerService;
 import uz.azizbek.maktabboshqaruv.bot.screens.HomeScreen;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentAccessService;
@@ -26,6 +27,9 @@ public class Onboarding {
 
     @Autowired
     private ParentAccessService access;
+
+    @Autowired
+    private BannerService banners;
 
     public BotView welcome(BotContext ctx) {
         return BotView.of(ctx.t("start.welcome", "app", ctx.t("app.name")), null)
@@ -72,8 +76,15 @@ public class Onboarding {
             success = fresh.t("link.success_many", "count", linked.size(), "list", list);
         }
         success += "\n\n" + fresh.t("link.intro");
-        return homeScreen.render(fresh, CallbackData.of("home"))
+        BotView home = homeScreen.render(fresh, CallbackData.of("home"))
                 .preface(success, Keyboards.main(fresh.lang()))
                 .section("onboarding");
+        try {
+            // The child is known only now, so the home card's banner is built from the fresh context.
+            home.banner(banners.banner(fresh, "home", CallbackData.of("home")));
+        } catch (Exception ignored) {
+            // without a banner the home page is shown as text
+        }
+        return home;
     }
 }

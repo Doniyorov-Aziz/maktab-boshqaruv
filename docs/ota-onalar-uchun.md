@@ -6,9 +6,15 @@
 
 **1-usul — QR kod.** Sinf rahbari bergan kartochkadagi QR kodni telefon kamerasi bilan skanerlang → Telegram ochiladi → **Start** tugmasini bosing.
 
-**2-usul — telefon raqami.** Telegram'da botni toping, **Start** bosing, so'ng **«📱 Raqamni ulashish»** tugmasini bosing. Raqamingiz maktabda yozilgan bo'lsa, farzandlaringiz avtomatik ulanadi.
+**2-usul — telefon raqami.** Telegram'da botni toping, **Start** bosing, so'ng pastdagi **«📱 Telefon raqamni ulashish»** tugmasini bosing. Raqamingiz maktabda yozilgan bo'lsa, farzandlaringiz avtomatik ulanadi.
 
-Bot javob beradi: **«✅ Tabriklaymiz! Endi farzandingiz haqida hamma narsa shu yerda»**. Tamom!
+**3-usul — kod.** **«🔑 Kod kiritish»** tugmasini bosing va kartochkadagi QR kod ostida yozilgan 10 belgili kodni yuboring.
+
+Bot javob beradi: **«✅ Tabriklaymiz! Endi farzandingiz haqida hamma narsa shu yerda»** va rangli bosh sahifani ko'rsatadi. Tamom!
+
+<img src="images/bot/banner-bosh-menyu-bugun.png" width="420" alt="Bosh sahifa">
+
+Har bir bo'lim shunday chiroyli kartochka bo'lib ochiladi: tepada rangli rasm, ostida qisqa matn va tugmalar.
 
 ## 2. Bot o'zi nimalarni yuboradi
 
@@ -35,12 +41,13 @@ Bot javob beradi: **«✅ Tabriklaymiz! Endi farzandingiz haqida hamma narsa shu
 | 📢 E'lonlar · 🗓 Tadbirlar | Maktab yangiliklari |
 | 👩‍🏫 O'qituvchilar | Farzandingizning o'qituvchilari |
 | 💬 Maktabga yozish | Sinf rahbariga yoki ma'muriyatga savol — javob shu yerga keladi |
+| 🤒 Sababli ariza | Farzandingiz kela olmasa — oldindan xabar berish |
 | ⚙️ Sozlamalar | Qaysi xabarlar kelsin, vaqt, til (O'zbekcha / Ўзбекча / Русский) |
 | 👨‍👩‍👧 Farzandlarim | Ikkinchi farzandni qo'shish yoki almashtirish |
 
 | Davomat kalendari | Hisobot |
 |---|---|
-| <img src="images/bot/01-davomat-kalendar.png" width="260" alt="Davomat kalendari"> | <img src="images/bot/03-hisobot-kartochka.png" width="240" alt="Hisobot kartochkasi"> |
+| <img src="images/bot/rasm-davomat-kalendar.png" width="260" alt="Davomat kalendari"> | <img src="images/bot/rasm-hisobot-kartochka.png" width="240" alt="Hisobot kartochkasi"> |
 
 ## 4. Farzandingiz kasal bo'lsa — 🤒 Sababli ariza
 

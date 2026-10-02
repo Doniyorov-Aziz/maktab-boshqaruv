@@ -85,17 +85,48 @@ function keyboardMd(json) {
   return lines
 }
 
+/** "## 4. Davomat" -> "davomat": file names follow the section being shown. */
+function currentSlug() {
+  const h = [...md].reverse().find(l => l.startsWith('## ')) || 'rasm'
+  return h.replace(/^##\s*\d+\.\s*/, '').toLowerCase().replace(/['‘’ʻ`]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'rasm'
+}
+
+const savedPhotos = new Map() // photoId -> { name, bytes } (a cached banner is saved once)
+const bannersSaved = new Set()
+
+async function savePhoto(photoId) {
+  let saved = savedPhotos.get(photoId)
+  if (!saved) {
+    imageNo++
+    const name = `${String(imageNo).padStart(2, '0')}-${currentSlug()}.png`
+    const res = await fetch(`${API}/api/telegram/mock/photos/${photoId}`, { headers: { Authorization: `Bearer ${token}` } })
+    const bytes = Buffer.from(await res.arrayBuffer())
+    fs.writeFileSync(path.join(IMG_DIR, name), bytes)
+    // The three full picture pages (1080 px wide, banners are 1280) also get stable names the docs link to.
+    const stable = { davomat: 'davomat-kalendar', baholar: 'baholar-grafik', hisobot: 'hisobot-kartochka' }[currentSlug()]
+    if (stable && bytes.readUInt32BE(16) === 1080) fs.writeFileSync(path.join(IMG_DIR, `rasm-${stable}.png`), bytes)
+    saved = { name, bytes }
+    savedPhotos.set(photoId, saved)
+  }
+  // The first 1280-wide banner shown in each section — even one reused from an earlier section —
+  // under a stable name for the docs' gallery.
+  const banner = path.join(IMG_DIR, `banner-${currentSlug()}.png`)
+  if (saved.bytes.readUInt32BE(16) === 1280 && !bannersSaved.has(banner)) {
+    fs.writeFileSync(banner, saved.bytes)
+    bannersSaved.add(banner)
+  }
+  return saved.name
+}
+
 async function renderOps(ops) {
   for (const op of ops) {
     if (op.op === 'delete') continue
     const out = []
-    if (op.op === 'edit') out.push('✏️ _(shu xabar tahrirlandi)_', '')
-    if (op.op === 'photo') {
-      imageNo++
-      const label = ['davomat-kalendar', 'baholar-grafik', 'hisobot-kartochka'][imageNo - 1] || op.photoId
-      const name = `${String(imageNo).padStart(2, '0')}-${label}.png`
-      const res = await fetch(`${API}/api/telegram/mock/photos/${op.photoId}`, { headers: { Authorization: `Bearer ${token}` } })
-      fs.writeFileSync(path.join(IMG_DIR, name), Buffer.from(await res.arrayBuffer()))
+    if (op.op === 'edit' || op.op === 'caption') out.push('✏️ _(shu xabar tahrirlandi)_', '')
+    if (op.op === 'media') out.push('🔄 _(kartochka shu xabarning o\'zida almashtirildi)_', '')
+    if (op.op === 'photo' || op.op === 'media') {
+      const name = await savePhoto(op.photoId)
       out.push(`![rasm](images/bot/${name})`, '')
     }
     if (op.text) out.push(...htmlToMd(op.text))
@@ -104,7 +135,7 @@ async function renderOps(ops) {
     // Leading spaces become no-break spaces: 4+ plain spaces after "> " would turn a line into a code block.
     const keepIndent = l => l.replace(/^ +/, m => ' '.repeat(m.length))
     md.push('🤖 **Bot:**', '', ...out.map(l => (l.startsWith('> ') ? '>> ' + keepIndent(l.slice(2)) : l === '' ? '>' : '> ' + keepIndent(l))), '')
-    if ((op.op === 'send' || op.op === 'edit') && op.keyboard && op.keyboard.includes('inline_keyboard')) {
+    if (op.op !== 'delete' && op.keyboard && op.keyboard.includes('inline_keyboard')) {
       page = op.messageId
     }
   }
@@ -167,7 +198,8 @@ async function drainNotifications(title, waitMs = 3500) {
 
 async function main() {
   fs.mkdirSync(IMG_DIR, { recursive: true })
-  for (const f of fs.readdirSync(IMG_DIR)) if (f.endsWith('.png')) fs.unlinkSync(path.join(IMG_DIR, f))
+  // Only the demo's own numbered images; admin and Mini App screenshots live here too.
+  for (const f of fs.readdirSync(IMG_DIR)) if (/^(\d{2,3}|banner)-.*\.png$/.test(f)) fs.unlinkSync(path.join(IMG_DIR, f))
   token = (await api('POST', '/api/auth/login', { username: ADMIN_USER, password: ADMIN_PASS })).toString().trim()
   const status = await api('GET', '/api/telegram/status')
   if (status.mode !== 'MOCK') throw new Error('Backend telegram.mock=true rejimida emas: ' + status.mode)
@@ -192,7 +224,8 @@ async function main() {
     '',
     `> Bu fayl \`scripts/bot-demo.mjs\` tomonidan avtomatik yaratildi (${new Date().toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' })}),`,
     '> backend `telegram.mock=true` rejimida, seed ma\'lumot bilan. Har bir 👤 qadam — ota-onaning harakati,',
-    '> 🤖 — bot javobi, `[...]` — inline tugmalar, ✏️ — xabar yangisi yuborilmay, o\'rnida tahrirlangani.',
+    '> 🤖 — bot javobi, `[...]` — inline tugmalar, ✏️ — xabar yangisi yuborilmay, o\'rnida tahrirlangani,',
+    '> 🔄 — kartochka (banner rasmi + matn + tugmalar) shu xabarning o\'zida almashtirilgani. Har sahifa tepasidagi rasm — bo\'lim banneri.',
     '> Botni Telegram\'da ochmasdan turib barcha sahifalarni shu yerda ko\'rish mumkin.',
     '',
     '**Mundarija:** ',

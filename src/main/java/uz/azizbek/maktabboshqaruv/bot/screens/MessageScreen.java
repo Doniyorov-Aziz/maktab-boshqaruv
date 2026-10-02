@@ -34,6 +34,10 @@ public class MessageScreen implements Screen, InputHandler {
     @Autowired
     private ParentMessageService messages;
 
+    private static String shorten(String s, int max) {
+        return s.length() > max ? s.substring(0, max - 1).stripTrailing() + "…" : s;
+    }
+
     @Override
     public String code() {
         return "msg";
@@ -70,12 +74,13 @@ public class MessageScreen implements Screen, InputHandler {
         List<MessageView> history = data.messages(ctx.student(), ctx.chatId());
         if (!history.isEmpty()) {
             sb.append("\n\n").append(ctx.t("msg.history_title")).append("\n");
-            for (MessageView m : history) {
-                String text = m.text().length() > 80 ? m.text().substring(0, 79) + "…" : m.text();
+            // The last three, shortened, so the page still fits a card caption (1024 characters).
+            for (MessageView m : history.stream().limit(3).toList()) {
+                String reply = m.replyText() == null ? null : shorten(m.replyText(), 110);
                 sb.append(ctx.t("msg.history_item", "status", ctx.t("msg.status." + m.status()),
                         "date", ctx.dateShort(m.createdAt().toLocalDate()), "to", ctx.t("msg.to." + m.recipient()),
-                        "text", e(text),
-                        "reply", m.replyText() == null ? "" : ctx.t("msg.history_reply", "text", e(m.replyText()))))
+                        "text", e(shorten(m.text(), 60)),
+                        "reply", reply == null ? "" : ctx.t("msg.history_reply", "text", e(reply))))
                         .append("\n");
             }
         }

@@ -228,8 +228,8 @@ public class BannerService {
         List<AnnouncementView> list = data.announcements(s, session);
         long unread = list.stream().filter(AnnouncementView::unread).count();
         List<Row> rows = list.stream().limit(5)
-                .map(a -> new Row(i18n.dateShort(lang, a.date()), (a.important() ? "! " : "") + a.title(),
-                        a.unread() ? t(lang, "banner.ann.new") : null))
+                .map(a -> new Row(i18n.dateShort(lang, a.date()), a.title(),
+                        a.important() ? t(lang, "banner.ann.important") : a.unread() ? t(lang, "banner.ann.new") : null))
                 .toList();
         return new Banner(color, icon, title, subtitle, String.valueOf(unread), t(lang, "banner.ann.big_label"), footer,
                 new Rows(t(lang, "banner.ann.heading"), rows, t(lang, "banner.ann.empty")), null);

@@ -3000,6 +3000,7 @@ Dastlabki rejadan farqlar:
 - [Bo'limlar xaritasi](#bolimlar-xaritasi)
 - [Sahifalar](#sahifalar)
 - [Avtomatik xabarlar](#avtomatik-xabarlar)
+- [Kartochkalar va bannerlar](#kartochkalar-va-bannerlar)
 - [Rasmlar (PNG)](#rasmlar-png)
 - [Mini App «Farzandim kundaligi»](#mini-app-farzandim-kundaligi)
 - [Arxitektura](#arxitektura)
@@ -3063,13 +3064,27 @@ flowchart TD
 
 ### Umumiy qoidalar
 
-- **Bitta xabar — bitta sahifa.** Tugma bosilganda bot yangi xabar yubormaydi, **o'sha xabarni tahrirlaydi** (`editMessageText`). Chat to'lib ketmaydi. Rasmli sahifadan matnli sahifaga o'tishda xabar o'chiriladi va yangisi yuboriladi.
+- **Har sahifa — kartochka.** Bo'lim ochilganda bot bitta xabar yuboradi: tepada bo'limning rangli **banneri** (1280×640 PNG), ostida caption'da sahifa matni va inline tugmalar ([pastda](#kartochkalar-va-bannerlar)).
+- **Bitta xabar — bitta sahifa.** Tugma bosilganda bot yangi xabar yubormaydi, **o'sha kartochkani almashtiradi** (`editMessageMedia` — banner, matn va tugmalar birga). Chat to'lib ketmaydi. Matni caption chegarasidan (1024 belgi) uzun sahifa oddiy matnli xabar bo'ladi va `editMessageText` bilan tahrirlanadi; kartochkadan matnga (yoki aksincha) o'tishda eski xabar o'chirilib, yangisi yuboriladi.
 - **Navigatsiya.** Har sahifa ostida `⬅️ Orqaga` va `🏠 Bosh menyu`; tepada yo'l ko'rsatkichi, masalan `🏠 › ✅ Davomat › Sentabr`.
-- **Pastki klaviatura** (doim ko'rinadi, 2 ustun): `📅 Dars jadvali` · `✅ Davomat` · `📘 Baholar` · `📊 Hisobot` · `📢 E'lonlar` · `🗓 Tadbirlar` · `👩‍🏫 O'qituvchilar` · `💬 Maktabga yozish` · `⚙️ Sozlamalar` · `👨‍👩‍👧 Farzandlarim`. Tugma bosilsa — yangi sahifa-xabar ochiladi.
+- **Pastki menyu** — doimiy klaviatura (`is_persistent`, `resize_keyboard`, maydonda «Bo'limni tanlang 👇»), ulangan zahoti va har `/start`, `/menu`da o'rnatiladi:
+
+  ```text
+  📱 Kundalikni ochish            ← faqat TELEGRAM_WEBAPP_URL berilsa (web_app tugmasi)
+  📅 Dars jadvali   | ✅ Davomat
+  📘 Baholar        | 📊 Hisobot
+  📢 E'lonlar       | 🗓 Tadbirlar
+  👩‍🏫 O'qituvchilar  | 💬 Maktabga yozish
+  🤒 Sababli ariza  | ⚙️ Sozlamalar
+  👨‍👩‍👧 Farzandlarim
+  ```
+
+  Tugma bosilsa — yangi kartochka ochiladi. Ota-ona bo'lim nomini qo'lda yozsa ham taniladi: katta-kichik harf, emoji va tutuq belgisi ahamiyatsiz («davomat», «DAVOMAT», «Посещаемость» — hammasi Davomat).
+- **Tugma ranglari** (Bot API 9.4 `style`): asosiy bo'limlar — `primary` (ko'k), «🤒 Sababli ariza» — `danger` (qizil), «📱 Telefon raqamni ulashish» — `success` (yashil). 2026-yil fevralidan oldingi Telegram ilovalari tugmalarni oddiy ko'rinishda chiqaradi — rang baribir bannerlar va emoji orqali beriladi.
 - **Tezlik.** Har bosishga darhol `answerCallbackQuery` qaytadi (soat belgisi aylanmaydi); og'ir sahifalarda `typing…` / `sending photo…` holati ko'rsatiladi.
 - **Format.** HTML (`<b>`, `<i>`, `<blockquote>`), sanalar «30-sentabr, seshanba», vaqt Asia/Tashkent bo'yicha. Uzun ro'yxatlar sahifalanadi: `◀️ 1/3 ▶️`. Ma'lumot bo'lmasa — do'stona bo'sh holat («Bu oyda baho hali yo'q 🙂»).
 - **Bir nechta farzand.** Tepada tanlangan farzand: `👦 Ali Valiyev · 5-A`, ostida `🔄 Farzandni almashtirish`. Tanlov eslab qolinadi (`parent_session.selected_student_id`).
-- **Buyruqlar** (`setMyCommands`): `/start`, `/menu`, `/jadval`, `/davomat`, `/baholar`, `/yordam`, `/stop`. Bot faqat shaxsiy chatlarda javob beradi.
+- **Buyruqlar** (`setMyCommands`): `/start`, `/menu`, `/jadval`, `/davomat`, `/baholar`, `/yordam`, `/stop`. Ular Telegram'ning «Menu» ro'yxatida va `/yordam` sahifasida turadi — asosiy ekran esa tugmali menyu. Bot faqat shaxsiy chatlarda javob beradi.
 
 ### Sahifalar ro'yxati
 
@@ -3077,7 +3092,7 @@ flowchart TD
 |---|---|---|
 | 🏠 **Bosh menyu — «Bugun»** | `home` | Bugungi holat (keldi/kechikdi/kelmadi), bugungi baholar, joriy dars (▶️), yangi e'lonlar soni, yaqin tadbir |
 | 📅 **Dars jadvali** | `sch` (`t=today\|tomorrow\|week`) | Bugun / Ertaga / Hafta; joriy dars ▶️, tanaffuslar, o'qituvchi; bayram va ta'til kunlari «🎉 Dam olish kuni» |
-| ✅ **Davomat** | `att` (`k=m\|q\|y`, `m`, `v=sum\|cal\|det\|sub\|img`) | Oylik xulosa: foiz, progress-bar `▓▓▓▓▓▓▓▓░░`, sinf o'rtachasi; ◀️ oy ▶️; kalendar; «Batafsil» — har kelmagan/kechikkan dars; fanlar bo'yicha; chorak va o'quv yili; 🖼 rasm |
+| ✅ **Davomat** | `att` (`k=m\|q\|y`, `m`, `v=sum\|cal\|det\|sub\|img`) | Oylik xulosa: foiz, progress-bar `▰▰▰▰▰▰▰▰▱▱`, sinf o'rtachasi; ◀️ oy ▶️; kalendar; «Batafsil» — har kelmagan/kechikkan dars; fanlar bo'yicha; chorak va o'quv yili; 🖼 rasm |
 | 📘 **Baholar** | `gr` (`v=recent\|subj\|det\|qtr\|chart`) | So'nggi baholar; fanlar bo'yicha o'rtacha (bar + ↑↓ tendensiya); fan tafsiloti — barcha baholar va o'qituvchi; chorak baholari; 🖼 grafik |
 | 📊 **Hisobot** | `rep` (`t=week\|month`) | Davomat, o'rtacha baho, kuchli fanlar, e'tibor talab qiladigan fanlar, xulq; 🖼 hisobot kartochkasi |
 | ⭐ **Xulq** | `beh` (`m`) | Avval rag'batlar, keyin ogohlantirishlar; oylar bo'yicha |
@@ -3094,8 +3109,8 @@ flowchart TD
 
 ### Kutib olish (onboarding)
 
-1. `/start` (kodsiz) — iliq salomlashuv, nima qila olishi va ikki yo'l: kodni yuborish yoki `📱 Raqamni ulashish`.
-2. Ulangandan keyin: «✅ Tabriklaymiz! Endi **Ali** haqida hamma narsa shu yerda», 3 qadamli qisqa tanishtiruv va Bosh menyu.
+1. `/start` (kodsiz) — kutib olish banneri, bot nima qila olishi 4 qatorda va ikki katta tugma: `📱 Telefon raqamni ulashish` (`request_contact`) va `🔑 Kod kiritish` (bosilsa, kod qayerda yozilgani tushuntiriladi; keyingi yozilgan kod farzandni ulaydi).
+2. Ulangandan keyin: «✅ Tabriklaymiz! Endi **Ali** haqida hamma narsa shu yerda», 3 qadamli qisqa tanishtiruv, pastki menyu va «Xush kelibsiz» bannerli Bosh sahifa.
 3. Noto'g'ri kod — «❌ Kod topilmadi» (qaysi kodlar mavjudligi oshkor qilinmaydi).
 
 To'liq dialoglar tugmalari bilan: [bot-demo.md](bot-demo.md).
@@ -3120,13 +3135,42 @@ To'liq dialoglar tugmalari bilan: [bot-demo.md](bot-demo.md).
 - Rejalashtirilgan xabarlar (`BotScheduledJobs`) har 5 daqiqada tekshiriladi. Xabar o'z vaqtidan 3 soat ichida yuboriladi — server shu vaqtda o'chiq bo'lsa ham, yonganida yetkaziladi; dedup kaliti har birini bir marta yuborishni kafolatlaydi.
 - Tinch soatlarda yaratilgan xabar ertalab yuboriladi. Ota-onaning o'z tinch soatlari maktabnikidan ustun turadi.
 
+## Kartochkalar va bannerlar
+
+`bot/image/BannerRenderer` har bo'lim uchun 1280×640 banner chizadi (Java2D, tashqi servis yo'q): bo'lim rangidagi gradient, chizilgan vektor ikonka (rangli emoji Java2D'da chizilmaydi), sarlavha, farzand ismi va sinfi, katta asosiy raqam va o'ng tomonda oq kartochka. `BannerService` ma'lumotni yig'adi; `BotRouter` uni har sahifaga biriktiradi, `BotResponder` sahifani rasm + caption sifatida ko'rsatadi. Banner yaratishda xato bo'lsa, sahifa oddiy matn bo'lib chiqadi.
+
+| Bo'lim | Rang | Bannerda |
+|---|---|---|
+| 🏠 Bosh sahifa | `#6D28D9` | «Xush kelibsiz!», maktab, farzand, sana; bugungi darslar, holat, baholar, yangi e'lonlar |
+| 📅 Jadval | `#4F46E5` | Ertangi darslar jadvali (vaqt, fan, xona), darslar soni |
+| ✅ Davomat | `#10B981` | Oy, katta foiz, rangli kalendar kataklari va legenda |
+| 📘 Baholar | `#0EA5E9` | O'rtacha baho va fanlar bo'yicha rangli ustunli grafik (↑↓) |
+| 📊 Hisobot | `#7C3AED` | Shu hafta: davomat %, o'rtacha baho, rag'bat, ogohlantirish |
+| 📢 E'lonlar | `#EC4899` | Yangi e'lonlar soni, so'nggi e'lonlar (muhim / yangi belgisi) |
+| 🗓 Tadbirlar | `#F59E0B` | Yaqinlashayotgan tadbirlar sanasi bilan |
+| 👩‍🏫 O'qituvchilar | `#06B6D4` | Sinf rahbari, fan o'qituvchilari |
+| 🤒 Sababli ariza | `#EF4444` | Arizalar: jami, tasdiqlangan, kutilmoqda, rad etilgan |
+| ⚙️ Sozlamalar | `#64748B` | Yoqilgan xabarlar, til, ertangi jadval vaqti, tinch soatlar |
+| ⭐ Xulq · 💬 Maktabga yozish · 🏫 Maktab haqida · 👨‍👩‍👧 Farzandlarim | `#F97316` · `#14B8A6` · `#2563EB` · `#8B5CF6` | Oylik rag'bat/ogohlantirish; murojaatlar; aloqa; farzandlar ro'yxati |
+
+| | | |
+|---|---|---|
+| ![Kutib olish](images/bot/banner-kutib-olish-va-ulanish.png) | ![Bosh sahifa](images/bot/banner-bosh-menyu-bugun.png) | ![Jadval](images/bot/banner-dars-jadvali.png) |
+| ![Davomat](images/bot/banner-davomat.png) | ![Baholar](images/bot/banner-baholar.png) | ![Hisobot](images/bot/banner-hisobot.png) |
+| ![E'lonlar](images/bot/banner-elonlar.png) | ![Tadbirlar](images/bot/banner-tadbirlar.png) | ![O'qituvchilar](images/bot/banner-oqituvchilar.png) |
+| ![Sababli ariza](images/bot/banner-sababli-ariza.png) | ![Sozlamalar](images/bot/banner-sozlamalar-3-til.png) | ![Farzandlarim](images/bot/banner-farzandlarim.png) |
+
+- **Kesh.** Banner tarkibi (raqamlar, sana, til) bo'yicha keshlanadi: o'zgarmagan banner qayta chizilmaydi, Telegram qaytargan `file_id` qayta ishlatiladi — yuklash yo'q, javob tez.
+- **Caption** — qalin sarlavha, emoji, `▰▰▰▰▰▰▰▱▱▱ 72%` progress bar, qisqa qatorlar; ostida bo'lim tablari, `🔄 Farzandni almashtirish` (bir nechta farzand bo'lsa) va `🏠 Bosh menyu`.
+- **Avtomatik xabarlar** (kelmadi, kechikdi, baho, e'lon) emoji sarlavha bilan keladi va ostida `🔎 Batafsil` tugmasi bor — u tegishli bo'limni yangi kartochka sifatida ochadi.
+
 ## Rasmlar (PNG)
 
 `bot/image/BotImageRenderer` Java2D bilan uchta rasm chizadi (tashqi servis yo'q). Shrift — ilova ichiga qo'shilgan **Inter** (OFL litsenziyasi, `src/main/resources/bot/fonts/`), shuning uchun `oʻ`, `gʻ`, `ў`, `ғ`, `қ`, `ҳ` har qanday serverda to'g'ri chiqadi. Ranglar — loyiha brendi (indigo → binafsha).
 
 | Davomat kalendari | Fanlar grafigi | Hisobot kartochkasi |
 |---|---|---|
-| ![Davomat kalendari](images/bot/01-davomat-kalendar.png) | ![Fanlar grafigi](images/bot/02-baholar-grafik.png) | ![Hisobot kartochkasi](images/bot/03-hisobot-kartochka.png) |
+| ![Davomat kalendari](images/bot/rasm-davomat-kalendar.png) | ![Fanlar grafigi](images/bot/rasm-baholar-grafik.png) | ![Hisobot kartochkasi](images/bot/rasm-hisobot-kartochka.png) |
 
 `BotImageService` rasmni bir marta chizadi va Telegram qaytargan `file_id`ni keshlaydi: ma'lumot o'zgarmaguncha keyingi so'rovlar faylni qayta yuklamaydi.
 

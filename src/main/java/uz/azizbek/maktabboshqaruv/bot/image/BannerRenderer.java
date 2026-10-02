@@ -144,7 +144,8 @@ public final class BannerRenderer {
         g.drawString(fit(g, b.title(), maxW), x, 250);
         g.setColor(new Color(255, 255, 255, 225));
         g.setFont(SEMIBOLD.deriveFont(30f));
-        g.drawString(fit(g, b.subtitle(), maxW), x, 298);
+        List<String> sub = wrap(g, b.subtitle(), maxW, b.bigValue() == null ? 2 : 1);
+        for (int i = 0; i < sub.size(); i++) g.drawString(sub.get(i), x, 298 + i * 40);
 
         if (b.bigValue() != null) {
             g.setColor(Color.WHITE);
@@ -215,8 +216,10 @@ public final class BannerRenderer {
     private static void stats(Graphics2D g, Stats s, Color color, int x, int y, int w, int h) {
         int top = heading(g, s.heading(), x, y, w);
         List<Stat> list = s.stats().size() > 4 ? s.stats().subList(0, 4) : s.stats();
-        int cols = 2, rows = (list.size() + 1) / 2, gap = 20;
-        int tw = (w - gap) / cols, th = Math.min(200, (y + h - top - gap * (rows - 1)) / Math.max(1, rows));
+        // Two stats stack as full-width tiles; three or four make a 2×2 grid.
+        int cols = list.size() <= 2 ? 1 : 2, rows = (list.size() + cols - 1) / cols, gap = 20;
+        // Tiles share the card's height, so two stats fill it as well as four.
+        int tw = (w - gap * (cols - 1)) / cols, th = (y + h - top - gap * (rows - 1)) / Math.max(1, rows);
         for (int i = 0; i < list.size(); i++) {
             Stat st = list.get(i);
             int tx = x + (i % cols) * (tw + gap), ty = top + (i / cols) * (th + gap);
@@ -224,7 +227,12 @@ public final class BannerRenderer {
             g.setColor(tint(accent, 0.10f));
             g.fill(new RoundRectangle2D.Double(tx, ty, tw, th, 28, 28));
             g.setColor(MUTED);
-            g.setFont(SEMIBOLD.deriveFont(24f));
+            float labelSize = 24f;
+            g.setFont(SEMIBOLD.deriveFont(labelSize));
+            while (labelSize > 17f && width(g, st.label()) > tw - 48) {
+                labelSize -= 1f;
+                g.setFont(SEMIBOLD.deriveFont(labelSize));
+            }
             g.drawString(fit(g, st.label(), tw - 48), tx + 24, ty + 46);
             g.setColor(shade(accent, 0.85f));
             float size = 64f;
@@ -523,6 +531,29 @@ public final class BannerRenderer {
 
     private static int width(Graphics2D g, String s) {
         return s == null ? 0 : g.getFontMetrics().stringWidth(s);
+    }
+
+    /** Word-wraps into at most {@code maxLines} lines; the last one is shortened with "…" if needed. */
+    static List<String> wrap(Graphics2D g, String text, int maxWidth, int maxLines) {
+        List<String> lines = new java.util.ArrayList<>();
+        if (text == null || text.isBlank()) return lines;
+        StringBuilder line = new StringBuilder();
+        String[] words = text.split(" ");
+        for (int i = 0; i < words.length; i++) {
+            String candidate = line.isEmpty() ? words[i] : line + " " + words[i];
+            if (width(g, candidate) <= maxWidth || line.isEmpty()) {
+                line = new StringBuilder(candidate);
+                continue;
+            }
+            if (lines.size() == maxLines - 1) {
+                line.append(" ").append(String.join(" ", java.util.Arrays.copyOfRange(words, i, words.length)));
+                break;
+            }
+            lines.add(line.toString());
+            line = new StringBuilder(words[i]);
+        }
+        lines.add(fit(g, line.toString(), maxWidth));
+        return lines;
     }
 
     static String fit(Graphics2D g, String text, int maxWidth) {
