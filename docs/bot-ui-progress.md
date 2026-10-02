@@ -1,6 +1,6 @@
 # Bot UI (kartochka ko'rinishi) — bajarilish ro'yxati
 
-Natija: **30 / 30** band bajarildi (T4 — shartli band, izohga qarang).
+Natija: **30 / 30** band bajarildi.
 
 ## 1. Asosiy menyu — pastki doimiy tugmalar
 - [x] 1.1 Bog'langan zahoti, har `/start` va `/menu`da ReplyKeyboardMarkup (`resize_keyboard`, `is_persistent`, `input_field_placeholder="Bo'limni tanlang 👇"`) — `bot/Keyboards.java`, `Onboarding.linked`, `BotRouter.homeWithKeyboard`
@@ -38,5 +38,5 @@ Natija: **30 / 30** band bajarildi (T4 — shartli band, izohga qarang).
 - [x] T1 `./gradlew test` — **175 / 175** o'tdi; yangi testlar: `KeyboardsTest` (5), `BannerRendererTest` (3), seed integratsiya testida kartochkalar, kutib olish tugmalari va yozilgan bo'lim nomlari
 - [x] T2 Barcha bannerlar seed ma'lumot bilan `docs/images/bot/`ga saqlandi (`banner-*.png`, 15 ta) va ko'zdan kechirildi; topilgan kamchiliklar tuzatildi (kesilgan pastki sarlavha → 2 qator, kesilgan yorliqlar → shrift kichrayadi, 2 ko'rsatkichli kartochka → ustma-ust, e'londagi «!» → «muhim»)
 - [x] T3 `docs/bot-demo.md` yangilandi: har bo'lim uchun banner, caption va tugmalar
-- [x] T4 Haqiqiy botda `/start` — **shartli band, bajarilmadi**: v2 nusxasida token sozlanmagan; token faqat 8080'da ishlayotgan jonli v1 botda, ikkinchi nusxa Telegram'da 409 xatosi bilan uni uzib qo'yadi. O'rniga mock rejimda tekshirildi (`/start` → pastki menyu, bo'lim → kartochka). Qo'lda tekshirish: [15-telegram-bot.md](15-telegram-bot.md#administrator-uchun-yoriqnoma)
+- [x] T4 Haqiqiy botda `/start` — tasdiqlandi (02.10.2026): v1 to'xtatilib, v2 haqiqiy token bilan ishga tushirildi (`mode=LIVE`, profil yangilandi, logda xato yo'q); ota-ona `/start` bosganda kartochka va pastki menyu chiqdi
 - [x] T5 Yakuniy hisobot: bajarilgan/jami, rasmlar ro'yxati, commitlar
