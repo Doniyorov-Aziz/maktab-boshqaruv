@@ -235,13 +235,66 @@ Ota-onalar uchun Telegram bot (batafsil: [15-telegram-bot.md](15-telegram-bot.md
 | POST | `/api/telegram/students/{studentId}/regenerate-code` | Yangi kod yaratadi (eskisi bekor bo'ladi, bog'lanishlar saqlanadi) | A/E |
 | DELETE | `/api/telegram/links/{linkId}` | Ota-onani uzish (`active=false`) | A/E |
 | GET | `/api/telegram/classes/{schoolClassId}/codes` | Sinfning barcha o'quvchilari uchun kod + deep link (QR varaq uchun) | A/E |
-| POST | `/api/telegram/mock/updates` | **Faqat `telegram.mock=true`**: ota-onaning botga yozgan xabarini simulyatsiya qiladi, botning javoblarini qaytaradi. Body: `chatId`, `text` yoki `contactPhone` (+ ixtiyoriy `firstName`, `username`, `contactUserId`) | A |
+| GET | `/api/telegram/files/{fileId}` | Ota-ona yuborgan rasmni backend orqali beradi (token brauzerga chiqmaydi) | A/E |
+| POST | `/api/telegram/mock/updates` | **Faqat `telegram.mock=true`**: ota-onaning harakatini simulyatsiya qiladi, botning javoblarini (yuborish/tahrirlash/rasm, tugmalari bilan) qaytaradi. Body: `chatId` + bittasi: `text`, `contactPhone`, `photoBase64`, `callbackData` (+ `messageId`); ixtiyoriy `firstName`, `username`, `contactUserId`, `languageCode` | A |
+| GET | `/api/telegram/mock/messages?chatId=&from=` | **Mock**: shu chatga yuborilgan xabarlar, `from` indeksidan boshlab (`next` — keyingi indeks) | A |
+| GET | `/api/telegram/mock/photos/{fileId}` | **Mock**: bot yuborgan PNG | A |
+
+### `/api/parent-messages` — ota-onalar murojaatlari (`schoolId` majburiy)
+
+| Metod | URL | Vazifa | Rol |
+|---|---|---|---|
+| GET | `/api/parent-messages` | Ro'yxat, yangilari birinchi, pagination. Ixtiyoriy `status` (`NEW`/`ANSWERED`) | A/E |
+| GET | `/api/parent-messages/count-new` | Javob kutayotganlar soni (sidebar belgisi) | A/E |
+| GET | `/api/parent-messages/{id}/photo` | Murojaatga ilova qilingan rasm | A/E |
+| POST | `/api/parent-messages/{id}/reply` | Javob yozish. Body: `{"text": "..."}`. Javob ota-onaga botda (`MESSAGE_REPLY`) yuboriladi | A/E |
+
+### `/api/absence-requests` — sababli arizalar (`schoolId` majburiy)
+
+| Metod | URL | Vazifa | Rol |
+|---|---|---|---|
+| GET | `/api/absence-requests` | Ro'yxat, pagination. Ixtiyoriy `status` (`PENDING`/`APPROVED`/`REJECTED`) | A/E |
+| GET | `/api/absence-requests/count-pending` | Kutilayotganlar soni | A/E |
+| GET | `/api/absence-requests/{id}/photo` | Ma'lumotnoma rasmi | A/E |
+| POST | `/api/absence-requests/{id}/approve` | Tasdiqlash: arizadagi kunlarning barcha darslari davomatda `EXCUSED` (bayram/ta'til kunlari bundan mustasno), javobda `excusedLessons`; ota-onaga xabar. `PENDING` bo'lmasa — 409 | A/E |
+| POST | `/api/absence-requests/{id}/reject` | Rad etish. Body: `{"text": "sabab"}` (majburiy); ota-onaga sababi bilan xabar | A/E |
+
+### `/api/broadcasts` — ota-onalarga umumiy xabar (faqat ADMIN)
+
+| Metod | URL | Vazifa | Rol |
+|---|---|---|---|
+| GET | `/api/broadcasts?schoolId=` | Yuborilganlar tarixi va natijasi (yuborildi / jami) | A |
+| POST | `/api/broadcasts/preview` | Ota-ona ko'radigan matn va qabul qiluvchilar soni, hech narsa yubormaydi | A |
+| POST | `/api/broadcasts` | Yuborish (outbox orqali, `BROADCAST`). Body: `schoolId`, `text`, `audience` (`ALL`/`CLASSES`), `classIds` | A |
+
+### `/api/bot` — bot statistikasi va sozlamalari (`schoolId` majburiy)
+
+| Metod | URL | Vazifa | Rol |
+|---|---|---|---|
+| GET | `/api/bot/stats` | Ulangan ota-onalar foizi, faol (7/30 kun), 30 kunlik yuborilgan xabarlar, eng ko'p ochilgan bo'limlar, sinflar bo'yicha qamrov | A/E |
+| GET | `/api/bot/settings` | Bot sozlamalari (yozuv bo'lmasa — standart qiymatlar) | A/E |
+| PUT | `/api/bot/settings` | Saqlash: `phone`, `directorName`, `receptionHours`, `bellScheduleNote`, `showTeacherPhones`, `tomorrowScheduleTime`, `weeklyReportDay`, `weeklyReportTime`, `eventReminderTime`, `lowGradeThreshold` (2 yoki 3) | A |
+| POST | `/api/bot/mock/run-jobs` | **Mock**: ertangi jadval, haftalik hisobot, tadbir eslatmasini hoziroq ishga tushiradi | A |
+
+### `/api/parent` — Mini App (JWT emas, Telegram imzosi)
+
+Login talab qilinmaydi (`SecurityConfig`da ochiq), lekin har so'rovda `X-Telegram-Init-Data` sarlavhasi bo'lishi shart. Imzo HMAC-SHA256 bilan tekshiriladi, `auth_date` 24 soatdan eski bo'lmasligi kerak — aks holda **401**. Chat bog'lanmagan o'quvchi id'si — **403**. Barcha endpointlar faqat o'qish uchun.
+
+| Metod | URL | Vazifa |
+|---|---|---|
+| GET | `/api/parent/me` | Ota-ona ismi, tili, bog'langan farzandlar, tanlangan farzand |
+| GET | `/api/parent/students/{id}/today` | «Bugun»: holat, darslar, bugungi baholar, yangi e'lonlar, yaqin tadbir |
+| GET | `/api/parent/students/{id}/schedule?day=today\|tomorrow\|week` | Dars jadvali |
+| GET | `/api/parent/students/{id}/attendance?month=YYYY-MM` | Oylik xulosa, kunlar kalendari, kelmagan/kechikkan darslar, fanlar bo'yicha |
+| GET | `/api/parent/students/{id}/grades` | So'nggi baholar va fanlar bo'yicha o'rtacha (tendensiya bilan) |
+| GET | `/api/parent/students/{id}/grades/{subjectId}` | Fan bo'yicha barcha baholar va o'qituvchi |
+| GET | `/api/parent/students/{id}/announcements` | Ota-onalarga mo'ljallangan e'lonlar |
 
 ### `/api/notifications` (`schoolId` majburiy)
 
 | Metod | URL | Vazifa | Rol | Qo'shimcha parametrlar |
 |---|---|---|---|---|
-| GET | `/api/notifications` | Xabarnomalar jurnali (outbox), yangilari birinchi, pagination | A/E | `type` (`ATTENDANCE_ABSENT`, `ATTENDANCE_LATE`, `GRADE_NEW`, `GRADE_UPDATED`, `ANNOUNCEMENT`), `status` (`PENDING`, `SENT`, `FAILED`, `SKIPPED`), `from`, `to` (`YYYY-MM-DD`, `createdAt` bo'yicha) — barchasi ixtiyoriy |
+| GET | `/api/notifications` | Xabarnomalar jurnali (outbox), yangilari birinchi, pagination | A/E | `type` (`ATTENDANCE_ABSENT`, `ATTENDANCE_LATE`, `GRADE_NEW`, `GRADE_UPDATED`, `GRADE_LOW`, `ANNOUNCEMENT`, `TOMORROW_SCHEDULE`, `WEEKLY_REPORT`, `EVENT_REMINDER`, `MESSAGE_REPLY`, `ABSENCE_DECISION`, `BROADCAST`), `status` (`PENDING`, `SENT`, `FAILED`, `SKIPPED`), `from`, `to` (`YYYY-MM-DD`, `createdAt` bo'yicha) — barchasi ixtiyoriy |
 | GET | `/api/notifications/stats` | `sentToday`, `failedToday`, `failedTotal`, `pending`, `skippedToday`, `linkedStudents`, `totalStudents`, `linkedPercent`, `parentCount` | A/E | — |
 | POST | `/api/notifications/{id}/retry` | `FAILED` xabarni qayta navbatga qo'yadi (`attempts=0`). Boshqa holatda — 409 | A/E | — |
 | GET | `/api/notifications/settings` | Maktab sozlamalari (yozuv bo'lmasa — standart qiymatlar) | A/E | — |
