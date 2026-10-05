@@ -43,7 +43,15 @@ export const loginTexts = {
     success: 'Muvaffaqiyatli',
     serverDown: "Server bilan bog'lanib bo'lmadi",
     retry: 'Qayta tekshirish',
-    badCredentials: "Login yoki parol noto'g'ri",
+    badCredentials: "Login yoki parol noto'g'ri. Qaytadan urinib ko'ring.",
+    fillBoth: 'Login va parolni kiriting',
+    dodge: [
+      "Avval to'ldiring 😉",
+      'Qochib ketdim! 🏃',
+      'Login va parol kerak 🙂'
+    ],
+    dodgeHint: 'Login va parolni kiriting — keyin tugma qochmaydi 😊',
+    retryIn: 'Qayta urinish:',
     genericError: 'Kirishda xatolik yuz berdi',
     terms:
       "Kirish bilan siz maktab ma'lumotlaridan foydalanish qoidalariga rozilik bildirasiz.",
@@ -100,7 +108,11 @@ export const loginTexts = {
     success: 'Успешно',
     serverDown: 'Не удалось связаться с сервером',
     retry: 'Проверить снова',
-    badCredentials: 'Неверный логин или пароль',
+    badCredentials: 'Неверный логин или пароль. Попробуйте ещё раз.',
+    fillBoth: 'Введите логин и пароль',
+    dodge: ['Сначала заполните 😉', 'Я убежала! 🏃', 'Нужны логин и пароль 🙂'],
+    dodgeHint: 'Введите логин и пароль — и кнопка больше не убежит 😊',
+    retryIn: 'Повтор через:',
     genericError: 'Не удалось войти',
     terms:
       'Входя в систему, вы соглашаетесь с правилами использования данных школы.',

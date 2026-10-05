@@ -179,8 +179,10 @@
         <section class="login__form-side">
           <div class="login__form-wrap">
             <div
+              ref="cardEl"
               class="login__card"
               :class="{ 'login__card--shake': shaking }"
+              @mousemove="onCardMove"
               role="region"
               aria-labelledby="login-title"
             >
@@ -214,7 +216,11 @@
               }}</h2>
               <p class="login__card-sub">{{ t.subtitle }}</p>
 
-              <q-form class="login__form" @submit.prevent="onSubmit">
+              <q-form
+                class="login__form"
+                @submit.prevent="onSubmit"
+                @validation-error="onValidationError"
+              >
                 <label for="login-username" class="login__label">{{
                   t.login
                 }}</label>
@@ -226,10 +232,11 @@
                   autofocus
                   autocomplete="username"
                   class="login__field"
-                  :error="authError ? true : undefined"
+                  :error="userInvalid ? true : undefined"
                   :rules="[val => !!val || t.required]"
                   lazy-rules="ondemand"
-                  @update:model-value="authError = false"
+                  @update:model-value="onTyping"
+                  @mouseenter="settleButton"
                 >
                   <template v-slot:prepend>
                     <q-icon name="person_outline" aria-hidden="true" />
@@ -247,10 +254,11 @@
                   outlined
                   autocomplete="current-password"
                   class="login__field"
-                  :error="authError ? true : undefined"
+                  :error="passInvalid ? true : undefined"
                   :rules="[val => !!val || t.required]"
                   lazy-rules="ondemand"
-                  @update:model-value="authError = false"
+                  @update:model-value="onTyping"
+                  @mouseenter="settleButton"
                   @keydown="detectCaps"
                   @keyup="detectCaps"
                   @blur="capsLock = false"
@@ -277,6 +285,26 @@
                   {{ t.capsLock }}
                 </div>
 
+                <!-- messages sit right under the fields -->
+                <div
+                  v-if="clientMessage"
+                  class="login__error"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <q-icon name="error_outline" size="20px" aria-hidden="true" />
+                  {{ clientMessage }}
+                </div>
+                <div
+                  v-else-if="errorMessage && !backendDown"
+                  class="login__error"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <q-icon name="error_outline" size="20px" aria-hidden="true" />
+                  {{ shownError }}
+                </div>
+
                 <div class="login__row">
                   <q-checkbox
                     v-model="rememberMe"
@@ -293,38 +321,51 @@
                   </button>
                 </div>
 
-                <div
-                  v-if="errorMessage && !backendDown"
-                  class="login__error"
-                  role="alert"
-                  aria-live="assertive"
-                >
-                  <q-icon name="error_outline" size="20px" aria-hidden="true" />
-                  {{ shownError }}
+                <!-- the playful "runaway" button: moves only sideways inside its own row -->
+                <div ref="submitRow" class="login__submit-row">
+                  <div
+                    class="login__submit-wrap"
+                    :class="{ 'login__submit-wrap--dodging': dodging }"
+                    :style="{ transform: `translate3d(${dodgeX}px, 0, 0)` }"
+                  >
+                    <q-btn
+                      type="submit"
+                      class="login__submit"
+                      :class="{ 'login__submit--success': success }"
+                      unelevated
+                      no-caps
+                      :loading="loading"
+                      :disable="loading || locked"
+                      :aria-label="t.submit"
+                    >
+                      <template v-if="success">
+                        <q-icon name="check" size="22px" class="q-mr-xs" />
+                        {{ t.success }}
+                      </template>
+                      <template v-else-if="locked"
+                        >{{ t.retryIn }} {{ secondsLeft }} s</template
+                      >
+                      <template v-else-if="dodgeLabel">{{
+                        dodgeLabel
+                      }}</template>
+                      <template v-else>{{ t.submit }}</template>
+                      <template v-slot:loading>
+                        <q-spinner size="20px" class="q-mr-sm" />
+                        {{ t.submitting }}
+                      </template>
+                    </q-btn>
+                  </div>
                 </div>
 
-                <q-btn
-                  type="submit"
-                  class="login__submit"
-                  :class="{ 'login__submit--success': success }"
-                  unelevated
-                  no-caps
-                  :loading="loading"
-                  :disable="loading || success"
-                  :aria-label="t.submit"
-                >
-                  <template v-if="success">
-                    <q-icon name="check" size="22px" class="q-mr-xs" />
-                    {{ t.success }}
-                  </template>
-                  <template v-else>{{ t.submit }}</template>
-                  <template v-slot:loading>
-                    <q-spinner size="20px" class="q-mr-sm" />
-                    {{ t.submitting }}
-                  </template>
-                </q-btn>
+                <p v-if="hintShown" class="login__dodge-hint">
+                  {{ t.dodgeHint }}
+                </p>
 
                 <p class="login__terms">{{ t.terms }}</p>
+
+                <div class="login__sr" aria-live="polite">{{
+                  liveMessage
+                }}</div>
               </q-form>
             </div>
 
@@ -367,7 +408,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -394,6 +435,34 @@ const shaking = ref(false)
 const forgotOpen = ref(false)
 const success = ref(false)
 const brandEl = ref(null)
+const cardEl = ref(null)
+const submitRow = ref(null)
+
+// ---- the playful "runaway" button (client-side only; it never asks the
+// server whether a login or password is right — that happens on submit)
+const MIN_LOGIN = 3
+const MIN_PASSWORD = 4
+const DODGE_DISTANCE = 60
+const COMPACT_WIDTH = 0.56 // share of the row the button takes while dodging
+const dodgeX = ref(0)
+const dodging = ref(false)
+const dodgeCount = ref(0)
+const dodgeDone = ref(false)
+const hintShown = ref(false)
+const emptyMarked = ref(false)
+const clientMessage = ref('')
+const liveMessage = ref('')
+let dodgeOn = false
+let lastDodge = 0
+let settleTimer = null
+
+// ---- UI-level lock after repeated wrong passwords
+const MAX_FAILS = 5
+const LOCK_MS = 30000
+const failCount = ref(0)
+const lockUntil = ref(0)
+const now = ref(Date.now())
+let ticker = null
 
 const lang = ref(readLang())
 const t = computed(() => loginTexts[lang.value])
@@ -422,6 +491,27 @@ const week = [
   [C.math, C.art, C.lang],
   [C.pe, C.sci, C.math]
 ]
+
+const incomplete = computed(
+  () =>
+    username.value.trim().length < MIN_LOGIN ||
+    password.value.length < MIN_PASSWORD
+)
+const dodgeLabel = computed(() =>
+  dodging.value && dodgeCount.value > 0
+    ? t.value.dodge[(dodgeCount.value - 1) % t.value.dodge.length]
+    : ''
+)
+const userInvalid = computed(
+  () => authError.value || (emptyMarked.value && !username.value)
+)
+const passInvalid = computed(
+  () => authError.value || (emptyMarked.value && !password.value)
+)
+const locked = computed(() => lockUntil.value > now.value)
+const secondsLeft = computed(() =>
+  Math.max(0, Math.ceil((lockUntil.value - now.value) / 1000))
+)
 
 /** Error text in the page language: the API message is Uzbek, so known cases are re-worded for RU. */
 const shownError = computed(() => {
@@ -474,11 +564,101 @@ onMounted(() => {
   parallaxOn =
     window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  // same rule for the runaway button: mouse on a desktop, motion allowed
+  dodgeOn = parallaxOn
+  ticker = setInterval(() => (now.value = Date.now()), 250)
 })
 
 onBeforeUnmount(() => {
   document.title = 'Maktab Boshqaruv'
+  clearInterval(ticker)
+  clearTimeout(settleTimer)
 })
+
+/** Browser autofill counts as filled, even before the page can read the value. */
+function autofilled() {
+  try {
+    return ['#login-username', '#login-password'].every(sel =>
+      document.querySelector(sel)?.matches(':-webkit-autofill')
+    )
+  } catch {
+    return false
+  }
+}
+
+function onCardMove(event) {
+  if (!dodgeOn || dodgeDone.value || loading.value || success.value) return
+  if (locked.value || !submitRow.value) return
+  if (!incomplete.value || autofilled()) {
+    if (dodging.value) settleButton()
+    return
+  }
+  const row = submitRow.value.getBoundingClientRect()
+  const btn = submitRow.value.firstElementChild.getBoundingClientRect()
+  const gapX = Math.max(btn.left - event.clientX, 0, event.clientX - btn.right)
+  const gapY = Math.max(btn.top - event.clientY, 0, event.clientY - btn.bottom)
+  if (Math.hypot(gapX, gapY) > DODGE_DISTANCE) return
+
+  const time = performance.now()
+  if (time - lastDodge < 260) return // let the previous move finish
+  lastDodge = time
+
+  const max = Math.floor((row.width - row.width * COMPACT_WIDTH) / 2)
+  // run away from the cursor; if already pressed into that corner, jump across
+  let dir = event.clientX < btn.left + btn.width / 2 ? 1 : -1
+  if (dodging.value && Math.abs(dodgeX.value - dir * max) < 12) dir = -dir
+  const spot = 0.72 + Math.random() * 0.28 // a different place every time
+  dodgeX.value = Math.round(dir * max * spot)
+  dodging.value = true
+  dodgeCount.value += 1
+  liveMessage.value = t.value.fillBoth
+
+  if (dodgeCount.value >= 3) {
+    clearTimeout(settleTimer)
+    settleTimer = setTimeout(() => {
+      settleButton()
+      dodgeDone.value = true
+      hintShown.value = true
+      emptyMarked.value = true
+    }, 700)
+  }
+}
+
+/** Back to the original place, with the normal "Kirish" label. */
+function settleButton() {
+  dodgeX.value = 0
+  dodging.value = false
+}
+
+watch(incomplete, isIncomplete => {
+  if (isIncomplete) return
+  // both fields filled: the button stays put and works normally
+  clearTimeout(settleTimer)
+  settleButton()
+  dodgeCount.value = 0
+  dodgeDone.value = false
+  hintShown.value = false
+  emptyMarked.value = false
+  clientMessage.value = ''
+})
+
+function onTyping() {
+  authError.value = false
+  clientMessage.value = ''
+}
+
+/** Enter / Tab+Space with empty fields: no dodging, a clear message and focus on the empty field. */
+function onValidationError() {
+  settleButton()
+  emptyMarked.value = true
+  clientMessage.value = t.value.fillBoth
+  liveMessage.value = t.value.fillBoth
+  nextTick(() =>
+    document
+      .querySelector(username.value ? '#login-password' : '#login-username')
+      ?.focus()
+  )
+}
 
 function onParallax(event) {
   if (!parallaxOn || !brandEl.value) return
@@ -521,7 +701,9 @@ function shake() {
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 async function onSubmit() {
-  if (loading.value || success.value) return // guards against a duplicate submit firing (e.g. Enter + button both resolving)
+  if (loading.value || success.value || locked.value) return // guards against a duplicate submit firing (e.g. Enter + button both resolving)
+  settleButton()
+  clientMessage.value = ''
   errorMessage.value = ''
   errorStatus.value = null
   authError.value = false
@@ -539,6 +721,7 @@ async function onSubmit() {
     } else {
       localStorage.removeItem('rememberedUsername')
     }
+    failCount.value = 0
     // A short green "✓" before leaving the page.
     loading.value = false
     success.value = true
@@ -552,6 +735,18 @@ async function onSubmit() {
     } else {
       authError.value = true
       shake()
+      if (error.response.status === 401) {
+        // one general message (never which of the two is wrong), a fresh password field
+        liveMessage.value = t.value.badCredentials
+        password.value = ''
+        failCount.value += 1
+        if (failCount.value >= MAX_FAILS) {
+          failCount.value = 0
+          lockUntil.value = Date.now() + LOCK_MS
+          now.value = Date.now()
+        }
+        nextTick(() => document.querySelector('#login-password')?.focus())
+      }
     }
   } finally {
     loading.value = false
@@ -1310,6 +1505,58 @@ async function onSubmit() {
   box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
 }
 
+/* runaway button: the wrapper moves, so the button itself keeps its styles */
+.login__submit-row {
+  display: flex;
+  justify-content: center;
+}
+
+.login__submit-wrap {
+  width: 100%;
+  /* the way back to its place is slower than the escape */
+  transition:
+    transform 400ms var(--ease-out),
+    width 300ms var(--ease-out);
+  will-change: transform;
+}
+
+.login__submit-wrap--dodging {
+  width: 56%;
+  transition:
+    transform 230ms var(--ease-out),
+    width 230ms var(--ease-out);
+}
+
+.login__submit-wrap .login__submit {
+  width: 100%;
+}
+
+.login__submit-wrap--dodging .login__submit {
+  font-size: var(--text-base);
+}
+
+.login__dodge-hint {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-brand);
+}
+
+.body--dark .login__dodge-hint {
+  color: #a5b4fc;
+}
+
+/* visible to screen readers only */
+.login__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .login__terms {
   margin: 16px 0 0;
   text-align: center;
@@ -1644,6 +1891,7 @@ async function onSubmit() {
 
   .scene__slot,
   .login__submit,
+  .login__submit-wrap,
   .login__field :deep(.q-field__control),
   .login__lang-btn {
     transition: none !important;
