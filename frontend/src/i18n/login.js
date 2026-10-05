@@ -45,12 +45,8 @@ export const loginTexts = {
     retry: 'Qayta tekshirish',
     badCredentials: "Login yoki parol noto'g'ri. Qaytadan urinib ko'ring.",
     fillBoth: 'Login va parolni kiriting',
-    dodge: [
-      "Avval to'ldiring 😉",
-      'Qochib ketdim! 🏃',
-      'Login va parol kerak 🙂'
-    ],
-    dodgeHint: 'Login va parolni kiriting — keyin tugma qochmaydi 😊',
+    dodge: ['Qochdim 🏃', 'Ushlolmaysiz 😜', "To'ldiring 😉"],
+    dodgeHint: 'Login va parolni kiriting 🙂',
     retryIn: 'Qayta urinish:',
     genericError: 'Kirishda xatolik yuz berdi',
     terms:
@@ -110,8 +106,8 @@ export const loginTexts = {
     retry: 'Проверить снова',
     badCredentials: 'Неверный логин или пароль. Попробуйте ещё раз.',
     fillBoth: 'Введите логин и пароль',
-    dodge: ['Сначала заполните 😉', 'Я убежала! 🏃', 'Нужны логин и пароль 🙂'],
-    dodgeHint: 'Введите логин и пароль — и кнопка больше не убежит 😊',
+    dodge: ['Убежала 🏃', 'Не поймаете 😜', 'Заполните 😉'],
+    dodgeHint: 'Введите логин и пароль 🙂',
     retryIn: 'Повтор через:',
     genericError: 'Не удалось войти',
     terms:

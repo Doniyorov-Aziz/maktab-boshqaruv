@@ -236,7 +236,6 @@
                   :rules="[val => !!val || t.required]"
                   lazy-rules="ondemand"
                   @update:model-value="onTyping"
-                  @mouseenter="settleButton"
                 >
                   <template v-slot:prepend>
                     <q-icon name="person_outline" aria-hidden="true" />
@@ -258,7 +257,6 @@
                   :rules="[val => !!val || t.required]"
                   lazy-rules="ondemand"
                   @update:model-value="onTyping"
-                  @mouseenter="settleButton"
                   @keydown="detectCaps"
                   @keyup="detectCaps"
                   @blur="capsLock = false"
@@ -321,17 +319,26 @@
                   </button>
                 </div>
 
-                <!-- the playful "runaway" button: moves only sideways inside its own row -->
+                <!-- the playful "runaway" button: while it plays it floats in an
+                     absolute layer over the card; the row keeps an empty
+                     placeholder, so the layout never jumps -->
                 <div ref="submitRow" class="login__submit-row">
                   <div
                     class="login__submit-wrap"
-                    :class="{ 'login__submit-wrap--dodging': dodging }"
-                    :style="{ transform: `translate3d(${dodgeX}px, 0, 0)` }"
+                    :class="{
+                      'login__submit-wrap--floating': floating,
+                      'login__submit-wrap--small': small,
+                      'login__submit-wrap--returning': returning
+                    }"
+                    :style="floatStyle"
                   >
                     <q-btn
                       type="submit"
                       class="login__submit"
-                      :class="{ 'login__submit--success': success }"
+                      :class="{
+                        'login__submit--success': success,
+                        'login__submit--pop': popping
+                      }"
                       unelevated
                       no-caps
                       :loading="loading"
@@ -408,7 +415,15 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  nextTick,
+  onMounted,
+  onBeforeUnmount
+} from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -440,21 +455,32 @@ const submitRow = ref(null)
 
 // ---- the playful "runaway" button (client-side only; it never asks the
 // server whether a login or password is right — that happens on submit)
-const MIN_LOGIN = 3
-const MIN_PASSWORD = 4
-const DODGE_DISTANCE = 60
-const COMPACT_WIDTH = 0.56 // share of the row the button takes while dodging
-const dodgeX = ref(0)
-const dodging = ref(false)
+const DODGE_RADIUS = 90 // px from the button centre that makes it run
+const PAD = 16 // the button stays this far inside the card
+const SMALL_W = 140
+const SMALL_H = 40
+const GAME_MS = 12000 // one game lasts 12 s from the first escape
+const MAX_GAMES = 2 // games per page session
+const floating = ref(false) // lifted into the absolute layer
+const small = ref(false) // shrunk, with a short label
+const returning = ref(false)
+const popping = ref(false)
+const pos = reactive({ x: 0, y: 0 }) // top-left in card coordinates
+const size = reactive({ w: 0, h: 0 })
 const dodgeCount = ref(0)
-const dodgeDone = ref(false)
+const gamesPlayed = ref(0)
+const gameOver = ref(false)
 const hintShown = ref(false)
 const emptyMarked = ref(false)
 const clientMessage = ref('')
 const liveMessage = ref('')
 let dodgeOn = false
-let lastDodge = 0
-let settleTimer = null
+let gameTimer = null
+let returnTimer = null
+let popTimer = null
+let frame = 0
+let lastEvent = null
+let lastStep = 0
 
 // ---- UI-level lock after repeated wrong passwords
 const MAX_FAILS = 5
@@ -492,15 +518,21 @@ const week = [
   [C.pe, C.sci, C.math]
 ]
 
-const incomplete = computed(
-  () =>
-    username.value.trim().length < MIN_LOGIN ||
-    password.value.length < MIN_PASSWORD
-)
+/** The game is on only while at least one of the two fields is empty. */
+const incomplete = computed(() => !username.value.trim() || !password.value)
 const dodgeLabel = computed(() =>
-  dodging.value && dodgeCount.value > 0
+  small.value && dodgeCount.value > 0
     ? t.value.dodge[(dodgeCount.value - 1) % t.value.dodge.length]
     : ''
+)
+const floatStyle = computed(() =>
+  floating.value
+    ? {
+        transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
+        width: `${size.w}px`,
+        height: `${size.h}px`
+      }
+    : {}
 )
 const userInvalid = computed(
   () => authError.value || (emptyMarked.value && !username.value)
@@ -572,7 +604,10 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.title = 'Maktab Boshqaruv'
   clearInterval(ticker)
-  clearTimeout(settleTimer)
+  clearTimeout(gameTimer)
+  clearTimeout(returnTimer)
+  clearTimeout(popTimer)
+  cancelAnimationFrame(frame)
 })
 
 /** Browser autofill counts as filled, even before the page can read the value. */
@@ -587,59 +622,234 @@ function autofilled() {
 }
 
 function onCardMove(event) {
-  if (!dodgeOn || dodgeDone.value || loading.value || success.value) return
-  if (locked.value || !submitRow.value) return
-  if (!incomplete.value || autofilled()) {
-    if (dodging.value) settleButton()
-    return
-  }
-  const row = submitRow.value.getBoundingClientRect()
-  const btn = submitRow.value.firstElementChild.getBoundingClientRect()
-  const gapX = Math.max(btn.left - event.clientX, 0, event.clientX - btn.right)
-  const gapY = Math.max(btn.top - event.clientY, 0, event.clientY - btn.bottom)
-  if (Math.hypot(gapX, gapY) > DODGE_DISTANCE) return
-
-  const time = performance.now()
-  if (time - lastDodge < 260) return // let the previous move finish
-  lastDodge = time
-
-  const max = Math.floor((row.width - row.width * COMPACT_WIDTH) / 2)
-  // run away from the cursor; if already pressed into that corner, jump across
-  let dir = event.clientX < btn.left + btn.width / 2 ? 1 : -1
-  if (dodging.value && Math.abs(dodgeX.value - dir * max) < 12) dir = -dir
-  const spot = 0.72 + Math.random() * 0.28 // a different place every time
-  dodgeX.value = Math.round(dir * max * spot)
-  dodging.value = true
-  dodgeCount.value += 1
-  liveMessage.value = t.value.fillBoth
-
-  if (dodgeCount.value >= 3) {
-    clearTimeout(settleTimer)
-    settleTimer = setTimeout(() => {
-      settleButton()
-      dodgeDone.value = true
-      hintShown.value = true
-      emptyMarked.value = true
-    }, 700)
+  if (!dodgeOn) return
+  lastEvent = event
+  // at most one step per animation frame
+  if (!frame) {
+    frame = requestAnimationFrame(() => {
+      frame = 0
+      dodgeStep(lastEvent)
+    })
   }
 }
 
-/** Back to the original place, with the normal "Kirish" label. */
-function settleButton() {
-  dodgeX.value = 0
-  dodging.value = false
+/** The card's padding box in viewport coordinates (the absolute layer's origin). */
+function cardBox() {
+  const c = cardEl.value
+  const r = c.getBoundingClientRect()
+  return {
+    left: r.left + c.clientLeft,
+    top: r.top + c.clientTop,
+    w: c.clientWidth,
+    h: c.clientHeight
+  }
+}
+
+/** Where the button lives in the form, in card coordinates (the placeholder row). */
+function homeRect(box) {
+  const r = submitRow.value.getBoundingClientRect()
+  return { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height }
+}
+
+/** The input boxes the button must never cover, slightly enlarged. */
+function obstacles(box) {
+  return [
+    ...cardEl.value.querySelectorAll('.login__field .q-field__control')
+  ].map(el => {
+    const r = el.getBoundingClientRect()
+    return {
+      l: r.left - box.left - 6,
+      t: r.top - box.top - 6,
+      r: r.right - box.left + 6,
+      b: r.bottom - box.top + 6
+    }
+  })
+}
+
+function clampCenter(box, x, y) {
+  return {
+    x: Math.min(Math.max(x, PAD + SMALL_W / 2), box.w - PAD - SMALL_W / 2),
+    y: Math.min(Math.max(y, PAD + SMALL_H / 2), box.h - PAD - SMALL_H / 2)
+  }
+}
+
+function hits(c, o) {
+  return (
+    c.x - SMALL_W / 2 < o.r &&
+    c.x + SMALL_W / 2 > o.l &&
+    c.y - SMALL_H / 2 < o.b &&
+    c.y + SMALL_H / 2 > o.t
+  )
+}
+
+/** If the spot covers an input, slide the button below it (or above, near the bottom). */
+function avoidInputs(box, c) {
+  const obs = obstacles(box)
+  let spot = { ...c }
+  for (let i = 0; i < 6; i++) {
+    const o = obs.find(ob => hits(spot, ob))
+    if (!o) return spot
+    const below = o.b + SMALL_H / 2 + 2
+    spot =
+      below + SMALL_H / 2 <= box.h - PAD
+        ? { x: spot.x, y: below }
+        : { x: spot.x, y: o.t - SMALL_H / 2 - 2 }
+    spot = clampCenter(box, spot.x, spot.y)
+  }
+  // squeezed between the fields: the free strip under them, by the form's own button row
+  return clampCenter(box, spot.x, box.h - PAD - SMALL_H / 2)
+}
+
+function dodgeStep(event) {
+  if (!event || !cardEl.value || !submitRow.value) return
+  if (
+    gameOver.value ||
+    returning.value ||
+    loading.value ||
+    success.value ||
+    locked.value
+  )
+    return
+  if (!incomplete.value || autofilled()) {
+    if (floating.value) endPlay()
+    return
+  }
+  const box = cardBox()
+  const cx = event.clientX - box.left
+  const cy = event.clientY - box.top
+  const home = homeRect(box)
+  const cur = floating.value
+    ? { x: pos.x + size.w / 2, y: pos.y + size.h / 2 }
+    : { x: home.x + home.w / 2, y: home.y + home.h / 2 }
+  const dx = cur.x - cx
+  const dy = cur.y - cy
+  const dist = Math.hypot(dx, dy)
+  if (dist >= DODGE_RADIUS) return
+
+  if (!floating.value) {
+    startPlay(home)
+    return
+  }
+  if (!small.value) return // still shrinking from the first escape
+  const time = performance.now()
+  if (time - lastStep < 120) return
+  lastStep = time
+
+  // straight away from the cursor tip; a random way if it sits right on the button
+  let ux = dx / dist
+  let uy = dy / dist
+  if (dist < 1) {
+    const a = Math.random() * Math.PI * 2
+    ux = Math.cos(a)
+    uy = Math.sin(a)
+  }
+  const step = 110 + Math.random() * 40
+  let spot = clampCenter(box, cur.x + ux * step, cur.y + uy * step)
+  let jumped = false
+  if (Math.hypot(spot.x - cur.x, spot.y - cur.y) < 40) {
+    // pressed against a side or corner: hop to the opposite half of the card
+    spot = clampCenter(box, box.w - cur.x, box.h - cur.y)
+    jumped = true
+  }
+  spot = avoidInputs(box, spot)
+  pos.x = Math.round(spot.x - SMALL_W / 2)
+  pos.y = Math.round(spot.y - SMALL_H / 2)
+  dodgeCount.value += 1
+  liveMessage.value = t.value.fillBoth
+  if (jumped) pop()
+}
+
+/** First escape: lift the button exactly where it is, then shrink it and run. */
+function startPlay(home) {
+  clearTimeout(returnTimer)
+  returning.value = false
+  pos.x = Math.round(home.x)
+  pos.y = Math.round(home.y)
+  size.w = Math.round(home.w)
+  size.h = Math.round(home.h)
+  floating.value = true
+  if (!gameTimer) {
+    gamesPlayed.value += 1
+    gameTimer = setTimeout(timeUp, GAME_MS)
+  }
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      if (!floating.value || returning.value) return
+      small.value = true
+      size.w = SMALL_W
+      size.h = SMALL_H
+      pos.x = Math.round(home.x + (home.w - SMALL_W) / 2)
+      pos.y = Math.round(home.y + (home.h - SMALL_H) / 2)
+      dodgeCount.value += 1
+      lastStep = 0
+      if (lastEvent) dodgeStep(lastEvent)
+    })
+  )
+}
+
+/** Back to the original size, label and place (300 ms), then down into the form. */
+function endPlay() {
+  clearTimeout(gameTimer)
+  gameTimer = null
+  if (!floating.value) return
+  const home = homeRect(cardBox())
+  returning.value = true
+  small.value = false
+  pos.x = Math.round(home.x)
+  pos.y = Math.round(home.y)
+  size.w = Math.round(home.w)
+  size.h = Math.round(home.h)
+  clearTimeout(returnTimer)
+  returnTimer = setTimeout(() => {
+    floating.value = false
+    returning.value = false
+  }, 300)
+}
+
+function pop() {
+  popping.value = false
+  requestAnimationFrame(() => {
+    popping.value = true
+    clearTimeout(popTimer)
+    popTimer = setTimeout(() => (popping.value = false), 220)
+  })
+}
+
+/** 12 s are up: the button stops playing and the empty field asks to be filled. */
+function timeUp() {
+  gameTimer = null
+  if (!incomplete.value) return
+  endPlay()
+  gameOver.value = true
+  hintShown.value = true
+  emptyMarked.value = true
+  liveMessage.value = t.value.dodgeHint
+  nextTick(() =>
+    document
+      .querySelector(
+        username.value.trim() ? '#login-password' : '#login-username'
+      )
+      ?.focus()
+  )
 }
 
 watch(incomplete, isIncomplete => {
   if (isIncomplete) return
-  // both fields filled: the button stays put and works normally
-  clearTimeout(settleTimer)
-  settleButton()
-  dodgeCount.value = 0
-  dodgeDone.value = false
+  // both fields filled: the button is itself again at once and works normally
+  endPlay()
   hintShown.value = false
   emptyMarked.value = false
   clientMessage.value = ''
+})
+
+// After a finished game, clearing a field again allows one more game (2 per session).
+watch([username, password], ([u, p], [pu, pp]) => {
+  if (!gameOver.value || gamesPlayed.value >= MAX_GAMES) return
+  if ((pu && !u) || (pp && !p)) {
+    gameOver.value = false
+    hintShown.value = false
+    emptyMarked.value = false
+  }
 })
 
 function onTyping() {
@@ -649,7 +859,7 @@ function onTyping() {
 
 /** Enter / Tab+Space with empty fields: no dodging, a clear message and focus on the empty field. */
 function onValidationError() {
-  settleButton()
+  endPlay()
   emptyMarked.value = true
   clientMessage.value = t.value.fillBoth
   liveMessage.value = t.value.fillBoth
@@ -702,7 +912,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 async function onSubmit() {
   if (loading.value || success.value || locked.value) return // guards against a duplicate submit firing (e.g. Enter + button both resolving)
-  settleButton()
+  endPlay()
   clientMessage.value = ''
   errorMessage.value = ''
   errorStatus.value = null
@@ -1298,6 +1508,7 @@ async function onSubmit() {
 }
 
 .login__card {
+  position: relative;
   padding: 44px;
   border-radius: var(--radius-xl);
   background: var(--login-card-bg);
@@ -1375,6 +1586,9 @@ async function onSubmit() {
 
 .login__form {
   display: grid;
+  /* QForm is position: relative by default; static makes the card the
+     origin of the runaway button's absolute layer */
+  position: static;
 }
 
 .login__label {
@@ -1505,46 +1719,76 @@ async function onSubmit() {
   box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
 }
 
-/* runaway button: the wrapper moves, so the button itself keeps its styles */
+/* runaway button: the row is a fixed placeholder; the wrapper floats over the
+   card (absolute, top-left origin + translate) only while the game is on */
 .login__submit-row {
-  display: flex;
-  justify-content: center;
+  height: 52px;
 }
 
 .login__submit-wrap {
   width: 100%;
-  /* the way back to its place is slower than the escape */
-  transition:
-    transform 400ms var(--ease-out),
-    width 300ms var(--ease-out);
-  will-change: transform;
-}
-
-.login__submit-wrap--dodging {
-  width: 56%;
-  transition:
-    transform 230ms var(--ease-out),
-    width 230ms var(--ease-out);
+  height: 52px;
 }
 
 .login__submit-wrap .login__submit {
   width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
-.login__submit-wrap--dodging .login__submit {
-  font-size: var(--text-base);
+.login__submit-wrap--floating {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 200ms var(--ease-out),
+    height 200ms var(--ease-out);
+  will-change: transform;
+}
+
+.login__submit-wrap--returning {
+  transition:
+    transform 300ms var(--ease-out),
+    width 300ms var(--ease-out),
+    height 300ms var(--ease-out);
+}
+
+.login__submit-wrap--small .login__submit {
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.login__submit--pop {
+  animation: loginPop 200ms var(--ease-out);
+}
+
+@keyframes loginPop {
+  from {
+    transform: scale(0.9);
+  }
+  to {
+    transform: scale(1);
+  }
 }
 
 .login__dodge-hint {
   margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(244, 63, 94, 0.08);
   text-align: center;
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--color-brand);
+  color: #be123c;
 }
 
 .body--dark .login__dodge-hint {
-  color: #a5b4fc;
+  background: rgba(244, 63, 94, 0.12);
+  color: #fda4af;
 }
 
 /* visible to screen readers only */
