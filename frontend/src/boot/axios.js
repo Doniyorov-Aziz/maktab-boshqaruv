@@ -17,7 +17,7 @@ function friendlyMessage(error) {
   }
   const status = error.response.status
   if (status === 401) {
-    return "Username yoki parol noto'g'ri"
+    return "Login yoki parol noto'g'ri"
   }
   if (status >= 500) {
     return "Serverda xatolik yuz berdi. Birozdan so'ng qayta urinib ko'ring."
