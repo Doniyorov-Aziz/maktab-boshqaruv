@@ -1,105 +1,182 @@
 <template>
   <q-layout>
     <q-page-container>
-      <q-page class="login">
+      <q-page class="login" :lang="lang === 'ru' ? 'ru' : 'uz'">
         <!-- Brand panel: a school "katakli daftar" (squared notebook) page -->
-        <section class="login__brand" aria-label="Maktab Boshqaruv haqida">
-          <div class="login__brand-inner">
-            <header class="login__logo">
-              <span class="login__logo-mark" aria-hidden="true">
-                <q-icon name="school" size="26px" />
-              </span>
-              <span class="login__logo-name">Maktab Boshqaruv</span>
-            </header>
+        <section
+          ref="brandEl"
+          class="login__brand"
+          :aria-label="t.brandAria"
+          @mousemove="onParallax"
+          @mouseleave="resetParallax"
+        >
+          <div class="login__vignette" aria-hidden="true" />
 
-            <div class="login__hero">
-              <h1 class="login__title"> Maktabingiz —<br />bir qarashda </h1>
-              <p class="login__lead">
-                Davomat, baholar, dars jadvali va ota-onalar bilan aloqa — bitta
-                tizimda.
-              </p>
+          <header class="login__logo">
+            <span class="login__logo-mark" aria-hidden="true">
+              <q-icon name="school" size="26px" />
+            </span>
+            <span class="login__logo-name">Maktab Boshqaruv</span>
+          </header>
+
+          <div class="login__brand-body">
+            <div class="login__intro">
+              <div class="login__text">
+                <h1 class="login__title">
+                  {{ t.title1 }}<br />{{ t.title2 }}
+                </h1>
+                <p class="login__lead">{{ t.lead }}</p>
+                <ul class="login__features">
+                  <li v-for="(label, i) in t.features" :key="label">
+                    <q-icon
+                      :name="featureIcons[i]"
+                      size="16px"
+                      aria-hidden="true"
+                    />
+                    {{ label }}
+                  </li>
+                </ul>
+              </div>
 
               <!-- Static sample cards: nothing real is shown before login -->
               <div class="login__scene" aria-hidden="true">
-                <div class="glass glass--attendance">
-                  <svg class="ring" viewBox="0 0 64 64">
-                    <circle class="ring__track" cx="32" cy="32" r="26" />
-                    <circle
-                      class="ring__value"
-                      cx="32"
-                      cy="32"
-                      r="26"
-                      :stroke-dasharray="ringLength"
-                      :stroke-dashoffset="ringLength * (1 - 0.94)"
-                    />
-                  </svg>
-                  <div>
-                    <div class="glass__value">94%</div>
-                    <div class="glass__label">Bugungi davomat</div>
-                  </div>
-                </div>
+                <div class="scene">
+                  <div class="scene__glow" />
 
-                <div class="glass glass--lesson">
-                  <div class="glass__label">Hozirgi dars</div>
-                  <div class="glass__chip">
-                    <span class="glass__dot" />Matematika
+                  <div
+                    class="scene__slot scene__slot--timetable"
+                    style="--d: 0.35"
+                  >
+                    <div class="glass glass--back">
+                      <div class="glass__title">{{ t.timetableTitle }}</div>
+                      <div class="week">
+                        <div
+                          v-for="(day, i) in t.days"
+                          :key="day"
+                          class="week__day"
+                        >
+                          <span class="week__label">{{ day }}</span>
+                          <span
+                            v-for="(c, j) in week[i]"
+                            :key="j"
+                            class="week__cell"
+                            :style="{ background: c }"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="glass__meta">5-A · 201-xona · 09:25–10:10</div>
-                  <div class="glass__progress"><span /></div>
-                </div>
 
-                <div class="glass glass--grade">
-                  <span class="glass__grade">5</span>
-                  <div>
-                    <div class="glass__title">Yangi baho</div>
-                    <div class="glass__label">Ona tili</div>
+                  <div
+                    class="scene__slot scene__slot--attendance"
+                    style="--d: 1"
+                  >
+                    <div class="glass glass--front">
+                      <svg class="ring" viewBox="0 0 64 64">
+                        <circle class="ring__track" cx="32" cy="32" r="26" />
+                        <circle
+                          class="ring__value"
+                          cx="32"
+                          cy="32"
+                          r="26"
+                          :stroke-dasharray="ringLength"
+                          :stroke-dashoffset="ringLength * (1 - 0.94)"
+                        />
+                      </svg>
+                      <div>
+                        <div class="glass__value">94%</div>
+                        <div class="glass__title">{{ t.attendanceTitle }}</div>
+                        <div class="glass__label">{{ t.attendanceNote }}</div>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div class="glass glass--telegram">
-                  <q-icon name="send" size="20px" class="glass__tg-icon" />
-                  <div>
-                    <div class="glass__title">Ota-onaga xabar ketdi</div>
-                    <div class="glass__label">
-                      Telegram · 08:31 <span class="glass__ticks">✓✓</span>
+                  <div
+                    class="scene__slot scene__slot--lesson"
+                    style="--d: 0.85"
+                  >
+                    <div class="glass glass--front glass--column">
+                      <div class="glass__label">{{ t.lessonTitle }}</div>
+                      <div class="glass__chip">
+                        <span class="glass__dot" />{{ t.lessonSubject }}
+                      </div>
+                      <div class="glass__meta">
+                        <span>{{ t.lessonMeta }}</span>
+                        <span>09:25–10:10</span>
+                      </div>
+                      <div class="glass__progress"><span /></div>
+                    </div>
+                  </div>
+
+                  <div class="scene__slot scene__slot--grade" style="--d: 0.6">
+                    <div class="glass glass--mid">
+                      <span class="glass__grade">5</span>
+                      <div>
+                        <div class="glass__title">{{ t.gradeTitle }}</div>
+                        <div class="glass__label">{{ t.gradeSubject }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    class="scene__slot scene__slot--telegram"
+                    style="--d: 0.7"
+                  >
+                    <div class="glass glass--mid">
+                      <span class="glass__tg" aria-hidden="true">
+                        <q-icon name="send" size="18px" />
+                      </span>
+                      <div>
+                        <div class="glass__title">{{ t.telegramTitle }}</div>
+                        <div class="glass__label">
+                          Telegram · 08:31 <span class="glass__ticks">✓✓</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <ul class="login__features">
-              <li v-for="f in features" :key="f.label">
-                <q-icon :name="f.icon" size="18px" aria-hidden="true" />
-                {{ f.label }}
-              </li>
-            </ul>
-
-            <footer class="login__copyright">
-              © 2026 Maktab Boshqaruv · v{{ version }}
-            </footer>
+            <div class="login__bottom">
+              <p class="login__copyright">
+                © 2026 Maktab Boshqaruv · v{{ version }}
+              </p>
+            </div>
           </div>
         </section>
 
-        <!-- Form panel -->
-        <section class="login__form-side">
+        <!-- Top-right controls: language and theme -->
+        <div class="login__controls">
+          <div class="login__lang" role="group" :aria-label="t.language">
+            <button
+              v-for="l in ['uz', 'ru']"
+              :key="l"
+              type="button"
+              class="login__lang-btn"
+              :class="{ 'login__lang-btn--active': lang === l }"
+              :aria-pressed="lang === l"
+              @click="setLang(l)"
+            >
+              {{ l === 'uz' ? "O'Z" : 'RU' }}
+            </button>
+          </div>
           <q-btn
             flat
             round
             class="login__theme"
             :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
-            :aria-label="
-              $q.dark.isActive
-                ? 'Yorug\' rejimga o\'tish'
-                : 'Qorong\'i rejimga o\'tish'
-            "
+            :aria-label="$q.dark.isActive ? t.lightMode : t.darkMode"
             @click="toggleTheme"
           >
             <q-tooltip>{{
-              $q.dark.isActive ? "Yorug' rejim" : "Qorong'i rejim"
+              $q.dark.isActive ? t.lightMode : t.darkMode
             }}</q-tooltip>
           </q-btn>
+        </div>
 
+        <!-- Form panel -->
+        <section class="login__form-side">
           <div class="login__form-wrap">
             <div
               class="login__card"
@@ -114,38 +191,43 @@
                 aria-live="assertive"
               >
                 <q-icon name="cloud_off" size="20px" aria-hidden="true" />
-                <span class="login__server-text"
-                  >Server bilan bog'lanib bo'lmadi</span
-                >
+                <span class="login__server-text">{{ t.serverDown }}</span>
                 <q-btn
                   flat
                   dense
                   no-caps
-                  label="Qayta tekshirish"
+                  :label="t.retry"
                   class="login__server-retry"
                   :loading="checking"
                   @click="checkHealth"
                 />
               </div>
 
-              <div class="login__greet" aria-hidden="true">
-                <q-icon name="waving_hand" size="24px" />
+              <div class="login__card-head">
+                <span class="login__card-logo" aria-hidden="true">
+                  <q-icon name="school" size="26px" />
+                </span>
+                <span class="login__badge">{{ t.badge }}</span>
               </div>
-              <h2 id="login-title" class="login__card-title">Xush kelibsiz</h2>
-              <p class="login__card-sub">
-                Davom etish uchun hisobingizga kiring
-              </p>
+              <h2 id="login-title" class="login__card-title">{{
+                t.welcome
+              }}</h2>
+              <p class="login__card-sub">{{ t.subtitle }}</p>
 
               <q-form class="login__form" @submit.prevent="onSubmit">
+                <label for="login-username" class="login__label">{{
+                  t.login
+                }}</label>
                 <q-input
                   v-model="username"
-                  label="Login"
+                  for="login-username"
+                  :placeholder="t.loginPlaceholder"
                   outlined
                   autofocus
                   autocomplete="username"
                   class="login__field"
                   :error="authError ? true : undefined"
-                  :rules="[val => !!val || 'Majburiy maydon']"
+                  :rules="[val => !!val || t.required]"
                   lazy-rules="ondemand"
                   @update:model-value="authError = false"
                 >
@@ -154,15 +236,19 @@
                   </template>
                 </q-input>
 
+                <label for="login-password" class="login__label">{{
+                  t.password
+                }}</label>
                 <q-input
                   v-model="password"
-                  label="Parol"
+                  for="login-password"
+                  :placeholder="t.passwordPlaceholder"
                   :type="showPassword ? 'text' : 'password'"
                   outlined
                   autocomplete="current-password"
                   class="login__field"
                   :error="authError ? true : undefined"
-                  :rules="[val => !!val || 'Majburiy maydon']"
+                  :rules="[val => !!val || t.required]"
                   lazy-rules="ondemand"
                   @update:model-value="authError = false"
                   @keydown="detectCaps"
@@ -179,9 +265,7 @@
                       dense
                       :icon="showPassword ? 'visibility_off' : 'visibility'"
                       :aria-label="
-                        showPassword
-                          ? 'Parolni yashirish'
-                          : 'Parolni ko\'rsatish'
+                        showPassword ? t.hidePassword : t.showPassword
                       "
                       :aria-pressed="showPassword"
                       @click="showPassword = !showPassword"
@@ -190,13 +274,13 @@
                 </q-input>
 
                 <div v-if="capsLock" class="login__caps" role="status">
-                  ⇪ Caps Lock yoqilgan
+                  {{ t.capsLock }}
                 </div>
 
                 <div class="login__row">
                   <q-checkbox
                     v-model="rememberMe"
-                    label="Eslab qolish"
+                    :label="t.remember"
                     color="primary"
                     dense
                   />
@@ -205,7 +289,7 @@
                     class="login__link"
                     @click="forgotOpen = true"
                   >
-                    Parolni unutdingizmi?
+                    {{ t.forgot }}
                   </button>
                 </div>
 
@@ -216,32 +300,43 @@
                   aria-live="assertive"
                 >
                   <q-icon name="error_outline" size="20px" aria-hidden="true" />
-                  {{ errorMessage }}
+                  {{ shownError }}
                 </div>
 
                 <q-btn
                   type="submit"
                   class="login__submit"
+                  :class="{ 'login__submit--success': success }"
                   unelevated
                   no-caps
                   :loading="loading"
-                  :disable="loading"
-                  aria-label="Kirish"
+                  :disable="loading || success"
+                  :aria-label="t.submit"
                 >
-                  Kirish
+                  <template v-if="success">
+                    <q-icon name="check" size="22px" class="q-mr-xs" />
+                    {{ t.success }}
+                  </template>
+                  <template v-else>{{ t.submit }}</template>
                   <template v-slot:loading>
                     <q-spinner size="20px" class="q-mr-sm" />
-                    Kirilmoqda...
+                    {{ t.submitting }}
                   </template>
                 </q-btn>
+
+                <p class="login__terms">{{ t.terms }}</p>
               </q-form>
             </div>
 
-            <p class="login__terms">
-              Kirish bilan siz maktab ma'lumotlaridan foydalanish qoidalariga
-              rozilik bildirasiz.
-            </p>
+            <ul class="login__trust">
+              <li v-for="(label, i) in t.trust" :key="label">
+                <q-icon :name="trustIcons[i]" size="15px" aria-hidden="true" />
+                {{ label }}
+              </li>
+            </ul>
           </div>
+
+          <p class="login__help">{{ t.help }}</p>
         </section>
 
         <q-dialog v-model="forgotOpen">
@@ -249,12 +344,10 @@
             <q-card-section class="row items-center no-wrap q-gutter-md">
               <q-icon name="key" size="28px" color="primary" />
               <div>
-                <div class="text-subtitle1 text-weight-bold">
-                  Parolni tiklash
-                </div>
-                <div class="login__dialog-text">
-                  Parolni tiklash uchun maktab administratoriga murojaat qiling.
-                </div>
+                <div class="text-subtitle1 text-weight-bold">{{
+                  t.forgotTitle
+                }}</div>
+                <div class="login__dialog-text">{{ t.forgotText }}</div>
               </div>
             </q-card-section>
             <q-card-actions align="right">
@@ -263,7 +356,7 @@
                 flat
                 no-caps
                 color="primary"
-                label="Tushunarli"
+                :label="t.forgotOk"
               />
             </q-card-actions>
           </q-card>
@@ -274,11 +367,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
+import { loginTexts, LOGIN_LANG_KEY } from '@/i18n/login'
 import { version } from '../../package.json'
 
 const $q = useQuasar()
@@ -290,6 +384,7 @@ const password = ref('')
 const loading = ref(false)
 const rememberMe = ref(!!localStorage.getItem('rememberedUsername'))
 const errorMessage = ref('')
+const errorStatus = ref(null)
 const showPassword = ref(false)
 const backendDown = ref(false)
 const checking = ref(false)
@@ -297,15 +392,68 @@ const capsLock = ref(false)
 const authError = ref(false)
 const shaking = ref(false)
 const forgotOpen = ref(false)
+const success = ref(false)
+const brandEl = ref(null)
+
+const lang = ref(readLang())
+const t = computed(() => loginTexts[lang.value])
 
 const ringLength = 2 * Math.PI * 26
-
-const features = [
-  { icon: 'fact_check', label: 'Davomat' },
-  { icon: 'star_outline', label: 'Baholar' },
-  { icon: 'calendar_view_week', label: 'Dars jadvali' },
-  { icon: 'send', label: 'Telegram xabarnomalar' }
+const featureIcons = [
+  'fact_check',
+  'star_outline',
+  'calendar_view_week',
+  'send'
 ]
+const trustIcons = ['lock', 'verified_user', 'phone_iphone']
+
+// Sample week: 5 days x 3 lessons, each a subject color.
+const C = {
+  math: '#818cf8',
+  lang: '#f472b6',
+  sci: '#34d399',
+  art: '#fbbf24',
+  pe: '#38bdf8'
+}
+const week = [
+  [C.math, C.lang, C.sci],
+  [C.lang, C.math, C.art],
+  [C.sci, C.pe, C.math],
+  [C.math, C.art, C.lang],
+  [C.pe, C.sci, C.math]
+]
+
+/** Error text in the page language: the API message is Uzbek, so known cases are re-worded for RU. */
+const shownError = computed(() => {
+  if (errorStatus.value === 401) return t.value.badCredentials
+  if (lang.value === 'uz') return errorMessage.value
+  return t.value.genericError
+})
+
+function readLang() {
+  try {
+    return localStorage.getItem(LOGIN_LANG_KEY) === 'ru' ? 'ru' : 'uz'
+  } catch {
+    return 'uz'
+  }
+}
+
+function setLang(l) {
+  lang.value = l
+  try {
+    localStorage.setItem(LOGIN_LANG_KEY, l)
+  } catch {
+    // storage unavailable — the choice lasts until reload
+  }
+}
+
+watch(
+  () => t.value.pageTitle,
+  title => {
+    document.title = title
+  },
+  { immediate: true }
+)
 
 async function checkHealth() {
   checking.value = true
@@ -319,7 +467,33 @@ async function checkHealth() {
   }
 }
 
-onMounted(checkHealth)
+// Mouse parallax: desktop pointers only, never with reduced motion.
+let parallaxOn = false
+onMounted(() => {
+  checkHealth()
+  parallaxOn =
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+})
+
+onBeforeUnmount(() => {
+  document.title = 'Maktab Boshqaruv'
+})
+
+function onParallax(event) {
+  if (!parallaxOn || !brandEl.value) return
+  const r = brandEl.value.getBoundingClientRect()
+  const x = ((event.clientX - r.left) / r.width) * 2 - 1
+  const y = ((event.clientY - r.top) / r.height) * 2 - 1
+  brandEl.value.style.setProperty('--px', x.toFixed(3))
+  brandEl.value.style.setProperty('--py', y.toFixed(3))
+}
+
+function resetParallax() {
+  if (!brandEl.value) return
+  brandEl.value.style.setProperty('--px', '0')
+  brandEl.value.style.setProperty('--py', '0')
+}
 
 function detectCaps(event) {
   if (typeof event.getModifierState === 'function') {
@@ -344,9 +518,12 @@ function shake() {
   })
 }
 
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 async function onSubmit() {
-  if (loading.value) return // guards against a duplicate submit firing (e.g. Enter + button both resolving)
+  if (loading.value || success.value) return // guards against a duplicate submit firing (e.g. Enter + button both resolving)
   errorMessage.value = ''
+  errorStatus.value = null
   authError.value = false
   loading.value = true
   try {
@@ -362,9 +539,14 @@ async function onSubmit() {
     } else {
       localStorage.removeItem('rememberedUsername')
     }
+    // A short green "✓" before leaving the page.
+    loading.value = false
+    success.value = true
+    await pause(300)
     await router.push('/')
   } catch (error) {
     errorMessage.value = error.friendlyMessage || 'Kirishda xatolik yuz berdi'
+    errorStatus.value = error.response ? error.response.status : null
     if (!error.response) {
       backendDown.value = true
     } else {
@@ -391,10 +573,14 @@ async function onSubmit() {
 /* ----------------------------------------------------------- brand panel */
 
 .login__brand {
+  --px: 0;
+  --py: 0;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   overflow: hidden;
   color: var(--login-brand-text);
-  /* squared notebook: 24px grid lines over a soft indigo gradient */
   background-color: var(--login-brand-from);
   background-image:
     linear-gradient(var(--login-grid-line) 1px, transparent 1px),
@@ -410,7 +596,7 @@ async function onSubmit() {
     100% 100%;
 }
 
-/* the notebook's red margin line */
+/* notebook margin line */
 .login__brand::before {
   content: '';
   position: absolute;
@@ -421,24 +607,38 @@ async function onSubmit() {
   background: var(--login-margin-line);
 }
 
-.login__brand-inner {
-  position: relative;
-  display: grid;
-  grid-template-rows: auto 1fr auto auto;
-  gap: 32px;
-  height: 100%;
-  min-height: 100vh;
-  padding: 40px 56px 32px 104px;
-  animation: loginRise 0.4s ease-out both;
+/* soft hairline where the panels meet */
+.login__brand::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.login__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 85% 80% at 50% 50%,
+    transparent 55%,
+    rgba(8, 6, 30, 0.38) 100%
+  );
 }
 
 .login__logo {
+  position: absolute;
+  top: 32px;
+  left: 96px;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: var(--text-md);
   font-weight: 700;
-  letter-spacing: 0.01em;
 }
 
 .login__logo-mark {
@@ -451,9 +651,27 @@ async function onSubmit() {
   color: var(--login-brand-to);
 }
 
-.login__hero {
-  align-self: center;
-  max-width: 640px;
+/* one cohesive block, centred vertically below the logo */
+.login__brand-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 32px;
+  padding: 100px 40px 28px 96px;
+  animation: loginRise 400ms var(--ease-out) both;
+}
+
+.login__intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+}
+
+.login__text {
+  max-width: 520px;
 }
 
 .login__title {
@@ -465,79 +683,164 @@ async function onSubmit() {
 }
 
 .login__lead {
-  margin: 20px 0 0;
-  max-width: 520px;
+  margin: 18px 0 0;
+  max-width: 420px;
   font-size: var(--text-lead);
   line-height: 1.55;
   color: var(--login-brand-muted);
+  text-wrap: balance;
 }
 
-/* ---- glass cards scene */
+/* ---- the card scene. Designed in px and zoomed to fit: zoom (unlike a
+   scale transform) re-lays out the text, so it stays crisp at any size. */
 
 .login__scene {
+  --scene-zoom: 1;
   position: relative;
-  height: 300px;
-  margin-top: 40px;
-  max-width: 600px;
+  min-width: 0;
+}
+
+.scene {
+  position: relative;
+  width: 500px;
+  height: 416px;
+  zoom: var(--scene-zoom);
+}
+
+.scene__glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 380px;
+  height: 320px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--login-scene-glow) 0%,
+    rgba(79, 70, 229, 0.25) 45%,
+    transparent 70%
+  );
+  filter: blur(80px);
+}
+
+.scene__slot {
+  position: absolute;
+  /* parallax: deeper cards move less */
+  transform: translate3d(
+    calc(var(--px) * var(--d) * 8px),
+    calc(var(--py) * var(--d) * 6px),
+    0
+  );
+  transition: transform var(--dur) var(--ease-out);
+  will-change: transform;
+}
+
+/* landscape arrangement (under the text) — integer positions only */
+.scene__slot--timetable {
+  top: 0;
+  left: 280px;
+  z-index: 1;
+}
+
+.scene__slot--attendance {
+  top: 36px;
+  left: 0;
+  z-index: 4;
+}
+
+.scene__slot--lesson {
+  top: 168px;
+  left: 150px;
+  z-index: 5;
+}
+
+.scene__slot--grade {
+  top: 300px;
+  left: 0;
+  z-index: 3;
+}
+
+.scene__slot--telegram {
+  top: 336px;
+  left: 228px;
+  z-index: 3;
 }
 
 .glass {
-  position: absolute;
   display: flex;
   align-items: center;
   gap: 14px;
+  width: max-content;
   padding: 16px 18px;
   border-radius: var(--radius-lg);
-  background: var(--login-glass-bg);
   border: 1px solid var(--login-glass-border);
-  box-shadow: 0 18px 40px rgba(10, 8, 40, 0.35);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  /* size to the content: a narrow panel must not squeeze the text into a column */
-  width: max-content;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   white-space: nowrap;
-  animation: loginFloat 7s ease-in-out infinite;
+  transform: translateZ(0);
+  will-change: transform;
+  animation: loginFloat 8s var(--ease-out) infinite;
+  -webkit-font-smoothing: antialiased;
 }
 
-.glass--attendance {
-  top: 8px;
-  left: 0;
-  --tilt: -4deg;
-  animation-delay: 0s;
-}
-
-.glass--lesson {
-  top: 0;
-  left: 236px;
-  width: 260px;
+.glass--column {
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
-  --tilt: 3deg;
-  animation-delay: -2.2s;
-  animation-duration: 8s;
+  gap: 10px;
 }
 
-.glass--grade {
-  top: 150px;
-  left: 56px;
-  --tilt: 2deg;
-  animation-delay: -4.1s;
-  animation-duration: 6.5s;
+/* depth through size, shadow and opacity — front cards are almost opaque,
+   so a card behind never shows through their text */
+.glass--back {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 0.72;
+  box-shadow: 0 10px 24px rgba(10, 8, 40, 0.25);
+  animation-duration: 9s;
+  animation-delay: -3s;
+  --tilt: 1deg;
 }
 
-.glass--telegram {
-  top: 172px;
-  left: 300px;
-  --tilt: -3deg;
-  animation-delay: -1.3s;
+.glass--mid {
+  background: rgba(46, 40, 140, 0.78);
+  box-shadow: 0 16px 32px rgba(10, 8, 40, 0.32);
   animation-duration: 7.5s;
+  animation-delay: -1.5s;
+  --tilt: -1deg;
+}
+
+.glass--front {
+  background: rgba(52, 46, 158, 0.9);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 24px 48px rgba(10, 8, 40, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  animation-duration: 8.5s;
+}
+
+.scene__slot--lesson .glass {
+  min-width: 300px;
+  animation-delay: -4.5s;
+  --tilt: 0.5deg;
+}
+
+.scene__slot--attendance .glass {
+  --tilt: -0.5deg;
+}
+
+.scene__slot--telegram .glass {
+  animation-delay: -6s;
 }
 
 .ring {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   transform: rotate(-90deg);
+  flex: none;
 }
 
 .ring circle {
@@ -570,17 +873,23 @@ async function onSubmit() {
   color: var(--login-brand-muted);
 }
 
+.scene__slot--attendance .glass__label {
+  font-size: var(--text-xs);
+}
+
 .glass__chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   align-self: flex-start;
-  padding: 4px 12px;
+  padding: 5px 12px;
   border-radius: 999px;
-  background: rgba(251, 191, 36, 0.2);
-  color: #fde68a;
+  /* white on indigo-900: contrast ≈ 12:1 */
+  background: #312e81;
+  color: #ffffff;
   font-weight: 700;
   font-size: var(--text-base);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
 .glass__dot {
@@ -591,6 +900,9 @@ async function onSubmit() {
 }
 
 .glass__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
   font-size: var(--text-sm);
   color: var(--login-brand-muted);
 }
@@ -613,23 +925,23 @@ async function onSubmit() {
 .glass__grade {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: #10b981;
-  color: #fff;
-  font-size: 24px;
+  background: #059669;
+  color: #ffffff;
+  font-size: 22px;
   font-weight: 800;
 }
 
-.glass__tg-icon {
+.glass__tg {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #229ed9;
-  color: #fff;
+  color: #ffffff;
 }
 
 .glass__ticks {
@@ -638,24 +950,58 @@ async function onSubmit() {
   font-weight: 700;
 }
 
+.week {
+  display: grid;
+  grid-template-columns: repeat(5, 30px);
+  gap: 8px;
+}
+
+.week__day {
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+}
+
+.week__label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--login-brand-muted);
+}
+
+.week__cell {
+  width: 30px;
+  height: 14px;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+
 /* ---- features and footer */
+
+.login__bottom {
+  display: grid;
+  gap: 14px;
+}
 
 .login__features {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 26px;
-  margin: 0;
+  gap: 10px;
+  margin: 28px 0 0;
   padding: 0;
   list-style: none;
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--login-brand-muted);
 }
 
 .login__features li {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--login-chip-bg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--login-brand-muted);
 }
 
 .login__features .q-icon {
@@ -663,9 +1009,60 @@ async function onSubmit() {
 }
 
 .login__copyright {
+  margin: 0;
   font-size: var(--text-xs);
-  color: var(--login-brand-muted);
-  opacity: 0.85;
+  color: var(--login-brand-faint);
+}
+
+/* ------------------------------------------------------------ controls */
+
+.login__controls {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.login__lang {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--login-card-bg);
+  border: 1px solid var(--login-card-border);
+}
+
+.login__lang-btn {
+  min-width: 38px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--brand-text-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.login__lang-btn--active {
+  background: var(--color-brand);
+  color: #ffffff;
+}
+
+.login__theme {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  background: var(--login-card-bg);
+  border: 1px solid var(--login-card-border);
+  color: var(--brand-text-muted);
 }
 
 /* ------------------------------------------------------------ form panel */
@@ -673,29 +1070,43 @@ async function onSubmit() {
 .login__form-side {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 32px;
-  background: var(--login-form-bg);
+  padding: 88px 32px 72px;
+  background:
+    radial-gradient(
+      560px circle at 50% 46%,
+      var(--login-form-glow),
+      transparent 70%
+    ),
+    var(--login-form-bg);
 }
 
-.login__theme {
+/* 40px fade from the brand panel, so the seam is not a hard edge */
+.login__form-side::before {
+  content: '';
   position: absolute;
-  top: 20px;
-  right: 20px;
-  color: var(--brand-text-muted);
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  background: linear-gradient(90deg, var(--login-edge), transparent);
+  pointer-events: none;
 }
 
 .login__form-wrap {
+  position: relative;
   width: 100%;
-  max-width: 420px;
-  animation: loginRise 0.4s ease-out 0.06s both;
+  max-width: 440px;
+  animation: loginRise 400ms var(--ease-out) 60ms both;
 }
 
 .login__card {
-  padding: 40px;
+  padding: 44px;
   border-radius: var(--radius-xl);
   background: var(--login-card-bg);
+  border: 1px solid var(--login-card-border);
   box-shadow: var(--login-card-shadow);
   color: var(--text-primary);
 }
@@ -708,7 +1119,7 @@ async function onSubmit() {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: -12px -12px 24px;
+  margin: -16px -16px 24px;
   padding: 10px 12px;
   border-radius: var(--radius-md);
   background: var(--login-warning-bg);
@@ -726,20 +1137,31 @@ async function onSubmit() {
   font-weight: 700;
 }
 
-.login__greet {
+.login__card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.login__card-logo {
   display: grid;
   place-items: center;
   width: 48px;
   height: 48px;
-  margin-bottom: 16px;
-  border-radius: var(--radius-md);
-  background: rgba(79, 70, 229, 0.12);
-  color: var(--color-brand);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.3);
 }
 
-.body--dark .login__greet {
-  background: rgba(129, 140, 248, 0.16);
-  color: #a5b4fc;
+.login__badge {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--login-badge-bg);
+  color: var(--login-badge-text);
+  font-size: var(--text-sm);
+  font-weight: 700;
 }
 
 .login__card-title {
@@ -751,28 +1173,46 @@ async function onSubmit() {
 }
 
 .login__card-sub {
-  margin: 8px 0 28px;
+  margin: 8px 0 26px;
   font-size: var(--text-md);
   color: var(--brand-text-muted);
 }
 
 .login__form {
   display: grid;
-  gap: 6px;
+}
+
+.login__label {
+  margin: 0 0 8px 2px;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.login__field {
+  margin-bottom: 6px;
 }
 
 .login__field :deep(.q-field__control) {
   height: 52px;
   border-radius: var(--radius-md);
+  transition: box-shadow var(--dur) var(--ease-out);
 }
 
 .login__field :deep(.q-field__marginal) {
   height: 52px;
 }
 
+.login__field :deep(.q-field__native::placeholder) {
+  color: var(--brand-text-muted);
+  opacity: 0.8;
+}
+
 /* QInput's root element carries both .login__field and .q-field--focused */
 .login__field.q-field--focused :deep(.q-field__control) {
-  box-shadow: 0 0 0 4px var(--login-input-ring);
+  box-shadow:
+    0 0 0 4px var(--login-input-ring),
+    0 0 24px var(--login-input-glow);
 }
 
 .login__field.q-field--error :deep(.q-field__control) {
@@ -780,10 +1220,10 @@ async function onSubmit() {
 }
 
 .login__caps {
-  margin: -8px 0 4px;
+  margin: -6px 0 6px;
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--color-warning);
+  color: #b45309;
 }
 
 .body--dark .login__caps {
@@ -795,7 +1235,7 @@ async function onSubmit() {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 2px 0 14px;
+  margin: 4px 0 18px;
 }
 
 .login__link {
@@ -822,11 +1262,11 @@ async function onSubmit() {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: var(--radius-md);
   background: rgba(239, 68, 68, 0.1);
-  color: var(--color-danger);
+  color: #b91c1c;
   font-size: var(--text-base);
   font-weight: 600;
 }
@@ -839,25 +1279,71 @@ async function onSubmit() {
   height: 52px;
   border-radius: var(--radius-md);
   background: var(--login-button-gradient);
-  color: #fff;
+  background-size: 200% 100%;
+  background-position: 0% 0;
+  color: #ffffff;
   font-size: var(--text-md);
   font-weight: 700;
   box-shadow: 0 8px 20px rgba(79, 70, 229, 0.28);
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out),
+    background-position var(--dur) var(--ease-out),
+    background-color var(--dur) var(--ease-out);
 }
 
 .login__submit:hover:not(.disabled) {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  background-position: 100% 0;
   box-shadow: 0 12px 26px rgba(79, 70, 229, 0.36);
 }
 
+.login__submit:active:not(.disabled) {
+  transform: scale(0.98);
+  transition-duration: var(--dur-fast);
+}
+
+.login__submit--success,
+.login__submit--success.disabled {
+  background: #059669 !important;
+  opacity: 1 !important;
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+}
+
 .login__terms {
-  margin: 20px 8px 0;
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--brand-text-muted);
+}
+
+.login__trust {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--brand-text-muted);
+}
+
+.login__trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.login__help {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
+  margin: 0;
   text-align: center;
   font-size: var(--text-sm);
-  line-height: 1.5;
   color: var(--brand-text-muted);
 }
 
@@ -893,10 +1379,10 @@ async function onSubmit() {
 @keyframes loginFloat {
   0%,
   100% {
-    transform: translateY(0) rotate(var(--tilt, 0deg));
+    transform: translateZ(0) translateY(0) rotate(var(--tilt, 0deg));
   }
   50% {
-    transform: translateY(-10px) rotate(var(--tilt, 0deg));
+    transform: translateZ(0) translateY(-5px) rotate(var(--tilt, 0deg));
   }
 }
 
@@ -917,34 +1403,123 @@ async function onSubmit() {
 
 /* ------------------------------------------------------------ responsive */
 
-/* Large screens: a bigger headline and card composition fill the panel. */
-@media (min-width: 1600px) {
-  .login__brand-inner {
-    padding: 48px 72px 36px 120px;
+/* ≥1440: text on the left and a tall card scene filling the right half.
+   Column widths and the scene zoom are sized so nothing reaches the edge. */
+@media (min-width: 1440px) {
+  .login {
+    grid-template-columns: 60fr 40fr;
   }
 
-  .login__brand::before {
-    left: 84px;
+  .login__brand-body {
+    padding: 96px 24px 24px 96px;
   }
 
-  .login__hero {
-    max-width: 780px;
+  .login__intro {
+    grid-template-columns: minmax(0, 330px) minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
   }
 
   .login__title {
-    font-size: 56px;
+    font-size: 44px;
   }
 
   .login__lead {
-    max-width: 580px;
+    font-size: var(--text-md);
   }
 
   .login__scene {
-    max-width: 780px;
-    height: 400px;
-    margin-top: 48px;
-    transform: scale(1.28);
-    transform-origin: left top;
+    --scene-zoom: 0.8;
+    justify-self: end;
+  }
+
+  .scene {
+    width: 480px;
+    height: 530px;
+  }
+
+  .scene__slot--timetable {
+    top: 0;
+    left: 222px;
+  }
+
+  .scene__slot--attendance {
+    top: 100px;
+    left: 0;
+  }
+
+  .scene__slot--lesson {
+    top: 250px;
+    left: 120px;
+  }
+
+  .scene__slot--grade {
+    top: 420px;
+    left: 0;
+  }
+
+  .scene__slot--telegram {
+    top: 452px;
+    left: 190px;
+  }
+}
+
+@media (min-width: 1680px) {
+  .login__intro {
+    grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .login__title {
+    font-size: 52px;
+  }
+
+  .login__lead {
+    font-size: var(--text-lead);
+  }
+
+  .login__scene {
+    --scene-zoom: 0.92;
+  }
+}
+
+/* wide screens: a larger text column so both columns are about as tall */
+@media (min-width: 1880px) {
+  .login__intro {
+    grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  }
+
+  .login__title {
+    font-size: 60px;
+  }
+
+  .login__lead {
+    max-width: 440px;
+    font-size: 20px;
+  }
+
+  .login__features {
+    margin-top: 32px;
+  }
+
+  .login__features li {
+    padding: 9px 16px;
+    font-size: 15px;
+  }
+
+  .login__scene {
+    --scene-zoom: 1.15;
+  }
+}
+
+/* 1280–1439: the scene sits under the text */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .login__title {
+    font-size: 46px;
+  }
+
+  .login__scene {
+    --scene-zoom: 0.8;
   }
 }
 
@@ -953,9 +1528,13 @@ async function onSubmit() {
     grid-template-columns: 1fr 1fr;
   }
 
-  .login__brand-inner {
-    padding: 32px 36px 28px 84px;
+  .login__brand-body {
     gap: 24px;
+    padding: 96px 28px 28px 84px;
+  }
+
+  .login__logo {
+    left: 84px;
   }
 
   .login__brand::before {
@@ -963,39 +1542,56 @@ async function onSubmit() {
   }
 
   .login__title {
-    font-size: 44px;
+    font-size: 40px;
+  }
+
+  .login__intro {
+    gap: 22px;
   }
 
   .login__scene {
-    height: 250px;
-    transform: scale(0.82);
-    transform-origin: left top;
-    margin-bottom: -40px;
+    --scene-zoom: 0.74;
+  }
+
+  .login__card {
+    padding: 36px;
   }
 }
 
-@media (min-width: 768px) and (max-width: 1099px) {
+@media (max-width: 1023px) {
   .login__scene {
-    height: 220px;
-    transform: scale(0.68);
-    margin-bottom: -70px;
+    --scene-zoom: 0.62;
   }
 }
 
+/* phone: compact header, the controls get their own row above the form */
 @media (max-width: 767px) {
   .login {
     grid-template-columns: 1fr;
   }
 
-  .login__brand-inner {
+  .login__brand {
     min-height: 0;
-    grid-template-rows: auto auto;
-    gap: 24px;
-    padding: 24px 20px 28px 44px;
+  }
+
+  .login__brand::after {
+    display: none;
+  }
+
+  .login__logo {
+    position: relative;
+    top: auto;
+    left: auto;
+    padding: 24px 20px 0 44px;
   }
 
   .login__brand::before {
     left: 26px;
+  }
+
+  .login__brand-body {
+    gap: 0;
+    padding: 20px 20px 28px 44px;
   }
 
   .login__title {
@@ -1009,39 +1605,52 @@ async function onSubmit() {
 
   .login__scene,
   .login__features,
-  .login__copyright {
+  .login__bottom {
     display: none;
   }
 
-  /* static here, so the theme button is placed against the whole page —
-     in the brand header's top-right corner, clear of the text */
-  .login__form-side {
+  .login__controls {
     position: static;
-    align-items: flex-start;
-    padding: 24px 16px 40px;
+    justify-content: flex-end;
+    padding: 16px 16px 0;
+    background: var(--login-form-bg);
   }
 
-  .login__theme {
-    top: 22px;
-    right: 12px;
-    color: var(--login-brand-text);
+  .login__form-side {
+    padding: 16px 16px 72px;
+    justify-content: flex-start;
+  }
+
+  .login__form-side::before {
+    display: none;
   }
 
   .login__card {
     padding: 28px 22px;
   }
+
+  .login__trust {
+    gap: 8px 14px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login__brand-inner,
+  .login__brand-body,
   .login__form-wrap,
   .glass,
   .login__card--shake {
     animation: none !important;
   }
 
-  .login__submit {
-    transition: none;
+  .scene__slot,
+  .login__submit,
+  .login__field :deep(.q-field__control),
+  .login__lang-btn {
+    transition: none !important;
+  }
+
+  .scene__slot {
+    transform: none !important;
   }
 
   .glass {
