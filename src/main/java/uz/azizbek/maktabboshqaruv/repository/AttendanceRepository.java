@@ -21,6 +21,13 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     List<Attendance> findByLessonSlotIdAndRecordDate(Long lessonSlotId, LocalDate recordDate);
 
+    /** [studentId, recordDate, status, comment] — a whole class month for the calendar, one query. */
+    @Query("select a.student.id, a.recordDate, a.status, a.comment from Attendance a " +
+            "where a.lessonSlot.schoolClass.id = :classId and a.recordDate between :from and :to")
+    List<Object[]> monthOfClass(@Param("classId") Long classId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    List<Attendance> findByStudentIdAndRecordDate(Long studentId, LocalDate recordDate);
+
     List<Attendance> findByStudentIdAndRecordDateBetweenOrderByRecordDate(Long studentId, LocalDate from, LocalDate to);
 
     boolean existsByLessonSlotIdAndStudentIdAndRecordDate(Long lessonSlotId, Long studentId, LocalDate recordDate);

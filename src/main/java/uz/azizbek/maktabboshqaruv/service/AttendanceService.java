@@ -199,7 +199,7 @@ public class AttendanceService {
 
     // Re-saving a roster with unchanged statuses must not re-notify parents;
     // only a change into ABSENT/LATE (e.g. PRESENT -> ABSENT) does.
-    private void publishIfNotifiable(Attendance attendance, AttendanceStatus previousStatus) {
+    void publishIfNotifiable(Attendance attendance, AttendanceStatus previousStatus) {
         if (AttendanceMarkedEvent.isNotifiable(previousStatus, attendance.getStatus())) {
             eventPublisher.publishEvent(new AttendanceMarkedEvent(attendance.getId(), previousStatus, attendance.getStatus()));
         }

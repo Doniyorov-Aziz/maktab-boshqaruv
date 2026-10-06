@@ -24,6 +24,30 @@ public class AttendanceController {
     @Autowired
     private AttendanceService attendanceService;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.AttendanceCalendarService calendarService;
+
+    /** Oylik kalendar: ?schoolClassId=5&month=2026-10. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/calendar")
+    public uz.azizbek.maktabboshqaruv.service.AttendanceCalendarService.Month calendar(
+            @RequestParam Long schoolClassId, @RequestParam String month) {
+        return calendarService.month(schoolClassId, java.time.YearMonth.parse(month));
+    }
+
+    public record DayMark(@jakarta.validation.constraints.NotNull Long studentId,
+                          @jakarta.validation.constraints.NotNull LocalDate date,
+                          uz.azizbek.maktabboshqaruv.entity.AttendanceStatus status,
+                          @jakarta.validation.constraints.Size(max = 300) String comment) {
+    }
+
+    /** One student's whole day from the calendar (status null = clear the day). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    @PutMapping("/day")
+    public uz.azizbek.maktabboshqaruv.service.AttendanceCalendarService.Cell markDay(@Valid @RequestBody DayMark mark) {
+        return calendarService.setDay(mark.studentId(), mark.date(), mark.status(), mark.comment());
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
     public Page<AttendanceResponseDto> getAllAttendance(@RequestParam Long schoolId, Pageable pageable) {

@@ -56,6 +56,10 @@ const routes = [
         component: () => import('@/pages/AttendancePage.vue')
       },
       {
+        path: 'attendance/calendar',
+        component: () => import('@/pages/AttendanceCalendarPage.vue')
+      },
+      {
         path: 'gradebook',
         component: () => import('@/pages/GradebookPage.vue')
       },

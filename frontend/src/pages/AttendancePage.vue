@@ -5,6 +5,16 @@
     title="Davomat olish"
     :subtitle="schoolStore.activeSchoolName"
   >
+    <template v-slot:actions>
+      <q-btn
+        outline
+        no-caps
+        color="primary"
+        icon="calendar_month"
+        label="Oylik kalendar"
+        @click="$router.push('/attendance/calendar')"
+      />
+    </template>
     <div v-if="todayLessons.length || myEmployeeId" class="q-mb-md">
       <div class="row items-center justify-between q-mb-sm">
         <div class="text-subtitle2 text-weight-semibold">Bugungi darslar</div>

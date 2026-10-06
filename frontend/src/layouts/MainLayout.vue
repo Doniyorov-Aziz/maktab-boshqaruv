@@ -485,6 +485,12 @@ const dailyNavItems = [
     color: '#ef4444'
   },
   {
+    path: '/attendance/calendar',
+    title: 'Davomat kalendari',
+    icon: 'calendar_month',
+    color: '#f97316'
+  },
+  {
     path: '/gradebook',
     title: 'Baholar jurnali',
     icon: 'grade',
