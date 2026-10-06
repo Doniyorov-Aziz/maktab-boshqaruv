@@ -47,6 +47,9 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        // readable by the frontend: blocked-account marker, download file names, media ranges
+        configuration.setExposedHeaders(List.of("X-Account-Blocked", "Content-Disposition", "Content-Range",
+                "Accept-Ranges", "Content-Length"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

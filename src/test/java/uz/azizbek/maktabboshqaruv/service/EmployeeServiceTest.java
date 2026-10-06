@@ -35,6 +35,15 @@ class EmployeeServiceTest {
     @Mock
     private SchoolRepository schoolRepository;
 
+    @Mock
+    private uz.azizbek.maktabboshqaruv.repository.LessonSlotRepository lessonSlotRepository;
+
+    @Mock
+    private uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository schoolClassRepository;
+
+    @Mock
+    private AccountStatusService accountStatusService;
+
     @InjectMocks
     private EmployeeService employeeService;
 

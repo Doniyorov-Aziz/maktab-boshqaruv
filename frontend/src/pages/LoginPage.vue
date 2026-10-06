@@ -335,21 +335,14 @@
                     <q-btn
                       type="submit"
                       class="login__submit"
-                      :class="{
-                        'login__submit--success': success,
-                        'login__submit--pop': popping
-                      }"
+                      :class="{ 'login__submit--pop': popping }"
                       unelevated
                       no-caps
-                      :loading="loading"
-                      :disable="loading || locked"
+                      :loading="loading || leaving"
+                      :disable="loading || leaving || locked"
                       :aria-label="t.submit"
                     >
-                      <template v-if="success">
-                        <q-icon name="check" size="22px" class="q-mr-xs" />
-                        {{ t.success }}
-                      </template>
-                      <template v-else-if="locked"
+                      <template v-if="locked"
                         >{{ t.retryIn }} {{ secondsLeft }} s</template
                       >
                       <template v-else-if="dodgeLabel">{{
@@ -424,7 +417,7 @@ import {
   onMounted,
   onBeforeUnmount
 } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
@@ -433,6 +426,7 @@ import { version } from '../../package.json'
 
 const $q = useQuasar()
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const username = ref(localStorage.getItem('rememberedUsername') || '')
@@ -448,7 +442,8 @@ const capsLock = ref(false)
 const authError = ref(false)
 const shaking = ref(false)
 const forgotOpen = ref(false)
-const success = ref(false)
+// set once the token is in: the spinner stays until the dashboard opens
+const leaving = ref(false)
 const brandEl = ref(null)
 const cardEl = ref(null)
 const submitRow = ref(null)
@@ -548,6 +543,8 @@ const secondsLeft = computed(() =>
 /** Error text in the page language: the API message is Uzbek, so known cases are re-worded for RU. */
 const shownError = computed(() => {
   if (errorStatus.value === 401) return t.value.badCredentials
+  // the account is on leave / dismissed (at login, or signed out mid-session)
+  if (errorStatus.value === 403) return t.value.blocked
   if (lang.value === 'uz') return errorMessage.value
   return t.value.genericError
 })
@@ -593,6 +590,11 @@ async function checkHealth() {
 let parallaxOn = false
 onMounted(() => {
   checkHealth()
+  // signed out because the account was blocked while working (see boot/axios.js)
+  if (route.query.blocked) {
+    errorStatus.value = 403
+    errorMessage.value = t.value.blocked
+  }
   parallaxOn =
     window.matchMedia('(hover: hover) and (pointer: fine)').matches &&
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -706,7 +708,7 @@ function dodgeStep(event) {
     gameOver.value ||
     returning.value ||
     loading.value ||
-    success.value ||
+    leaving.value ||
     locked.value
   )
     return
@@ -908,10 +910,8 @@ function shake() {
   })
 }
 
-const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
-
 async function onSubmit() {
-  if (loading.value || success.value || locked.value) return // guards against a duplicate submit firing (e.g. Enter + button both resolving)
+  if (loading.value || leaving.value || locked.value) return // guards against a duplicate submit firing (e.g. Enter + button both resolving)
   endPlay()
   clientMessage.value = ''
   errorMessage.value = ''
@@ -932,10 +932,8 @@ async function onSubmit() {
       localStorage.removeItem('rememberedUsername')
     }
     failCount.value = 0
-    // A short green "✓" before leaving the page.
-    loading.value = false
-    success.value = true
-    await pause(300)
+    // straight to the dashboard — no "success" animation, the button just keeps its spinner
+    leaving.value = true
     await router.push('/')
   } catch (error) {
     errorMessage.value = error.friendlyMessage || 'Kirishda xatolik yuz berdi'
@@ -1710,13 +1708,6 @@ async function onSubmit() {
 .login__submit:active:not(.disabled) {
   transform: scale(0.98);
   transition-duration: var(--dur-fast);
-}
-
-.login__submit--success,
-.login__submit--success.disabled {
-  background: #059669 !important;
-  opacity: 1 !important;
-  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
 }
 
 /* runaway button: the row is a fixed placeholder; the wrapper floats over the

@@ -62,4 +62,33 @@ public class EmployeeRequestDto {
     public void setPositionId(Long positionId) {
         this.positionId = positionId;
     }
+
+    /** ACTIVE / ON_LEAVE / DISMISSED; null keeps the current status (ACTIVE for a new employee). */
+    private uz.azizbek.maktabboshqaruv.entity.EmployeeStatus status;
+    private java.time.LocalDate leaveFrom;
+    private java.time.LocalDate leaveTo;
+
+    public uz.azizbek.maktabboshqaruv.entity.EmployeeStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(uz.azizbek.maktabboshqaruv.entity.EmployeeStatus status) {
+        this.status = status;
+    }
+
+    public java.time.LocalDate getLeaveFrom() {
+        return leaveFrom;
+    }
+
+    public void setLeaveFrom(java.time.LocalDate leaveFrom) {
+        this.leaveFrom = leaveFrom;
+    }
+
+    public java.time.LocalDate getLeaveTo() {
+        return leaveTo;
+    }
+
+    public void setLeaveTo(java.time.LocalDate leaveTo) {
+        this.leaveTo = leaveTo;
+    }
 }

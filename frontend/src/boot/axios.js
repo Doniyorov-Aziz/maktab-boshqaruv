@@ -44,8 +44,10 @@ export default ({ router }) => {
         localStorage.removeItem('token')
         localStorage.removeItem('username')
         localStorage.removeItem('role')
+        // the account was put on leave while signed in: say why on the login page
+        const blocked = error.response.headers?.['x-account-blocked'] === '1'
         if (router.currentRoute.value.path !== '/login') {
-          router.push('/login')
+          router.push(blocked ? '/login?blocked=1' : '/login')
         }
       }
       return Promise.reject(error)

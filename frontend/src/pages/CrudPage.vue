@@ -342,6 +342,11 @@
                 class="q-px-sm q-py-2xs"
                 >{{ col.badgeLabels?.[props.value] || props.value }}</q-badge
               >
+              <div
+                v-if="col.badgeHint && col.badgeHint(props.row)"
+                class="text-caption muted-text badge-hint"
+                >{{ col.badgeHint(props.row) }}</div
+              >
             </q-td>
           </template>
 
@@ -478,7 +483,7 @@
               </template>
               Maktab: {{ schoolStore.activeSchoolName || '—' }}
             </q-banner>
-            <template v-for="field in module.fields" :key="field.key">
+            <template v-for="field in formFields" :key="field.key">
               <q-select
                 v-if="!field.autoSchool && field.type === 'select'"
                 v-model="formModel[field.key]"
@@ -490,6 +495,7 @@
                 map-options
                 outlined
                 dense
+                :hint="field.hint"
                 :rules="fieldRules(field)"
               />
               <q-input
@@ -867,6 +873,11 @@ const formError = ref('')
 const saving = ref(false)
 const fieldOptions = reactive({})
 
+// a field with showIf(form) is shown (and validated, and sent) only when it applies
+const formFields = computed(() =>
+  module.value.fields.filter(f => !f.showIf || f.showIf(formModel))
+)
+
 function inputType(field) {
   if (field.type === 'password') return 'password'
   if (field.type === 'number') return 'number'
@@ -951,6 +962,9 @@ async function onSave() {
   formError.value = ''
   try {
     const payload = { ...formModel }
+    for (const f of module.value.fields) {
+      if (f.showIf && !f.showIf(formModel)) payload[f.key] = null
+    }
     if (module.value.key === 'users' && isEditing.value && !payload.password) {
       delete payload.password
     }
@@ -1064,6 +1078,11 @@ function extractError(error) {
 
 .form-drawer {
   border-radius: 0;
+}
+
+.badge-hint {
+  margin-top: 2px;
+  white-space: nowrap;
 }
 
 .entity-card {

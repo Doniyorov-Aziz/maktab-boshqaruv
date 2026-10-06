@@ -11,6 +11,63 @@ public class EmployeeResponseDto {
     private String positionTitle;
     private Long schoolId;
     private String schoolName;
+    private String status;
+    private java.time.LocalDate leaveFrom;
+    private java.time.LocalDate leaveTo;
+    /** "Matematika, Fizika" — subjects the employee teaches (from the timetable). */
+    private String subjects;
+    /** "5-A, 6-B" — classes the employee teaches. */
+    private String classes;
+    /** "7-A" — the class(es) this employee leads as class teacher. */
+    private String classTeacherOf;
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public java.time.LocalDate getLeaveFrom() {
+        return leaveFrom;
+    }
+
+    public void setLeaveFrom(java.time.LocalDate leaveFrom) {
+        this.leaveFrom = leaveFrom;
+    }
+
+    public java.time.LocalDate getLeaveTo() {
+        return leaveTo;
+    }
+
+    public void setLeaveTo(java.time.LocalDate leaveTo) {
+        this.leaveTo = leaveTo;
+    }
+
+    public String getSubjects() {
+        return subjects;
+    }
+
+    public void setSubjects(String subjects) {
+        this.subjects = subjects;
+    }
+
+    public String getClasses() {
+        return classes;
+    }
+
+    public void setClasses(String classes) {
+        this.classes = classes;
+    }
+
+    public String getClassTeacherOf() {
+        return classTeacherOf;
+    }
+
+    public void setClassTeacherOf(String classTeacherOf) {
+        this.classTeacherOf = classTeacherOf;
+    }
 
     public Long getId() {
         return id;

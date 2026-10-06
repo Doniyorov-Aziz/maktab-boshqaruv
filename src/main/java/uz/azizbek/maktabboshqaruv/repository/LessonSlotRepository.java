@@ -17,6 +17,11 @@ public interface LessonSlotRepository extends JpaRepository<LessonSlot, Long> {
     List<LessonSlot> findBySchoolClassAcademicYearSchoolId(Long schoolId);
     List<LessonSlot> findBySchoolClassId(Long schoolClassId);
     List<LessonSlot> findByEmployeeId(Long employeeId);
+
+    /** [employeeId, subjectName, gradeNumber, sectionLetter] — what each listed employee teaches, one query. */
+    @Query("select distinct l.employee.id, l.subject.name, l.schoolClass.gradeNumber, l.schoolClass.sectionLetter " +
+            "from LessonSlot l where l.employee.id in :employeeIds")
+    List<Object[]> teachingOf(@Param("employeeIds") java.util.Collection<Long> employeeIds);
     List<LessonSlot> findByRoomId(Long roomId);
     long countByEmployeeId(Long employeeId);
 

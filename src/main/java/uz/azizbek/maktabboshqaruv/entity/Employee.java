@@ -30,6 +30,51 @@ public class Employee {
     @Column(nullable = false, unique = true)
     private String phone;
 
+    /** Nullable column (ddl-auto=update on an existing table): null reads as ACTIVE. */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 16)
+    private EmployeeStatus status;
+
+    /** Optional leave period; after leaveTo the daily job returns the employee to ACTIVE. */
+    private java.time.LocalDate leaveFrom;
+
+    private java.time.LocalDate leaveTo;
+
+    public EmployeeStatus getStatus() {
+        return status == null ? EmployeeStatus.ACTIVE : status;
+    }
+
+    public void setStatus(EmployeeStatus status) {
+        this.status = status;
+    }
+
+    public java.time.LocalDate getLeaveFrom() {
+        return leaveFrom;
+    }
+
+    public void setLeaveFrom(java.time.LocalDate leaveFrom) {
+        this.leaveFrom = leaveFrom;
+    }
+
+    public java.time.LocalDate getLeaveTo() {
+        return leaveTo;
+    }
+
+    public void setLeaveTo(java.time.LocalDate leaveTo) {
+        this.leaveTo = leaveTo;
+    }
+
+    /**
+     * Whether the employee is away on {@code today}: dismissed, or on leave whose period
+     * (if given) covers today. A leave planned for later does not block yet.
+     */
+    public boolean isAwayOn(java.time.LocalDate today) {
+        EmployeeStatus s = getStatus();
+        if (s == EmployeeStatus.DISMISSED) return true;
+        if (s != EmployeeStatus.ON_LEAVE) return false;
+        return (leaveFrom == null || !today.isBefore(leaveFrom)) && (leaveTo == null || !today.isAfter(leaveTo));
+    }
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdDate;

@@ -1,5 +1,6 @@
 package uz.azizbek.maktabboshqaruv.config;
 
+import uz.azizbek.maktabboshqaruv.service.AccountStatusService;
 import uz.azizbek.maktabboshqaruv.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,6 +22,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private AccountStatusService accountStatusService;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -34,6 +38,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (jwtUtil.isTokenValid(token)) {
                 String username = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
+
+                // a signed token is not enough: the account may have been put on leave since
+                // (cached for a minute, so this is not a database query per request)
+                if (!accountStatusService.isUsable(username)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setHeader("X-Account-Blocked", "1");
+                    response.setContentType("text/plain;charset=UTF-8");
+                    response.getWriter().write(AccountStatusService.BLOCKED_MESSAGE);
+                    return;
+                }
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(

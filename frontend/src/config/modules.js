@@ -29,6 +29,17 @@ const roomTypeColors = {
   LIBRARY: '#ec4899'
 }
 
+export const employeeStatusLabels = {
+  ACTIVE: 'Ishda',
+  ON_LEAVE: "Ta'tilda",
+  DISMISSED: 'Ishdan ketgan'
+}
+const employeeStatusColors = {
+  ACTIVE: '#10b981',
+  ON_LEAVE: '#f59e0b',
+  DISMISSED: '#94a3b8'
+}
+
 export const modules = [
   {
     key: 'schools',
@@ -415,6 +426,23 @@ export const modules = [
     group: 'Odamlar',
     endpoint: '/api/employees',
     schoolScoped: true,
+    filters: [
+      {
+        key: 'positionId',
+        label: 'Lavozim',
+        optionsEndpoint: '/api/positions',
+        optionValue: 'id',
+        optionLabel: 'title'
+      },
+      {
+        key: 'status',
+        label: 'Holat',
+        options: Object.entries(employeeStatusLabels).map(([value, label]) => ({
+          value,
+          label
+        }))
+      }
+    ],
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -425,13 +453,46 @@ export const modules = [
         align: 'left',
         link: { type: 'teacher', idField: 'id' }
       },
-      { name: 'phone', label: 'Telefon', field: 'phone', align: 'left' },
+      {
+        name: 'status',
+        label: 'Holat',
+        field: 'status',
+        align: 'left',
+        badgeColors: employeeStatusColors,
+        badgeLabels: employeeStatusLabels,
+        badgeHint: row =>
+          row.status === 'ON_LEAVE' && (row.leaveFrom || row.leaveTo)
+            ? `${dateFormat(row.leaveFrom) || '…'} – ${dateFormat(row.leaveTo) || '…'}`
+            : ''
+      },
       {
         name: 'positionTitle',
         label: 'Lavozim',
         field: 'positionTitle',
         align: 'left'
-      }
+      },
+      {
+        name: 'subjects',
+        label: 'Fanlar',
+        field: 'subjects',
+        align: 'left',
+        format: v => v || '—'
+      },
+      {
+        name: 'classes',
+        label: 'Sinflar',
+        field: 'classes',
+        align: 'left',
+        format: v => v || '—'
+      },
+      {
+        name: 'classTeacherOf',
+        label: 'Sinf rahbari',
+        field: 'classTeacherOf',
+        align: 'left',
+        format: v => v || '—'
+      },
+      { name: 'phone', label: 'Telefon', field: 'phone', align: 'left' }
     ],
     fields: [
       { key: 'firstName', label: 'Ism', type: 'text', required: true },
@@ -445,6 +506,31 @@ export const modules = [
         optionsEndpoint: '/api/positions',
         optionValue: 'id',
         optionLabel: 'title'
+      },
+      {
+        key: 'status',
+        label: 'Holat',
+        type: 'select',
+        required: false,
+        hint: "Ta'tilda yoki ishdan ketgan xodim tizimga kira olmaydi",
+        options: Object.entries(employeeStatusLabels).map(([value, label]) => ({
+          value,
+          label
+        }))
+      },
+      {
+        key: 'leaveFrom',
+        label: "Ta'til boshlanishi (ixtiyoriy)",
+        type: 'date',
+        required: false,
+        showIf: form => form.status === 'ON_LEAVE'
+      },
+      {
+        key: 'leaveTo',
+        label: "Ta'til tugashi (ixtiyoriy) — keyin avtomatik «Ishda»",
+        type: 'date',
+        required: false,
+        showIf: form => form.status === 'ON_LEAVE'
       },
       { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
     ]

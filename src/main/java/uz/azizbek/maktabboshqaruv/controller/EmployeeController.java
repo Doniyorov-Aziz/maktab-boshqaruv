@@ -20,8 +20,11 @@ public class EmployeeController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<EmployeeResponseDto> getAllEmployees(@RequestParam Long schoolId, Pageable pageable) {
-        return employeeService.getAllEmployees(schoolId, pageable);
+    public Page<EmployeeResponseDto> getAllEmployees(@RequestParam Long schoolId,
+                                                     @RequestParam(required = false) Long positionId,
+                                                     @RequestParam(required = false) uz.azizbek.maktabboshqaruv.entity.EmployeeStatus status,
+                                                     Pageable pageable) {
+        return employeeService.getAllEmployees(schoolId, positionId, status, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
