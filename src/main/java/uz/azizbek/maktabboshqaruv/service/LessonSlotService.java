@@ -68,6 +68,7 @@ public class LessonSlotService {
         dto.setSubjectName(lessonSlot.getSubject().getName());
         dto.setTeacherId(lessonSlot.getEmployee().getId());
         dto.setTeacherName(lessonSlot.getEmployee().getFirstName() + " " + lessonSlot.getEmployee().getLastName());
+        dto.setTeacherLastName(lessonSlot.getEmployee().getLastName());
         dto.setRoomId(lessonSlot.getRoom().getId());
         dto.setRoomNumber(lessonSlot.getRoom().getRoomNumber());
         dto.setWeekday(lessonSlot.getWeekday());

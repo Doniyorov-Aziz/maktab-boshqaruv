@@ -34,6 +34,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     // short-lived in-memory caches (account status, bot lookups)
     implementation 'com.github.ben-manes.caffeine:caffeine'
+    // timetable PDF (A4 landscape, embedded Inter font for Latin + Cyrillic)
+    implementation 'com.github.librepdf:openpdf:2.0.3'
 }
 
 tasks.named('test') {

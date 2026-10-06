@@ -21,6 +21,9 @@ public class LessonSlotController {
     @Autowired
     private LessonSlotService lessonSlotService;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.TimetablePdfService timetablePdfService;
+
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
     public Page<LessonSlotResponseDto> getAllLessonSlots(@RequestParam Long schoolId, Pageable pageable) {
@@ -34,6 +37,19 @@ public class LessonSlotController {
                                                   @RequestParam(required = false) Long employeeId,
                                                   @RequestParam(required = false) Long roomId) {
         return lessonSlotService.getTimetable(schoolId, schoolClassId, employeeId, roomId);
+    }
+
+    /** "PDF yuklab olish": the class's week on one A4 landscape page; without schoolClassId — every class. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/timetable.pdf")
+    public ResponseEntity<byte[]> getTimetablePdf(@RequestParam Long schoolId,
+                                                  @RequestParam(required = false) Long schoolClassId) {
+        byte[] pdf = timetablePdfService.render(schoolId, schoolClassId);
+        String name = schoolClassId == null ? "dars-jadvali-barcha-sinflar.pdf" : "dars-jadvali.pdf";
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + name + "\"")
+                .body(pdf);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

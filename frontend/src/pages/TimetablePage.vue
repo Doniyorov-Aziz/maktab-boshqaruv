@@ -3,237 +3,236 @@
     icon="calendar_view_week"
     color="#a855f7"
     title="Dars jadvali"
-    :subtitle="schoolStore.activeSchoolName"
+    :subtitle="subtitle"
   >
     <template v-slot:actions>
-      <q-btn
-        outline
+      <q-btn-toggle
+        v-model="filterType"
+        dense
+        no-caps
+        unelevated
+        toggle-color="primary"
+        color="grey-3"
+        text-color="grey-9"
+        class="tt-mode no-print"
+        :options="[
+          { value: 'class', label: 'Sinf' },
+          { value: 'teacher', label: 'O\'qituvchi' },
+          { value: 'room', label: 'Xona' }
+        ]"
+        @update:model-value="onFilterTypeChange"
+      />
+      <q-btn-dropdown
+        split
+        unelevated
         no-caps
         color="primary"
-        icon="add"
-        label="Dars qo'shish"
-        @click="router.push('/app/lesson-slots?create=1')"
-      />
+        icon="picture_as_pdf"
+        label="PDF yuklab olish"
+        class="no-print"
+        :loading="pdfLoading"
+        :disable="filterType !== 'class' || !filterValue"
+        @click="downloadPdf(false)"
+      >
+        <q-list dense style="min-width: 220px">
+          <q-item v-close-popup clickable @click="downloadPdf(false)">
+            <q-item-section avatar
+              ><q-icon name="description"
+            /></q-item-section>
+            <q-item-section>{{ currentLabel }} sinf</q-item-section>
+          </q-item>
+          <q-item v-close-popup clickable @click="downloadPdf(true)">
+            <q-item-section avatar
+              ><q-icon name="library_books"
+            /></q-item-section>
+            <q-item-section>Barcha sinflar (bitta fayl)</q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
       <q-btn
-        outline
-        no-caps
-        color="grey-7"
+        flat
+        round
+        dense
         icon="print"
-        label="PDF"
-        class="gt-xs"
-        @click="printDialogOpen = true"
-      />
+        color="grey-7"
+        class="no-print gt-xs"
+        @click="printPage"
+        ><q-tooltip>Chop etish (Ctrl+P)</q-tooltip></q-btn
+      >
       <q-btn
-        outline
-        no-caps
+        flat
+        round
+        dense
+        icon="add"
         color="primary"
+        class="no-print"
+        @click="router.push('/app/lesson-slots?create=1')"
+        ><q-tooltip>Dars qo'shish</q-tooltip></q-btn
+      >
+      <q-btn
+        flat
+        round
+        dense
         icon="list"
-        label="Ro'yxat ko'rinishi"
+        color="grey-7"
+        class="no-print"
         @click="router.push('/app/lesson-slots')"
-      />
+        ><q-tooltip>Ro'yxat ko'rinishi</q-tooltip></q-btn
+      >
     </template>
 
-    <div class="brand-card q-pa-md q-mb-md">
-      <div class="row q-col-gutter-md items-end">
-        <div class="col-12 col-sm-3">
-          <q-select
-            v-model="filterType"
-            :options="[
-              { value: 'class', label: 'Sinf bo\'yicha' },
-              { value: 'teacher', label: 'O\'qituvchi bo\'yicha' },
-              { value: 'room', label: 'Xona bo\'yicha' }
-            ]"
-            option-value="value"
-            option-label="label"
-            emit-value
-            map-options
-            outlined
-            dense
-            label="Filtr turi"
-            @update:model-value="onFilterTypeChange"
-          />
-        </div>
-        <div class="col-12 col-sm-4">
-          <q-select
-            v-model="filterValue"
-            :options="filterOptions"
-            option-value="value"
-            option-label="label"
-            emit-value
-            map-options
-            outlined
-            dense
-            :label="filterLabel"
-            @update:model-value="loadTimetable"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div v-if="loading" class="brand-card q-pa-md">
-      <q-skeleton type="rect" height="400px" />
-    </div>
-
-    <div v-else class="brand-card q-pa-sm overflow-hidden">
-      <div ref="tableWrapperRef" class="table-scroll table-scroll--relative">
-        <div
-          v-if="liveLine.visible"
-          class="live-time-line"
-          :style="{
-            top: liveLine.top + 'px',
-            left: liveLine.left + 'px',
-            width: liveLine.width + 'px'
-          }"
-        >
-          <span class="live-time-line__badge">{{ liveClock }}</span>
-        </div>
-        <table class="timetable-grid">
-          <thead>
-            <tr>
-              <th class="time-col"></th>
-              <th
-                v-for="day in weekdays"
-                :key="day"
-                class="day-col"
-                :class="{ 'day-col--today': day === todayName }"
-              >
-                {{ day }}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="(slot, idx) in timeSlots" :key="slot">
-              <tr>
-                <td class="time-col">{{ slot }}</td>
-                <td
-                  v-for="day in weekdays"
-                  :key="day"
-                  :ref="el => day === todayName && setTodayCellRef(idx, el)"
-                  class="cell"
-                  :class="{ 'cell--today': day === todayName }"
-                >
-                  <div
-                    v-for="entry in cellEntries(day, slot)"
-                    :key="entry.lessonSlotId"
-                    class="lesson-chip"
-                    :class="{ 'lesson-chip--live': isLive(day, entry) }"
-                    :style="{ background: subjectColor(entry.subjectName) }"
-                    @click="openDetail(entry)"
-                  >
-                    <div class="text-weight-bold ellipsis">{{
-                      entry.subjectName
-                    }}</div>
-                    <div class="ellipsis" v-if="filterType !== 'class'">{{
-                      entry.className
-                    }}</div>
-                    <div class="ellipsis" v-if="filterType !== 'teacher'">{{
-                      entry.teacherName
-                    }}</div>
-                    <div class="ellipsis" v-if="filterType !== 'room'"
-                      >{{ entry.roomNumber }}-xona</div
-                    >
-                  </div>
-                  <div
-                    v-if="!cellEntries(day, slot).length"
-                    class="cell-add"
-                    @click="router.push('/app/lesson-slots?create=1')"
-                  >
-                    <q-icon name="add" size="16px" />
-                  </div>
-                </td>
-              </tr>
-              <tr v-if="breakLabel(idx)" class="break-row">
-                <td class="time-col"></td>
-                <td :colspan="weekdays.length" class="break-cell">{{
-                  breakLabel(idx)
-                }}</td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div v-if="!loading && entries.length" class="row q-gutter-sm q-mt-md">
-      <div v-for="s in subjectLegend" :key="s.name" class="legend-chip">
-        <span class="legend-dot" :style="{ background: s.color }" />
-        {{ s.name }}
-      </div>
-    </div>
-
-    <q-dialog v-model="printDialogOpen">
-      <q-card style="width: 100%; max-width: 380px; border-radius: 18px">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">PDF sifatida chiqarish</div>
-          <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
-        </q-card-section>
-        <q-card-section class="q-gutter-md">
-          <q-option-group
-            v-model="printScope"
-            :options="[
-              { label: 'Joriy ko\'rinish (hozir ekranda)', value: 'current' },
-              {
-                label: 'Barcha sinflar (har biri alohida sahifada)',
-                value: 'all',
-                disable: filterType !== 'class'
-              }
-            ]"
-            color="primary"
-          />
-          <div v-if="filterType !== 'class'" class="text-caption muted-text">
-            "Barcha sinflar" faqat "Sinf bo'yicha" filtrida ishlaydi
-          </div>
-        </q-card-section>
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn
-            flat
-            no-caps
-            label="Bekor qilish"
-            color="grey-7"
-            v-close-popup
-          />
-          <q-btn
-            color="primary"
-            no-caps
-            unelevated
-            label="Chop etish"
-            :loading="printPreparing"
-            @click="confirmPrint"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <div v-if="printAllMode" class="print-all-only">
-      <div
-        v-for="cls in printAllData"
-        :key="cls.classId"
-        class="print-class-page"
+    <!-- class tabs (1-A, 1-B, 2-A…) in one row; teacher/room — a select -->
+    <div class="tt-picker no-print">
+      <q-tabs
+        v-if="filterType === 'class'"
+        v-model="filterValue"
+        dense
+        no-caps
+        inline-label
+        outside-arrows
+        mobile-arrows
+        active-color="primary"
+        indicator-color="primary"
+        align="left"
+        class="tt-tabs"
+        @update:model-value="onPick"
       >
-        <h2>{{ cls.className }} — dars jadvali</h2>
-        <table class="print-all-table">
-          <thead>
-            <tr>
-              <th>Kun</th>
-              <th>Vaqt</th>
-              <th>Fan</th>
-              <th>O'qituvchi</th>
-              <th>Xona</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(e, i) in cls.entries" :key="i">
-              <td>{{ e.weekday }}</td>
-              <td>{{ e.startTime.slice(0, 5) }}–{{ e.endTime.slice(0, 5) }}</td>
-              <td>{{ e.subjectName }}</td>
-              <td>{{ e.teacherName }}</td>
-              <td>{{ e.roomNumber }}-xona</td>
-            </tr>
-          </tbody>
-        </table>
+        <q-tab
+          v-for="o in filterOptions"
+          :key="o.value"
+          :name="o.value"
+          :label="o.label"
+        />
+      </q-tabs>
+      <q-select
+        v-else
+        v-model="filterValue"
+        :options="filterOptions"
+        option-value="value"
+        option-label="label"
+        emit-value
+        map-options
+        outlined
+        dense
+        use-input
+        input-debounce="0"
+        :label="filterType === 'teacher' ? 'O\'qituvchi' : 'Xona'"
+        style="max-width: 320px"
+        @update:model-value="onPick"
+        @filter="filterSelect"
+      />
+    </div>
+
+    <!-- desktop/tablet: the whole week on one screen -->
+    <div
+      v-if="!isPhone"
+      ref="gridBox"
+      class="tt-box brand-card"
+      :style="{ height: gridHeight ? gridHeight + 'px' : undefined }"
+    >
+      <div v-if="loading" class="tt-loading">
+        <q-skeleton type="rect" class="full-height" />
+      </div>
+      <div
+        v-else-if="!periods.length"
+        class="tt-empty column flex-center muted-text"
+      >
+        <q-icon name="event_busy" size="44px" class="q-mb-sm" />
+        <div>Bu {{ modeNoun }} uchun dars jadvali kiritilmagan</div>
+      </div>
+      <div
+        v-else
+        class="tt-grid"
+        :style="{
+          gridTemplateRows: `34px repeat(${periods.length}, minmax(0, 1fr))`
+        }"
+      >
+        <div class="tt-corner">Dars</div>
+        <div
+          v-for="day in weekdays"
+          :key="day"
+          class="tt-day"
+          :class="{ 'tt-day--today': day === todayName }"
+        >
+          {{ day }}
+        </div>
+        <template v-for="(p, i) in periods" :key="p.start">
+          <div class="tt-period">
+            <b>{{ i + 1 }}</b>
+            <span>{{ p.start }}–{{ p.end }}</span>
+          </div>
+          <div
+            v-for="day in weekdays"
+            :key="day + p.start"
+            class="tt-cell"
+            :class="{ 'tt-cell--today': day === todayName }"
+          >
+            <div
+              v-for="e in cell(day, p.start)"
+              :key="e.lessonSlotId"
+              class="tt-lesson"
+              :class="{ 'tt-lesson--now': isLive(day, e) }"
+              :style="{ '--c': subjectColor(e.subjectName) }"
+              @click="openDetail(e)"
+            >
+              <div class="tt-subject">{{ e.subjectName }}</div>
+              <div class="tt-meta">{{ metaLine(e) }}</div>
+              <q-tooltip anchor="top middle" self="bottom middle" :delay="300">
+                <b>{{ e.subjectName }}</b
+                ><br />
+                {{ e.teacherName }} · {{ roomLabel(e.roomNumber) }}<br />
+                {{ e.className }} · {{ e.startTime.slice(0, 5) }}–{{
+                  e.endTime.slice(0, 5)
+                }}
+              </q-tooltip>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
+
+    <!-- phone: days as tabs, one day at a time -->
+    <template v-else>
+      <q-tabs
+        v-model="phoneDay"
+        dense
+        no-caps
+        mobile-arrows
+        outside-arrows
+        active-color="primary"
+        class="q-mb-sm"
+      >
+        <q-tab
+          v-for="day in weekdays"
+          :key="day"
+          :name="day"
+          :label="day.slice(0, 3)"
+        />
+      </q-tabs>
+      <div class="brand-card q-pa-sm">
+        <q-skeleton v-if="loading" type="rect" height="240px" />
+        <div v-else-if="!dayList.length" class="q-pa-lg text-center muted-text">
+          Bu kunda dars yo'q
+        </div>
+        <div
+          v-for="e in dayList"
+          :key="e.lessonSlotId"
+          class="tt-phone-row"
+          :style="{ '--c': subjectColor(e.subjectName) }"
+          @click="openDetail(e)"
+        >
+          <div class="tt-phone-time">
+            {{ e.startTime.slice(0, 5) }}<br /><span>{{
+              e.endTime.slice(0, 5)
+            }}</span>
+          </div>
+          <div class="col">
+            <div class="text-weight-bold">{{ e.subjectName }}</div>
+            <div class="text-caption muted-text">{{ metaLine(e) }}</div>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <q-dialog v-model="detailOpen">
       <q-card
@@ -263,7 +262,7 @@
           </div>
           <div class="row items-center q-gutter-xs">
             <q-icon name="meeting_room" size="18px" class="muted-text" />
-            {{ detailEntry.roomNumber }}-xona
+            {{ roomLabel(detailEntry.roomNumber) }}
           </div>
           <div class="row items-center q-gutter-xs">
             <q-icon name="schedule" size="18px" class="muted-text" />
@@ -289,12 +288,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
 import { useSchoolStore } from '@/stores/school'
 
+const route = useRoute()
 const router = useRouter()
+const $q = useQuasar()
 const schoolStore = useSchoolStore()
 
 const weekdays = [
@@ -305,224 +307,93 @@ const weekdays = [
   'Juma',
   'Shanba'
 ]
-const dayIndex = {
-  1: 'Dushanba',
-  2: 'Seshanba',
-  3: 'Chorshanba',
-  4: 'Payshanba',
-  5: 'Juma',
-  6: 'Shanba',
-  0: null
-}
-const todayName = dayIndex[new Date().getDay()]
+const todayName = [null, ...weekdays][new Date().getDay()] || null
+const QUERY_KEY = { class: 'class', teacher: 'teacher', room: 'room' }
 
-const filterType = ref('class')
+const filterType = ref(
+  route.query.teacher ? 'teacher' : route.query.room ? 'room' : 'class'
+)
 const filterValue = ref(null)
 const filterOptions = ref([])
+const allOptions = ref([])
 const entries = ref([])
 const loading = ref(false)
+const pdfLoading = ref(false)
+const isPhone = computed(() => $q.screen.lt.sm)
+const phoneDay = ref(todayName || 'Dushanba')
 
-const filterLabel = computed(() => {
-  if (filterType.value === 'class') return 'Sinf'
-  if (filterType.value === 'teacher') return "O'qituvchi"
-  return 'Xona'
-})
+const currentLabel = computed(
+  () => allOptions.value.find(o => o.value === filterValue.value)?.label || ''
+)
+const modeNoun = computed(
+  () =>
+    ({ class: 'sinf', teacher: "o'qituvchi", room: 'xona' })[filterType.value]
+)
+const subtitle = computed(() =>
+  [schoolStore.activeSchoolName, currentLabel.value && `${currentLabel.value}`]
+    .filter(Boolean)
+    .join(' · ')
+)
 
-const timeSlots = computed(() => {
-  const set = new Set(entries.value.map(e => e.startTime.slice(0, 5)))
-  return [...set].sort()
-})
-
-const periodEndByStart = computed(() => {
+// lesson rows = distinct start times, numbered 1..N, each with its end time
+const periods = computed(() => {
   const map = new Map()
   for (const e of entries.value) {
-    map.set(e.startTime.slice(0, 5), e.endTime.slice(0, 5))
+    const s = e.startTime.slice(0, 5)
+    const end = e.endTime.slice(0, 5)
+    if (!map.has(s) || map.get(s) < end) map.set(s, end)
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([start, end]) => ({ start, end }))
+})
+
+const byCell = computed(() => {
+  const map = new Map()
+  for (const e of entries.value) {
+    const k = `${e.weekday}|${e.startTime.slice(0, 5)}`
+    if (!map.has(k)) map.set(k, [])
+    map.get(k).push(e)
   }
   return map
 })
 
-function breakLabel(idx) {
-  const current = timeSlots.value[idx]
-  const next = timeSlots.value[idx + 1]
-  if (!next) return ''
-  const end = periodEndByStart.value.get(current)
-  if (!end || end >= next) return ''
-  const toMin = t => {
-    const [h, m] = t.split(':').map(Number)
-    return h * 60 + m
-  }
-  const gap = toMin(next) - toMin(end)
-  return gap > 0 ? `Tanaffus · ${gap} daq` : ''
+function cell(day, start) {
+  return byCell.value.get(`${day}|${start}`) || []
 }
 
-const subjectLegend = computed(() => {
-  const names = [...new Set(entries.value.map(e => e.subjectName))].sort()
-  return names.map(name => ({ name, color: subjectColor(name) }))
-})
+const dayList = computed(() =>
+  entries.value
+    .filter(e => e.weekday === phoneDay.value)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+)
 
-const detailOpen = ref(false)
-const detailEntry = ref(null)
-function openDetail(entry) {
-  detailEntry.value = entry
-  detailOpen.value = true
+function metaLine(e) {
+  const parts = []
+  if (filterType.value !== 'teacher')
+    parts.push(e.teacherLastName || e.teacherName)
+  if (filterType.value !== 'class') parts.push(e.className)
+  if (filterType.value !== 'room') parts.push(roomLabel(e.roomNumber))
+  return parts.filter(Boolean).join(' · ')
 }
 
-const printDialogOpen = ref(false)
-const printScope = ref('current')
-const printPreparing = ref(false)
-const printAllMode = ref(false)
-const printAllData = ref([])
-
-async function confirmPrint() {
-  printDialogOpen.value = false
-  if (printScope.value === 'current') {
-    window.print()
-    return
-  }
-
-  printPreparing.value = true
-  try {
-    const classes = filterOptions.value
-    const results = []
-    for (const cls of classes) {
-      const res = await api.get('/api/lesson-slots/timetable', {
-        params: {
-          schoolId: schoolStore.activeSchoolId,
-          schoolClassId: cls.value
-        }
-      })
-      results.push({
-        classId: cls.value,
-        className: cls.label,
-        entries: [...res.data].sort(
-          (a, b) =>
-            a.weekday.localeCompare(b.weekday) ||
-            a.startTime.localeCompare(b.startTime)
-        )
-      })
-    }
-    printAllData.value = results
-    printAllMode.value = true
-    await nextTick()
-    window.print()
-    printAllMode.value = false
-  } finally {
-    printPreparing.value = false
-  }
+// "201" → "201-xona", but a named room ("Katta sport zali") stays as it is
+function roomLabel(room) {
+  if (!room) return ''
+  return /^\d/.test(room) ? `${room}-xona` : room
 }
 
-// --- live "now" time line, drawn over today's column only ---
-const tableWrapperRef = ref(null)
-const todayCellRefs = ref({})
-const liveLine = ref({ visible: false, top: 0, left: 0, width: 0 })
-const liveClock = ref('')
-let liveTimer = null
+const now = ref(new Date())
+let clock = null
 
-function setTodayCellRef(idx, el) {
-  if (el) todayCellRefs.value[idx] = el
-}
-
-function nowMinutes() {
-  const now = new Date()
-  return now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60
-}
-
-function toMin(t) {
-  const [h, m] = t.split(':').map(Number)
-  return h * 60 + m
-}
-
-function recomputeLiveLine() {
-  const now = new Date()
-  liveClock.value = now.toTimeString().slice(0, 5)
-
-  if (!todayName || !tableWrapperRef.value) {
-    liveLine.value = { ...liveLine.value, visible: false }
-    return
-  }
-  const wrapperRect = tableWrapperRef.value.getBoundingClientRect()
-  const nowMin = nowMinutes()
-  const slots = timeSlots.value
-
-  for (let i = 0; i < slots.length; i++) {
-    const start = toMin(slots[i])
-    const end = toMin(periodEndByStart.value.get(slots[i]) || slots[i])
-    const cell = todayCellRefs.value[i]
-    if (!cell) continue
-    const rect = cell.getBoundingClientRect()
-
-    if (nowMin >= start && nowMin < end) {
-      const ratio = (nowMin - start) / (end - start || 1)
-      const top =
-        rect.top -
-        wrapperRect.top +
-        tableWrapperRef.value.scrollTop +
-        rect.height * ratio
-      setLine(true, top, rect, wrapperRect)
-      return
-    }
-
-    const next = slots[i + 1]
-    if (next) {
-      const nextStart = toMin(next)
-      if (nowMin >= end && nowMin < nextStart) {
-        const nextCell = todayCellRefs.value[i + 1]
-        if (nextCell) {
-          const nextRect = nextCell.getBoundingClientRect()
-          const ratio = (nowMin - end) / (nextStart - end || 1)
-          const bottomOfThis =
-            rect.top -
-            wrapperRect.top +
-            tableWrapperRef.value.scrollTop +
-            rect.height
-          const topOfNext =
-            nextRect.top - wrapperRect.top + tableWrapperRef.value.scrollTop
-          const top = bottomOfThis + (topOfNext - bottomOfThis) * ratio
-          setLine(true, top, rect, wrapperRect)
-          return
-        }
-      }
-    }
-  }
-  liveLine.value = { ...liveLine.value, visible: false }
-}
-
-function setLine(visible, top, rect, wrapperRect) {
-  liveLine.value = {
-    visible,
-    top,
-    left: rect.left - wrapperRect.left + tableWrapperRef.value.scrollLeft,
-    width: rect.width
-  }
-}
-
-function startLiveTimer() {
-  stopLiveTimer()
-  nextTick(recomputeLiveLine)
-  liveTimer = setInterval(recomputeLiveLine, 30000)
-}
-function stopLiveTimer() {
-  if (liveTimer) clearInterval(liveTimer)
-  liveTimer = null
-}
-
-onMounted(startLiveTimer)
-onBeforeUnmount(stopLiveTimer)
-watch(entries, () => nextTick(recomputeLiveLine))
-
-function cellEntries(day, slot) {
-  return entries.value.filter(
-    e => e.weekday === day && e.startTime.slice(0, 5) === slot
-  )
-}
-
-function isLive(day, entry) {
+function isLive(day, e) {
   if (day !== todayName) return false
-  const now = new Date()
-  const [sh, sm] = entry.startTime.split(':').map(Number)
-  const [eh, em] = entry.endTime.split(':').map(Number)
-  const nowMin = now.getHours() * 60 + now.getMinutes()
-  return nowMin >= sh * 60 + sm && nowMin < eh * 60 + em
+  const m = now.value.getHours() * 60 + now.value.getMinutes()
+  const toMin = t => {
+    const [h, mm] = t.split(':').map(Number)
+    return h * 60 + mm
+  }
+  return m >= toMin(e.startTime) && m < toMin(e.endTime)
 }
 
 const subjectPalette = [
@@ -539,6 +410,7 @@ const subjectPalette = [
   '#eab308',
   '#f43f5e'
 ]
+// same hash as the PDF (TimetablePdfService#subjectColor) — one colour per subject everywhere
 function subjectColor(name) {
   let hash = 0
   for (const ch of name || '')
@@ -546,46 +418,101 @@ function subjectColor(name) {
   return subjectPalette[Math.abs(hash) % subjectPalette.length]
 }
 
+const detailOpen = ref(false)
+const detailEntry = ref(null)
+function openDetail(entry) {
+  detailEntry.value = entry
+  detailOpen.value = true
+}
+
+// --- one screen, no page scroll: the grid takes exactly the height left below it ---
+const gridBox = ref(null)
+const gridHeight = ref(0)
+
+function fitGrid() {
+  if (!gridBox.value || isPhone.value) return
+  const top = gridBox.value.getBoundingClientRect().top + window.scrollY
+  // q-page bottom padding (16px) + a hair so rounding never adds a scrollbar
+  gridHeight.value = Math.max(320, Math.floor(window.innerHeight - top - 18))
+}
+
+let resizeTimer = null
+function onResize() {
+  clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(fitGrid, 80)
+}
+
+onMounted(() => {
+  window.addEventListener('resize', onResize)
+  clock = setInterval(() => (now.value = new Date()), 30000)
+  nextTick(fitGrid)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onResize)
+  clearInterval(clock)
+  clearTimeout(resizeTimer)
+})
+watch([entries, isPhone, filterOptions], () => nextTick(fitGrid))
+
+// --- picking a class / teacher / room (kept in the URL: ?class=12) ---
+function filterSelect(val, update) {
+  update(() => {
+    const q = (val || '').toLowerCase()
+    filterOptions.value = q
+      ? allOptions.value.filter(o => o.label.toLowerCase().includes(q))
+      : allOptions.value
+  })
+}
+
 async function onFilterTypeChange() {
   filterValue.value = null
   entries.value = []
-  await loadFilterOptions()
+  await loadFilterOptions(null)
 }
 
-async function loadFilterOptions() {
+function onPick(val) {
+  router.replace({ query: { [QUERY_KEY[filterType.value]]: val } })
+  loadTimetable()
+}
+
+async function loadFilterOptions(preferred) {
   if (!schoolStore.activeSchoolId) return
+  const schoolId = schoolStore.activeSchoolId
   if (filterType.value === 'class') {
     const res = await api.get('/api/school-classes', {
-      params: {
-        schoolId: schoolStore.activeSchoolId,
-        size: 100,
-        sort: 'gradeNumber,asc'
-      }
+      params: { schoolId, size: 200, sort: 'gradeNumber,asc' }
     })
-    filterOptions.value = res.data.content.map(c => ({
-      value: c.id,
-      label: `${c.gradeNumber}-${c.sectionLetter}`
-    }))
+    allOptions.value = res.data.content
+      .slice()
+      .sort(
+        (a, b) =>
+          a.gradeNumber - b.gradeNumber ||
+          String(a.sectionLetter).localeCompare(String(b.sectionLetter))
+      )
+      .map(c => ({ value: c.id, label: `${c.gradeNumber}-${c.sectionLetter}` }))
   } else if (filterType.value === 'teacher') {
     const res = await api.get('/api/employees', {
-      params: { schoolId: schoolStore.activeSchoolId, size: 200 }
+      params: { schoolId, size: 500 }
     })
-    filterOptions.value = res.data.content.map(e => ({
+    allOptions.value = res.data.content.map(e => ({
       value: e.id,
       label: e.fullName
     }))
   } else {
-    const res = await api.get('/api/rooms', {
-      params: { schoolId: schoolStore.activeSchoolId, size: 200 }
-    })
-    filterOptions.value = res.data.content.map(r => ({
+    const res = await api.get('/api/rooms', { params: { schoolId, size: 500 } })
+    allOptions.value = res.data.content.map(r => ({
       value: r.id,
       label: r.roomNumber
     }))
   }
-  if (filterOptions.value.length) {
-    filterValue.value = filterOptions.value[0].value
-    loadTimetable()
+  filterOptions.value = allOptions.value
+  const wanted = Number(preferred)
+  const pick = allOptions.value.some(o => o.value === wanted)
+    ? wanted
+    : allOptions.value[0]?.value
+  if (pick != null) {
+    filterValue.value = pick
+    onPick(pick)
   }
 }
 
@@ -598,7 +525,6 @@ async function loadTimetable() {
     else if (filterType.value === 'teacher')
       params.employeeId = filterValue.value
     else params.roomId = filterValue.value
-
     const res = await api.get('/api/lesson-slots/timetable', { params })
     entries.value = res.data
   } finally {
@@ -606,7 +532,45 @@ async function loadTimetable() {
   }
 }
 
-loadFilterOptions()
+// --- PDF (A4 landscape, made by the backend) and plain printing ---
+async function downloadPdf(all) {
+  pdfLoading.value = true
+  try {
+    const params = { schoolId: schoolStore.activeSchoolId }
+    if (!all) params.schoolClassId = filterValue.value
+    const res = await api.get('/api/lesson-slots/timetable.pdf', {
+      params,
+      responseType: 'blob',
+      timeout: 60000
+    })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = all
+      ? 'dars-jadvali-barcha-sinflar.pdf'
+      : `dars-jadvali-${currentLabel.value || 'sinf'}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  } catch {
+    $q.notify({ type: 'negative', message: "PDF tayyorlab bo'lmadi" })
+  } finally {
+    pdfLoading.value = false
+  }
+}
+
+function printPage() {
+  window.print()
+}
+
+const preferred =
+  route.query.class || route.query.teacher || route.query.room || null
+loadFilterOptions(preferred)
+watch(
+  () => schoolStore.activeSchoolId,
+  () => loadFilterOptions(null)
+)
 </script>
 
 <style scoped>
@@ -614,197 +578,217 @@ loadFilterOptions()
   color: var(--brand-text-muted);
 }
 
-.table-scroll {
-  overflow-x: auto;
+.tt-mode :deep(.q-btn) {
+  padding: 4px 12px;
 }
 
-.table-scroll--relative {
-  position: relative;
+.tt-picker {
+  margin: -8px 0 10px;
 }
 
-.live-time-line {
-  position: absolute;
-  height: 2px;
-  background: var(--color-danger);
-  z-index: 2;
-  pointer-events: none;
+.tt-tabs {
+  border-bottom: 1px solid var(--brand-border);
 }
 
-.live-time-line::before {
-  content: '';
-  position: absolute;
-  left: -4px;
-  top: -3px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-danger);
-}
-
-.live-time-line__badge {
-  position: absolute;
-  right: 0;
-  top: -18px;
-  font-size: 10px;
-  font-weight: 700;
-  color: white;
-  background: var(--color-danger);
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-
-.timetable-grid {
-  border-collapse: collapse;
-  width: 100%;
-  min-width: 900px;
-  table-layout: fixed;
-}
-
-.time-col {
-  width: 76px;
-  font-size: 13px;
+.tt-tabs :deep(.q-tab) {
+  min-height: 34px;
+  padding: 0 14px;
   font-weight: 600;
-  color: var(--brand-text-muted);
-  text-align: center;
-  vertical-align: top;
-  padding-top: 12px;
 }
 
-.day-col {
-  text-align: center;
-  padding: 12px 4px;
-  font-size: 15px;
-  font-weight: 700;
-  border-bottom: 2px solid var(--brand-border);
+.tt-box {
+  overflow: hidden;
+  padding: 0;
 }
 
-.day-col--today {
-  color: var(--q-primary);
+.tt-loading,
+.tt-empty {
+  height: 100%;
+  padding: 12px;
 }
 
-.cell {
-  border: 1px solid var(--brand-border);
-  vertical-align: top;
-  padding: 5px;
-  height: 84px;
+.tt-grid {
+  display: grid;
+  grid-template-columns: 92px repeat(6, minmax(0, 1fr));
+  height: 100%;
 }
 
-.cell--today {
-  background: rgba(79, 70, 229, 0.03);
-}
-
-.cell-add {
+.tt-corner,
+.tt-day {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  min-height: 40px;
+  font-weight: 700;
+  font-size: 13px;
+  border-bottom: 2px solid var(--brand-border);
+  background: var(--surface-2);
+}
+
+.tt-corner {
   color: var(--brand-text-muted);
-  opacity: 0;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: opacity 0.15s ease;
+  font-size: 12px;
 }
 
-.cell:hover .cell-add {
-  opacity: 1;
-  background: rgba(79, 70, 229, 0.06);
+.tt-day--today {
+  color: var(--q-primary);
+  background: rgba(79, 70, 229, 0.09);
 }
 
-.break-row .break-cell {
-  text-align: center;
+.tt-period {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--brand-border);
+  border-right: 1px solid var(--brand-border);
+  line-height: 1.2;
+  min-height: 0;
+}
+
+.tt-period b {
+  font-size: 15px;
+}
+
+.tt-period span {
   font-size: 11px;
   color: var(--brand-text-muted);
-  background: var(--surface-2);
+  white-space: nowrap;
+}
+
+.tt-cell {
+  border-bottom: 1px solid var(--brand-border);
+  border-right: 1px solid var(--brand-border);
   padding: 3px;
-  border: 1px solid var(--brand-border);
-}
-
-.lesson-chip {
-  border-radius: 8px;
-  padding: 5px 7px;
-  color: white;
-  font-size: 12px;
-  margin-bottom: 3px;
-  line-height: 1.35;
-  cursor: pointer;
-}
-
-.lesson-chip--live {
-  box-shadow:
-    0 0 0 2px white,
-    0 0 0 4px var(--q-primary);
-}
-
-.legend-chip {
+  min-height: 0;
+  min-width: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--brand-border);
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
 }
 
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
+.tt-cell:last-child {
+  border-right: 0;
+}
+
+.tt-cell--today {
+  background: rgba(79, 70, 229, 0.04);
+}
+
+.tt-lesson {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 7px;
+  border-left: 4px solid var(--c);
+  background: color-mix(in srgb, var(--c) 13%, transparent);
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.15s ease;
+}
+
+.tt-lesson:hover {
+  background: color-mix(in srgb, var(--c) 22%, transparent);
+}
+
+.tt-lesson--now {
+  box-shadow: inset 0 0 0 2px var(--c);
+  background: color-mix(in srgb, var(--c) 24%, transparent);
+}
+
+.tt-subject {
+  font-weight: 700;
+  /* grows with the screen: 13px on 1366, ~16px on 1920 */
+  font-size: clamp(13px, 0.85vw, 17px);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-meta {
+  font-size: clamp(11px, 0.68vw, 14px);
+  line-height: 1.25;
+  color: var(--brand-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-phone-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 8px;
+  border-left: 4px solid var(--c);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+}
+
+.tt-phone-time {
+  width: 48px;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.tt-phone-time span {
+  font-weight: 400;
+  color: var(--brand-text-muted);
+}
+
+/* below 1024px the grid keeps a readable width and scrolls sideways */
+@media (max-width: 1023px) {
+  .tt-box {
+    overflow-x: auto;
+  }
+  .tt-grid {
+    min-width: 860px;
+  }
 }
 </style>
 
 <style>
-.print-all-only {
-  display: none;
-}
-
+/* Ctrl+P: the timetable alone, A4 landscape, on one page */
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
   }
-
-  .timetable-grid,
-  .timetable-grid * {
-    visibility: visible;
+  .q-header,
+  .q-loading-bar,
+  .q-drawer,
+  .q-footer,
+  .no-print,
+  .q-tabs {
+    display: none !important;
   }
-  .timetable-grid {
-    position: absolute;
-    left: 0;
-    top: 0;
-    min-width: 0;
+  .q-page-container {
+    padding: 0 !important;
   }
-
-  .print-all-only,
-  .print-all-only * {
-    visibility: visible;
+  .q-page {
+    padding: 0 !important;
+    min-height: 0 !important;
   }
-  .print-all-only {
-    display: block;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+  .tt-box {
+    height: 180mm !important;
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1;
+    overflow: visible !important;
   }
-  /* when printing all classes, the regular single-view grid must stay hidden */
-  body:has(.print-all-only) .timetable-grid,
-  body:has(.print-all-only) .timetable-grid * {
-    visibility: hidden !important;
+  .tt-grid {
+    min-width: 0 !important;
   }
-  .print-class-page {
-    page-break-after: always;
-    padding: 16px;
-  }
-  .print-all-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .print-all-table th,
-  .print-all-table td {
-    border: 1px solid #ccc;
-    padding: 6px 8px;
-    text-align: left;
-    font-size: 12px;
+  .tt-lesson,
+  .tt-day,
+  .tt-corner {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 </style>

@@ -37,8 +37,8 @@ public final class BannerRenderer {
     private static final Color MUTED = new Color(0x64748B);
     private static final Color LINE = new Color(0xE2E8F0);
     private static final Color TRACK = new Color(0xEEF2F7);
-    private static final Font SEMIBOLD = load("/bot/fonts/Inter-SemiBold.ttf");
-    private static final Font BOLD = load("/bot/fonts/Inter-Bold.ttf");
+    private static final Font SEMIBOLD = load("/fonts/Inter-SemiBold.ttf");
+    private static final Font BOLD = load("/fonts/Inter-Bold.ttf");
 
     /** Day status fill / text colors, same as the admin panel and the big calendar image. */
     private static final Map<String, Color[]> DAY = Map.of(

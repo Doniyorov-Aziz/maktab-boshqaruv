@@ -46,9 +46,9 @@ public final class BotImageRenderer {
             "NONE", new Color[]{new Color(0xF1F5F9), new Color(0x94A3B8)});
 
     private static final int W = 1080;
-    private static final Font REGULAR = load("/bot/fonts/Inter-Regular.ttf");
-    private static final Font SEMIBOLD = load("/bot/fonts/Inter-SemiBold.ttf");
-    private static final Font BOLD = load("/bot/fonts/Inter-Bold.ttf");
+    private static final Font REGULAR = load("/fonts/Inter-Regular.ttf");
+    private static final Font SEMIBOLD = load("/fonts/Inter-SemiBold.ttf");
+    private static final Font BOLD = load("/fonts/Inter-Bold.ttf");
 
     private BotImageRenderer() {
     }

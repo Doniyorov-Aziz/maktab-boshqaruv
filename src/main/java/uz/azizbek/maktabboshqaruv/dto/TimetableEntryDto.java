@@ -11,6 +11,15 @@ public class TimetableEntryDto {
     private String subjectName;
     private Long teacherId;
     private String teacherName;
+    private String teacherLastName;
+
+    public String getTeacherLastName() {
+        return teacherLastName;
+    }
+
+    public void setTeacherLastName(String teacherLastName) {
+        this.teacherLastName = teacherLastName;
+    }
     private Long roomId;
     private String roomNumber;
     private String weekday;
