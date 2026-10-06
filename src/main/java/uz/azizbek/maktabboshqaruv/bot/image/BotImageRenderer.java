@@ -229,7 +229,7 @@ public final class BotImageRenderer {
                               String gradesLabel, Double gradeAverage, String gradesNote,
                               String chartTitle, List<SubjectBar> bars, String emptyText,
                               String bestLabel, String best, String attentionLabel, String attention,
-                              String noneText, String footer) {
+                              String allGoodLabel, String allGoodText, String noneText, String footer) {
     }
 
     public static final int WEEKLY_H = 1350;
@@ -282,10 +282,14 @@ public final class BotImageRenderer {
             g.setFont(SEMIBOLD.deriveFont(30f));
             centered(g, in.emptyText(), 60, W - 60, cy + ch / 2 + 20);
         }
-        int rowH = 62, labelW = 280, barX = 90 + labelW + 16, barW = W - 60 - 30 - barX - 96;
+        // few subjects: spread the rows over the card instead of leaving its lower half empty
+        int area = ch - 96 - 34;
+        int rowH = bars.isEmpty() ? 62 : Math.min(96, Math.max(62, area / bars.size()));
+        int top = cy + 96 + Math.max(0, (area - rowH * bars.size()) / 2);
+        int labelW = 280, barX = 90 + labelW + 16, barW = W - 60 - 30 - barX - 96;
         for (int i = 0; i < bars.size(); i++) {
             SubjectBar b = bars.get(i);
-            int y = cy + 96 + i * rowH;
+            int y = top + i * rowH + (rowH - 62) / 2;
             g.setColor(TEXT);
             g.setFont(SEMIBOLD.deriveFont(28f));
             g.drawString(fit(g, b.subject(), labelW), 90, y + 34);
@@ -301,24 +305,38 @@ public final class BotImageRenderer {
 
         // best subject and the one that needs attention
         int by = cy + ch + 32, bw = (W - 120 - 30) / 2, bh = 150;
-        badge(g, 60, by, bw, bh, new Color(0xD1FAE5), new Color(0x065F46), true, in.bestLabel(),
+        badge(g, 60, by, bw, bh, new Color(0xD1FAE5), new Color(0x065F46), '*', in.bestLabel(),
                 in.best() == null ? in.noneText() : in.best());
-        badge(g, 60 + bw + 30, by, bw, bh, new Color(0xFEF3C7), new Color(0x92400E), false, in.attentionLabel(),
-                in.attention() == null ? in.noneText() : in.attention());
+        if (in.attention() == null && in.gradeAverage() != null) {
+            // nothing below 4 this week: a calm blue "all good" instead of an empty warning
+            badge(g, 60 + bw + 30, by, bw, bh, new Color(0xE0E7FF), new Color(0x3730A3), 'v', in.allGoodLabel(),
+                    in.allGoodText());
+        } else {
+            badge(g, 60 + bw + 30, by, bw, bh, new Color(0xFEF3C7), new Color(0x92400E), '!', in.attentionLabel(),
+                    in.attention() == null ? in.noneText() : in.attention());
+        }
 
         footer(g, in.footer(), WEEKLY_H - 40);
         return png(img, g);
     }
 
     /** Rounded badge with a drawn icon: a star for the best subject, a warning triangle otherwise. */
-    private static void badge(Graphics2D g, int x, int y, int w, int h, Color fill, Color ink, boolean star,
+    private static void badge(Graphics2D g, int x, int y, int w, int h, Color fill, Color ink, char icon,
                               String label, String value) {
         g.setColor(fill);
         g.fill(new RoundRectangle2D.Double(x, y, w, h, 32, 32));
         int ix = x + 32, iy = y + 38, s = 56;
         g.setColor(ink);
         java.awt.geom.Path2D p = new java.awt.geom.Path2D.Double();
-        if (star) {
+        if (icon == 'v') {
+            g.fill(new java.awt.geom.Ellipse2D.Double(ix, iy, s, s));
+            g.setColor(fill);
+            g.setStroke(new BasicStroke(6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            p.moveTo(ix + s * 0.27, iy + s * 0.52);
+            p.lineTo(ix + s * 0.44, iy + s * 0.68);
+            p.lineTo(ix + s * 0.74, iy + s * 0.35);
+            g.draw(p);
+        } else if (icon == '*') {
             for (int i = 0; i < 10; i++) {
                 double a = -Math.PI / 2 + i * Math.PI / 5;
                 double r = i % 2 == 0 ? s / 2.0 : s / 4.6;

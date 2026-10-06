@@ -90,6 +90,7 @@ public class WeeklyReportCardService {
                 i18n.t(lang, "img.weekly.no_grades"),
                 i18n.t(lang, "img.weekly.best"), f.best(),
                 i18n.t(lang, "img.weekly.attention"), f.attention(),
+                i18n.t(lang, "img.weekly.all_good_label"), i18n.t(lang, "img.weekly.all_good"),
                 i18n.t(lang, "img.none"),
                 child.schoolName() + " · " + i18n.t(lang, "app.name")));
     }

@@ -62,3 +62,60 @@ export function haptic(type = 'light') {
     // not available outside Telegram
   }
 }
+
+/** "success" | "warning" | "error" — a short vibration after an action finished. */
+export function hapticNotify(type = 'success') {
+  try {
+    webApp()?.HapticFeedback?.notificationOccurred(type)
+  } catch {
+    // not available outside Telegram
+  }
+}
+
+export function hapticSelect() {
+  try {
+    webApp()?.HapticFeedback?.selectionChanged()
+  } catch {
+    // not available outside Telegram
+  }
+}
+
+let backHandler = null
+
+/** Telegram's native ‹ Back button in the header: shown with a handler, hidden with null. */
+export function setBackButton(handler) {
+  const button = webApp()?.BackButton
+  if (!button) return
+  if (backHandler) button.offClick?.(backHandler)
+  backHandler = handler
+  if (handler) {
+    button.onClick?.(handler)
+    button.show?.()
+  } else {
+    button.hide?.()
+  }
+}
+
+let mainHandler = null
+
+/** Telegram's big bottom MainButton; null hides it. */
+export function setMainButton(text, handler) {
+  const button = webApp()?.MainButton
+  if (!button) return
+  if (mainHandler) button.offClick?.(mainHandler)
+  mainHandler = handler
+  if (text && handler) {
+    button.setText?.(text)
+    button.onClick?.(handler)
+    button.show?.()
+  } else {
+    button.hide?.()
+  }
+}
+
+export function mainButtonProgress(on) {
+  const button = webApp()?.MainButton
+  if (!button) return
+  if (on) button.showProgress?.(false)
+  else button.hideProgress?.()
+}

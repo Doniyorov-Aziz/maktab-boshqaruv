@@ -8,15 +8,25 @@ export const state = reactive({
   error: null,
   lang: 'uz',
   children: [],
-  childId: null
+  childId: null,
+  // Bumped by pull-to-refresh and the MainButton: the open page reloads.
+  refresh: 0
 })
+
+export function refreshPages() {
+  state.refresh++
+}
 
 export const child = computed(
   () => state.children.find(c => c.studentId === state.childId) || null
 )
 
-export function t(key) {
-  return translate(state.lang, key)
+export function t(key, params) {
+  const text = translate(state.lang, key)
+  if (!params) return text
+  return text.replace(/\{(\w+)}/g, (m, name) =>
+    name in params ? params[name] : m
+  )
 }
 
 export async function loadMe() {

@@ -53,3 +53,41 @@ export function averageColor(avg) {
   if (avg >= 2.5) return '#f59e0b'
   return '#ef4444'
 }
+
+// One stable colour per subject (the same subject is always the same colour).
+const PALETTE = [
+  '#4f46e5',
+  '#0ea5e9',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#ec4899',
+  '#14b8a6',
+  '#f97316',
+  '#6366f1'
+]
+
+function hash(text) {
+  let h = 0
+  for (const ch of text || '') h = (h * 31 + ch.codePointAt(0)) >>> 0
+  return h
+}
+
+export function subjectColor(name) {
+  return PALETTE[hash((name || '').toLowerCase()) % PALETTE.length]
+}
+
+/** "Ali Valiyev" → "AV". */
+export function initials(name) {
+  return (name || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w.charAt(0).toUpperCase())
+    .join('')
+}
+
+export function avatarColor(id) {
+  return PALETTE[Number(id || 0) % PALETTE.length]
+}

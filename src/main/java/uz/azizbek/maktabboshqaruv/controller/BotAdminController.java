@@ -62,6 +62,7 @@ public class BotAdminController {
         }
         LocalDateTime now = LocalDateTime.now(clock);
         return Map.of(
+                "morningDigest", jobs.runMorningDigests(now, true),
                 "tomorrowSchedule", jobs.runTomorrowSchedules(now, true),
                 "weeklyReport", jobs.runWeeklyReports(now, true),
                 "eventReminder", jobs.runEventReminders(now, true));

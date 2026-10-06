@@ -12,7 +12,15 @@
       >
     </div>
 
-    <div v-if="!data" class="wa-card"><q-skeleton height="280px" /></div>
+    <div v-if="error" class="wa-card">
+      <WaState
+        kind="error"
+        :text="t('error')"
+        :retry-text="t('retry')"
+        @retry="load()"
+      />
+    </div>
+    <div v-else-if="!data" class="wa-card"><q-skeleton height="280px" /></div>
     <template v-else>
       <div class="wa-card summary">
         <div
@@ -123,19 +131,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { parentApi } from '@/webapp/api'
 import { state, t } from '@/webapp/state'
 import { monthTitle, dayShort, fullDate } from '@/webapp/i18n'
 import { subjectIcon } from '@/webapp/icons'
 import { haptic } from '@/webapp/telegram'
 import { todayStr as localToday } from '@/utils/date'
+import WaState from '@/components/webapp/WaState.vue'
 
 const todayStr = localToday()
 const now = new Date()
 const year = ref(now.getFullYear())
 const month = ref(now.getMonth() + 1)
 const data = ref(null)
+const error = ref(false)
 const selected = ref(null)
 
 const s = computed(() => data.value.summary)
@@ -170,16 +180,28 @@ function pick(date) {
   selected.value = date
 }
 
-async function load() {
-  data.value = null
+async function load(quiet = false) {
+  error.value = false
+  if (!quiet) data.value = null
   const key = `${year.value}-${String(month.value).padStart(2, '0')}`
-  data.value = (
-    await parentApi.get(`/api/parent/students/${state.childId}/attendance`, {
-      params: { month: key }
-    })
-  ).data
-  selected.value = isCurrentMonth.value ? todayStr : null
+  try {
+    data.value = (
+      await parentApi.get(`/api/parent/students/${state.childId}/attendance`, {
+        params: { month: key }
+      })
+    ).data
+  } catch {
+    if (!data.value) error.value = true
+    return
+  }
+  if (!quiet) selected.value = isCurrentMonth.value ? todayStr : null
 }
+
+// Pull-to-refresh / MainButton: reload the month, keep the chosen day.
+watch(
+  () => state.refresh,
+  () => load(true)
+)
 
 function shift(delta) {
   haptic()
