@@ -2,7 +2,10 @@ package uz.azizbek.maktabboshqaruv.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uz.azizbek.maktabboshqaruv.bot.BotI18n;
 import uz.azizbek.maktabboshqaruv.entity.NotificationLog;
+import uz.azizbek.maktabboshqaruv.entity.ParentSession;
+import uz.azizbek.maktabboshqaruv.repository.ParentSessionRepository;
 import uz.azizbek.maktabboshqaruv.entity.NotificationStatus;
 import uz.azizbek.maktabboshqaruv.entity.NotificationType;
 import uz.azizbek.maktabboshqaruv.repository.NotificationLogRepository;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,9 +45,17 @@ public class NotificationSender {
     private static final Logger log = LoggerFactory.getLogger(NotificationSender.class);
     private static final long PER_CHAT_INTERVAL_MS = 1000;
     private static final long RETRY_BACKOFF_SECONDS = 30;
+    private static final int MAX_TEXT = 4000;
+    private static final String BUNDLE_SEPARATOR = "➖➖➖";
 
     @Autowired
     private NotificationLogRepository notificationLogRepository;
+
+    @Autowired
+    private ParentSessionRepository sessionRepository;
+
+    @Autowired
+    private WeeklyReportCardService weeklyCards;
 
     @Autowired
     private ParentTelegramLinkRepository linkRepository;
@@ -87,28 +99,97 @@ public class NotificationSender {
             if (last != null && clock.millis() - last < PER_CHAT_INTERVAL_MS) continue;
 
             throttleGlobal();
-            if (deliver(n)) delivered++;
+            if (Boolean.TRUE.equals(n.getQuietBundle())) {
+                delivered += deliverQuietBundle(n.getChatId());
+            } else if (deliver(n)) {
+                delivered++;
+            }
         }
         return delivered;
     }
 
-    boolean deliver(NotificationLog n) {
-        // The parent may have sent /stop (or been unlinked) after this was queued.
+    /**
+     * Quiet hours are over: everything held back for this chat goes out as one
+     * message ("🌙 Tunda kelgan xabarlar") instead of a burst of separate ones.
+     * A single held message is simply sent as it is.
+     */
+    int deliverQuietBundle(Long chatId) {
+        List<NotificationLog> held = notificationLogRepository.findDueQuietBundle(chatId, LocalDateTime.now(clock));
+        List<NotificationLog> live = new ArrayList<>();
+        for (NotificationLog n : held) {
+            if (stillSubscribed(n)) {
+                live.add(n);
+            } else {
+                skipUnsubscribed(n);
+            }
+        }
+        if (live.isEmpty()) return 0;
+        if (live.size() == 1) return deliver(live.get(0)) ? 1 : 0;
+
+        String lang = sessionRepository.findByChatId(chatId).map(ParentSession::lang).orElse(BotI18n.DEFAULT_LANG);
+        StringBuilder text = new StringBuilder(BotI18n.get().t(lang, "notif.quiet_bundle_title", "count", live.size()));
+        for (NotificationLog n : live) {
+            String part = "\n\n" + BUNDLE_SEPARATOR + "\n\n" + n.getText();
+            if (text.length() + part.length() > MAX_TEXT) {
+                text.append("\n\n…");
+                break;
+            }
+            text.append(part);
+        }
+        try {
+            telegramClient.sendMessage(chatId, text.toString(), null);
+            lastSendMillis = clock.millis();
+            lastSentPerChat.put(chatId, lastSendMillis);
+            LocalDateTime sentAt = LocalDateTime.now(clock);
+            for (NotificationLog n : live) {
+                n.setAttempts(n.getAttempts() + 1);
+                n.setStatus(NotificationStatus.SENT);
+                n.setSentAt(sentAt);
+                n.setLastError(null);
+                notificationLogRepository.save(n);
+            }
+            return live.size();
+        } catch (TelegramApiException e) {
+            lastSendMillis = clock.millis();
+            for (NotificationLog n : live) handleFailure(n, e);
+            return 0;
+        } catch (RuntimeException e) {
+            lastSendMillis = clock.millis();
+            for (NotificationLog n : live) handleFailure(n, new TelegramApiException(0, e.getMessage(), null));
+            return 0;
+        }
+    }
+
+    private boolean stillSubscribed(NotificationLog n) {
         // An announcement row names just one of the parent's children, so any active link counts.
-        boolean stillSubscribed = n.getType() == NotificationType.ANNOUNCEMENT || n.getType() == NotificationType.BROADCAST
+        return n.getType() == NotificationType.ANNOUNCEMENT || n.getType() == NotificationType.BROADCAST
                 ? !linkRepository.findByChatIdAndActiveTrue(n.getChatId()).isEmpty()
                 : linkRepository.findByStudentIdAndChatId(n.getStudent().getId(), n.getChatId())
                 .map(l -> Boolean.TRUE.equals(l.getActive()))
                 .orElse(false);
-        if (!stillSubscribed) {
-            n.setStatus(NotificationStatus.SKIPPED);
-            n.setLastError("Ota-ona obunani bekor qilgan");
-            notificationLogRepository.save(n);
+    }
+
+    private void skipUnsubscribed(NotificationLog n) {
+        n.setStatus(NotificationStatus.SKIPPED);
+        n.setLastError("Ota-ona obunani bekor qilgan");
+        notificationLogRepository.save(n);
+    }
+
+    boolean deliver(NotificationLog n) {
+        // The parent may have sent /stop (or been unlinked) after this was queued.
+        if (!stillSubscribed(n)) {
+            skipUnsubscribed(n);
             return false;
         }
 
         try {
-            telegramClient.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
+            byte[] picture = n.getImage() == null ? null : weeklyCards.render(n.getImage());
+            if (picture != null) {
+                // the picture is drawn now, so it shows the latest data; the text is its caption
+                telegramClient.sendPhoto(n.getChatId(), picture, "haftalik-hisobot.png", n.getText(), n.getReplyMarkup());
+            } else {
+                telegramClient.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
+            }
             lastSendMillis = clock.millis();
             lastSentPerChat.put(n.getChatId(), lastSendMillis);
             n.setAttempts(n.getAttempts() + 1);

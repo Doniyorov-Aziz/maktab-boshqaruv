@@ -57,7 +57,7 @@ public class NotificationSettings {
             case ANNOUNCEMENT -> Boolean.TRUE.equals(announcementEnabled);
             // Scheduled digests are switched per parent in the bot; replies,
             // decisions and admin broadcasts are always delivered.
-            case TOMORROW_SCHEDULE, WEEKLY_REPORT, EVENT_REMINDER, MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST -> true;
+            case TOMORROW_SCHEDULE, WEEKLY_REPORT, EVENT_REMINDER, MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST, MORNING_DIGEST -> true;
         };
     }
 

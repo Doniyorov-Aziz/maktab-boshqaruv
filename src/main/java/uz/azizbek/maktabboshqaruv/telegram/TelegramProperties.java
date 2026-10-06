@@ -29,7 +29,7 @@ public class TelegramProperties {
     /** How old a Mini App initData may be before it is rejected. */
     private long initDataMaxAgeSeconds = 86400;
     /** Per-chat request budget (updates per second) before the bot asks the parent to slow down. */
-    private int chatRatePerSecond = 2;
+    private int chatRatePerSecond = 3;
 
     /** Mini App URL only when it is a usable HTTPS address — Telegram rejects anything else. */
     public String webappUrlIfValid() {

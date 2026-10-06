@@ -110,7 +110,7 @@ public class NotificationService {
                 slot.getSubject().getName(), slot.getStartTime(), attendance.getRecordDate(), today, school.getName());
 
         return createRows(school, type, attendance.getId(), attendance.getRecordDate(), recipientsOf(student), text,
-                details("att:s:" + student.getId() + ":n:1"));
+                actions("att:s:" + student.getId() + ":n:1", "/attendance", student.getId()));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -142,7 +142,7 @@ public class NotificationService {
         int threshold = botSettingService.getOrDefault(school).getLowGradeThreshold();
         if (!event.created() || grade.getScore() > threshold || recipients.isEmpty()) {
             return createRows(school, type, grade.getId(), recordDate, recipients, normalText,
-                    details("gr:s:" + student.getId() + ":n:1"));
+                    actions("gr:s:" + student.getId() + ":n:1", "/grades", student.getId()));
         }
 
         // Low grade: parents who keep the "past baho" switch on get the gentle
@@ -160,7 +160,7 @@ public class NotificationService {
                 lang -> InlineKeyboardMarkup.builder().row(InlineButton.callback(BotI18n.get().t(lang, "notif.btn.write_teacher"),
                         "msg:a:to:to:CT:s:" + student.getId() + ":n:1")).build());
         created += createRows(school, type, grade.getId(), recordDate, normal, normalText,
-                details("gr:s:" + student.getId() + ":n:1"));
+                actions("gr:s:" + student.getId() + ":n:1", "/grades", student.getId()));
         return created;
     }
 
@@ -190,7 +190,7 @@ public class NotificationService {
                 ? announcement.getCreatedDate().toLocalDate() : LocalDate.now(clock);
         return createRows(school, NotificationType.ANNOUNCEMENT, announcement.getId(), recordDate, oncePerChat(links),
                 lang -> MessageFormatter.announcement(lang, announcement.getTitle(), announcement.getContent(), label, school.getName()),
-                details("ann:id:" + announcement.getId() + ":n:1"));
+                actions("ann:id:" + announcement.getId() + ":n:1", "/announcements", null));
     }
 
     /**
@@ -206,11 +206,26 @@ public class NotificationService {
         return createRows(school, type, referenceId, recordDate, List.of(new Recipient(student, chatId)), text, markup);
     }
 
-    /** "🔎 Batafsil" button under an automatic message: opens the matching bot page as a new card. */
-    static Function<String, Object> details(String callbackData) {
-        return lang -> InlineKeyboardMarkup.builder()
-                .row(InlineButton.callback(BotI18n.get().t(lang, "notif.btn.details"), callbackData).styled("primary"))
-                .build();
+    /**
+     * Buttons under an automatic message: "📱 Batafsil" opens the matching Mini App
+     * page when TELEGRAM_WEBAPP_URL is set (else the bot page as a new card), and
+     * "💬 Sinf rahbariga yozish" starts a message to the class teacher.
+     */
+    Function<String, Object> actions(String callbackData, String webAppPage, Long teacherForStudentId) {
+        String webApp = telegramProperties.webappUrlIfValid();
+        return lang -> {
+            BotI18n i18n = BotI18n.get();
+            String label = i18n.t(lang, "notif.btn.app_details");
+            InlineButton details = webApp != null
+                    ? InlineButton.webApp(label, webApp + webAppPage)
+                    : InlineButton.callback(label, callbackData).styled("primary");
+            InlineKeyboardMarkup.Builder kb = InlineKeyboardMarkup.builder().row(details);
+            if (teacherForStudentId != null) {
+                kb.row(InlineButton.callback(i18n.t(lang, "notif.btn.write_class_teacher"),
+                        "msg:a:to:to:CT:s:" + teacherForStudentId + ":n:1"));
+            }
+            return kb.build();
+        };
     }
 
     /** A parent with two children in the same audience gets one message, not two. */
@@ -231,6 +246,24 @@ public class NotificationService {
      */
     public int createRows(School school, NotificationType type, Long referenceId, LocalDate recordDate,
                           List<Recipient> recipients, Function<String, String> text, Function<String, Object> markup) {
+        return createRows(school, type, referenceId, recordDate, recipients, text, markup, null);
+    }
+
+    /** Like a direct message, but sent as a picture (rendered at delivery time) with the text as caption. */
+    @Transactional
+    public int enqueueDirectImage(School school, Student student, Long chatId, NotificationType type, Long referenceId,
+                                  LocalDate recordDate, Function<String, String> caption, Function<String, Object> markup,
+                                  Function<String, String> image) {
+        if (notificationLogRepository.existsByChatIdAndTypeAndReferenceIdAndRecordDate(chatId, type, referenceId, recordDate)) {
+            return 0;
+        }
+        return createRows(school, type, referenceId, recordDate, List.of(new Recipient(student, chatId)), caption, markup, image);
+    }
+
+    /** @param image per-language picture reference (see {@link NotificationLog#getImage()}), or null for a text message */
+    public int createRows(School school, NotificationType type, Long referenceId, LocalDate recordDate,
+                          List<Recipient> recipients, Function<String, String> text, Function<String, Object> markup,
+                          Function<String, String> image) {
         if (recipients.isEmpty()) {
             log.debug("{} ref={}: bog'langan ota-ona yo'q", type, referenceId);
             return 0;
@@ -279,6 +312,10 @@ public class NotificationService {
             row.setLastError(skipReason);
             row.setCreatedAt(now);
             row.setScheduledAt(scheduledAt);
+            if (image != null) row.setImage(image.apply(lang));
+            // Held back by quiet hours: goes out in the single morning note with the others
+            // (a picture keeps its own message).
+            if (scheduledAt.isAfter(now) && status == NotificationStatus.PENDING && image == null) row.setQuietBundle(true);
             notificationLogRepository.save(row);
             created++;
             if (status == NotificationStatus.SKIPPED) {

@@ -59,6 +59,8 @@ public class BotScheduledJobs {
     @Autowired
     private ParentDataService data;
     @Autowired
+    private WeeklyReportCardService weeklyCards;
+    @Autowired
     private Clock clock;
 
     private final BotI18n i18n = BotI18n.get();
@@ -68,12 +70,68 @@ public class BotScheduledJobs {
         if (!properties.isActive()) return;
         LocalDateTime now = LocalDateTime.now(clock);
         try {
+            runMorningDigests(now, false);
             runTomorrowSchedules(now, false);
             runWeeklyReports(now, false);
             runEventReminders(now, false);
         } catch (Exception e) {
             log.error("Rejalashtirilgan xabarnomalarda xato", e);
         }
+    }
+
+    /**
+     * "☀️ Xayrli tong!" on school days at the school's digest time (07:30 by
+     * default): today's lessons, the first one, and today's events and news.
+     * Never on Sunday, a holiday or a day without lessons.
+     * @param force ignore the time window (used by the mock demo); Sundays and holidays still count.
+     */
+    public int runMorningDigests(LocalDateTime now, boolean force) {
+        LocalDate today = now.toLocalDate();
+        if (today.getDayOfWeek() == DayOfWeek.SUNDAY) return 0;
+        int queued = 0;
+        Map<Long, ParentSession> sessions = sessions();
+        for (ParentTelegramLink link : linkRepository.findAllActive()) {
+            Student s = link.getStudent();
+            ParentSession session = sessions.get(link.getChatId());
+            if (session != null && !session.wants(NotificationType.MORNING_DIGEST)) continue;
+            School school = NotificationService.schoolOf(s);
+            LocalTime at = botSettingService.getOrDefault(school).getMorningDigestTime();
+            if (!force && !due(now, today.atTime(at))) continue;
+            if (notificationLogRepository.existsByChatIdAndTypeAndReferenceIdAndRecordDate(
+                    link.getChatId(), NotificationType.MORNING_DIGEST, s.getId(), today)) continue;
+
+            DaySchedule day = data.day(s, today);
+            if (!day.hasLessons()) continue; // holiday, vacation or no timetable today
+
+            List<String> news = data.announcements(s, session).stream()
+                    .filter(a -> today.equals(a.date())).map(AnnouncementView::title).limit(2).toList();
+            queued += notificationService.enqueueDirect(school, s, link.getChatId(), NotificationType.MORNING_DIGEST,
+                    s.getId(), today, lang -> morningText(lang, s, day, news, school),
+                    lang -> appButton(lang, "notif.btn.open_app", "", "home"));
+        }
+        if (queued > 0) log.info("Ertalabki digest: {} ta xabar navbatga qo'shildi", queued);
+        return queued;
+    }
+
+    String morningText(String lang, Student s, DaySchedule day, List<String> news, School school) {
+        LessonView first = day.lessons().get(0);
+        String events = day.events().isEmpty() ? "" : i18n.t(lang, "notif.morning_events", "list", day.events().stream()
+                .map(e -> SubjectIcons.event(e.type()) + " " + MessageFormatter.escape(e.title())).collect(Collectors.joining(", ")));
+        String newsLine = news.isEmpty() ? "" : i18n.t(lang, "notif.morning_news", "list",
+                news.stream().map(MessageFormatter::escape).collect(Collectors.joining(", ")));
+        return i18n.t(lang, "notif.morning", "name", MessageFormatter.escape(s.getFirstName()),
+                "count", day.lessons().size(), "start", first.start(),
+                "emoji", SubjectIcons.subject(first.subject()), "subject", MessageFormatter.escape(first.subject()),
+                "events", events, "news", newsLine) + MessageFormatter.footer(lang, school.getName());
+    }
+
+    /** "📱 …" — the Mini App page when TELEGRAM_WEBAPP_URL is set, otherwise the bot page as a new card. */
+    InlineKeyboardMarkup appButton(String lang, String labelKey, String webAppPage, String botScreen) {
+        String webApp = properties.webappUrlIfValid();
+        InlineButton button = webApp != null
+                ? InlineButton.webApp(i18n.t(lang, labelKey), webApp + webAppPage)
+                : InlineButton.callback(i18n.t(lang, labelKey), botScreen + ":n:1");
+        return InlineKeyboardMarkup.builder().row(button).build();
     }
 
     /** @param force ignore the time window (used by the mock demo). */
@@ -95,8 +153,11 @@ public class BotScheduledJobs {
             DaySchedule day = data.day(s, tomorrow);
             if (day.holidayTitle() == null && day.lessons().isEmpty()) continue; // Sunday, or nothing scheduled
 
+            // "ertaga kerakli narsalar": announcements whose deadline is tomorrow
+            List<String> needs = data.announcements(s, session).stream()
+                    .filter(a -> tomorrow.equals(a.deadline())).map(AnnouncementView::title).limit(3).toList();
             queued += notificationService.enqueueDirect(school, s, link.getChatId(), NotificationType.TOMORROW_SCHEDULE,
-                    s.getId(), tomorrow, lang -> tomorrowText(lang, s, day, school),
+                    s.getId(), tomorrow, lang -> tomorrowText(lang, s, day, school) + needsLine(lang, needs),
                     lang -> InlineKeyboardMarkup.builder().row(InlineButton.callback(i18n.t(lang, "notif.btn.schedule"),
                             "sch:t:week:s:" + s.getId() + ":n:1")).build());
         }
@@ -124,6 +185,12 @@ public class BotScheduledJobs {
                 + MessageFormatter.footer(lang, school.getName());
     }
 
+    private String needsLine(String lang, List<String> needs) {
+        if (needs.isEmpty()) return "";
+        return "\n" + i18n.t(lang, "notif.tomorrow_needs", "list",
+                needs.stream().map(MessageFormatter::escape).collect(Collectors.joining(", ")));
+    }
+
     public int runWeeklyReports(LocalDateTime now, boolean force) {
         LocalDate today = now.toLocalDate();
         LocalDate weekStart = today.with(DayOfWeek.MONDAY);
@@ -140,20 +207,30 @@ public class BotScheduledJobs {
             if (notificationLogRepository.existsByChatIdAndTypeAndReferenceIdAndRecordDate(
                     link.getChatId(), NotificationType.WEEKLY_REPORT, s.getId(), weekStart)) continue;
 
-            queued += notificationService.enqueueDirect(school, s, link.getChatId(), NotificationType.WEEKLY_REPORT,
-                    s.getId(), weekStart, lang -> {
-                        String period = i18n.t(lang, "rep.week_period", "from", i18n.dateShort(lang, weekStart), "to", i18n.dateShort(lang, today));
-                        ReportView report = data.report(s, weekStart, today, period);
-                        return i18n.t(lang, "notif.weekly", "period", period,
-                                "name", MessageFormatter.escape(ParentDataService.fullName(s)),
-                                "class", MessageFormatter.escape(ParentDataService.className(s.getSchoolClass())),
-                                "body", ReportScreen.body(i18n, lang, report)) + MessageFormatter.footer(lang, school.getName());
-                    },
-                    lang -> InlineKeyboardMarkup.builder().row(InlineButton.callback(i18n.t(lang, "notif.btn.report"),
-                            "rep:t:week:s:" + s.getId() + ":n:1")).build());
+            // A 1080×1350 picture card (drawn when sent) with a short caption and "📱 Batafsil".
+            WeeklyReportCardService.WeeklyFacts facts = weeklyCards.facts(s, weekStart, today);
+            queued += notificationService.enqueueDirectImage(school, s, link.getChatId(), NotificationType.WEEKLY_REPORT,
+                    s.getId(), weekStart, lang -> weeklyCaption(lang, s, weekStart, today, facts, school),
+                    lang -> appButton(lang, "notif.btn.app_details", "/grades", "rep:t:week:s:" + s.getId()),
+                    lang -> WeeklyReportCardService.reference(s.getId(), weekStart, today, lang));
         }
         if (queued > 0) log.info("Haftalik hisobot: {} ta xabar navbatga qo'shildi", queued);
         return queued;
+    }
+
+    /** Short caption under the weekly picture (Telegram allows 1024 characters). */
+    String weeklyCaption(String lang, Student s, LocalDate from, LocalDate to, WeeklyReportCardService.WeeklyFacts f,
+                         School school) {
+        String none = i18n.t(lang, "img.none");
+        return i18n.t(lang, "notif.weekly_caption",
+                "period", i18n.dateShort(lang, from) + " – " + i18n.dateShort(lang, to),
+                "name", MessageFormatter.escape(ParentDataService.fullName(s)),
+                "class", MessageFormatter.escape(ParentDataService.className(s.getSchoolClass())),
+                "rate", f.attendanceRate() == null ? none : String.format(Locale.ROOT, "%.0f%%", f.attendanceRate()),
+                "avg", f.gradeAverage() == null ? none : String.format(Locale.ROOT, "%.2f", f.gradeAverage()),
+                "best", f.best() == null ? none : MessageFormatter.escape(f.best()),
+                "attention", f.attention() == null ? none : MessageFormatter.escape(f.attention()))
+                + MessageFormatter.footer(lang, school.getName());
     }
 
     public int runEventReminders(LocalDateTime now, boolean force) {

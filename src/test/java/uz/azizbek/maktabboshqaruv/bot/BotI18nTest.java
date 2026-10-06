@@ -30,6 +30,22 @@ class BotI18nTest {
     }
 
     @Test
+    void v3TextsExistInUzbekAndRussian() {
+        for (String key : new String[]{"notif.morning", "notif.weekly_caption", "notif.quiet_bundle_title",
+                "notif.btn.app_details", "notif.btn.write_class_teacher", "notif.tomorrow_needs", "set.item.morning",
+                "img.weekly.title", "menu.webapp"}) {
+            for (String lang : BotI18n.LANGUAGES) {
+                String text = I18N.t(lang, key);
+                assertNotEquals(key, text, lang + ": " + key + " yo'q");
+                assertFalse(text.isBlank(), lang + ": " + key);
+            }
+        }
+        assertTrue(I18N.t("uz", "notif.morning", "name", "Aziza", "count", 5).contains("Aziza</b>ning <b>5</b> ta darsi"));
+        assertTrue(I18N.t("ru", "notif.morning", "name", "Aziza", "count", 5).contains("Доброе утро"));
+        assertEquals("📱 Ilovani ochish", I18N.t("uz", "menu.webapp"));
+    }
+
+    @Test
     void translationsUseTheSamePlaceholders() {
         for (String key : I18N.keys("uz")) {
             Set<String> expected = placeholders(I18N.t("uz", key));

@@ -54,6 +54,10 @@ public final class ParentViews {
     public record SubjectAverage(Long subjectId, String subject, double average, int count, String trend) {
     }
 
+    /** One day of the child's grade dynamics: the average of that day's grades. */
+    public record TrendPoint(LocalDate date, double average, int count) {
+    }
+
     public record SubjectDetail(Long subjectId, String subject, String teacher, double average,
                                 List<GradeView> grades) {
     }

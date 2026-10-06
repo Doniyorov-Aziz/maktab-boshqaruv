@@ -49,6 +49,7 @@ public class ParentSession {
     private Boolean notifyTomorrowSchedule;
     private Boolean notifyWeeklyReport;
     private Boolean notifyEventReminder;
+    private Boolean notifyMorningDigest;
 
     private LocalTime scheduleTime;
 
@@ -74,6 +75,7 @@ public class ParentSession {
             case TOMORROW_SCHEDULE -> notifyTomorrowSchedule;
             case WEEKLY_REPORT -> notifyWeeklyReport;
             case EVENT_REMINDER -> notifyEventReminder;
+            case MORNING_DIGEST -> notifyMorningDigest;
             // Replies, decisions and school broadcasts are personal/official — always delivered.
             case MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST -> Boolean.TRUE;
         };
@@ -217,6 +219,14 @@ public class ParentSession {
 
     public void setNotifyWeeklyReport(Boolean notifyWeeklyReport) {
         this.notifyWeeklyReport = notifyWeeklyReport;
+    }
+
+    public Boolean getNotifyMorningDigest() {
+        return notifyMorningDigest;
+    }
+
+    public void setNotifyMorningDigest(Boolean notifyMorningDigest) {
+        this.notifyMorningDigest = notifyMorningDigest;
     }
 
     public Boolean getNotifyEventReminder() {

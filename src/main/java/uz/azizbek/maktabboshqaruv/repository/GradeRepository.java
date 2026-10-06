@@ -28,6 +28,12 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
     List<Grade> findForGradebook(@Param("schoolClassId") Long schoolClassId, @Param("subjectId") Long subjectId,
                                   @Param("from") LocalDate from, @Param("to") LocalDate to);
 
+    /** Class average per subject (no student data leaves the query — only the averages). */
+    @Query("select g.subject.id, avg(g.score) from Grade g where g.student.schoolClass.id = :schoolClassId " +
+            "and g.gradeDate between :from and :to group by g.subject.id")
+    List<Object[]> classAverageBySubjectBetween(@Param("schoolClassId") Long schoolClassId,
+                                                @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     @Query("select avg(g.score) from Grade g where g.student.schoolClass.academicYear.school.id = :schoolId")
     Double averageScoreBySchoolId(@Param("schoolId") Long schoolId);
 

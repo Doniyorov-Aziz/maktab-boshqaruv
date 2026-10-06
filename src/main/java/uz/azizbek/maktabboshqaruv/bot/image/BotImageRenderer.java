@@ -221,6 +221,131 @@ public final class BotImageRenderer {
         return png(img, g);
     }
 
+    // ------------------------------------------------------- weekly card
+
+    /** Inputs of the 1080×1350 weekly report card sent every Saturday. */
+    public record WeeklyInput(String title, String period, String childName, String classAndSchool,
+                              String attendanceLabel, Double attendanceRate,
+                              String gradesLabel, Double gradeAverage, String gradesNote,
+                              String chartTitle, List<SubjectBar> bars, String emptyText,
+                              String bestLabel, String best, String attentionLabel, String attention,
+                              String noneText, String footer) {
+    }
+
+    public static final int WEEKLY_H = 1350;
+
+    public static byte[] weeklyCard(WeeklyInput in) {
+        BufferedImage img = new BufferedImage(W, WEEKLY_H, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = graphics(img);
+
+        // header: report title and period, the child in large type
+        int headH = 290;
+        g.setPaint(new GradientPaint(0, 0, INDIGO, W, headH, VIOLET));
+        g.fillRect(0, 0, W, headH);
+        g.setColor(new Color(255, 255, 255, 220));
+        g.setFont(SEMIBOLD.deriveFont(30f));
+        g.drawString(fit(g, in.title() + " · " + in.period(), W - 120), 60, 88);
+        g.setColor(Color.WHITE);
+        float nameSize = 64f;
+        g.setFont(BOLD.deriveFont(nameSize));
+        while (nameSize > 44f && g.getFontMetrics().stringWidth(in.childName()) > W - 120) {
+            nameSize -= 2f;
+            g.setFont(BOLD.deriveFont(nameSize));
+        }
+        g.drawString(fit(g, in.childName(), W - 120), 60, 176);
+        g.setColor(new Color(255, 255, 255, 215));
+        g.setFont(SEMIBOLD.deriveFont(30f));
+        g.drawString(fit(g, in.classAndSchool(), W - 120), 60, 228);
+
+        // two big numbers
+        int tileW = (W - 120 - 30) / 2, tileH = 230, ty = headH + 40;
+        tile(g, 60, ty, tileW, tileH, in.attendanceLabel(),
+                in.attendanceRate() == null ? in.noneText() : fmt1(in.attendanceRate()) + "%",
+                rateColor(in.attendanceRate()), null, in.attendanceRate());
+        tile(g, 60 + tileW + 30, ty, tileW, tileH, in.gradesLabel(),
+                in.gradeAverage() == null ? in.noneText() : String.format(java.util.Locale.ROOT, "%.2f", in.gradeAverage()),
+                in.gradeAverage() == null ? MUTED : gradeColor(in.gradeAverage()), in.gradesNote(), null);
+
+        // subject averages bar chart
+        int cy = ty + tileH + 36, ch = 470;
+        g.setColor(CARD);
+        g.fill(new RoundRectangle2D.Double(60, cy, W - 120, ch, 36, 36));
+        g.setColor(BORDER);
+        g.setStroke(new BasicStroke(2f));
+        g.draw(new RoundRectangle2D.Double(60, cy, W - 120, ch, 36, 36));
+        g.setColor(TEXT);
+        g.setFont(BOLD.deriveFont(34f));
+        g.drawString(fit(g, in.chartTitle(), W - 180), 90, cy + 62);
+        List<SubjectBar> bars = in.bars().size() > 6 ? in.bars().subList(0, 6) : in.bars();
+        if (bars.isEmpty()) {
+            g.setColor(MUTED);
+            g.setFont(SEMIBOLD.deriveFont(30f));
+            centered(g, in.emptyText(), 60, W - 60, cy + ch / 2 + 20);
+        }
+        int rowH = 62, labelW = 280, barX = 90 + labelW + 16, barW = W - 60 - 30 - barX - 96;
+        for (int i = 0; i < bars.size(); i++) {
+            SubjectBar b = bars.get(i);
+            int y = cy + 96 + i * rowH;
+            g.setColor(TEXT);
+            g.setFont(SEMIBOLD.deriveFont(28f));
+            g.drawString(fit(g, b.subject(), labelW), 90, y + 34);
+            g.setColor(new Color(0xEEF2FF));
+            g.fill(new RoundRectangle2D.Double(barX, y + 8, barW, 32, 32, 32));
+            g.setColor(gradeColor(b.average()));
+            double ratio = Math.max(0.04, Math.min(1, b.average() / 5.0));
+            g.fill(new RoundRectangle2D.Double(barX, y + 8, barW * ratio, 32, 32, 32));
+            g.setColor(TEXT);
+            g.setFont(BOLD.deriveFont(30f));
+            g.drawString(String.format(java.util.Locale.ROOT, "%.1f", b.average()), barX + barW + 20, y + 36);
+        }
+
+        // best subject and the one that needs attention
+        int by = cy + ch + 32, bw = (W - 120 - 30) / 2, bh = 150;
+        badge(g, 60, by, bw, bh, new Color(0xD1FAE5), new Color(0x065F46), true, in.bestLabel(),
+                in.best() == null ? in.noneText() : in.best());
+        badge(g, 60 + bw + 30, by, bw, bh, new Color(0xFEF3C7), new Color(0x92400E), false, in.attentionLabel(),
+                in.attention() == null ? in.noneText() : in.attention());
+
+        footer(g, in.footer(), WEEKLY_H - 40);
+        return png(img, g);
+    }
+
+    /** Rounded badge with a drawn icon: a star for the best subject, a warning triangle otherwise. */
+    private static void badge(Graphics2D g, int x, int y, int w, int h, Color fill, Color ink, boolean star,
+                              String label, String value) {
+        g.setColor(fill);
+        g.fill(new RoundRectangle2D.Double(x, y, w, h, 32, 32));
+        int ix = x + 32, iy = y + 38, s = 56;
+        g.setColor(ink);
+        java.awt.geom.Path2D p = new java.awt.geom.Path2D.Double();
+        if (star) {
+            for (int i = 0; i < 10; i++) {
+                double a = -Math.PI / 2 + i * Math.PI / 5;
+                double r = i % 2 == 0 ? s / 2.0 : s / 4.6;
+                double px = ix + s / 2.0 + Math.cos(a) * r, py = iy + s / 2.0 + Math.sin(a) * r;
+                if (i == 0) p.moveTo(px, py);
+                else p.lineTo(px, py);
+            }
+            p.closePath();
+            g.fill(p);
+        } else {
+            p.moveTo(ix + s / 2.0, iy);
+            p.lineTo(ix + s, iy + s - 4);
+            p.lineTo(ix, iy + s - 4);
+            p.closePath();
+            g.fill(p);
+            g.setColor(fill);
+            g.setFont(BOLD.deriveFont(34f));
+            centered(g, "!", ix, ix + s, iy + s - 12);
+        }
+        int tx = ix + s + 22, tw = x + w - tx - 24;
+        g.setColor(ink);
+        g.setFont(SEMIBOLD.deriveFont(24f));
+        g.drawString(fit(g, label, tw), tx, y + 60);
+        g.setFont(BOLD.deriveFont(34f));
+        g.drawString(fit(g, value, tw), tx, y + 108);
+    }
+
     // ------------------------------------------------------------- helpers
 
     private static Graphics2D graphics(BufferedImage img) {

@@ -50,9 +50,14 @@ public class BotSetting {
     @Column(nullable = false)
     private LocalTime eventReminderTime;
 
-    /** Grades at or below this score trigger the gentle "past baho" message. */
+    /** Grades at or below this score trigger the gentle "past baho" message (2 or 3). */
     @Column(nullable = false)
     private Integer lowGradeThreshold;
+
+    /** Morning digest on school days; nullable column, existing rows fall back to 07:30. */
+    private LocalTime morningDigestTime;
+
+    public static final LocalTime DEFAULT_MORNING_DIGEST = LocalTime.of(7, 30);
 
     public static BotSetting defaults(School school) {
         BotSetting s = new BotSetting();
@@ -62,8 +67,17 @@ public class BotSetting {
         s.setWeeklyReportDay(DayOfWeek.SATURDAY);
         s.setWeeklyReportTime(LocalTime.of(18, 0));
         s.setEventReminderTime(LocalTime.of(18, 0));
-        s.setLowGradeThreshold(2);
+        s.setMorningDigestTime(DEFAULT_MORNING_DIGEST);
+        s.setLowGradeThreshold(3);
         return s;
+    }
+
+    public LocalTime getMorningDigestTime() {
+        return morningDigestTime != null ? morningDigestTime : DEFAULT_MORNING_DIGEST;
+    }
+
+    public void setMorningDigestTime(LocalTime morningDigestTime) {
+        this.morningDigestTime = morningDigestTime;
     }
 
     public Long getId() {

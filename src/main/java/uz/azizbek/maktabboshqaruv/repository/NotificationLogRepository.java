@@ -26,6 +26,12 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             "and n.scheduledAt <= :now order by n.scheduledAt, n.id")
     List<NotificationLog> findDue(@Param("now") LocalDateTime now, Pageable pageable);
 
+    /** Everything held back for one chat by quiet hours and now due — sent together as one morning note. */
+    @Query("select n from NotificationLog n where n.chatId = :chatId and n.quietBundle = true " +
+            "and n.status = uz.azizbek.maktabboshqaruv.entity.NotificationStatus.PENDING " +
+            "and n.scheduledAt <= :now order by n.createdAt, n.id")
+    List<NotificationLog> findDueQuietBundle(@Param("chatId") Long chatId, @Param("now") LocalDateTime now);
+
     long countBySchoolIdAndStatusAndSentAtBetween(Long schoolId, NotificationStatus status,
                                                    LocalDateTime from, LocalDateTime to);
 

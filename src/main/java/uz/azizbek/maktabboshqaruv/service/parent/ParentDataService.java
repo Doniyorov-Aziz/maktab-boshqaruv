@@ -225,6 +225,34 @@ public class ParentDataService {
         return result;
     }
 
+    /** Daily averages of the last {@code days} days (days without grades are left out). */
+    public List<TrendPoint> gradeTrend(Student s, int days) {
+        LocalDate today = today();
+        LocalDate from = today.minusDays(days - 1L);
+        Map<LocalDate, List<Integer>> byDay = new TreeMap<>();
+        for (Grade g : gradeRepository.findByStudentIdAndGradeDateBetweenOrderByGradeDateDescIdDesc(s.getId(), from, today)) {
+            byDay.computeIfAbsent(g.getGradeDate(), d -> new ArrayList<>()).add(g.getScore());
+        }
+        List<TrendPoint> points = new ArrayList<>();
+        byDay.forEach((date, scores) -> points.add(new TrendPoint(date, ParentStats.average(scores), scores.size())));
+        return points;
+    }
+
+    /**
+     * The class's average per subject over the school year, for comparison with
+     * the child's own average. Only averages — never other children's names or grades.
+     */
+    public Map<Long, Double> classSubjectAverages(Student s) {
+        LocalDate[] year = ParentStats.schoolYearRange(today());
+        Map<Long, Double> result = new LinkedHashMap<>();
+        for (Object[] row : gradeRepository.classAverageBySubjectBetween(s.getSchoolClass().getId(), year[0], year[1])) {
+            if (row[0] != null && row[1] != null) {
+                result.put(((Number) row[0]).longValue(), Math.round(((Number) row[1]).doubleValue() * 100) / 100.0);
+            }
+        }
+        return result;
+    }
+
     /** All of the current school year's grades in one subject, with its teacher. */
     public SubjectDetail subjectDetail(Student s, Long subjectId) {
         LocalDate[] year = ParentStats.schoolYearRange(today());

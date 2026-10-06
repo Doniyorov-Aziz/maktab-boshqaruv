@@ -51,7 +51,7 @@ class KeyboardsTest {
         Keyboards.setWebAppUrl("https://kundalik.example.uz/#/webapp");
         List<KeyboardButton> top = Keyboards.main("uz").keyboard().get(0);
         assertEquals(1, top.size());
-        assertEquals("📱 Kundalikni ochish", top.get(0).text());
+        assertEquals("📱 Ilovani ochish", top.get(0).text());
         assertEquals("https://kundalik.example.uz/#/webapp", top.get(0).webApp().url());
         assertEquals(7, Keyboards.main("uz").keyboard().size());
     }

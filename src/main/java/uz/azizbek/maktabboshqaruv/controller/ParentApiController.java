@@ -99,7 +99,14 @@ public class ParentApiController {
         result.put("recent", data.recentGrades(s, 30));
         result.put("subjects", data.subjectAverages(s));
         result.put("quarter", data.quarterGrades(s));
+        result.put("trend", data.gradeTrend(s, 30));
+        result.put("classAverages", data.classSubjectAverages(s));
         return result;
+    }
+
+    @GetMapping("/students/{id}/events")
+    public List<EventView> events(@RequestHeader(HEADER) String initData, @PathVariable Long id) {
+        return data.upcomingEvents(student(initData, id), 60);
     }
 
     @GetMapping("/students/{id}/grades/{subjectId}")

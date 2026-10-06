@@ -38,8 +38,54 @@ class NotificationSenderTest {
     @Mock
     private TelegramClient telegramClient;
 
+    @Mock
+    private uz.azizbek.maktabboshqaruv.repository.ParentSessionRepository sessionRepository;
+
+    @Mock
+    private WeeklyReportCardService weeklyCards;
+
     @InjectMocks
     private NotificationSender sender;
+
+    @Test
+    void quietHours_heldMessagesGoOutAsOneMorningNote() {
+        NotificationLog a = pending(1L, 11L);
+        a.setText("🔴 Ali 1-darsga kelmadi");
+        a.setQuietBundle(true);
+        NotificationLog b = pending(2L, 11L);
+        b.setText("📘 Ali 5 baho oldi");
+        b.setQuietBundle(true);
+        when(notificationLogRepository.findDue(any(), any())).thenReturn(List.of(a, b));
+        when(notificationLogRepository.findDueQuietBundle(11L, NOW)).thenReturn(List.of(a, b));
+        when(sessionRepository.findByChatId(11L)).thenReturn(Optional.empty());
+        subscribed(11L);
+
+        assertEquals(2, sender.sendDue());
+
+        verify(telegramClient, times(1)).sendMessage(eq(11L), argThat((String text) ->
+                text.startsWith("🌙 <b>Tunda kelgan xabarlar</b> (2 ta)")
+                        && text.contains("🔴 Ali 1-darsga kelmadi") && text.contains("📘 Ali 5 baho oldi")), isNull());
+        assertEquals(NotificationStatus.SENT, a.getStatus());
+        assertEquals(NotificationStatus.SENT, b.getStatus());
+    }
+
+    @Test
+    void weeklyReportRow_isSentAsPicture_withCaption() {
+        NotificationLog n = pending(1L, 11L);
+        n.setType(NotificationType.WEEKLY_REPORT);
+        n.setText("📊 Haftalik hisobot");
+        n.setImage("weekly:100:2026-09-28:2026-10-03:uz");
+        byte[] png = {1, 2, 3};
+        when(notificationLogRepository.findDue(any(), any())).thenReturn(List.of(n));
+        when(weeklyCards.render("weekly:100:2026-09-28:2026-10-03:uz")).thenReturn(png);
+        subscribed(11L);
+
+        assertEquals(1, sender.sendDue());
+
+        verify(telegramClient).sendPhoto(eq(11L), eq(png), anyString(), eq("📊 Haftalik hisobot"), isNull());
+        verify(telegramClient, never()).sendMessage(anyLong(), anyString(), any());
+        assertEquals(NotificationStatus.SENT, n.getStatus());
+    }
 
     private Student student;
 
