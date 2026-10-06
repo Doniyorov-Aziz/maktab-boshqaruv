@@ -199,6 +199,7 @@
               no-caps
               color="negative"
               label="O'chirish"
+              :loading="deleting"
               @click="deleteEvent"
             />
             <q-space />
@@ -417,6 +418,7 @@ function openEditDialog(ev) {
 }
 
 async function saveEvent() {
+  if (saving.value) return
   saving.value = true
   formError.value = ''
   try {
@@ -436,7 +438,11 @@ async function saveEvent() {
   }
 }
 
+const deleting = ref(false)
+
 async function deleteEvent() {
+  if (deleting.value) return // a second click while the first is on its way
+  deleting.value = true
   try {
     await api.delete(`/api/calendar-events/${editingId.value}`)
     dialogOpen.value = false
@@ -447,6 +453,8 @@ async function deleteEvent() {
       type: 'negative',
       message: error.response?.data || 'Xatolik yuz berdi'
     })
+  } finally {
+    deleting.value = false
   }
 }
 

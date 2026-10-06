@@ -247,6 +247,7 @@
               no-caps
               color="negative"
               label="O'chirish"
+              :loading="deleting"
               @click="deleteGrade"
             />
             <q-space />
@@ -508,6 +509,7 @@ function openGradeDialog(existingGrade, studentId, date) {
 }
 
 async function saveGrade() {
+  if (saving.value) return
   saving.value = true
   formError.value = ''
   try {
@@ -534,7 +536,11 @@ async function saveGrade() {
   }
 }
 
+const deleting = ref(false)
+
 async function deleteGrade() {
+  if (deleting.value) return // a second click while the first is on its way
+  deleting.value = true
   try {
     await api.delete(`/api/grades/${editingGradeId.value}`)
     dialogOpen.value = false
@@ -545,6 +551,8 @@ async function deleteGrade() {
       type: 'negative',
       message: error.response?.data || 'Xatolik yuz berdi'
     })
+  } finally {
+    deleting.value = false
   }
 }
 

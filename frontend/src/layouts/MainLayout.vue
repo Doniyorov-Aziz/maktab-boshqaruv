@@ -593,8 +593,11 @@ async function loadBotCounts() {
   try {
     const params = { schoolId: schoolStore.activeSchoolId }
     const [m, a] = await Promise.all([
-      api.get('/api/parent-messages/count-new', { params }),
-      api.get('/api/absence-requests/count-pending', { params })
+      api.get('/api/parent-messages/count-new', { params, background: true }),
+      api.get('/api/absence-requests/count-pending', {
+        params,
+        background: true
+      })
     ])
     botCounts.value = { messages: m.data, absences: a.data }
   } catch {

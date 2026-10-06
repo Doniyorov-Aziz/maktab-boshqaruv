@@ -314,6 +314,20 @@
         />
       </div>
 
+      <!-- first load: skeleton rows instead of an empty table flashing "Hozircha ma'lumot yo'q" -->
+      <div
+        v-else-if="loading && !rows.length"
+        class="brand-card q-pa-md column q-gutter-sm"
+      >
+        <q-skeleton type="text" width="40%" height="28px" />
+        <q-skeleton
+          v-for="i in pagination.rowsPerPage"
+          :key="i"
+          type="rect"
+          height="34px"
+        />
+      </div>
+
       <div v-else class="brand-card overflow-hidden">
         <q-table
           :rows="displayRows"
@@ -1049,6 +1063,7 @@ async function openEditDialog(row) {
 }
 
 async function onSave() {
+  if (saving.value) return // Enter + click must not create two rows
   saving.value = true
   formError.value = ''
   try {
