@@ -42,6 +42,9 @@ public class ParentDataService {
     @Autowired
     private Clock clock;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.BotCache cache;
+
     public LocalDate today() {
         return LocalDate.now(clock);
     }
@@ -62,10 +65,26 @@ public class ParentDataService {
 
     // --------------------------------------------------------------- schedule
 
+    /**
+     * A school's events overlapping [from, to]. Ranges near today (the bot's pages)
+     * come from a 5-minute cache of [today−60d, today+365d]; anything else is queried.
+     */
+    List<CalendarEvent> eventsInRange(Long schoolId, LocalDate from, LocalDate to) {
+        LocalDate today = today();
+        LocalDate windowFrom = today.minusDays(60);
+        LocalDate windowTo = today.plusDays(365);
+        if (from.isBefore(windowFrom) || to.isAfter(windowTo)) {
+            return calendarEventRepository.findInRange(schoolId, from, to);
+        }
+        return cache.events(schoolId, () -> calendarEventRepository.findInRange(schoolId, windowFrom, windowTo)).stream()
+                .filter(e -> !e.getStartDate().isAfter(to) && !e.getEndDate().isBefore(from))
+                .toList();
+    }
+
     public DaySchedule day(Student s, LocalDate date) {
         SchoolClass c = s.getSchoolClass();
         Long schoolId = c.getAcademicYear().getSchool().getId();
-        List<EventView> events = calendarEventRepository.findInRange(schoolId, date, date).stream()
+        List<EventView> events = eventsInRange(schoolId, date, date).stream()
                 .map(this::toEventView).toList();
         String holiday = events.stream()
                 .filter(e -> "HOLIDAY".equals(e.type()) || "VACATION".equals(e.type()))
@@ -106,8 +125,13 @@ public class ParentDataService {
         return result;
     }
 
+    /** The class's whole week, cached (one fetch-join query on a miss). */
+    List<LessonSlot> weekOf(Long classId) {
+        return cache.slots(classId, () -> lessonSlotRepository.findWeekOfClass(classId));
+    }
+
     private List<LessonSlot> slotsOf(Long classId, String weekday) {
-        return lessonSlotRepository.findBySchoolClassId(classId).stream()
+        return weekOf(classId).stream()
                 .filter(l -> l.getWeekday().equals(weekday))
                 .sorted(Comparator.comparing(LessonSlot::getStartTime))
                 .toList();
@@ -260,7 +284,7 @@ public class ParentDataService {
                 .filter(g -> g.getSubject().getId().equals(subjectId) && inRange(g.getGradeDate(), year)).toList();
         String subjectName = grades.isEmpty() ? null : grades.get(0).getSubject().getName();
         String teacher = null;
-        for (LessonSlot slot : lessonSlotRepository.findBySchoolClassId(s.getSchoolClass().getId())) {
+        for (LessonSlot slot : weekOf(s.getSchoolClass().getId())) {
             if (slot.getSubject().getId().equals(subjectId)) {
                 teacher = personName(slot.getEmployee());
                 if (subjectName == null) subjectName = slot.getSubject().getName();
@@ -356,7 +380,7 @@ public class ParentDataService {
 
     public List<EventView> upcomingEvents(Student s, int days) {
         LocalDate today = today();
-        return calendarEventRepository.findInRange(s.getSchoolClass().getAcademicYear().getSchool().getId(), today, today.plusDays(days))
+        return eventsInRange(s.getSchoolClass().getAcademicYear().getSchool().getId(), today, today.plusDays(days))
                 .stream().map(this::toEventView).toList();
     }
 
@@ -375,7 +399,7 @@ public class ParentDataService {
                     showPhones ? c.getClassTeacher().getPhone() : null, true));
         }
         Map<String, Employee> bySubject = new TreeMap<>();
-        for (LessonSlot slot : lessonSlotRepository.findBySchoolClassId(c.getId())) {
+        for (LessonSlot slot : weekOf(c.getId())) {
             bySubject.putIfAbsent(slot.getSubject().getName(), slot.getEmployee());
         }
         bySubject.forEach((subject, e) -> result.add(new TeacherView(subject, personName(e), showPhones ? e.getPhone() : null, false)));
@@ -384,7 +408,7 @@ public class ParentDataService {
 
     /** Subject teacher for the "✍️ O'qituvchiga yozish" button on a low-grade message. */
     public String teacherOf(Student s, Long subjectId) {
-        for (LessonSlot slot : lessonSlotRepository.findBySchoolClassId(s.getSchoolClass().getId())) {
+        for (LessonSlot slot : weekOf(s.getSchoolClass().getId())) {
             if (slot.getSubject().getId().equals(subjectId)) return personName(slot.getEmployee());
         }
         return null;

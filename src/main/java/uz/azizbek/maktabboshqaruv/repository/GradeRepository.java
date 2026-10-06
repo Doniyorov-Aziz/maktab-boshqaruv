@@ -17,9 +17,18 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
     @Query("select g from Grade g where g.student.schoolClass.academicYear.school.id = :schoolId")
     Page<Grade> findBySchoolId(@Param("schoolId") Long schoolId, Pageable pageable);
 
-    List<Grade> findByStudentIdOrderByGradeDateDesc(Long studentId);
+    /** A student's grades with subject and student (class, year, school) in the same query — no per-row loads. */
+    @Query("select g from Grade g join fetch g.subject join fetch g.student s join fetch s.schoolClass c " +
+            "join fetch c.academicYear y join fetch y.school left join fetch c.classTeacher ct left join fetch ct.position " +
+            "where s.id = :studentId order by g.gradeDate desc")
+    List<Grade> findByStudentIdOrderByGradeDateDesc(@Param("studentId") Long studentId);
 
-    List<Grade> findByStudentIdAndGradeDateBetweenOrderByGradeDateDescIdDesc(Long studentId, LocalDate from, LocalDate to);
+    @Query("select g from Grade g join fetch g.subject join fetch g.student s join fetch s.schoolClass c " +
+            "join fetch c.academicYear y join fetch y.school left join fetch c.classTeacher ct left join fetch ct.position " +
+            "where s.id = :studentId and g.gradeDate between :from and :to order by g.gradeDate desc, g.id desc")
+    List<Grade> findByStudentIdAndGradeDateBetweenOrderByGradeDateDescIdDesc(@Param("studentId") Long studentId,
+                                                                             @Param("from") LocalDate from,
+                                                                             @Param("to") LocalDate to);
 
     @Query("select g.subject.id as subjectId, g.subject.name as subjectName, avg(g.score) as avgScore " +
             "from Grade g where g.student.id = :studentId group by g.subject.id, g.subject.name order by avgScore desc")

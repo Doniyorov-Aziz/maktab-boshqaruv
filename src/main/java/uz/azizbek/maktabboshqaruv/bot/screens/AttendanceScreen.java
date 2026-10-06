@@ -1,7 +1,6 @@
 package uz.azizbek.maktabboshqaruv.bot.screens;
 
 import uz.azizbek.maktabboshqaruv.bot.*;
-import uz.azizbek.maktabboshqaruv.bot.image.BotImageService;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentDataService;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentStats;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentViews.*;
@@ -33,7 +32,7 @@ public class AttendanceScreen implements Screen {
     private ParentDataService data;
 
     @Autowired
-    private BotImageService images;
+    private uz.azizbek.maktabboshqaruv.bot.MiniAppLinks miniApp;
 
     @Override
     public String code() {
@@ -64,7 +63,9 @@ public class AttendanceScreen implements Screen {
             case "cal" -> calendar(ctx, summary, month, base);
             case "det" -> details(ctx, summary, base, cb.getInt("p", 0));
             case "sub" -> bySubject(ctx, summary, base);
-            case "img" -> image(ctx, month, base);
+            // old "picture" buttons in earlier messages: the calendar as text
+            case "img" -> calendar(ctx, data.attendance(ctx.student(), "month", month.toString(),
+                    periodLabel(ctx, "month", month, quarter)), month, base);
             default -> summaryView(ctx, summary, kind, month, quarter, thisMonth, base);
         };
     }
@@ -100,8 +101,7 @@ public class AttendanceScreen implements Screen {
                     quarter < 4 ? ctx.btn(ctx.t("att.period.quarter", "n", quarter + 1) + " ▶️", base.with("q", quarter + 1)) : ctx.blank());
         }
         kb.row(ctx.btn(ctx.t("att.btn.calendar"), base.with("v", "cal")), ctx.btn(ctx.t("att.btn.details"), base.with("v", "det")));
-        kb.row(ctx.btn(ctx.t("att.btn.subjects"), base.with("v", "sub")),
-                "m".equals(kind) ? ctx.btn(ctx.t("common.image"), base.with("v", "img")) : null);
+        kb.row(ctx.btn(ctx.t("att.btn.subjects"), base.with("v", "sub")), miniApp.details(ctx, "/attendance"));
         kb.row(kindBtn(ctx, "m", "att.btn.month", kind), kindBtn(ctx, "q", "att.btn.quarter", kind), kindBtn(ctx, "y", "att.btn.year", kind));
         kb.row(ctx.switchRow("att").toArray(new InlineButton[0]));
         kb.row(ctx.navRow(null).toArray(new InlineButton[0]));
@@ -148,7 +148,7 @@ public class AttendanceScreen implements Screen {
         sb.append("\n").append(ctx.t("att.calendar.legend"));
 
         InlineKeyboardMarkup.Builder kb = InlineKeyboardMarkup.builder();
-        if (days.size() <= 31) kb.row(ctx.btn(ctx.t("common.image"), base.with("v", "img")));
+        kb.row(miniApp.details(ctx, "/attendance"));
         kb.row(ctx.navRow(base).toArray(new InlineButton[0]));
         return BotView.of(sb.toString(), kb.build()).section("attendance");
     }
@@ -197,14 +197,6 @@ public class AttendanceScreen implements Screen {
         return BotView.of(sb.toString().stripTrailing(), kb).section("attendance");
     }
 
-    private BotView image(BotContext ctx, YearMonth month, CallbackData base) {
-        String label = ctx.i18n().monthYear(ctx.lang(), month.getMonthValue(), month.getYear());
-        AttendanceSummary s = data.attendance(ctx.student(), "month", month.toString(), label);
-        ChildInfo child = data.child(ctx.student());
-        BotImageService.Rendered png = images.attendanceCalendar(ctx.lang(), child, s, month.getYear(), month.getMonthValue(), data.today());
-        InlineKeyboardMarkup kb = InlineKeyboardMarkup.builder().row(ctx.navRow(base).toArray(new InlineButton[0])).build();
-        return BotView.photo(png, ctx.t("att.image_caption", "name", e(child.fullName()), "period", label), kb).section("attendance_img");
-    }
 
     String periodLabel(BotContext ctx, String kind, YearMonth month, int quarter) {
         return switch (kind) {

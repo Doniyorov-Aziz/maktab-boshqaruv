@@ -2,7 +2,6 @@ package uz.azizbek.maktabboshqaruv.bot;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uz.azizbek.maktabboshqaruv.bot.image.BannerService;
 import uz.azizbek.maktabboshqaruv.entity.ParentSession;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.service.BotUsageService;
@@ -62,7 +61,7 @@ public class BotRouter {
     @Autowired
     private Clock clock;
     @Autowired
-    private BannerService banners;
+    private BotBanners banners;
 
     public BotRouter(List<Screen> screenBeans, List<InputHandler> inputHandlers) {
         for (Screen s : screenBeans) screens.put(s.code(), s);
@@ -120,18 +119,14 @@ public class BotRouter {
                 access.save(session);
             }
 
-            boolean heavy = isHeavy(data);
-            if (heavy) {
-                answer(cq.id(), BotI18n.get().t(session.lang(), "common.image_wait"), false);
-                client.sendChatAction(chatId, "upload_photo");
-            } else if (isSlowText(data)) {
+            if (isSlowText(data)) {
                 client.sendChatAction(chatId, "typing");
             }
             // Buttons under an automatic notification open a new page instead of overwriting the notification.
             Long messageId = "1".equals(data.get("n")) ? null : cq.message().messageId();
             BotContext ctx = new BotContext(chatId, messageId, session, student, students, cq.from());
             BotView view = decorate(ctx, render(ctx, screen, data), data);
-            if (!heavy) answer(cq.id(), view.toast(), false);
+            answer(cq.id(), view.toast(), false);
             responder.deliver(chatId, messageId, view, messageId != null && cq.message().photo() != null);
             usage.record(chatId, ctx.student(), view.section());
         } catch (ParentAccessService.AccessDenied denied) {
@@ -154,25 +149,13 @@ public class BotRouter {
         return view;
     }
 
-    /**
-     * Turns a page into a card by attaching its section banner. A banner failure
-     * never breaks the page — it is simply shown as text.
-     */
+    /** Turns a page into a card under its section's static banner (sent by file_id, never drawn). */
     private BotView decorate(BotContext ctx, BotView view, CallbackData data) {
-        if (view == null || view.photo() != null || view.text() == null || view.banner() != null) return view;
-        String section = "onboarding".equals(view.section()) ? "home" : view.section();
-        if (section == null || !BannerService.SECTIONS.contains(section)) return view;
-        try {
-            return view.banner(banners.banner(ctx, section, data));
-        } catch (Exception e) {
-            log.warn("Banner yaratilmadi (section={}): {}", section, TokenMasker.mask(e.toString()));
-            return view;
-        }
-    }
-
-    private static boolean isHeavy(CallbackData data) {
-        String v = data.get("v");
-        return "img".equals(v) || "chart".equals(v);
+        if (view == null || view.text() == null || view.banner() != null) return view;
+        String section = "onboarding".equals(view.section()) ? "welcome" : view.section();
+        if (!"welcome".equals(section) && ctx.student() == null) return view;
+        BotBanners.Banner banner = banners.of(section);
+        return banner == null ? view : view.banner(banner);
     }
 
     /** Pages that scan a whole quarter/year or month of records. */
@@ -285,18 +268,32 @@ public class BotRouter {
 
     // --------------------------------------------------------------- helpers
 
+    /**
+     * Loads the chat's session and refreshes what changed. Written back only when
+     * something did (or "last active" is five minutes old) — not an UPDATE per tap.
+     */
     private ParentSession touch(long chatId, TelegramModels.User from) {
         ParentSession session = access.session(chatId);
-        session.setLastActiveAt(LocalDateTime.now(clock));
+        LocalDateTime now = LocalDateTime.now(clock);
+        boolean changed = false;
+        if (session.getLastActiveAt() == null || session.getLastActiveAt().isBefore(now.minusMinutes(5))) {
+            session.setLastActiveAt(now);
+            changed = true;
+        }
         if (from != null) {
-            session.setFirstName(from.firstName());
-            session.setUsername(from.username());
+            if (!java.util.Objects.equals(session.getFirstName(), from.firstName())
+                    || !java.util.Objects.equals(session.getUsername(), from.username())) {
+                session.setFirstName(from.firstName());
+                session.setUsername(from.username());
+                changed = true;
+            }
             // First contact: pick the language from the Telegram app when it is Russian.
             if (session.getLanguage() == null) {
                 session.setLanguage("ru".equals(from.languageCode()) ? "ru" : "uz");
+                changed = true;
             }
         }
-        return access.save(session);
+        return changed ? access.save(session) : session;
     }
 
     private void answer(String callbackId, String text, boolean alert) {

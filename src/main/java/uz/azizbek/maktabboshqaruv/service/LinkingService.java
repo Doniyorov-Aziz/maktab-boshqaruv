@@ -49,6 +49,9 @@ public class LinkingService {
     private StudentRepository studentRepository;
 
     @Autowired
+    private BotCache botCache;
+
+    @Autowired
     private ParentTelegramLinkRepository linkRepository;
 
     @Autowired
@@ -92,6 +95,7 @@ public class LinkingService {
     /** /stop: every link of this chat goes inactive. */
     @Transactional
     public int stop(long chatId) {
+        botCache.evictChat(chatId);
         return linkRepository.deactivateByChatId(chatId);
     }
 
@@ -102,6 +106,7 @@ public class LinkingService {
             l.setActive(false);
             linkRepository.save(l);
         });
+        botCache.evictChat(chatId);
     }
 
     private void link(Student student, long chatId, TelegramModels.User from) {
@@ -116,6 +121,7 @@ public class LinkingService {
         link.setFirstName(from == null ? null : from.firstName());
         link.setActive(true);
         linkRepository.save(link);
+        botCache.evictChat(chatId);
         failedCodeAttempts.remove(chatId);
         log.info("Telegram: ota-ona (chat={}) o'quvchi #{} ga ulandi", chatId, student.getId());
     }

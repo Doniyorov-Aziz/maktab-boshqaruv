@@ -246,24 +246,6 @@ public class NotificationService {
      */
     public int createRows(School school, NotificationType type, Long referenceId, LocalDate recordDate,
                           List<Recipient> recipients, Function<String, String> text, Function<String, Object> markup) {
-        return createRows(school, type, referenceId, recordDate, recipients, text, markup, null);
-    }
-
-    /** Like a direct message, but sent as a picture (rendered at delivery time) with the text as caption. */
-    @Transactional
-    public int enqueueDirectImage(School school, Student student, Long chatId, NotificationType type, Long referenceId,
-                                  LocalDate recordDate, Function<String, String> caption, Function<String, Object> markup,
-                                  Function<String, String> image) {
-        if (notificationLogRepository.existsByChatIdAndTypeAndReferenceIdAndRecordDate(chatId, type, referenceId, recordDate)) {
-            return 0;
-        }
-        return createRows(school, type, referenceId, recordDate, List.of(new Recipient(student, chatId)), caption, markup, image);
-    }
-
-    /** @param image per-language picture reference (see {@link NotificationLog#getImage()}), or null for a text message */
-    public int createRows(School school, NotificationType type, Long referenceId, LocalDate recordDate,
-                          List<Recipient> recipients, Function<String, String> text, Function<String, Object> markup,
-                          Function<String, String> image) {
         if (recipients.isEmpty()) {
             log.debug("{} ref={}: bog'langan ota-ona yo'q", type, referenceId);
             return 0;
@@ -312,10 +294,9 @@ public class NotificationService {
             row.setLastError(skipReason);
             row.setCreatedAt(now);
             row.setScheduledAt(scheduledAt);
-            if (image != null) row.setImage(image.apply(lang));
             // Held back by quiet hours: goes out in the single morning note with the others
             // (a picture keeps its own message).
-            if (scheduledAt.isAfter(now) && status == NotificationStatus.PENDING && image == null) row.setQuietBundle(true);
+            if (scheduledAt.isAfter(now) && status == NotificationStatus.PENDING) row.setQuietBundle(true);
             notificationLogRepository.save(row);
             created++;
             if (status == NotificationStatus.SKIPPED) {

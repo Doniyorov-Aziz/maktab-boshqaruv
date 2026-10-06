@@ -33,7 +33,7 @@ class BotI18nTest {
     void v3TextsExistInUzbekAndRussian() {
         for (String key : new String[]{"notif.morning", "notif.weekly_caption", "notif.quiet_bundle_title",
                 "notif.btn.app_details", "notif.btn.write_class_teacher", "notif.tomorrow_needs", "set.item.morning",
-                "img.weekly.title", "menu.webapp"}) {
+                "notif.weekly_subjects", "menu.webapp"}) {
             for (String lang : BotI18n.LANGUAGES) {
                 String text = I18N.t(lang, key);
                 assertNotEquals(key, text, lang + ": " + key + " yo'q");

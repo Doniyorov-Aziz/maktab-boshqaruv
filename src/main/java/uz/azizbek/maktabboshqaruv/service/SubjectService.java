@@ -27,6 +27,9 @@ public class SubjectService {
     private SubjectRepository subjectRepository;
 
     @Autowired
+    private BotCache botCache;
+
+    @Autowired
     private SchoolRepository schoolRepository;
 
     @Autowired
@@ -84,6 +87,7 @@ public class SubjectService {
 
         boolean renamed = !request.getName().equals(subject.getName());
         if (!renamed) return toResponseDto(subject);
+        botCache.evictAllClasses(); // the bot's cached timetables show subject names
         if (subjectRepository.existsActiveBySchoolIdAndName(school.getId(), request.getName())) {
             throw new IllegalStateException("Bu fan ushbu maktabda allaqachon mavjud");
         }

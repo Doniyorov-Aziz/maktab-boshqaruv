@@ -1,7 +1,6 @@
 package uz.azizbek.maktabboshqaruv.bot.screens;
 
 import uz.azizbek.maktabboshqaruv.bot.*;
-import uz.azizbek.maktabboshqaruv.bot.image.BotImageService;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentDataService;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentViews.*;
 import uz.azizbek.maktabboshqaruv.telegram.TelegramModels.InlineButton;
@@ -24,7 +23,7 @@ public class ReportScreen implements Screen {
     private ParentDataService data;
 
     @Autowired
-    private BotImageService images;
+    private uz.azizbek.maktabboshqaruv.bot.MiniAppLinks miniApp;
 
     @Override
     public String code() {
@@ -38,13 +37,6 @@ public class ReportScreen implements Screen {
         ReportView report = data.report(ctx.student(), month ? "month" : "week", periodLabel(ctx, month));
         CallbackData base = CallbackData.of("rep").with("t", tab);
 
-        if ("img".equals(cb.get("v"))) {
-            ChildInfo child = data.child(ctx.student());
-            BotImageService.Rendered png = images.reportCard(ctx.lang(), child, report, month);
-            return BotView.photo(png, ctx.t("rep.image_caption", "name", e(child.fullName()), "period", report.period()),
-                    InlineKeyboardMarkup.builder().row(ctx.navRow(base).toArray(new InlineButton[0])).build()).section("report_img");
-        }
-
         StringBuilder sb = new StringBuilder(ctx.crumb(ctx.t("sec.report"), ctx.t("rep.tab." + tab))).append("\n")
                 .append(ctx.childHeader()).append("\n")
                 .append(ctx.t("rep.title", "period", report.period())).append("\n\n")
@@ -52,7 +44,7 @@ public class ReportScreen implements Screen {
 
         InlineKeyboardMarkup kb = InlineKeyboardMarkup.builder()
                 .row(tab(ctx, "week", tab), tab(ctx, "month", tab))
-                .row(ctx.btn(ctx.t("common.image"), base.with("v", "img")))
+                .row(miniApp.details(ctx, "/grades"))
                 .row(ctx.switchRow("rep").toArray(new InlineButton[0]))
                 .row(ctx.navRow(null).toArray(new InlineButton[0]))
                 .build();

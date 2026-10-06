@@ -1,19 +1,17 @@
 package uz.azizbek.maktabboshqaruv.bot;
 
-import uz.azizbek.maktabboshqaruv.bot.image.BotImageService;
 import uz.azizbek.maktabboshqaruv.telegram.TelegramModels;
 
 /**
- * What a screen wants to show: one message (text + inline keyboard), or a
- * photo page. {@code section} feeds the usage statistics; {@code toast} is the
+ * What a screen wants to show: one message (text + inline keyboard), optionally
+ * as a card under the section's static banner. {@code section} feeds the usage statistics; {@code toast} is the
  * short text shown on the tapped button (answerCallbackQuery).
  */
 public final class BotView {
 
     private final String text;
     private final TelegramModels.InlineKeyboardMarkup keyboard;
-    private BotImageService.Rendered photo;
-    private BotImageService.Rendered banner;
+    private BotBanners.Banner banner;
     private boolean newMessage;
     private String section;
     private String toast;
@@ -62,13 +60,6 @@ public final class BotView {
         return new BotView(text, keyboard);
     }
 
-    public static BotView photo(BotImageService.Rendered photo, String caption, TelegramModels.InlineKeyboardMarkup keyboard) {
-        BotView v = new BotView(caption, keyboard);
-        v.photo = photo;
-        v.newMessage = true;
-        return v;
-    }
-
     /** Send as a fresh message instead of editing the tapped one (e.g. after a typed command). */
     public BotView asNewMessage() {
         this.newMessage = true;
@@ -100,17 +91,13 @@ public final class BotView {
         return keyboard;
     }
 
-    public BotImageService.Rendered photo() {
-        return photo;
-    }
-
     /** Section banner: the page is shown as a card — banner photo with the text as its caption. */
-    public BotView banner(BotImageService.Rendered banner) {
+    public BotView banner(BotBanners.Banner banner) {
         this.banner = banner;
         return this;
     }
 
-    public BotImageService.Rendered banner() {
+    public BotBanners.Banner banner() {
         return banner;
     }
 

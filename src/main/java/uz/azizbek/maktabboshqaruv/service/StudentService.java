@@ -19,6 +19,9 @@ public class StudentService {
     private StudentRepository studentRepository;
 
     @Autowired
+    private BotCache botCache;
+
+    @Autowired
     private SchoolClassRepository schoolClassRepository;
 
     @Autowired
@@ -78,6 +81,7 @@ public class StudentService {
         student.setGuardianPhone(request.getGuardianPhone());
 
         Student updated = studentRepository.save(student);
+        botCache.evictAllChats();
         return toResponseDto(updated);
     }
 
@@ -87,6 +91,7 @@ public class StudentService {
             throw new IllegalStateException("Bunday o'quvchi topilmadi: " + id);
         }
         studentRepository.deleteById(id);
+        botCache.evictAllChats();
     }
 
     private StudentResponseDto toResponseDto(Student student) {

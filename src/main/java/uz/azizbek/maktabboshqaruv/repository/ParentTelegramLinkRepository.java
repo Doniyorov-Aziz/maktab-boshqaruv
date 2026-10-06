@@ -51,6 +51,12 @@ public interface ParentTelegramLinkRepository extends JpaRepository<ParentTelegr
 
     boolean existsByChatIdAndStudentIdAndActiveTrue(Long chatId, Long studentId);
 
+    /** The chat's children with class, year and school in one query (the bot's cache loader). */
+    @Query("select s from Student s join fetch s.schoolClass c join fetch c.academicYear y join fetch y.school " +
+            "left join fetch c.classTeacher ct left join fetch ct.position " +
+            "where s.id in (select l.student.id from ParentTelegramLink l where l.chatId = :chatId and l.active = true)")
+    List<uz.azizbek.maktabboshqaruv.entity.Student> findLinkedStudents(@Param("chatId") Long chatId);
+
     @Transactional
     @Modifying
     @Query("update ParentTelegramLink l set l.active = false where l.chatId = :chatId and l.active = true")

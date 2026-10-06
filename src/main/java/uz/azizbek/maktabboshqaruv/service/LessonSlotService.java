@@ -29,6 +29,9 @@ public class LessonSlotService {
     private LessonSlotRepository lessonSlotRepository;
 
     @Autowired
+    private BotCache botCache;
+
+    @Autowired
     private SchoolClassRepository schoolClassRepository;
 
     @Autowired
@@ -112,6 +115,7 @@ public class LessonSlotService {
         lessonSlot.setEndTime(request.getEndTime());
 
         LessonSlot saved = lessonSlotRepository.save(lessonSlot);
+        botCache.evictAllClasses();
         return toResponseDto(saved);
     }
 
@@ -146,6 +150,7 @@ public class LessonSlotService {
         lessonSlot.setEndTime(request.getEndTime());
 
         LessonSlot updated = lessonSlotRepository.save(lessonSlot);
+        botCache.evictAllClasses();
         return toResponseDto(updated);
     }
 
@@ -155,6 +160,7 @@ public class LessonSlotService {
             throw new IllegalStateException("Bunday dars jadvali topilmadi: " + id);
         }
         lessonSlotRepository.deleteById(id);
+        botCache.evictAllClasses();
     }
 
     private void validateTimeRange(LessonSlotRequestDto request) {

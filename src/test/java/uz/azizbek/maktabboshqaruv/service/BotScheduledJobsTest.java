@@ -50,7 +50,7 @@ class BotScheduledJobsTest {
     @Mock
     private ParentDataService data;
     @Mock
-    private WeeklyReportCardService weeklyCards;
+    private WeeklyReportService weeklyReports;
 
     @InjectMocks
     private BotScheduledJobs jobs;

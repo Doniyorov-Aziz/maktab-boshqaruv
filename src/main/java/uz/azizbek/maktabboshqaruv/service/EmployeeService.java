@@ -27,6 +27,9 @@ public class EmployeeService {
     private EmployeeRepository employeeRepository;
 
     @Autowired
+    private BotCache botCache;
+
+    @Autowired
     private PositionRepository positionRepository;
 
     @Autowired
@@ -104,6 +107,7 @@ public class EmployeeService {
         applyStatus(employee, request);
 
         Employee updated = employeeRepository.save(employee);
+        botCache.evictAllClasses(); // teacher names in the bot's cached timetables
         return getEmployeeById(updated.getId());
     }
 

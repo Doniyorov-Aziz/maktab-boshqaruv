@@ -1,7 +1,6 @@
 package uz.azizbek.maktabboshqaruv.bot.screens;
 
 import uz.azizbek.maktabboshqaruv.bot.*;
-import uz.azizbek.maktabboshqaruv.bot.image.BotImageService;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentDataService;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentStats;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentViews.*;
@@ -29,7 +28,7 @@ public class GradesScreen implements Screen {
     private ParentDataService data;
 
     @Autowired
-    private BotImageService images;
+    private uz.azizbek.maktabboshqaruv.bot.MiniAppLinks miniApp;
 
     @Override
     public String code() {
@@ -43,7 +42,8 @@ public class GradesScreen implements Screen {
             case "subj" -> subjects(ctx);
             case "det" -> detail(ctx, cb.getLong("id"), cb.getInt("p", 0));
             case "qtr" -> quarter(ctx);
-            case "chart" -> chart(ctx);
+            // old "chart" buttons in earlier messages: the subject averages as text
+            case "chart" -> subjects(ctx);
             default -> recent(ctx, cb.getInt("p", 0));
         };
     }
@@ -100,7 +100,7 @@ public class GradesScreen implements Screen {
         InlineKeyboardMarkup kb = InlineKeyboardMarkup.builder()
                 .row(tabs(ctx, "subj"))
                 .grid(buttons, 2)
-                .row(list.isEmpty() ? null : ctx.btn(ctx.t("gr.btn.chart"), CallbackData.of("gr").with("v", "chart")))
+                .row(miniApp.details(ctx, "/grades"))
                 .row(ctx.switchRow("gr").toArray(new InlineButton[0]))
                 .row(ctx.navRow(null).toArray(new InlineButton[0]))
                 .build();
@@ -156,13 +156,6 @@ public class GradesScreen implements Screen {
         return BotView.of(sb.toString().stripTrailing(), kb).section("grades");
     }
 
-    private BotView chart(BotContext ctx) {
-        ChildInfo child = data.child(ctx.student());
-        BotImageService.Rendered png = images.subjectChart(ctx.lang(), child, data.subjectAverages(ctx.student()));
-        InlineKeyboardMarkup kb = InlineKeyboardMarkup.builder()
-                .row(ctx.navRow(CallbackData.of("gr").with("v", "subj")).toArray(new InlineButton[0])).build();
-        return BotView.photo(png, ctx.t("gr.chart_caption", "name", e(child.fullName())), kb).section("grades_img");
-    }
 
     private StringBuilder header(BotContext ctx, String page) {
         return new StringBuilder(ctx.crumb(ctx.t("sec.grades"), page)).append("\n").append(ctx.childHeader()).append("\n");

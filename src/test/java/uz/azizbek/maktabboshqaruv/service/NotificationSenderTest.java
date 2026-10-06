@@ -41,9 +41,6 @@ class NotificationSenderTest {
     @Mock
     private uz.azizbek.maktabboshqaruv.repository.ParentSessionRepository sessionRepository;
 
-    @Mock
-    private WeeklyReportCardService weeklyCards;
-
     @InjectMocks
     private NotificationSender sender;
 
@@ -70,20 +67,17 @@ class NotificationSenderTest {
     }
 
     @Test
-    void weeklyReportRow_isSentAsPicture_withCaption() {
+    void weeklyReportRow_isPlainText_noPicture() {
         NotificationLog n = pending(1L, 11L);
         n.setType(NotificationType.WEEKLY_REPORT);
         n.setText("📊 Haftalik hisobot");
-        n.setImage("weekly:100:2026-09-28:2026-10-03:uz");
-        byte[] png = {1, 2, 3};
         when(notificationLogRepository.findDue(any(), any())).thenReturn(List.of(n));
-        when(weeklyCards.render("weekly:100:2026-09-28:2026-10-03:uz")).thenReturn(png);
         subscribed(11L);
 
         assertEquals(1, sender.sendDue());
 
-        verify(telegramClient).sendPhoto(eq(11L), eq(png), anyString(), eq("📊 Haftalik hisobot"), isNull());
-        verify(telegramClient, never()).sendMessage(anyLong(), anyString(), any());
+        verify(telegramClient).sendMessage(11L, "📊 Haftalik hisobot", null);
+        verify(telegramClient, never()).sendPhoto(anyLong(), any(), anyString(), anyString(), any());
         assertEquals(NotificationStatus.SENT, n.getStatus());
     }
 

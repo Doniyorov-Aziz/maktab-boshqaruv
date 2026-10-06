@@ -24,6 +24,9 @@ public class CalendarEventService {
     private CalendarEventRepository calendarEventRepository;
 
     @Autowired
+    private BotCache botCache;
+
+    @Autowired
     private SchoolRepository schoolRepository;
 
     public Page<CalendarEventResponseDto> getAllEvents(Long schoolId, Pageable pageable) {
@@ -51,6 +54,7 @@ public class CalendarEventService {
         applyFields(event, request);
 
         CalendarEvent saved = calendarEventRepository.save(event);
+        botCache.evictEvents();
         return toResponseDto(saved);
     }
 
@@ -66,6 +70,7 @@ public class CalendarEventService {
         applyFields(event, request);
 
         CalendarEvent updated = calendarEventRepository.save(event);
+        botCache.evictEvents();
         return toResponseDto(updated);
     }
 
@@ -75,6 +80,7 @@ public class CalendarEventService {
             throw new IllegalStateException("Bunday tadbir topilmadi: " + id);
         }
         calendarEventRepository.deleteById(id);
+        botCache.evictEvents();
     }
 
     private void validateDateRange(CalendarEventRequestDto request) {

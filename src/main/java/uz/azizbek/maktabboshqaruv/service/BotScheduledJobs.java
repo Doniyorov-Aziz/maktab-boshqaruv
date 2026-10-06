@@ -59,7 +59,7 @@ public class BotScheduledJobs {
     @Autowired
     private ParentDataService data;
     @Autowired
-    private WeeklyReportCardService weeklyCards;
+    private WeeklyReportService weeklyReports;
     @Autowired
     private Clock clock;
 
@@ -207,31 +207,16 @@ public class BotScheduledJobs {
             if (notificationLogRepository.existsByChatIdAndTypeAndReferenceIdAndRecordDate(
                     link.getChatId(), NotificationType.WEEKLY_REPORT, s.getId(), weekStart)) continue;
 
-            // A 1080×1350 picture card (drawn when sent) with a short caption and "📱 Batafsil".
-            WeeklyReportCardService.WeeklyFacts facts = weeklyCards.facts(s, weekStart, today);
-            queued += notificationService.enqueueDirectImage(school, s, link.getChatId(), NotificationType.WEEKLY_REPORT,
-                    s.getId(), weekStart, lang -> weeklyCaption(lang, s, weekStart, today, facts, school),
-                    lang -> appButton(lang, "notif.btn.app_details", "/grades", "rep:t:week:s:" + s.getId()),
-                    lang -> WeeklyReportCardService.reference(s.getId(), weekStart, today, lang));
+            // formatted text (no picture is drawn) + "📱 Batafsil" for the charts in the Mini App
+            WeeklyReportService.WeeklyFacts facts = weeklyReports.facts(s, weekStart, today);
+            queued += notificationService.enqueueDirect(school, s, link.getChatId(), NotificationType.WEEKLY_REPORT,
+                    s.getId(), weekStart, lang -> weeklyReports.text(lang, s, weekStart, today, facts, school),
+                    lang -> appButton(lang, "notif.btn.app_details", "/grades", "rep:t:week:s:" + s.getId()));
         }
         if (queued > 0) log.info("Haftalik hisobot: {} ta xabar navbatga qo'shildi", queued);
         return queued;
     }
 
-    /** Short caption under the weekly picture (Telegram allows 1024 characters). */
-    String weeklyCaption(String lang, Student s, LocalDate from, LocalDate to, WeeklyReportCardService.WeeklyFacts f,
-                         School school) {
-        String none = i18n.t(lang, "img.none");
-        return i18n.t(lang, "notif.weekly_caption",
-                "period", i18n.dateShort(lang, from) + " – " + i18n.dateShort(lang, to),
-                "name", MessageFormatter.escape(ParentDataService.fullName(s)),
-                "class", MessageFormatter.escape(ParentDataService.className(s.getSchoolClass())),
-                "rate", f.attendanceRate() == null ? none : String.format(Locale.ROOT, "%.0f%%", f.attendanceRate()),
-                "avg", f.gradeAverage() == null ? none : String.format(Locale.ROOT, "%.2f", f.gradeAverage()),
-                "best", f.best() == null ? none : MessageFormatter.escape(f.best()),
-                "attention", f.attention() == null ? none : MessageFormatter.escape(f.attention()))
-                + MessageFormatter.footer(lang, school.getName());
-    }
 
     public int runEventReminders(LocalDateTime now, boolean force) {
         LocalDate tomorrow = now.toLocalDate().plusDays(1);

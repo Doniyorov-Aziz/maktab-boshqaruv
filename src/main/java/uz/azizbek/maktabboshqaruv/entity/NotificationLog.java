@@ -73,24 +73,8 @@ public class NotificationLog {
     @Column(columnDefinition = "TEXT")
     private String replyMarkup;
 
-    /**
-     * Picture to send instead of a plain message, rendered at delivery time —
-     * e.g. "weekly:<studentId>:<from>:<to>:<lang>" for the weekly report card.
-     * The text then becomes the photo's caption.
-     */
-    @Column(length = 120)
-    private String image;
-
     /** Held back by quiet hours: delivered together with the other held messages in one morning note. */
     private Boolean quietBundle;
-
-    public String getImage() {
-        return image;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
-    }
 
     public Boolean getQuietBundle() {
         return quietBundle;

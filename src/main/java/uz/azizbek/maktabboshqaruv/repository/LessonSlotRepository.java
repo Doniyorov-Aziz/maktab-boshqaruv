@@ -27,6 +27,11 @@ public interface LessonSlotRepository extends JpaRepository<LessonSlot, Long> {
 
     boolean existsBySubjectId(Long subjectId);
 
+    /** A class's whole week with subject, teacher and room in one query (the bot's cache loader). */
+    @Query("select distinct l from LessonSlot l join fetch l.subject join fetch l.employee e join fetch e.position " +
+            "left join fetch l.room r left join fetch r.building where l.schoolClass.id = :classId")
+    List<LessonSlot> findWeekOfClass(@Param("classId") Long classId);
+
     /** A renamed subject: today's timetable moves to the new subject row; grade history stays on the old one. */
     @org.springframework.data.jpa.repository.Modifying
     @Query("update LessonSlot l set l.subject.id = :to where l.subject.id = :from")

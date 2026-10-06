@@ -39,5 +39,22 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'load'
+	}
+}
+
+// 10.3: 3000 simulated parents against the bot (Telegram mocked) — `gradlew loadTest`
+tasks.register('loadTest', Test) {
+	description = 'Bot load test: 3000 simulated parents, mock Telegram'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'load'
+	}
+	maxHeapSize = '1g'
+	testLogging {
+		showStandardStreams = true
+	}
 }

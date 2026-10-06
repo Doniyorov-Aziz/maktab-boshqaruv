@@ -35,4 +35,49 @@ Har band alohida commit, push yo'q.
 | R | Maktab bo'yicha cheklov (boshqa maktab = 403) | YO'Q — `schoolId` faqat parametr | `SchoolAccessService` + interceptor |
 
 ## Bajarilish
-(ish davomida to'ldiriladi)
+
+| Bo'lim | Holat | Commit |
+|---|---|---|
+| 1. Login + ta'tildagi xodim bloki | ✅ | 97dcd73 |
+| 2. Dars jadvali bitta ekranda + PDF | ✅ | 4a347f2 |
+| 3. CRUD: sticky amallar, kartochkalar, filtrlar, nofaol fanlar | ✅ | 8c2beed |
+| 4. Davomat oylik kalendari | ✅ | d738ff4 |
+| 5. Yakshanba/kelajak bahosi 409 | ✅ | 7f6222d |
+| 6.1 Xulq yozuvlari | ✅ | ad00b5f |
+| 6.2 Murojaat sanasi/vaqti (qo'lda) | ⏳ 9-bo'lim ichida qilinadi | — |
+| 7. Global loading | ✅ | 5314824 |
+| 10. Bot unumdorligi | ⏳ WIP (pastga qarang) | WIP commit |
+| 8. Telegram admin sahifalari | ❌ hali yo'q | — |
+| 9. Ota-ona murojaatlari (bot + saqlash + chat) | ❌ hali yo'q | — |
+| R. Maktab bo'yicha cheklov (403) | ❌ hali yo'q | — |
+| Yakuniy tekshiruv | ❌ | — |
+
+### Sessiya uzilsa — shu yerdan davom eting
+**10-bo'lim (WIP commit) holati:** Java2D butunlay olib tashlandi (`bot/image/*`, `WeeklyReportCardService`),
+statik bannerlar `resources/bot/banners/*.png` + `BotBanners` (file_id `bot_asset` jadvalida),
+rasmli tugmalar → «📱 Batafsil» (`MiniAppLinks`), haftalik hisobot matnli (`WeeklyReportService`),
+`BotUpdateDispatcher` (8–16 thread, navbat 2000, chat bo'yicha tartib), `BotCache` (Caffeine:
+chat→farzandlar 5 daq, sinf jadvali 10 daq, maktab tadbirlari 5 daq, yozishda evict), fetch-join so'rovlar,
+statistika JDBC batch, sessiya faqat o'zgarganda saqlanadi, outbox oralig'i 250 ms.
+Yuklama testi (`gradlew loadTest`, natija pastda) — p95 5–6 ms, issiq trafikda 2.78 so'rov/update.
+
+**Keyingi qadam (aniq):**
+1. Unit-testlarni tuzatish — 11 ta yiqilgan: `BotCache` mock qo'shish (EmployeeServiceTest, LessonSlotServiceTest,
+   LinkingServiceTest, NotificationSenderTest, ParentAccessServiceTest), `BotScreensSeedIntegrationTest:172`
+   (banner endi statik: sendPhoto/sendPhotoById tekshiruvi), so'ng `gradlew test` yashil → 10-bo'lim yakuniy commit.
+2. 9-bo'lim (Appeal/AppealMessage, bot oqimi, storage, chat sahifa, 6.2 date-time) → commit.
+3. 8-bo'lim (ota-onalar sahifasi, media bilan xabar + file_id, tarix, statistika) → commit.
+4. R: SchoolAccess (schoolId interceptor + murojaat fayli 403) + testlar.
+5. Yakuniy tekshiruv (TEKSHIRUV 1–9), skrinshotlar, shu faylni to'ldirish.
+
+Ish muhiti: worktree `.claude/worktrees/v4`, branch `feature/v4`; test backend skripti
+`~/.claude/jobs/924c677b/tmp/v4/run-v4.ps1` (port 8082, jar nusxasi — jonli bot 8080 ga tegilmaydi);
+Playwright skriptlari shu papkada (`check-*.cjs`, `lib.cjs`). Testlar: `DB_URL=…/maktab_tg_test`.
+
+### 10.3 yuklama testi natijasi
+```
+Foydalanuvchilar: 3000, har raundda 12000 update (/start, jadval, baholar, davomat), 200/s, Telegram mock
+1-raund (birinchi murojaat): o'rtacha 3.3 ms, p95 6.3 ms, p99 9.6 ms; 4.19 so'rov/update; heap ≤113 MB; CPU ~1.2%
+2-raund (qaytgan ota-onalar): o'rtacha 3.0 ms, p95 5.1 ms, p99 6.0 ms; 2.78 so'rov/update; heap ≤114 MB; CPU ~0.9%
+Optimizatsiyadan oldin: 37.4 so'rov/update (eager N+1).
+```

@@ -42,11 +42,14 @@ public class ParentAccessService {
     @Autowired
     private Clock clock;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.BotCache cache;
+
+    /** Cached for a few minutes; linking/unlinking evicts the chat at once. */
     public List<Student> linkedStudents(long chatId) {
-        return linkRepository.findByChatIdAndActiveTrue(chatId).stream()
-                .map(ParentTelegramLink::getStudent)
+        return cache.students(chatId, () -> linkRepository.findLinkedStudents(chatId).stream()
                 .sorted(java.util.Comparator.comparing(Student::getFirstName).thenComparing(Student::getId))
-                .toList();
+                .toList());
     }
 
     /** The student with this id, only if this chat is actively linked to it. */

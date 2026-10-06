@@ -2,7 +2,6 @@ package uz.azizbek.maktabboshqaruv.bot;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uz.azizbek.maktabboshqaruv.bot.image.BotImageService;
 import uz.azizbek.maktabboshqaruv.telegram.TelegramApiException;
 import uz.azizbek.maktabboshqaruv.telegram.TelegramClient;
 import uz.azizbek.maktabboshqaruv.telegram.TokenMasker;
@@ -11,12 +10,13 @@ import org.springframework.stereotype.Component;
 
 /**
  * Puts a {@link BotView} on screen following the "one page = one message"
- * rule. A page with a section banner is a card: the banner photo with the page
- * text as its caption; moving between cards replaces the photo in place
- * (editMessageMedia), so the chat never fills up. Pages whose text is longer
- * than a caption allows (1024 characters) are plain text messages, edited
- * with editMessageText. When the tapped message cannot be edited into the new
- * kind (text → card or card → text), it is removed and the page sent fresh.
+ * rule. A page with a section banner is a card: the section's static banner
+ * photo (sent by its Telegram file_id) with the page text as its caption;
+ * moving between cards replaces the photo in place (editMessageMedia), so the
+ * chat never fills up. Pages whose text is longer than a caption allows (1024
+ * characters) are plain text messages, edited with editMessageText. When the
+ * tapped message cannot be edited into the new kind (text → card or card →
+ * text), it is removed and the page sent fresh. Nothing is drawn per request.
  */
 @Component
 public class BotResponder {
@@ -30,7 +30,7 @@ public class BotResponder {
     private TelegramClient client;
 
     @Autowired
-    private BotImageService images;
+    private BotBanners banners;
 
     public void deliver(long chatId, Long messageId, BotView view) {
         deliver(chatId, messageId, view, false);
@@ -41,11 +41,6 @@ public class BotResponder {
         if (view.prefaceText() != null) {
             client.sendMessage(chatId, view.prefaceText(), view.prefaceKeyboard());
         }
-        if (view.photo() != null) {
-            client.sendChatAction(chatId, "upload_photo");
-            sendPhoto(chatId, view.photo(), view.text(), view.keyboard());
-            return;
-        }
         if (view.text() == null) return;
 
         boolean edit = !view.newMessage() && messageId != null;
@@ -53,7 +48,7 @@ public class BotResponder {
             Object markup = view.keyboard() != null ? view.keyboard() : view.replyKeyboard();
             if (edit && currentIsPhoto && editCard(chatId, messageId, view)) return;
             if (edit) safeDelete(chatId, messageId);
-            sendPhoto(chatId, view.banner(), view.text(), markup);
+            sendCard(chatId, view.banner(), view.text(), markup);
             return;
         }
 
@@ -74,35 +69,38 @@ public class BotResponder {
 
     /** Replaces the banner and caption of the tapped card. Returns false if a fresh message is needed. */
     private boolean editCard(long chatId, long messageId, BotView view) {
-        BotImageService.Rendered banner = view.banner();
-        String cached = images.cachedFileId(banner.cacheKey());
+        BotBanners.Banner banner = view.banner();
+        String fileId = banners.fileId(banner);
         try {
-            TelegramClient.SentPhoto sent = client.editMessageMedia(chatId, messageId, cached,
-                    cached == null ? banner.png() : null, banner.fileName(), view.text(), view.keyboard());
-            images.rememberFileId(banner.cacheKey(), sent.fileId());
+            TelegramClient.SentPhoto sent = client.editMessageMedia(chatId, messageId, fileId,
+                    fileId == null ? banners.png(banner) : null, banner.fileName(), view.text(), view.keyboard());
+            banners.remember(banner, sent.fileId());
             return true;
         } catch (TelegramApiException e) {
             if (notModified(e)) return true;
+            if (fileId != null) banners.forget(banner);
             log.debug("Kartochkani tahrirlab bo'lmadi, yangisi yuboriladi: {}", TokenMasker.mask(e.getMessage()));
             return false;
         }
     }
 
-    private void sendPhoto(long chatId, BotImageService.Rendered photo, String caption, Object markup) {
-        String key = photo.cacheKey();
-        String cached = images.cachedFileId(key);
+    /** Sends a card by the banner's file_id; uploads the PNG only if Telegram does not have it yet. */
+    private void sendCard(long chatId, BotBanners.Banner banner, String caption, Object markup) {
+        String fileId = banners.fileId(banner);
         TelegramClient.SentPhoto sent = null;
-        if (cached != null) {
+        if (fileId != null) {
             try {
-                sent = client.sendPhotoById(chatId, cached, caption, markup);
+                sent = client.sendPhotoById(chatId, fileId, caption, markup);
             } catch (TelegramApiException e) {
-                log.debug("Keshlangan rasm qayta yuborilmadi, yangidan yuklanadi: {}", TokenMasker.mask(e.getMessage()));
+                if (e.getErrorCode() == 429) throw e;
+                banners.forget(banner);
+                log.debug("Banner file_id eskirgan, qayta yuklanadi: {}", TokenMasker.mask(e.getMessage()));
             }
         }
         if (sent == null) {
-            sent = client.sendPhoto(chatId, photo.png(), photo.fileName(), caption, markup);
+            sent = client.sendPhoto(chatId, banners.png(banner), banner.fileName(), caption, markup);
         }
-        images.rememberFileId(key, sent.fileId());
+        banners.remember(banner, sent.fileId());
     }
 
     private void safeDelete(long chatId, long messageId) {

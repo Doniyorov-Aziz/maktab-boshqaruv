@@ -26,6 +26,9 @@ public class TelegramLinkService {
     private StudentRepository studentRepository;
 
     @Autowired
+    private BotCache botCache;
+
+    @Autowired
     private SchoolClassRepository schoolClassRepository;
 
     @Autowired
@@ -74,6 +77,7 @@ public class TelegramLinkService {
                 .orElseThrow(() -> new IllegalStateException("Bunday bog'lanish topilmadi: " + linkId));
         link.setActive(false);
         linkRepository.save(link);
+        botCache.evictChat(link.getChatId());
     }
 
     @Transactional

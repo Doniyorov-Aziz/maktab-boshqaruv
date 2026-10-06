@@ -52,10 +52,10 @@ public class NotificationSender {
     private NotificationLogRepository notificationLogRepository;
 
     @Autowired
-    private ParentSessionRepository sessionRepository;
+    private BotCache botCache;
 
     @Autowired
-    private WeeklyReportCardService weeklyCards;
+    private ParentSessionRepository sessionRepository;
 
     @Autowired
     private ParentTelegramLinkRepository linkRepository;
@@ -73,7 +73,8 @@ public class NotificationSender {
     private long lastSendMillis = 0;
     private final Map<Long, Long> lastSentPerChat = new ConcurrentHashMap<>();
 
-    @Scheduled(fixedDelayString = "${telegram.send-interval-ms:1000}", initialDelayString = "${telegram.send-initial-delay-ms:5000}")
+    // short pause between passes; throttleGlobal() keeps the rate at max-per-second (~25/s) anyway
+    @Scheduled(fixedDelayString = "${telegram.send-interval-ms:250}", initialDelayString = "${telegram.send-initial-delay-ms:5000}")
     public void tick() {
         if (!telegramProperties.isActive()) return;
         try {
@@ -183,13 +184,7 @@ public class NotificationSender {
         }
 
         try {
-            byte[] picture = n.getImage() == null ? null : weeklyCards.render(n.getImage());
-            if (picture != null) {
-                // the picture is drawn now, so it shows the latest data; the text is its caption
-                telegramClient.sendPhoto(n.getChatId(), picture, "haftalik-hisobot.png", n.getText(), n.getReplyMarkup());
-            } else {
-                telegramClient.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
-            }
+            telegramClient.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
             lastSendMillis = clock.millis();
             lastSentPerChat.put(n.getChatId(), lastSendMillis);
             n.setAttempts(n.getAttempts() + 1);
@@ -229,6 +224,7 @@ public class NotificationSender {
             n.setLastError("403: Ota-ona botni bloklagan — bog'lanish o'chirildi");
             notificationLogRepository.save(n);
             int links = linkRepository.deactivateByChatId(n.getChatId());
+            botCache.evictChat(n.getChatId());
             notificationLogRepository.skipPendingForChat(n.getChatId(), "Ota-ona botni bloklagan");
             log.info("Telegram 403: chat={} botni bloklagan, {} ta bog'lanish o'chirildi", n.getChatId(), links);
             return;
