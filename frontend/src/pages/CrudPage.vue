@@ -72,11 +72,11 @@
 
     <template v-else>
       <div
-        v-if="module.filters && module.filters.length"
-        class="row q-gutter-sm q-mb-md"
+        v-if="module.filters?.length || module.toggles?.length"
+        class="row items-center q-gutter-sm q-mb-md"
       >
         <q-select
-          v-for="f in module.filters"
+          v-for="f in module.filters || []"
           :key="f.key"
           v-model="activeFilters[f.key]"
           :options="filterOptionsFor(f)"
@@ -88,7 +88,18 @@
           outlined
           clearable
           :label="f.label"
-          style="min-width: 160px"
+          :placeholder="f.placeholder"
+          style="min-width: 180px"
+          @update:model-value="onFilterChange"
+        />
+        <q-toggle
+          v-for="tg in module.toggles || []"
+          :key="tg.key"
+          v-model="activeFilters[tg.key]"
+          :label="tg.label"
+          :true-value="true"
+          :false-value="null"
+          dense
           @update:model-value="onFilterChange"
         />
       </div>
@@ -109,9 +120,23 @@
             :key="row.id"
             class="col-12 col-sm-6 col-md-4"
           >
-            <div class="brand-card q-pa-md full-height entity-card">
+            <div
+              class="brand-card q-pa-md full-height entity-card"
+              :class="{ 'entity-card--link': cardIsLink }"
+              :tabindex="cardIsLink ? 0 : undefined"
+              @click="onCardClick(row)"
+              @keydown.enter="onCardClick(row)"
+            >
               <div class="row items-start justify-between no-wrap">
-                <div class="row items-center q-gutter-sm no-wrap">
+                <div
+                  v-if="module.key === 'school-classes'"
+                  class="row items-center q-gutter-sm no-wrap"
+                >
+                  <div class="class-card__name" :style="{ color: module.color }"
+                    >{{ row.gradeNumber }}-{{ row.sectionLetter }}</div
+                  >
+                </div>
+                <div v-else class="row items-center q-gutter-sm no-wrap">
                   <q-avatar
                     :icon="module.icon"
                     :style="{ background: module.color }"
@@ -139,7 +164,8 @@
                     size="sm"
                     icon="edit"
                     color="primary"
-                    @click="openEditDialog(row)"
+                    @click.stop="openEditDialog(row)"
+                    @keydown.enter.stop
                   />
                   <q-btn
                     v-if="canDelete"
@@ -149,7 +175,8 @@
                     size="sm"
                     icon="delete_outline"
                     color="negative"
-                    @click="confirmDelete(row)"
+                    @click.stop="confirmDelete(row)"
+                    @keydown.enter.stop
                   />
                 </div>
               </div>
@@ -178,15 +205,38 @@
                     <div class="text-caption muted-text">Sinflar</div>
                   </div>
                 </div>
-                <q-btn
-                  class="full-width q-mt-md"
-                  outline
-                  no-caps
-                  color="primary"
-                  label="Shu maktabga o'tish"
-                  :disable="row.id === schoolStore.activeSchoolId"
-                  @click="switchToSchool(row)"
-                />
+                <div class="row items-center q-mt-md text-caption text-primary">
+                  <q-icon name="login" size="16px" class="q-mr-xs" />
+                  {{
+                    row.id === schoolStore.activeSchoolId
+                      ? 'Joriy maktab — bosing, bosh sahifa ochiladi'
+                      : "Bosing — shu maktabga o'tish"
+                  }}
+                </div>
+              </template>
+
+              <template v-else-if="module.key === 'school-classes'">
+                <div class="text-caption muted-text q-mt-xs ellipsis">
+                  <q-icon name="person" size="14px" />
+                  {{ row.classTeacherName || 'Sinf rahbari tayinlanmagan' }}
+                </div>
+                <div class="row q-mt-md q-col-gutter-sm text-center">
+                  <div class="col-6">
+                    <div class="text-h6 text-weight-bold">{{
+                      row.studentCount ?? 0
+                    }}</div>
+                    <div class="text-caption muted-text">O'quvchi</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="text-h6 text-weight-bold">{{
+                      row.maxStudents ?? '—'
+                    }}</div>
+                    <div class="text-caption muted-text">Maks.</div>
+                  </div>
+                </div>
+                <div class="text-caption muted-text q-mt-sm ellipsis">{{
+                  row.academicYearTitle
+                }}</div>
               </template>
 
               <template v-else-if="module.key === 'buildings'">
@@ -274,7 +324,7 @@
           @request="onRequest"
           binary-state-sort
           flat
-          class="brand-table"
+          class="brand-table sticky-table"
           :class="{ 'row-clickable': !!module.rowLink }"
           :rows-per-page-options="[10, 20, 50]"
           @row-click="onRowClick"
@@ -366,6 +416,23 @@
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="row-actions">
               <q-btn
+                v-if="
+                  canEdit &&
+                  module.key === 'subjects' &&
+                  props.row.active === false
+                "
+                flat
+                dense
+                round
+                size="sm"
+                icon="restore"
+                color="positive"
+                :loading="busyRowId === props.row.id"
+                @click.stop="reactivate(props.row)"
+              >
+                <q-tooltip>Qayta faollashtirish</q-tooltip>
+              </q-btn>
+              <q-btn
                 v-if="canEdit"
                 flat
                 dense
@@ -378,16 +445,19 @@
                 <q-tooltip>Tahrirlash</q-tooltip>
               </q-btn>
               <q-btn
-                v-if="canDelete"
+                v-if="canDelete && props.row.active !== false"
                 flat
                 dense
                 round
                 size="sm"
-                icon="delete_outline"
+                :icon="module.softDelete ? 'block' : 'delete_outline'"
                 color="negative"
+                :loading="busyRowId === props.row.id"
                 @click.stop="confirmDelete(props.row)"
               >
-                <q-tooltip>O'chirish</q-tooltip>
+                <q-tooltip>{{
+                  module.softDelete ? 'Nofaol qilish' : "O'chirish"
+                }}</q-tooltip>
               </q-btn>
             </q-td>
           </template>
@@ -624,12 +694,15 @@ const displayRows = computed(() => {
   if (!searchQuery.value) return rows.value
   const q = searchQuery.value.toLowerCase()
   const source = searchCache.value || []
-  return source.filter(row =>
-    module.value.columns.some(col => {
-      if (typeof col.field !== 'string') return false
-      const v = row[col.field]
-      return v != null && String(v).toLowerCase().includes(q)
-    })
+  return source.filter(
+    row =>
+      (module.value.searchText &&
+        module.value.searchText(row).toLowerCase().includes(q)) ||
+      module.value.columns.some(col => {
+        if (typeof col.field !== 'string') return false
+        const v = row[col.field]
+        return v != null && String(v).toLowerCase().includes(q)
+      })
   )
 })
 
@@ -644,13 +717,21 @@ async function loadFilterOptionsFor(f) {
     const params = { size: 1000 }
     if (f.schoolScoped) params.schoolId = schoolStore.activeSchoolId
     const response = await api.get(f.optionsEndpoint, { params })
-    filterOptionsCache[f.key] = response.data.content.map(item => ({
+    const options = response.data.content.map(item => ({
       value: item[f.optionValue],
       label:
         typeof f.optionLabel === 'function'
           ? f.optionLabel(item)
           : item[f.optionLabel]
     }))
+    // "2-A" before "10-A"
+    if (f.sortOptions)
+      options.sort((a, b) =>
+        String(a.label).localeCompare(String(b.label), undefined, {
+          numeric: true
+        })
+      )
+    filterOptionsCache[f.key] = options
   } catch {
     filterOptionsCache[f.key] = []
   }
@@ -757,6 +838,16 @@ function onRowClick(evt, row) {
   router.push(`/profiles/${module.value.rowLink}/${row.id}`)
 }
 
+const cardIsLink = computed(() =>
+  ['schools', 'school-classes'].includes(module.value.key)
+)
+
+function onCardClick(row) {
+  if (module.value.key === 'schools') switchToSchool(row)
+  else if (module.value.key === 'school-classes')
+    router.push(`/profiles/class/${row.id}`)
+}
+
 function switchToSchool(row) {
   schoolStore.setActiveSchool(row.id, row.name)
   router.push('/')
@@ -813,7 +904,7 @@ watch(
   () => route.params.moduleKey,
   async () => {
     pagination.value = {
-      sortBy: 'id',
+      sortBy: module.value?.defaultSort || 'id',
       descending: false,
       page: 1,
       rowsPerPage: module.value?.viewType === 'cards' ? 12 : 10,
@@ -993,11 +1084,29 @@ async function onSave() {
   }
 }
 
+const busyRowId = ref(null)
+
+async function reactivate(row) {
+  busyRowId.value = row.id
+  try {
+    await api.put(`${module.value.endpoint}/${row.id}/activate`)
+    $q.notify({ type: 'positive', message: 'Qayta faollashtirildi' })
+    searchCache.value = null
+    fetchRows()
+  } catch (error) {
+    $q.notify({ type: 'negative', message: extractError(error) })
+  } finally {
+    busyRowId.value = null
+  }
+}
+
 function confirmDelete(row) {
+  const soft = module.value.softDelete
   $q.dialog({
-    title: "O'chirish",
-    message:
-      "Haqiqatan ham o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
+    title: soft ? 'Nofaol qilish' : "O'chirish",
+    message: soft
+      ? "Fan nofaol bo'ladi: yangi baho va jadvalda tanlanmaydi, eski baholarda nomi saqlanadi. Keyin qayta faollashtirish mumkin."
+      : "Haqiqatan ham o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
     cancel: {
       flat: true,
       label: 'Bekor qilish',
@@ -1005,18 +1114,20 @@ function confirmDelete(row) {
       noCaps: true
     },
     ok: {
-      label: "O'chirish",
+      label: soft ? 'Nofaol qilish' : "O'chirish",
       color: 'negative',
       unelevated: true,
       noCaps: true
     },
     persistent: true
   }).onOk(async () => {
+    if (busyRowId.value === row.id) return // a second click while the first is on its way
+    busyRowId.value = row.id
     try {
       await api.delete(`${module.value.endpoint}/${row.id}`)
       $q.notify({
         type: 'positive',
-        message: "Muvaffaqiyatli o'chirildi",
+        message: soft ? 'Nofaol qilindi' : "Muvaffaqiyatli o'chirildi",
         icon: 'check_circle'
       })
       if (module.value.key === 'schools') {
@@ -1026,6 +1137,8 @@ function confirmDelete(row) {
       fetchRows()
     } catch (error) {
       $q.notify({ type: 'negative', message: extractError(error) })
+    } finally {
+      busyRowId.value = null
     }
   })
 }
@@ -1066,14 +1179,53 @@ function extractError(error) {
   background: rgba(79, 70, 229, 0.06);
 }
 
+/* edit/delete are always visible; the column sticks to the right edge even when
+   the table scrolls sideways, and the header row sticks to the top */
 .row-actions {
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  white-space: nowrap;
 }
 
-:deep(tbody tr:hover) .row-actions,
-:deep(tbody tr:focus-within) .row-actions {
-  opacity: 1;
+:deep(.sticky-table .q-table__middle) {
+  max-height: calc(100vh - 260px);
+}
+
+:deep(.sticky-table thead tr th) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--card-bg);
+}
+
+:deep(.sticky-table tbody td:last-child),
+:deep(.sticky-table thead th:last-child) {
+  position: sticky;
+  right: 0;
+  background: var(--card-bg);
+  box-shadow: -8px 0 10px -10px rgba(15, 23, 42, 0.35);
+}
+
+:deep(.sticky-table thead th:last-child) {
+  z-index: 3;
+}
+
+:deep(.sticky-table tbody tr:hover td:last-child) {
+  background: color-mix(in srgb, var(--card-bg) 94%, #4f46e5);
+}
+
+/* school / class cards: the whole card opens it */
+.entity-card--link {
+  cursor: pointer;
+}
+
+.entity-card--link:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--q-primary) 45%, var(--brand-border));
+}
+
+.class-card__name {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .form-drawer {

@@ -12,6 +12,8 @@ import java.util.List;
 
 public interface GradeRepository extends JpaRepository<Grade, Long> {
 
+    boolean existsBySubjectId(Long subjectId);
+
     @Query("select g from Grade g where g.student.schoolClass.academicYear.school.id = :schoolId")
     Page<Grade> findBySchoolId(@Param("schoolId") Long schoolId, Pageable pageable);
 

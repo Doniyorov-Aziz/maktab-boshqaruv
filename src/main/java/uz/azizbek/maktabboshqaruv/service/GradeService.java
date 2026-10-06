@@ -74,6 +74,7 @@ public class GradeService {
                 .orElseThrow(() -> new IllegalStateException("Bunday fan mavjud emas"));
 
         validateSameSchool(student, subject);
+        requireActive(subject);
 
         Grade grade = new Grade();
         grade.setStudent(student);
@@ -104,6 +105,10 @@ public class GradeService {
                 .orElseThrow(() -> new IllegalStateException("Bunday fan mavjud emas"));
 
         validateSameSchool(student, subject);
+        // an old grade of a now-inactive subject can still be corrected; moving a grade to it cannot
+        if (!Objects.equals(grade.getSubject().getId(), subject.getId())) {
+            requireActive(subject);
+        }
 
         // Only a change parents care about re-notifies — a comment edit does not.
         boolean meaningfulChange = !Objects.equals(grade.getScore(), request.getScore())
@@ -133,6 +138,12 @@ public class GradeService {
         gradeRepository.deleteById(id);
     }
 
+    private static void requireActive(Subject subject) {
+        if (!subject.isActive()) {
+            throw new IllegalStateException("«" + subject.getName() + "» fani nofaol — yangi baho qo'yib bo'lmaydi");
+        }
+    }
+
     private void validateSameSchool(Student student, Subject subject) {
         Long studentSchoolId = student.getSchoolClass().getAcademicYear().getSchool().getId();
         if (subject.getSchool() == null || !studentSchoolId.equals(subject.getSchool().getId())) {
@@ -147,6 +158,7 @@ public class GradeService {
         dto.setStudentName(grade.getStudent().getFirstName() + " " + grade.getStudent().getLastName());
         dto.setSubjectId(grade.getSubject().getId());
         dto.setSubjectName(grade.getSubject().getName());
+        dto.setSubjectActive(grade.getSubject().isActive());
         dto.setGradeDate(grade.getGradeDate());
         dto.setScore(grade.getScore());
         dto.setType(grade.getType());

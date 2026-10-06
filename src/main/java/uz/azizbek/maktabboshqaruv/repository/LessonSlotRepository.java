@@ -25,6 +25,13 @@ public interface LessonSlotRepository extends JpaRepository<LessonSlot, Long> {
     List<LessonSlot> findByRoomId(Long roomId);
     long countByEmployeeId(Long employeeId);
 
+    boolean existsBySubjectId(Long subjectId);
+
+    /** A renamed subject: today's timetable moves to the new subject row; grade history stays on the old one. */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("update LessonSlot l set l.subject.id = :to where l.subject.id = :from")
+    int moveSubject(@Param("from") Long from, @Param("to") Long to);
+
     @Query("select l from LessonSlot l where l.schoolClass.academicYear.school.id = :schoolId " +
             "and l.weekday = :weekday and l.startTime <= :time and l.endTime > :time order by l.schoolClass.gradeNumber, l.schoolClass.sectionLetter")
     List<LessonSlot> findCurrentlyInSession(@Param("schoolId") Long schoolId, @Param("weekday") String weekday, @Param("time") LocalTime time);

@@ -17,6 +17,20 @@ public class Subject {
     @Column(nullable = false)
     private String name;
 
+    /**
+     * Subjects are never deleted: an old subject becomes inactive, so grades and
+     * timetables of past years keep showing its name. Null (rows from before) = active.
+     */
+    private Boolean active;
+
+    public boolean isActive() {
+        return active == null || active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public Long getId() {
         return id;
     }

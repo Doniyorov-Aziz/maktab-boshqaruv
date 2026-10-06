@@ -30,6 +30,12 @@ class SubjectServiceTest {
     @Mock
     private SchoolRepository schoolRepository;
 
+    @Mock
+    private uz.azizbek.maktabboshqaruv.repository.GradeRepository gradeRepository;
+
+    @Mock
+    private uz.azizbek.maktabboshqaruv.repository.LessonSlotRepository lessonSlotRepository;
+
     @InjectMocks
     private SubjectService subjectService;
 
@@ -55,7 +61,7 @@ class SubjectServiceTest {
         School school = new School();
         school.setId(1L);
         when(schoolRepository.findById(1L)).thenReturn(Optional.of(school));
-        when(subjectRepository.existsBySchoolIdAndName(1L, "Matematika")).thenReturn(true);
+        when(subjectRepository.existsActiveBySchoolIdAndName(1L, "Matematika")).thenReturn(true);
 
         assertThrows(IllegalStateException.class, () -> subjectService.createSubject(request));
         verify(subjectRepository, never()).save(any());
@@ -68,7 +74,7 @@ class SubjectServiceTest {
         school.setId(1L);
         school.setName("Maktab 1");
         when(schoolRepository.findById(1L)).thenReturn(Optional.of(school));
-        when(subjectRepository.existsBySchoolIdAndName(1L, "Matematika")).thenReturn(false);
+        when(subjectRepository.existsActiveBySchoolIdAndName(1L, "Matematika")).thenReturn(false);
 
         Subject saved = new Subject();
         saved.setId(1L);
@@ -84,8 +90,34 @@ class SubjectServiceTest {
 
     @Test
     void deleteSubject_notFound_throws() {
-        when(subjectRepository.existsById(1L)).thenReturn(false);
+        when(subjectRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> subjectService.deleteSubject(1L));
+    }
+
+    @Test
+    void deleteSubject_onlyDeactivates() {
+        Subject subject = new Subject();
+        subject.setId(1L);
+        subject.setName("Matematika");
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject));
+
+        subjectService.deleteSubject(1L);
+
+        assertEquals(false, subject.isActive());
+        verify(subjectRepository).save(subject);
+        verify(subjectRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void inactiveSubject_isRefusedForNewWork() {
+        Subject subject = new Subject();
+        subject.setId(1L);
+        subject.setName("Chizmachilik");
+        subject.setActive(false);
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject));
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> subjectService.requireActive(1L));
+        assertEquals("«Chizmachilik» fani nofaol — uni tanlab bo'lmaydi", e.getMessage());
     }
 }

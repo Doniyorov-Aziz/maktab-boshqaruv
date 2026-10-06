@@ -9,6 +9,24 @@ import java.util.List;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
     Page<Student> findBySchoolClassAcademicYearSchoolId(Long schoolId, Pageable pageable);
+
+    /** [classId, count] for the given classes — one query for a whole page of class cards. */
+    @org.springframework.data.jpa.repository.Query(
+            "select s.schoolClass.id, count(s) from Student s where s.schoolClass.id in :classIds group by s.schoolClass.id")
+    List<Object[]> countByClassIds(@org.springframework.data.repository.query.Param("classIds") java.util.Collection<Long> classIds);
+
+    /** Students list: optional class filter and a first/last name search (either order). */
+    @org.springframework.data.jpa.repository.Query("""
+            select s from Student s where s.schoolClass.academicYear.school.id = :schoolId
+              and (:classId is null or s.schoolClass.id = :classId)
+              and (:q is null
+                   or lower(concat(s.firstName, ' ', s.lastName)) like :q
+                   or lower(concat(s.lastName, ' ', s.firstName)) like :q)
+            """)
+    Page<Student> search(@org.springframework.data.repository.query.Param("schoolId") Long schoolId,
+                         @org.springframework.data.repository.query.Param("classId") Long classId,
+                         @org.springframework.data.repository.query.Param("q") String q,
+                         Pageable pageable);
     long countBySchoolClassAcademicYearSchoolId(Long schoolId);
     List<Student> findBySchoolClassIdOrderByLastNameAscFirstNameAsc(Long schoolClassId);
     List<Student> findBySchoolClassAcademicYearSchoolId(Long schoolId);

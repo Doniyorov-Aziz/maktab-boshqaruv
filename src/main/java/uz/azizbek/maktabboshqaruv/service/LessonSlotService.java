@@ -97,6 +97,9 @@ public class LessonSlotService {
                 .orElseThrow(() -> new IllegalStateException("Bunday xona mavjud emas"));
 
         validateSameSchool(schoolClass, subject, employee, room);
+        if (!subject.isActive()) {
+            throw new IllegalStateException("«" + subject.getName() + "» fani nofaol — jadvalga qo'shib bo'lmaydi");
+        }
         validateNoConflicts(request, null);
 
         LessonSlot lessonSlot = new LessonSlot();
@@ -129,6 +132,9 @@ public class LessonSlotService {
                 .orElseThrow(() -> new IllegalStateException("Bunday xona mavjud emas"));
 
         validateSameSchool(schoolClass, subject, employee, room);
+        if (!subject.isActive() && (lessonSlot.getSubject() == null || !lessonSlot.getSubject().getId().equals(subject.getId()))) {
+            throw new IllegalStateException("«" + subject.getName() + "» fani nofaol — jadvalga qo'shib bo'lmaydi");
+        }
         validateNoConflicts(request, id);
 
         lessonSlot.setSchoolClass(schoolClass);

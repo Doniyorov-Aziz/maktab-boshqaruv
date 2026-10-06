@@ -26,9 +26,20 @@ public class SchoolClassService {
     @Autowired
     private EmployeeRepository employeeRepository;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.repository.StudentRepository studentRepository;
+
     public Page<SchoolClassResponseDto> getAllSchoolClasses(Long schoolId, Pageable pageable) {
-        return schoolClassRepository.findByAcademicYearSchoolId(schoolId, pageable)
+        Page<SchoolClassResponseDto> page = schoolClassRepository.findByAcademicYearSchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
+        // student counts for the class cards: one grouped query for the page
+        java.util.List<Long> ids = page.getContent().stream().map(SchoolClassResponseDto::getId).toList();
+        if (!ids.isEmpty()) {
+            java.util.Map<Long, Long> counts = new java.util.HashMap<>();
+            for (Object[] r : studentRepository.countByClassIds(ids)) counts.put((Long) r[0], (Long) r[1]);
+            page.getContent().forEach(c -> c.setStudentCount(counts.getOrDefault(c.getId(), 0L)));
+        }
+        return page;
     }
 
     public SchoolClassResponseDto getSchoolClassById(Long id) {

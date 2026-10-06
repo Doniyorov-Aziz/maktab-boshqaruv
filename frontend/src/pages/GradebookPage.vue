@@ -33,7 +33,16 @@
             dense
             label="Fan"
             @update:model-value="loadGradebook"
-          />
+          >
+            <template v-slot:option="scope">
+              <q-item v-bind="scope.itemProps">
+                <q-item-section
+                  :class="{ 'text-grey-6': scope.opt.inactive }"
+                  >{{ scope.opt.label }}</q-item-section
+                >
+              </q-item>
+            </template>
+          </q-select>
         </div>
         <div class="col-6 col-sm-2">
           <date-field
@@ -57,11 +66,19 @@
             class="full-width"
             icon="add"
             label="Baho qo'yish"
-            :disable="!selectedClassId || !selectedSubjectId"
+            :disable="!selectedClassId || !selectedSubjectId || subjectInactive"
             @click="openGradeDialog(null, null)"
           />
         </div>
       </div>
+      <q-banner
+        v-if="subjectInactive"
+        dense
+        class="q-mt-md rounded-borders bg-grey-2 text-grey-8"
+      >
+        <template v-slot:avatar><q-icon name="history" /></template>
+        Bu fan nofaol: eski baholar ko'rinadi, yangi baho qo'yilmaydi.
+      </q-banner>
     </div>
 
     <div v-if="loading" class="brand-card q-pa-md">
@@ -278,6 +295,11 @@ const schoolStore = useSchoolStore()
 
 const classOptions = ref([])
 const subjectOptions = ref([])
+const subjectInactive = computed(
+  () =>
+    subjectOptions.value.find(o => o.value === selectedSubjectId.value)
+      ?.inactive || false
+)
 const selectedClassId = ref(null)
 const selectedSubjectId = ref(null)
 
@@ -349,13 +371,25 @@ async function loadClasses() {
 
 async function loadSubjects() {
   if (!schoolStore.activeSchoolId) return
+  // inactive subjects stay listed (after the active ones) so their old grades can be read
   const response = await api.get('/api/subjects', {
-    params: { schoolId: schoolStore.activeSchoolId, size: 100 }
+    params: {
+      schoolId: schoolStore.activeSchoolId,
+      size: 300,
+      includeInactive: true
+    }
   })
-  subjectOptions.value = response.data.content.map(s => ({
-    value: s.id,
-    label: s.name
-  }))
+  subjectOptions.value = response.data.content
+    .slice()
+    .sort(
+      (a, b) =>
+        Number(b.active) - Number(a.active) || a.name.localeCompare(b.name)
+    )
+    .map(s => ({
+      value: s.id,
+      label: s.active ? s.name : `${s.name} · nofaol`,
+      inactive: !s.active
+    }))
   if (!selectedSubjectId.value && subjectOptions.value.length) {
     selectedSubjectId.value = subjectOptions.value[0].value
   }
@@ -430,6 +464,8 @@ const distributionChartOptions = computed(() => {
 
 function onCellClick(student, date) {
   const existing = gradeFor(student.studentId, date)
+  // an inactive subject is history only: old grades open, empty cells do not
+  if (!existing && subjectInactive.value) return
   openGradeDialog(existing, student.studentId, date)
 }
 

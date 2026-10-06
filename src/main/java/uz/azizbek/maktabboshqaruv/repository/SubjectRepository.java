@@ -13,4 +13,16 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
     Page<Subject> findBySchoolId(Long schoolId, Pageable pageable);
     List<Subject> findBySchoolId(Long schoolId);
     long countBySchoolId(Long schoolId);
+
+    /** Active subjects only (a null column counts as active) — what new grades/lessons can pick. */
+    @org.springframework.data.jpa.repository.Query(
+            "select s from Subject s where s.school.id = :schoolId and (s.active is null or s.active = true)")
+    Page<Subject> findActiveBySchoolId(@org.springframework.data.repository.query.Param("schoolId") Long schoolId,
+                                       Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query(
+            "select count(s) > 0 from Subject s where s.school.id = :schoolId and lower(s.name) = lower(:name) " +
+            "and (s.active is null or s.active = true)")
+    boolean existsActiveBySchoolIdAndName(@org.springframework.data.repository.query.Param("schoolId") Long schoolId,
+                                          @org.springframework.data.repository.query.Param("name") String name);
 }

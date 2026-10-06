@@ -38,4 +38,14 @@ public class SubjectResponseDto {
     public void setSchoolName(String schoolName) {
         this.schoolName = schoolName;
     }
+
+    private boolean active = true;
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 }

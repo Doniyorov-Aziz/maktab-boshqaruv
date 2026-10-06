@@ -74,4 +74,14 @@ public class SchoolClassResponseDto {
     public void setAcademicYearTitle(String academicYearTitle) {
         this.academicYearTitle = academicYearTitle;
     }
+
+    private long studentCount;
+
+    public long getStudentCount() {
+        return studentCount;
+    }
+
+    public void setStudentCount(long studentCount) {
+        this.studentCount = studentCount;
+    }
 }

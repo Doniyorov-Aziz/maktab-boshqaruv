@@ -25,7 +25,12 @@ public class StudentService {
     private ActivityLogService activityLogService;
 
     public Page<StudentResponseDto> getAllStudents(Long schoolId, Pageable pageable) {
-        return studentRepository.findBySchoolClassAcademicYearSchoolId(schoolId, pageable)
+        return getAllStudents(schoolId, null, null, pageable);
+    }
+
+    public Page<StudentResponseDto> getAllStudents(Long schoolId, Long schoolClassId, String q, Pageable pageable) {
+        String like = q == null || q.isBlank() ? null : "%" + q.trim().toLowerCase().replaceAll("\\s+", " ") + "%";
+        return studentRepository.search(schoolId, schoolClassId, like, pageable)
                 .map(this::toResponseDto);
     }
 

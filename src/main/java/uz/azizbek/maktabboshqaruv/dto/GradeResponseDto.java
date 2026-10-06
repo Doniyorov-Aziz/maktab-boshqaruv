@@ -11,6 +11,16 @@ public class GradeResponseDto {
     private String studentName;
     private Long subjectId;
     private String subjectName;
+    /** false = the subject was retired since; the name is shown greyed with "nofaol". */
+    private boolean subjectActive = true;
+
+    public boolean isSubjectActive() {
+        return subjectActive;
+    }
+
+    public void setSubjectActive(boolean subjectActive) {
+        this.subjectActive = subjectActive;
+    }
     private LocalDate gradeDate;
     private Integer score;
     private GradeType type;

@@ -20,8 +20,17 @@ public class SubjectController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<SubjectResponseDto> getAllSubjects(@RequestParam Long schoolId, Pageable pageable) {
-        return subjectService.getAllSubjects(schoolId, pageable);
+    public Page<SubjectResponseDto> getAllSubjects(@RequestParam Long schoolId,
+                                                   @RequestParam(defaultValue = "false") boolean includeInactive,
+                                                   Pageable pageable) {
+        return subjectService.getAllSubjects(schoolId, includeInactive, pageable);
+    }
+
+    /** "Qayta faollashtirish". */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<SubjectResponseDto> activate(@PathVariable Long id) {
+        return ResponseEntity.ok(subjectService.activate(id));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
@@ -48,6 +57,6 @@ public class SubjectController {
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteSubject(@PathVariable Long id) {
         subjectService.deleteSubject(id);
-        return ResponseEntity.ok("ID " + id + " bilan fan muvaffaqiyatli o'chirildi");
+        return ResponseEntity.ok("Fan nofaol qilindi — eski baholar va jadvalda nomi saqlanadi");
     }
 }

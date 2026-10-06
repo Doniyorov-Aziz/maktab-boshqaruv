@@ -239,6 +239,11 @@ export const modules = [
     endpoint: '/api/school-classes',
     schoolScoped: true,
     rowLink: 'class',
+    viewType: 'cards',
+    defaultSort: 'gradeNumber',
+    // "5-a", "5 A", teacher's name — the search box filters the cards as you type
+    searchText: row =>
+      `${row.gradeNumber}-${row.sectionLetter} ${row.gradeNumber} ${row.sectionLetter} ${row.classTeacherName || ''}`,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -317,6 +322,18 @@ export const modules = [
     group: 'Odamlar',
     endpoint: '/api/students',
     schoolScoped: true,
+    filters: [
+      {
+        key: 'schoolClassId',
+        label: 'Sinf',
+        placeholder: 'Barcha sinflar',
+        optionsEndpoint: '/api/school-classes',
+        optionValue: 'id',
+        optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`,
+        schoolScoped: true,
+        sortOptions: true
+      }
+    ],
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -383,6 +400,9 @@ export const modules = [
     group: "O'quv jarayoni",
     endpoint: '/api/subjects',
     schoolScoped: true,
+    // "O'chirish" only retires a subject: old grades keep its name
+    softDelete: true,
+    toggles: [{ key: 'includeInactive', label: "Nofaollarni ko'rsatish" }],
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -391,6 +411,14 @@ export const modules = [
         field: 'name',
         sortable: true,
         align: 'left'
+      },
+      {
+        name: 'active',
+        label: 'Holat',
+        field: row => (row.active === false ? 'INACTIVE' : 'ACTIVE'),
+        align: 'left',
+        badgeColors: { ACTIVE: '#10b981', INACTIVE: '#94a3b8' },
+        badgeLabels: { ACTIVE: 'Faol', INACTIVE: 'Nofaol' }
       }
     ],
     fields: [
@@ -469,14 +497,19 @@ export const modules = [
         name: 'positionTitle',
         label: 'Lavozim',
         field: 'positionTitle',
-        align: 'left'
+        align: 'left',
+        // long titles wrap instead of pushing the table wider than the screen
+        style: 'max-width: 210px; white-space: normal',
+        headerStyle: 'max-width: 210px'
       },
       {
         name: 'subjects',
         label: 'Fanlar',
         field: 'subjects',
         align: 'left',
-        format: v => v || '—'
+        format: v => v || '—',
+        style: 'max-width: 240px; white-space: normal',
+        headerStyle: 'max-width: 240px'
       },
       {
         name: 'classes',
