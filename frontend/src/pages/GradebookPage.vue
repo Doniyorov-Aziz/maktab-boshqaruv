@@ -193,7 +193,9 @@
             <date-field
               v-model="gradeForm.gradeDate"
               label="Sana"
-              :rules="[v => !!v || 'Majburiy']"
+              no-sundays
+              no-future
+              :rules="[v => !!v || 'Majburiy', schoolDayRule]"
             />
             <div>
               <div class="text-caption muted-text q-mb-xs">Baho</div>
@@ -461,6 +463,18 @@ const distributionChartOptions = computed(() => {
     }
   }
 })
+
+// same rule as the backend (409): no grades on a Sunday or a day that has not come yet
+function schoolDayRule(v) {
+  if (!v) return true
+  const [y, m, d] = v.split('-').map(Number)
+  const day = new Date(y, m - 1, d)
+  if (day.getDay() === 0) return "Yakshanba kuni baho qo'yilmaydi"
+  const now = new Date()
+  if (day > new Date(now.getFullYear(), now.getMonth(), now.getDate()))
+    return "Kelajak sanaga baho qo'yilmaydi"
+  return true
+}
 
 function onCellClick(student, date) {
   const existing = gradeFor(student.studentId, date)

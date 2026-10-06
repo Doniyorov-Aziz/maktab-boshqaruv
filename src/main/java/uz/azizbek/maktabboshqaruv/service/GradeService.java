@@ -41,6 +41,20 @@ public class GradeService {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
+    @Autowired
+    private java.time.Clock clock;
+
+    /** Grades only on school days that have already come: never on a Sunday, never ahead of today (409). */
+    void validateGradeDate(LocalDate date) {
+        if (date == null) return;
+        if (date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+            throw new IllegalStateException("Yakshanba kuni baho qo'yilmaydi");
+        }
+        if (date.isAfter(LocalDate.now(clock))) {
+            throw new IllegalStateException("Kelajak sanaga baho qo'yilmaydi");
+        }
+    }
+
     public Page<GradeResponseDto> getAllGrades(Long schoolId, Pageable pageable) {
         return gradeRepository.findBySchoolId(schoolId, pageable).map(this::toResponseDto);
     }
@@ -75,6 +89,7 @@ public class GradeService {
 
         validateSameSchool(student, subject);
         requireActive(subject);
+        validateGradeDate(request.getGradeDate());
 
         Grade grade = new Grade();
         grade.setStudent(student);
@@ -108,6 +123,9 @@ public class GradeService {
         // an old grade of a now-inactive subject can still be corrected; moving a grade to it cannot
         if (!Objects.equals(grade.getSubject().getId(), subject.getId())) {
             requireActive(subject);
+        }
+        if (!Objects.equals(grade.getGradeDate(), request.getGradeDate())) {
+            validateGradeDate(request.getGradeDate());
         }
 
         // Only a change parents care about re-notifies — a comment edit does not.
