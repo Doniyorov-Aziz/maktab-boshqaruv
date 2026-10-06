@@ -788,6 +788,20 @@ export const modules = [
     group: 'Kundalik hayot',
     endpoint: '/api/behavior-records',
     schoolScoped: true,
+    defaultSort: 'recordDate',
+    defaultDescending: true,
+    filters: [
+      {
+        key: 'schoolClassId',
+        label: 'Sinf',
+        placeholder: 'Barcha sinflar',
+        optionsEndpoint: '/api/school-classes',
+        optionValue: 'id',
+        optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`,
+        schoolScoped: true,
+        sortOptions: true
+      }
+    ],
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -797,19 +811,45 @@ export const modules = [
         align: 'left',
         link: { type: 'student', idField: 'studentId' }
       },
-      { name: 'type', label: 'Turi', field: 'type', align: 'left' },
+      { name: 'className', label: 'Sinf', field: 'className', align: 'left' },
       {
-        name: 'recordDate',
-        label: 'Sana',
-        field: 'recordDate',
+        name: 'guardian',
+        label: 'Ota-ona',
+        field: row =>
+          [row.guardianName, row.guardianPhone].filter(Boolean).join(' · ') ||
+          '—',
         align: 'left',
-        format: dateFormat
+        style: 'max-width: 220px; white-space: normal'
+      },
+      {
+        name: 'type',
+        label: 'Turi',
+        field: 'type',
+        align: 'left',
+        badgeColors: { REWARD: '#10b981', WARNING: '#f59e0b' },
+        badgeLabels: { REWARD: "Rag'bat", WARNING: 'Ogohlantirish' }
       },
       {
         name: 'description',
         label: 'Tavsif',
         field: 'description',
-        align: 'left'
+        align: 'left',
+        style: 'max-width: 260px; white-space: normal'
+      },
+      {
+        name: 'createdBy',
+        label: 'Kim yozgan',
+        field: 'createdBy',
+        align: 'left',
+        format: v => v || '—'
+      },
+      {
+        name: 'recordDate',
+        label: 'Sana',
+        field: 'recordDate',
+        sortable: true,
+        align: 'left',
+        format: dateFormat
       }
     ],
     fields: [

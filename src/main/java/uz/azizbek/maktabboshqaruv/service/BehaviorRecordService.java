@@ -22,7 +22,16 @@ public class BehaviorRecordService {
     private StudentRepository studentRepository;
 
     public Page<BehaviorRecordResponseDto> getAllRecords(Long schoolId, Pageable pageable) {
-        return behaviorRecordRepository.findBySchoolId(schoolId, pageable).map(this::toResponseDto);
+        return getAllRecords(schoolId, null, pageable);
+    }
+
+    public Page<BehaviorRecordResponseDto> getAllRecords(Long schoolId, Long schoolClassId, Pageable pageable) {
+        return behaviorRecordRepository.search(schoolId, schoolClassId, pageable).map(this::toResponseDto);
+    }
+
+    private static String currentUsername() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return auth == null ? null : auth.getName();
     }
 
     @Transactional
@@ -35,6 +44,7 @@ public class BehaviorRecordService {
         record.setRecordDate(request.getRecordDate());
         record.setType(request.getType());
         record.setDescription(request.getDescription());
+        record.setCreatedBy(currentUsername());
 
         BehaviorRecord saved = behaviorRecordRepository.save(record);
         return toResponseDto(saved);
@@ -72,6 +82,15 @@ public class BehaviorRecordService {
         dto.setRecordDate(record.getRecordDate());
         dto.setType(record.getType());
         dto.setDescription(record.getDescription());
+        Student s = record.getStudent();
+        if (s.getSchoolClass() != null) {
+            dto.setSchoolClassId(s.getSchoolClass().getId());
+            dto.setClassName(s.getSchoolClass().getGradeNumber() + "-" + s.getSchoolClass().getSectionLetter());
+        }
+        dto.setGuardianName(s.getGuardianName());
+        dto.setGuardianPhone(s.getGuardianPhone());
+        dto.setCreatedBy(record.getCreatedBy());
+        dto.setCreatedDate(record.getCreatedDate());
         return dto;
     }
 }

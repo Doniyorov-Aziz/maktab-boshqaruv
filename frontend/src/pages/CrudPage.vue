@@ -905,7 +905,7 @@ watch(
   async () => {
     pagination.value = {
       sortBy: module.value?.defaultSort || 'id',
-      descending: false,
+      descending: !!module.value?.defaultDescending,
       page: 1,
       rowsPerPage: module.value?.viewType === 'cards' ? 12 : 10,
       rowsNumber: 0

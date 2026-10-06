@@ -30,6 +30,18 @@ public class BehaviorRecord {
     @Column(nullable = false)
     private String description;
 
+    /** Who wrote it (username); null on records made before this column existed. */
+    @Column(length = 64)
+    private String createdBy;
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdDate;

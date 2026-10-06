@@ -20,8 +20,10 @@ public class BehaviorRecordController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<BehaviorRecordResponseDto> getAllRecords(@RequestParam Long schoolId, Pageable pageable) {
-        return behaviorRecordService.getAllRecords(schoolId, pageable);
+    public Page<BehaviorRecordResponseDto> getAllRecords(@RequestParam Long schoolId,
+                                                         @RequestParam(required = false) Long schoolClassId,
+                                                         Pageable pageable) {
+        return behaviorRecordService.getAllRecords(schoolId, schoolClassId, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")

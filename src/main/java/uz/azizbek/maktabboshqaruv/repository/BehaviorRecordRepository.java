@@ -14,6 +14,14 @@ public interface BehaviorRecordRepository extends JpaRepository<BehaviorRecord, 
     @Query("select b from BehaviorRecord b where b.student.schoolClass.academicYear.school.id = :schoolId")
     Page<BehaviorRecord> findBySchoolId(@Param("schoolId") Long schoolId, Pageable pageable);
 
+    /** List page: student and class fetched in the same query (no N+1), optional class filter. */
+    @Query(value = "select b from BehaviorRecord b join fetch b.student s join fetch s.schoolClass c " +
+            "where c.academicYear.school.id = :schoolId and (:classId is null or c.id = :classId)",
+            countQuery = "select count(b) from BehaviorRecord b " +
+                    "where b.student.schoolClass.academicYear.school.id = :schoolId " +
+                    "and (:classId is null or b.student.schoolClass.id = :classId)")
+    Page<BehaviorRecord> search(@Param("schoolId") Long schoolId, @Param("classId") Long classId, Pageable pageable);
+
     @Query("select b from BehaviorRecord b where b.student.schoolClass.academicYear.school.id = :schoolId order by b.recordDate desc, b.id desc")
     List<BehaviorRecord> findLatestBySchoolId(@Param("schoolId") Long schoolId, Pageable pageable);
 
