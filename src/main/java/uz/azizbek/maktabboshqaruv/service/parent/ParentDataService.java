@@ -34,8 +34,6 @@ public class ParentDataService {
     @Autowired
     private CalendarEventRepository calendarEventRepository;
     @Autowired
-    private ParentMessageRepository parentMessageRepository;
-    @Autowired
     private AbsenceRequestRepository absenceRequestRepository;
     @Autowired
     private BotSettingService botSettingService;
@@ -443,13 +441,6 @@ public class ParentDataService {
     }
 
     // ------------------------------------------------------- messages, requests
-
-    public List<MessageView> messages(Student s, Long chatId) {
-        return parentMessageRepository.findTop5ByChatIdAndStudentIdOrderByCreatedAtDesc(chatId, s.getId()).stream()
-                .map(m -> new MessageView(m.getId(), m.getRecipient().name(), m.getText(), m.getStatus().name(),
-                        m.getCreatedAt(), m.getReplyText()))
-                .toList();
-    }
 
     public List<AbsenceView> absenceRequests(Student s, Long chatId) {
         return absenceRequestRepository.findTop5ByChatIdAndStudentIdOrderByCreatedAtDesc(chatId, s.getId()).stream()

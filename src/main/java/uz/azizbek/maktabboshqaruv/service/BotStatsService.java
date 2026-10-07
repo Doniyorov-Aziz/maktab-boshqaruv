@@ -28,7 +28,7 @@ public class BotStatsService {
     @Autowired
     private NotificationLogRepository notificationLogRepository;
     @Autowired
-    private ParentMessageService parentMessageService;
+    private uz.azizbek.maktabboshqaruv.repository.AppealRepository appealRepository;
     @Autowired
     private AbsenceRequestService absenceRequestService;
     @Autowired
@@ -46,7 +46,8 @@ public class BotStatsService {
         dto.setParentCount(linkRepository.countParentsBySchoolId(schoolId));
         dto.setActive7(usageRepository.countActiveChats(schoolId, now.minusDays(7)));
         dto.setActive30(usageRepository.countActiveChats(schoolId, now.minusDays(30)));
-        dto.setNewMessages(parentMessageService.countNew(schoolId));
+        // parent appeals still waiting to be opened (status NEW)
+        dto.setNewMessages(appealRepository.countBySchoolIdAndStatus(schoolId, uz.azizbek.maktabboshqaruv.entity.AppealEnums.Status.NEW));
         dto.setPendingAbsences(absenceRequestService.countPending(schoolId));
 
         Map<Long, Long> studentsByClass = new HashMap<>();

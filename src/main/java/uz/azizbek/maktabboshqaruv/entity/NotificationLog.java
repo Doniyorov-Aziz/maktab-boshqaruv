@@ -76,6 +76,22 @@ public class NotificationLog {
     /** Held back by quiet hours: delivered together with the other held messages in one morning note. */
     private Boolean quietBundle;
 
+    /**
+     * Files sent with this message, resolved at delivery time: "appeal:12,13" (files of an
+     * appeal reply) or "broadcast:7" (a broadcast's attachments). The text becomes the caption
+     * or a message after the files. Null for a plain text message.
+     */
+    @Column(length = 255)
+    private String media;
+
+    public String getMedia() {
+        return media;
+    }
+
+    public void setMedia(String media) {
+        this.media = media;
+    }
+
     public Boolean getQuietBundle() {
         return quietBundle;
     }

@@ -130,7 +130,7 @@ class BotScreensSeedIntegrationTest {
                 {"att:k:m:v:sub", "Davomat fanlar"}, {"att:k:q", "Davomat chorak"}, {"att:k:y", "Davomat o'quv yili"},
                 {"gr", "Baholar so'nggi"}, {"gr:v:subj", "Baholar fanlar"}, {"gr:v:qtr", "Chorak baholari"},
                 {"rep", "Hisobot hafta"}, {"rep:t:month", "Hisobot oy"}, {"beh", "Xulq"}, {"ann", "E'lonlar"},
-                {"ev", "Tadbirlar"}, {"tch", "O'qituvchilar"}, {"msg", "Maktabga yozish"}, {"abs", "Sababli ariza"},
+                {"ev", "Tadbirlar"}, {"tch", "O'qituvchilar"}, {"msg", "Ma'muriyatga xat"}, {"abs", "Sababli ariza"},
                 {"info", "Maktab haqida"}, {"set", "Sozlamalar"}, {"set:v:times", "Vaqtlar"}, {"set:v:lang", "Til"},
                 {"ch", "Farzandlarim"}
         };

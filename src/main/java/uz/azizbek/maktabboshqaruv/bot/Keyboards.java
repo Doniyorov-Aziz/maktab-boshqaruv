@@ -20,7 +20,7 @@ import java.util.Map;
  *   📅 Dars jadvali   | ✅ Davomat
  *   📘 Baholar        | 📊 Hisobot
  *   📢 E'lonlar       | 🗓 Tadbirlar
- *   👩‍🏫 O'qituvchilar  | 💬 Maktabga yozish
+ *   👩‍🏫 O'qituvchilar  | ✉️ Ma'muriyatga xat
  *   🤒 Sababli ariza  | ⚙️ Sozlamalar
  *   👨‍👩‍👧 Farzandlarim
  * </pre>
@@ -49,7 +49,9 @@ public final class Keyboards {
             new String[]{"sec.announcements", "ann"}, new String[]{"sec.events", "ev"},
             new String[]{"sec.teachers", "tch"}, new String[]{"sec.absence", "abs"},
             new String[]{"sec.school", "info"}, new String[]{"sec.settings", "set"},
-            new String[]{"sec.children", "ch"}, new String[]{"kb.home", "home"});
+            new String[]{"sec.children", "ch"}, new String[]{"kb.home", "home"},
+            // the label of the old "write to school" button still on parents' keyboards
+            new String[]{"kb.write_legacy", "msg"});
 
     private static final Map<String, String> LABEL_TO_SCREEN = new HashMap<>();
     private static volatile String webAppUrl;

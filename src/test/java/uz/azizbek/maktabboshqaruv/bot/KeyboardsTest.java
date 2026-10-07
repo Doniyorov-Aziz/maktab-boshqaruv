@@ -25,7 +25,7 @@ class KeyboardsTest {
         assertEquals(List.of("📅 Dars jadvali", "✅ Davomat"), rows.get(0).stream().map(KeyboardButton::text).toList());
         assertEquals(List.of("📘 Baholar", "📊 Hisobot"), rows.get(1).stream().map(KeyboardButton::text).toList());
         assertEquals(List.of("📢 E'lonlar", "🗓 Tadbirlar"), rows.get(2).stream().map(KeyboardButton::text).toList());
-        assertEquals(List.of("👩‍🏫 O'qituvchilar", "💬 Maktabga yozish"), rows.get(3).stream().map(KeyboardButton::text).toList());
+        assertEquals(List.of("👩‍🏫 O'qituvchilar", "✉️ Ma'muriyatga xat"), rows.get(3).stream().map(KeyboardButton::text).toList());
         assertEquals(List.of("🤒 Sababli ariza", "⚙️ Sozlamalar"), rows.get(4).stream().map(KeyboardButton::text).toList());
         assertEquals(List.of("👨‍👩‍👧 Farzandlarim"), rows.get(5).stream().map(KeyboardButton::text).toList());
     }

@@ -45,9 +45,25 @@ public final class TelegramModels {
             String text,
             Contact contact,
             List<PhotoSize> photo,
-            String caption) {
+            String caption,
+            Video video,
+            Voice voice,
+            Audio audio,
+            Document document,
+            @JsonProperty("video_note") VideoNote videoNote,
+            @JsonProperty("media_group_id") String mediaGroupId) {
         public Message(Long messageId, User from, Chat chat, String text, Contact contact) {
             this(messageId, from, chat, text, contact, null, null);
+        }
+
+        public Message(Long messageId, User from, Chat chat, String text, Contact contact, List<PhotoSize> photo,
+                       String caption) {
+            this(messageId, from, chat, text, contact, photo, caption, null, null, null, null, null, null);
+        }
+
+        /** The largest photo size (its file id, unique id and size), or null. */
+        public PhotoSize largestPhoto() {
+            return photo == null || photo.isEmpty() ? null : photo.get(photo.size() - 1);
         }
 
         /** file_id of the largest photo size, or null. */
@@ -81,7 +97,42 @@ public final class TelegramModels {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record PhotoSize(@JsonProperty("file_id") String fileId, Integer width, Integer height) {
+    public record PhotoSize(@JsonProperty("file_id") String fileId, Integer width, Integer height,
+                            @JsonProperty("file_unique_id") String fileUniqueId,
+                            @JsonProperty("file_size") Long fileSize) {
+        public PhotoSize(String fileId, Integer width, Integer height) {
+            this(fileId, width, height, null, null);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Video(@JsonProperty("file_id") String fileId, @JsonProperty("file_unique_id") String fileUniqueId,
+                        Integer duration, @JsonProperty("mime_type") String mimeType,
+                        @JsonProperty("file_size") Long fileSize, @JsonProperty("file_name") String fileName) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Voice(@JsonProperty("file_id") String fileId, @JsonProperty("file_unique_id") String fileUniqueId,
+                        Integer duration, @JsonProperty("mime_type") String mimeType,
+                        @JsonProperty("file_size") Long fileSize) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Audio(@JsonProperty("file_id") String fileId, @JsonProperty("file_unique_id") String fileUniqueId,
+                        Integer duration, @JsonProperty("mime_type") String mimeType,
+                        @JsonProperty("file_size") Long fileSize, @JsonProperty("file_name") String fileName,
+                        String title) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Document(@JsonProperty("file_id") String fileId, @JsonProperty("file_unique_id") String fileUniqueId,
+                           @JsonProperty("file_name") String fileName, @JsonProperty("mime_type") String mimeType,
+                           @JsonProperty("file_size") Long fileSize) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record VideoNote(@JsonProperty("file_id") String fileId, @JsonProperty("file_unique_id") String fileUniqueId,
+                            Integer duration, Integer length, @JsonProperty("file_size") Long fileSize) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

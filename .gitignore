@@ -43,3 +43,7 @@ application-local.properties
 # Local DB backups (contains data, never commit)
 db-backups/
 backend-detached.log
+
+# Ota-onalar murojaatlari fayllari (app.storage.path)
+/storage/
+storage/

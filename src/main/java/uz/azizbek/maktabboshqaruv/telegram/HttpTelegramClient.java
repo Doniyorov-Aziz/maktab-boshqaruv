@@ -35,6 +35,9 @@ public class HttpTelegramClient implements TelegramClient {
     private static final ParameterizedTypeReference<TelegramModels.ApiResponse<TelegramModels.TgFile>> FILE_TYPE =
             new ParameterizedTypeReference<>() {
             };
+    private static final ParameterizedTypeReference<TelegramModels.ApiResponse<List<TelegramModels.Message>>> MESSAGES_TYPE =
+            new ParameterizedTypeReference<>() {
+            };
 
     private final RestClient restClient;
     private final RestClient fileClient;
@@ -238,6 +241,95 @@ public class HttpTelegramClient implements TelegramClient {
                 "allowed_updates", List.of("message", "callback_query"));
         TelegramModels.ApiResponse<List<TelegramModels.Update>> response = postJson("/getUpdates", body, UPDATES_TYPE);
         return response.result() == null ? List.of() : response.result();
+    }
+
+    @Override
+    public SentMedia sendMedia(long chatId, MediaItem item, Object replyMarkup) {
+        TelegramModels.Message m;
+        if (item.fileId() != null) {
+            Map<String, Object> body = new HashMap<>();
+            body.put("chat_id", chatId);
+            body.put(item.kind().field, item.fileId());
+            if (item.captionHtml() != null) {
+                body.put("caption", item.captionHtml());
+                body.put("parse_mode", "HTML");
+            }
+            if (replyMarkup != null) body.put("reply_markup", replyMarkup);
+            m = postJson("/" + item.kind().method, body, MESSAGE_TYPE).result();
+        } else {
+            MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+            form.add("chat_id", String.valueOf(chatId));
+            form.add(item.kind().field, namedBytes(item.bytes(), item.fileName()));
+            if (item.captionHtml() != null) {
+                form.add("caption", item.captionHtml());
+                form.add("parse_mode", "HTML");
+            }
+            if (replyMarkup != null) form.add("reply_markup", TelegramJson.write(replyMarkup));
+            m = call(() -> restClient.post().uri("/" + item.kind().method)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(form)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> { /* parsed from body */ })
+                    .body(MESSAGE_TYPE)).result();
+        }
+        return new SentMedia(m == null ? null : m.messageId(), fileIdOf(m, item.kind()));
+    }
+
+    @Override
+    public List<SentMedia> sendMediaGroup(long chatId, List<MediaItem> items) {
+        MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+        form.add("chat_id", String.valueOf(chatId));
+        List<Map<String, Object>> media = new java.util.ArrayList<>();
+        for (int i = 0; i < items.size(); i++) {
+            MediaItem it = items.get(i);
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("type", it.kind().field);
+            if (it.fileId() != null) {
+                entry.put("media", it.fileId());
+            } else {
+                entry.put("media", "attach://file" + i);
+                form.add("file" + i, namedBytes(it.bytes(), it.fileName()));
+            }
+            if (it.captionHtml() != null) {
+                entry.put("caption", it.captionHtml());
+                entry.put("parse_mode", "HTML");
+            }
+            media.add(entry);
+        }
+        form.add("media", TelegramJson.write(media));
+        List<TelegramModels.Message> sent = call(() -> restClient.post().uri("/sendMediaGroup")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(form)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> { /* parsed from body */ })
+                .body(MESSAGES_TYPE)).result();
+        List<SentMedia> result = new java.util.ArrayList<>();
+        for (int i = 0; i < items.size(); i++) {
+            TelegramModels.Message m = sent != null && i < sent.size() ? sent.get(i) : null;
+            result.add(new SentMedia(m == null ? null : m.messageId(), fileIdOf(m, items.get(i).kind())));
+        }
+        return result;
+    }
+
+    private static ByteArrayResource namedBytes(byte[] bytes, String fileName) {
+        return new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return fileName == null ? "file" : fileName;
+            }
+        };
+    }
+
+    /** The file_id Telegram assigned to what we just sent (for re-sending without re-uploading). */
+    private static String fileIdOf(TelegramModels.Message m, MediaKind kind) {
+        if (m == null) return null;
+        return switch (kind) {
+            case PHOTO -> m.largestPhotoId();
+            case VIDEO -> m.video() != null ? m.video().fileId() : m.document() != null ? m.document().fileId() : null;
+            case DOCUMENT -> m.document() != null ? m.document().fileId() : null;
+            case AUDIO -> m.audio() != null ? m.audio().fileId() : m.document() != null ? m.document().fileId() : null;
+            case VOICE -> m.voice() != null ? m.voice().fileId() : null;
+        };
     }
 
     private static SentPhoto toSentPhoto(TelegramModels.Message m) {

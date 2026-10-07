@@ -72,7 +72,7 @@ export const botSections = {
   announcements: "E'lonlar",
   events: 'Tadbirlar',
   teachers: "O'qituvchilar",
-  write: 'Maktabga yozish',
+  write: "Ma'muriyatga xat",
   absence: 'Sababli ariza',
   school: 'Maktab haqida',
   settings: 'Sozlamalar',

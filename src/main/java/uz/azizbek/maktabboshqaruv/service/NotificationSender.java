@@ -64,6 +64,9 @@ public class NotificationSender {
     private TelegramClient telegramClient;
 
     @Autowired
+    private OutboxMedia outboxMedia;
+
+    @Autowired
     private TelegramProperties telegramProperties;
 
     @Autowired
@@ -184,7 +187,12 @@ public class NotificationSender {
         }
 
         try {
-            telegramClient.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
+            if (n.getMedia() != null) {
+                // files first (by file_id when Telegram already has them), then the text with its buttons
+                outboxMedia.send(n);
+            } else {
+                telegramClient.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
+            }
             lastSendMillis = clock.millis();
             lastSentPerChat.put(n.getChatId(), lastSendMillis);
             n.setAttempts(n.getAttempts() + 1);

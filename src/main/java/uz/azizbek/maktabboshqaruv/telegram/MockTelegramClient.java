@@ -105,6 +105,36 @@ public class MockTelegramClient implements TelegramClient {
         return bytes;
     }
 
+    @Override
+    public SentMedia sendMedia(long chatId, MediaItem item, Object replyMarkup) {
+        String fileId = item.fileId();
+        if (fileId == null) {
+            fileId = "mock-" + item.kind().field + "-" + fileIds.getAndIncrement();
+            files.put(fileId, item.bytes());
+        }
+        long id = messageIds.incrementAndGet();
+        log.info("[MOCK TELEGRAM] chat={} {} {} {}", chatId, item.kind().field, fileId, item.captionHtml());
+        record(new SentMessage(chatId, item.captionHtml(), replyMarkup != null, item.kind().field, id,
+                TelegramJson.write(replyMarkup), fileId));
+        return new SentMedia(id, fileId);
+    }
+
+    @Override
+    public List<SentMedia> sendMediaGroup(long chatId, List<MediaItem> items) {
+        List<SentMedia> result = new ArrayList<>();
+        for (MediaItem item : items) {
+            String fileId = item.fileId();
+            if (fileId == null) {
+                fileId = "mock-" + item.kind().field + "-" + fileIds.getAndIncrement();
+                files.put(fileId, item.bytes());
+            }
+            long id = messageIds.incrementAndGet();
+            record(new SentMessage(chatId, item.captionHtml(), false, "album", id, null, fileId));
+            result.add(new SentMedia(id, fileId));
+        }
+        return result;
+    }
+
     /** Simulates a parent uploading a photo; returns the file_id the bot will see. */
     public String storeIncomingFile(byte[] bytes) {
         String fileId = "mock-upload-" + fileIds.getAndIncrement();

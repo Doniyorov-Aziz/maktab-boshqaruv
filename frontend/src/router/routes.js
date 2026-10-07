@@ -78,7 +78,7 @@ const routes = [
       },
       {
         path: 'parent-messages',
-        component: () => import('@/pages/ParentMessagesPage.vue'),
+        component: () => import('@/pages/AppealsPage.vue'),
         meta: { editorOnly: true }
       },
       {

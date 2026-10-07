@@ -82,7 +82,7 @@
             label="O'qituvchilar telefonini ota-onalarga ko'rsatish"
           />
           <div class="text-caption muted-text q-ml-sm">
-            O'chiq bo'lsa, ota-onalar «💬 Maktabga yozish» orqali bog'lanadi.
+            O'chiq bo'lsa, ota-onalar «✉️ Ma'muriyatga xat» orqali bog'lanadi.
           </div>
         </div>
       </div>

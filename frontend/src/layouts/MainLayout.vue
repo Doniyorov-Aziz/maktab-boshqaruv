@@ -585,26 +585,53 @@ const groupedModules = computed(() => {
   return groups
 })
 
-// Unanswered parent messages / undecided absence requests, shown as sidebar badges.
+// Unread parent appeal messages / undecided absence requests, shown as sidebar badges.
+// Polled every 30 s without the loading bar; a toast says when new appeals arrive.
 const botCounts = ref({ messages: 0, absences: 0 })
+let countsSchool = null
 
 async function loadBotCounts() {
   if (!schoolStore.activeSchoolId || !authStore.isEditor) return
+  const schoolId = schoolStore.activeSchoolId
   try {
-    const params = { schoolId: schoolStore.activeSchoolId }
+    const params = { schoolId }
     const [m, a] = await Promise.all([
-      api.get('/api/parent-messages/count-new', { params, background: true }),
+      api.get('/api/appeals/unread', { params, background: true }),
       api.get('/api/absence-requests/count-pending', {
         params,
         background: true
       })
     ])
+    const before = botCounts.value.messages
+    if (
+      countsSchool === schoolId &&
+      m.data > before &&
+      route.path !== '/parent-messages'
+    ) {
+      $q.notify({
+        icon: 'forum',
+        color: 'primary',
+        message: `Ota-onadan yangi xabar: ${m.data - before} ta`,
+        actions: [
+          {
+            label: "Ko'rish",
+            color: 'white',
+            handler: () => router.push('/parent-messages')
+          }
+        ]
+      })
+    }
+    countsSchool = schoolId
     botCounts.value = { messages: m.data, absences: a.data }
   } catch {
-    botCounts.value = { messages: 0, absences: 0 }
+    // keep the last known numbers on a network hiccup
   }
 }
 loadBotCounts()
+const countsTimer = setInterval(() => {
+  if (!document.hidden) loadBotCounts()
+}, 30000)
+onBeforeUnmount(() => clearInterval(countsTimer))
 
 const currentModule = computed(() =>
   route.params.moduleKey ? getModule(route.params.moduleKey) : null

@@ -67,6 +67,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/health").permitAll()
                         // Mini App: authenticated by Telegram-signed initData inside the controller, not by JWT.
                         .requestMatchers("/api/parent/**").permitAll()
+                        // appeal files: a signed 30-minute link for <img>/<video>, checked in the controller
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/appeals/*/attachments/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

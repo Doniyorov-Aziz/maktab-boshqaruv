@@ -23,6 +23,62 @@ public class TelegramSimulateRequestDto {
     /** Simulates sending a photo (base64 PNG/JPEG); text becomes its caption. */
     private String photoBase64;
     private String languageCode;
+    /** Simulates any other file: VIDEO, VOICE, AUDIO, DOCUMENT or VIDEO_NOTE (text becomes its caption). */
+    private String fileKind;
+    private String fileBase64;
+    private String fileName;
+    private String mimeType;
+    private Integer duration;
+    /** The same value on several updates = one album. */
+    private String mediaGroupId;
+
+    public String getFileKind() {
+        return fileKind;
+    }
+
+    public void setFileKind(String fileKind) {
+        this.fileKind = fileKind;
+    }
+
+    public String getFileBase64() {
+        return fileBase64;
+    }
+
+    public void setFileBase64(String fileBase64) {
+        this.fileBase64 = fileBase64;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
+    }
+
+    public Integer getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Integer duration) {
+        this.duration = duration;
+    }
+
+    public String getMediaGroupId() {
+        return mediaGroupId;
+    }
+
+    public void setMediaGroupId(String mediaGroupId) {
+        this.mediaGroupId = mediaGroupId;
+    }
 
     public String getCallbackData() {
         return callbackData;

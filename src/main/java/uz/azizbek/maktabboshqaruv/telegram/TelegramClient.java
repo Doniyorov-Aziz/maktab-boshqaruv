@@ -70,4 +70,36 @@ public interface TelegramClient {
     default byte[] downloadFile(String fileId) {
         throw new TelegramApiException(404, "Fayl topilmadi", null);
     }
+
+    /** What kind of file a media message carries — maps to sendPhoto / sendVideo / … */
+    enum MediaKind {
+        PHOTO("sendPhoto", "photo"), VIDEO("sendVideo", "video"), DOCUMENT("sendDocument", "document"),
+        AUDIO("sendAudio", "audio"), VOICE("sendVoice", "voice");
+
+        public final String method;
+        public final String field;
+
+        MediaKind(String method, String field) {
+            this.method = method;
+            this.field = field;
+        }
+    }
+
+    /** A sent media message: its id and Telegram's file_id (reuse it instead of uploading again). */
+    record SentMedia(Long messageId, String fileId) {
+    }
+
+    /** One file for sendMedia / an album: by file_id when Telegram already has it, else the bytes. */
+    record MediaItem(MediaKind kind, String fileId, byte[] bytes, String fileName, String captionHtml) {
+    }
+
+    /** Sends one photo/video/document/audio/voice — by {@code fileId} if given, else uploads {@code bytes}. */
+    default SentMedia sendMedia(long chatId, MediaItem item, Object replyMarkup) {
+        throw new TelegramApiException(0, "sendMedia qo'llab-quvvatlanmaydi", null);
+    }
+
+    /** An album (2–10 photos/videos, or documents, or audios); returns each item's file_id in order. */
+    default List<SentMedia> sendMediaGroup(long chatId, List<MediaItem> items) {
+        throw new TelegramApiException(0, "sendMediaGroup qo'llab-quvvatlanmaydi", null);
+    }
 }

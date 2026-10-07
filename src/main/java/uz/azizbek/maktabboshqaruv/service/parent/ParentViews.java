@@ -93,10 +93,6 @@ public final class ParentViews {
                                int newAnnouncements, EventView nextEvent) {
     }
 
-    public record MessageView(Long id, String recipient, String text, String status, LocalDateTime createdAt,
-                              String replyText) {
-    }
-
     public record AbsenceView(Long id, LocalDate from, LocalDate to, String reason, String status,
                               String decisionNote) {
     }

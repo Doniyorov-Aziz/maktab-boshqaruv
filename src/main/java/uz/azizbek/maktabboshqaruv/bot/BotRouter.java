@@ -2,6 +2,7 @@ package uz.azizbek.maktabboshqaruv.bot;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uz.azizbek.maktabboshqaruv.bot.screens.MessageScreen;
 import uz.azizbek.maktabboshqaruv.entity.ParentSession;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.service.BotUsageService;
@@ -164,6 +165,12 @@ public class BotRouter {
                 || ("rep".equals(data.screen()) && "month".equals(data.get("t")));
     }
 
+    private boolean writingAppeal(long chatId, TelegramModels.Message m) {
+        if (m.text() != null && m.text().startsWith("/")) return false;
+        String pending = access.session(chatId).getPendingAction();
+        return pending != null && pending.startsWith(MessageScreen.PENDING);
+    }
+
     private static boolean ownsPending(Screen screen, String pending) {
         return screen instanceof InputHandler h && h.pendingPrefixes().stream().anyMatch(pending::startsWith);
     }
@@ -176,7 +183,9 @@ public class BotRouter {
         long chatId = m.chat().id();
         ParentSession session = null;
         try {
-            if (!rateLimiter.allow(chatId)) return;
+            // An album (or several forwarded messages) arrives as a burst of updates; while the
+            // parent is writing an appeal none of them may be dropped (the appeal has its own cap).
+            if (!rateLimiter.allow(chatId) && !writingAppeal(chatId, m)) return;
             session = touch(chatId, m.from());
             List<Student> students = access.linkedStudents(chatId);
             Student selected = students.isEmpty() ? null : access.selected(session);
@@ -230,7 +239,7 @@ public class BotRouter {
             for (InputHandler h : inputHandlers) {
                 if (h.pendingPrefixes().stream().anyMatch(pending::startsWith)) {
                     if (ctx.student() == null && !(h instanceof uz.azizbek.maktabboshqaruv.bot.screens.ChildrenScreen)) break;
-                    return h.handleInput(ctx, text, photo);
+                    return h.handleMessage(ctx, m);
                 }
             }
         }

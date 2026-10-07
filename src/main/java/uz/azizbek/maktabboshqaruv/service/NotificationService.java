@@ -206,6 +206,17 @@ public class NotificationService {
         return createRows(school, type, referenceId, recordDate, List.of(new Recipient(student, chatId)), text, markup);
     }
 
+    /** A personal message with files (see {@link NotificationLog#getMedia()}), e.g. an appeal reply. */
+    @Transactional
+    public int enqueueDirect(School school, Student student, Long chatId, NotificationType type, Long referenceId,
+                             LocalDate recordDate, Function<String, String> text, Function<String, Object> markup,
+                             String media) {
+        if (notificationLogRepository.existsByChatIdAndTypeAndReferenceIdAndRecordDate(chatId, type, referenceId, recordDate)) {
+            return 0;
+        }
+        return createRows(school, type, referenceId, recordDate, List.of(new Recipient(student, chatId)), text, markup, media);
+    }
+
     /**
      * Buttons under an automatic message: "📱 Batafsil" opens the matching Mini App
      * page when TELEGRAM_WEBAPP_URL is set (else the bot page as a new card), and
@@ -246,6 +257,13 @@ public class NotificationService {
      */
     public int createRows(School school, NotificationType type, Long referenceId, LocalDate recordDate,
                           List<Recipient> recipients, Function<String, String> text, Function<String, Object> markup) {
+        return createRows(school, type, referenceId, recordDate, recipients, text, markup, null);
+    }
+
+    /** @param media files that go with every row ("broadcast:7", "appeal:12,13"), or null */
+    public int createRows(School school, NotificationType type, Long referenceId, LocalDate recordDate,
+                          List<Recipient> recipients, Function<String, String> text, Function<String, Object> markup,
+                          String media) {
         if (recipients.isEmpty()) {
             log.debug("{} ref={}: bog'langan ota-ona yo'q", type, referenceId);
             return 0;
@@ -294,9 +312,10 @@ public class NotificationService {
             row.setLastError(skipReason);
             row.setCreatedAt(now);
             row.setScheduledAt(scheduledAt);
+            row.setMedia(media);
             // Held back by quiet hours: goes out in the single morning note with the others
-            // (a picture keeps its own message).
-            if (scheduledAt.isAfter(now) && status == NotificationStatus.PENDING) row.setQuietBundle(true);
+            // (a message with files keeps its own message).
+            if (scheduledAt.isAfter(now) && status == NotificationStatus.PENDING && media == null) row.setQuietBundle(true);
             notificationLogRepository.save(row);
             created++;
             if (status == NotificationStatus.SKIPPED) {

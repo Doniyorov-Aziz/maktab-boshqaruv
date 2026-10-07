@@ -106,13 +106,36 @@ public class TelegramController {
             String text = request.getText();
             String caption = null;
             if (request.getPhotoBase64() != null) {
-                String fileId = mock.storeIncomingFile(Base64.getDecoder().decode(request.getPhotoBase64()));
-                photo = List.of(new TelegramModels.PhotoSize(fileId, 800, 600));
+                byte[] bytes = Base64.getDecoder().decode(request.getPhotoBase64());
+                String fileId = mock.storeIncomingFile(bytes);
+                photo = List.of(new TelegramModels.PhotoSize(fileId, 800, 600, fileId, (long) bytes.length));
+                caption = text;
+                text = null;
+            }
+            TelegramModels.Video video = null;
+            TelegramModels.Voice voice = null;
+            TelegramModels.Audio audio = null;
+            TelegramModels.Document document = null;
+            TelegramModels.VideoNote videoNote = null;
+            if (request.getFileKind() != null && request.getFileBase64() != null) {
+                byte[] bytes = Base64.getDecoder().decode(request.getFileBase64());
+                String id = mock.storeIncomingFile(bytes);
+                long size = bytes.length;
+                Integer sec = request.getDuration();
+                String mime = request.getMimeType();
+                switch (request.getFileKind().toUpperCase()) {
+                    case "VIDEO" -> video = new TelegramModels.Video(id, id, sec, mime, size, request.getFileName());
+                    case "VOICE" -> voice = new TelegramModels.Voice(id, id, sec, mime, size);
+                    case "AUDIO" -> audio = new TelegramModels.Audio(id, id, sec, mime, size, request.getFileName(), null);
+                    case "VIDEO_NOTE" -> videoNote = new TelegramModels.VideoNote(id, id, sec, 240, size);
+                    default -> document = new TelegramModels.Document(id, id, request.getFileName(), mime, size);
+                }
                 caption = text;
                 text = null;
             }
             update = new TelegramModels.Update(SIMULATED_UPDATE_ID.getAndIncrement(),
-                    new TelegramModels.Message(1L, from, chat, text, contact, photo, caption));
+                    new TelegramModels.Message(SIMULATED_UPDATE_ID.get(), from, chat, text, contact, photo, caption,
+                            video, voice, audio, document, videoNote, request.getMediaGroupId()));
         }
 
         int before = mock.size();
