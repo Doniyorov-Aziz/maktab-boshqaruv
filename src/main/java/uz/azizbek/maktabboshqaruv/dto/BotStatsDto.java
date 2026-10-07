@@ -17,6 +17,65 @@ public class BotStatsDto {
     private List<ClassCoverage> classes;
     private List<SectionCount> sections;
     private List<DayCount> sentPerDay;
+    /** Last 30 days by the day a message was queued: queued / delivered / failed. */
+    private List<DayStatus> messagesPerDay;
+    private long messages30;
+    private long delivered30;
+    private long failed30;
+    /** Parent appeals (section 9) in the last 30 days, and the average time to the first reply. */
+    private long appeals30;
+    private Double avgReplyMinutes;
+
+    public record DayStatus(LocalDate date, long queued, long delivered, long failed) {
+    }
+
+    public List<DayStatus> getMessagesPerDay() {
+        return messagesPerDay;
+    }
+
+    public void setMessagesPerDay(List<DayStatus> messagesPerDay) {
+        this.messagesPerDay = messagesPerDay;
+    }
+
+    public long getMessages30() {
+        return messages30;
+    }
+
+    public void setMessages30(long messages30) {
+        this.messages30 = messages30;
+    }
+
+    public long getDelivered30() {
+        return delivered30;
+    }
+
+    public void setDelivered30(long delivered30) {
+        this.delivered30 = delivered30;
+    }
+
+    public long getFailed30() {
+        return failed30;
+    }
+
+    public void setFailed30(long failed30) {
+        this.failed30 = failed30;
+    }
+
+    public long getAppeals30() {
+        return appeals30;
+    }
+
+    public void setAppeals30(long appeals30) {
+        this.appeals30 = appeals30;
+    }
+
+    public Double getAvgReplyMinutes() {
+        return avgReplyMinutes;
+    }
+
+    public void setAvgReplyMinutes(Double avgReplyMinutes) {
+        this.avgReplyMinutes = avgReplyMinutes;
+    }
 
     public static class ClassCoverage {
         private Long classId;

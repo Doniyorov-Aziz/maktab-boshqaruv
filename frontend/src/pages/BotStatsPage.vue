@@ -19,7 +19,7 @@
     </template>
 
     <div class="row q-col-gutter-md q-mb-md">
-      <div v-for="k in kpis" :key="k.label" class="col-6 col-md-4 col-xl-2">
+      <div v-for="k in kpis" :key="k.label" class="col-6 col-md-3 col-xl">
         <div class="brand-card stat-card">
           <div class="row items-center no-wrap">
             <div
@@ -48,12 +48,19 @@
     <div class="row q-col-gutter-md q-mb-md">
       <div class="col-12 col-lg-7">
         <div class="brand-card q-pa-md chart-card">
-          <div class="text-subtitle1 text-weight-semibold q-mb-sm"
-            >Yuborilgan xabarlar (30 kun)</div
-          >
+          <div class="row items-center q-mb-sm">
+            <div class="text-subtitle1 text-weight-semibold"
+              >Xabarlar (30 kun)</div
+            >
+            <q-space />
+            <span v-if="stats" class="text-caption muted-text tabular-nums">
+              {{ stats.messages30 }} navbatga ·
+              {{ stats.delivered30 }} yetkazildi · {{ stats.failed30 }} xato
+            </span>
+          </div>
           <div class="chart-box">
             <q-skeleton v-if="!stats" type="rect" class="full-height" />
-            <Bar v-else :data="sentChartData" :options="sentChartOptions" />
+            <Line v-else :data="sentChartData" :options="sentChartOptions" />
           </div>
         </div>
       </div>
@@ -77,6 +84,22 @@
             />
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="brand-card q-pa-md q-mb-md">
+      <div class="row items-center q-mb-sm">
+        <div class="text-subtitle1 text-weight-semibold"
+          >Sinflar bo'yicha botga ulanish (%)</div
+        >
+        <q-space />
+        <span class="text-caption muted-text"
+          >Ulanish foizi past sinflar birinchi</span
+        >
+      </div>
+      <div class="chart-box">
+        <q-skeleton v-if="!stats" type="rect" class="full-height" />
+        <Bar v-else :data="classChartData" :options="classChartOptions" />
       </div>
     </div>
 
@@ -150,11 +173,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
-import { Bar } from 'vue-chartjs'
+import { Bar, Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   Tooltip,
+  Legend,
   BarElement,
+  LineElement,
+  PointElement,
   CategoryScale,
   LinearScale
 } from 'chart.js'
@@ -164,7 +190,25 @@ import { useSchoolStore } from '@/stores/school'
 import { formatShortDate } from '@/utils/date'
 import { botSections } from '@/utils/telegram'
 
-ChartJS.register(Tooltip, BarElement, CategoryScale, LinearScale)
+ChartJS.register(
+  Tooltip,
+  Legend,
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale
+)
+
+function replyTime(minutes) {
+  if (minutes == null) return '—'
+  if (minutes < 1) return '1 daqiqadan kam'
+  if (minutes < 60) return `${Math.round(minutes)} daq`
+  const h = Math.floor(minutes / 60)
+  const m = Math.round(minutes % 60)
+  if (h < 24) return m ? `${h} soat ${m} daq` : `${h} soat`
+  return `${Math.round(h / 24)} kun`
+}
 
 const $q = useQuasar()
 const schoolStore = useSchoolStore()
@@ -207,6 +251,13 @@ const kpis = computed(() => {
       hint: null,
       icon: 'forum',
       color: '#f59e0b'
+    },
+    {
+      label: 'Murojaatlar (30 kun)',
+      value: s.appeals30 ?? 0,
+      hint: `o'rtacha javob: ${replyTime(s.avgReplyMinutes)}`,
+      icon: 'mark_chat_unread',
+      color: '#ec4899'
     },
     {
       label: 'Kutilayotgan arizalar',
@@ -261,23 +312,42 @@ const gridColor = computed(() =>
   $q.dark.isActive ? 'rgba(148,163,184,0.16)' : 'rgba(148,163,184,0.18)'
 )
 
-const sentChartData = computed(() => ({
-  labels: (stats.value?.sentPerDay || []).map(d => formatShortDate(d.date)),
-  datasets: [
-    {
-      label: 'Yuborilgan',
-      data: (stats.value?.sentPerDay || []).map(d => d.count),
-      backgroundColor: '#229ed9',
-      borderRadius: 6,
-      maxBarThickness: 18
-    }
-  ]
-}))
+const sentChartData = computed(() => {
+  const days = stats.value?.messagesPerDay || []
+  const line = (label, key, color, dash) => ({
+    label,
+    data: days.map(d => d[key]),
+    borderColor: color,
+    backgroundColor: color,
+    borderDash: dash || [],
+    tension: 0.3,
+    pointRadius: 2,
+    borderWidth: 2
+  })
+  return {
+    labels: days.map(d => formatShortDate(d.date)),
+    datasets: [
+      line("Navbatga qo'yilgan", 'queued', '#8b5cf6', [6, 4]),
+      line('Yetkazilgan', 'delivered', '#10b981'),
+      line('Xato', 'failed', '#ef4444')
+    ]
+  }
+})
 
 const sentChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        color: textColor.value,
+        font: { family: 'Inter' },
+        boxWidth: 12
+      }
+    }
+  },
   scales: {
     x: {
       ticks: {
@@ -293,6 +363,57 @@ const sentChartOptions = computed(() => ({
         color: textColor.value,
         font: { family: 'Inter' },
         precision: 0
+      },
+      grid: { color: gridColor.value }
+    }
+  }
+}))
+
+const coverageHex = p =>
+  p == null || p < 30 ? '#ef4444' : p < 70 ? '#f59e0b' : '#10b981'
+
+const classChartData = computed(() => {
+  const rows = stats.value?.classes || []
+  return {
+    labels: rows.map(c => c.className),
+    datasets: [
+      {
+        label: 'Ulangan, %',
+        data: rows.map(c => c.percent ?? 0),
+        backgroundColor: rows.map(c => coverageHex(c.percent)),
+        borderRadius: 6,
+        maxBarThickness: 28
+      }
+    ]
+  }
+})
+
+const classChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: ctx => {
+          const c = stats.value.classes[ctx.dataIndex]
+          return ` ${c.percent ?? 0}% · ${c.linked}/${c.students} o'quvchi`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: textColor.value, font: { family: 'Inter' } },
+      grid: { display: false }
+    },
+    y: {
+      beginAtZero: true,
+      max: 100,
+      ticks: {
+        color: textColor.value,
+        font: { family: 'Inter' },
+        callback: v => `${v}%`
       },
       grid: { color: gridColor.value }
     }

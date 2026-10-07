@@ -1,6 +1,6 @@
 package uz.azizbek.maktabboshqaruv.dto;
 
-import jakarta.validation.constraints.NotBlank;
+
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -12,15 +12,26 @@ public class BroadcastRequestDto {
     @NotNull
     private Long schoolId;
 
-    @NotBlank
+    // may be empty when files are attached (checked in the service)
     @Size(max = 3500)
     private String text;
 
     @NotNull
-    @Pattern(regexp = "^(ALL|CLASSES)$")
+    @Pattern(regexp = "^(ALL|CLASSES|PARENTS)$")
     private String audience;
 
     private List<Long> classIds;
+
+    /** audience = PARENTS: the chosen parents (ParentTelegramLink ids; the chat id itself never leaves the server). */
+    private List<Long> linkIds;
+
+    public List<Long> getLinkIds() {
+        return linkIds;
+    }
+
+    public void setLinkIds(List<Long> linkIds) {
+        this.linkIds = linkIds;
+    }
 
     public Long getSchoolId() {
         return schoolId;

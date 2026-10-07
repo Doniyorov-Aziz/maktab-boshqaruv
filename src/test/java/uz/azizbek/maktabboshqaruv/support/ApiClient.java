@@ -49,6 +49,36 @@ public class ApiClient {
         return send("DELETE", path, null);
     }
 
+    /** One part of a multipart request: a JSON part ({@code fileName} null) or a file. */
+    public record Part(String name, String fileName, String contentType, byte[] bytes) {
+        public static Part json(String name, Object value) {
+            return new Part(name, null, "application/json", MAPPER.writeValueAsString(value).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        public static Part file(String name, String fileName, String contentType, byte[] bytes) {
+            return new Part(name, fileName, contentType, bytes);
+        }
+    }
+
+    public Response multipart(String path, java.util.List<Part> parts) throws Exception {
+        String boundary = "----test" + System.nanoTime();
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        for (Part p : parts) {
+            out.write(("--" + boundary + "\r\nContent-Disposition: form-data; name=\"" + p.name() + "\""
+                    + (p.fileName() != null ? "; filename=\"" + p.fileName() + "\"" : "")
+                    + "\r\nContent-Type: " + p.contentType() + "\r\n\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            out.write(p.bytes());
+            out.write("\r\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        out.write(("--" + boundary + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + path))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .POST(HttpRequest.BodyPublishers.ofByteArray(out.toByteArray()));
+        if (token != null) b.header("Authorization", "Bearer " + token);
+        HttpResponse<byte[]> r = http.send(b.build(), HttpResponse.BodyHandlers.ofByteArray());
+        return new Response(r.statusCode(), new String(r.body(), java.nio.charset.StandardCharsets.UTF_8), r);
+    }
+
     public Response send(String method, String path, String json) throws Exception {
         HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + path));
         if (token != null) b.header("Authorization", "Bearer " + token);

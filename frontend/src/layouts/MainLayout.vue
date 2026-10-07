@@ -555,6 +555,13 @@ const groupedModules = computed(() => {
         color: '#f59e0b',
         badge: botCounts.value.absences || null
       },
+      {
+        key: 'telegram-parents',
+        path: '/telegram-parents',
+        title: 'Ota-onalar (Telegram)',
+        icon: 'family_restroom',
+        color: '#229ed9'
+      },
       ...(authStore.isAdmin
         ? [
             {
@@ -581,6 +588,21 @@ const groupedModules = computed(() => {
         color: '#64748b'
       }
     )
+  }
+  // viewers may still look at who is linked to the bot (no chat ids, no invite links)
+  if (!authStore.isEditor) {
+    groups.push({
+      name: 'Boshqaruv',
+      items: [
+        {
+          key: 'telegram-parents',
+          path: '/telegram-parents',
+          title: 'Ota-onalar (Telegram)',
+          icon: 'family_restroom',
+          color: '#229ed9'
+        }
+      ]
+    })
   }
   return groups
 })

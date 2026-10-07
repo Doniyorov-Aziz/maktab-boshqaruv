@@ -18,6 +18,29 @@ public class BroadcastDto {
     private long pending;
     private long failed;
     private long skipped;
+    /** audience = PARENTS: how many parents were chosen. */
+    private int chosenParents;
+    private List<Attachment> attachments = List.of();
+
+    /** A file sent with the message (shown in the history; the file itself stays on the server). */
+    public record Attachment(String kind, String name, Long size, boolean uploaded) {
+    }
+
+    public int getChosenParents() {
+        return chosenParents;
+    }
+
+    public void setChosenParents(int chosenParents) {
+        this.chosenParents = chosenParents;
+    }
+
+    public List<Attachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<Attachment> attachments) {
+        this.attachments = attachments;
+    }
 
     public Long getId() {
         return id;

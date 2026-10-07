@@ -1,6 +1,7 @@
 package uz.azizbek.maktabboshqaruv.repository;
 
 import uz.azizbek.maktabboshqaruv.entity.ParentTelegramLink;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -50,6 +51,15 @@ public interface ParentTelegramLinkRepository extends JpaRepository<ParentTelegr
     List<ParentTelegramLink> findAllActive();
 
     boolean existsByChatIdAndStudentIdAndActiveTrue(Long chatId, Long studentId);
+
+    /** Linked parents of a school with their child and class in one query (the "choose parents" list). */
+    @Query("select l from ParentTelegramLink l join fetch l.student s join fetch s.schoolClass c " +
+            "where l.active = true and c.academicYear.school.id = :schoolId " +
+            "and (:classId is null or c.id = :classId) " +
+            "and (:q = '' or lower(concat(coalesce(l.firstName, ''), ' ', coalesce(l.telegramUsername, ''), ' ', s.lastName, ' ', s.firstName)) like :q) " +
+            "order by c.gradeNumber, c.sectionLetter, s.lastName, s.firstName")
+    List<ParentTelegramLink> findActiveWithStudent(@Param("schoolId") Long schoolId, @Param("classId") Long classId,
+                                                   @Param("q") String q, Pageable pageable);
 
     /** The chat's children with class, year and school in one query (the bot's cache loader). */
     @Query("select s from Student s join fetch s.schoolClass c join fetch c.academicYear y join fetch y.school " +

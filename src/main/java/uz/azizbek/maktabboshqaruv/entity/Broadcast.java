@@ -35,6 +35,30 @@ public class Broadcast {
 
     private Integer recipientCount;
 
+    /** Comma-separated chat ids when audience = PARENTS. */
+    @Column(columnDefinition = "TEXT")
+    private String chatIds;
+
+    /** Attached files (photos, videos, documents); 0 for a text-only message. */
+    @Column(columnDefinition = "integer default 0")
+    private Integer mediaCount = 0;
+
+    public String getChatIds() {
+        return chatIds;
+    }
+
+    public void setChatIds(String chatIds) {
+        this.chatIds = chatIds;
+    }
+
+    public Integer getMediaCount() {
+        return mediaCount;
+    }
+
+    public void setMediaCount(Integer mediaCount) {
+        this.mediaCount = mediaCount;
+    }
+
     public Long getId() {
         return id;
     }

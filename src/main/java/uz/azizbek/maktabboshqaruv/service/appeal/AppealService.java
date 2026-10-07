@@ -495,7 +495,7 @@ public class AppealService {
         return line.length() > 190 ? line.substring(0, 189) + "…" : line;
     }
 
-    static Kind kindOf(String mime, String name) {
+    public static Kind kindOf(String mime, String name) {
         String m = mime == null ? "" : mime.toLowerCase(Locale.ROOT);
         String n = name == null ? "" : name.toLowerCase(Locale.ROOT);
         if (m.startsWith("image/") && !n.endsWith(".svg")) return Kind.PHOTO;

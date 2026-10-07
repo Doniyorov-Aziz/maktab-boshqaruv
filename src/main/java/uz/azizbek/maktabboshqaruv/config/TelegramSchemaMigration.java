@@ -26,7 +26,9 @@ public class TelegramSchemaMigration implements CommandLineRunner {
 
     private static final List<String[]> STALE_CHECKS = List.of(
             new String[]{"notification_log", "notification_log_type_check"},
-            new String[]{"notification_log", "notification_log_status_check"}
+            new String[]{"notification_log", "notification_log_status_check"},
+            // v4: "tanlangan ota-onalar" (PARENTS) audience
+            new String[]{"broadcast", "broadcast_audience_check"}
     );
 
     @Autowired

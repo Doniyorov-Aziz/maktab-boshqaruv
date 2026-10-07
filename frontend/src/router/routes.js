@@ -77,6 +77,10 @@ const routes = [
         meta: { editorOnly: true }
       },
       {
+        path: 'telegram-parents',
+        component: () => import('@/pages/TelegramParentsPage.vue')
+      },
+      {
         path: 'parent-messages',
         component: () => import('@/pages/AppealsPage.vue'),
         meta: { editorOnly: true }

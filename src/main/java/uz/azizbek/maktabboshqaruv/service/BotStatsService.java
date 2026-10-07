@@ -1,6 +1,7 @@
 package uz.azizbek.maktabboshqaruv.service;
 
 import uz.azizbek.maktabboshqaruv.dto.BotStatsDto;
+import uz.azizbek.maktabboshqaruv.entity.NotificationStatus;
 import uz.azizbek.maktabboshqaruv.entity.SchoolClass;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.repository.*;
@@ -29,6 +30,9 @@ public class BotStatsService {
     private NotificationLogRepository notificationLogRepository;
     @Autowired
     private uz.azizbek.maktabboshqaruv.repository.AppealRepository appealRepository;
+
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.repository.AppealMessageRepository appealMessageRepository;
     @Autowired
     private AbsenceRequestService absenceRequestService;
     @Autowired
@@ -90,6 +94,38 @@ public class BotStatsService {
             days.add(new BotStatsDto.DayCount(d, perDay.getOrDefault(d, 0L)));
         }
         dto.setSentPerDay(days);
+
+        // queued / delivered / failed per day (by the day the message was queued)
+        LocalDate first = now.toLocalDate().minusDays(29);
+        Map<LocalDate, long[]> byDay = new HashMap<>();
+        for (Object[] row : notificationLogRepository.statusPerDay(schoolId, first.atStartOfDay())) {
+            long[] c = byDay.computeIfAbsent((LocalDate) row[0], k -> new long[3]);
+            long n = ((Number) row[2]).longValue();
+            c[0] += n;
+            if (row[1] == NotificationStatus.SENT) c[1] += n;
+            if (row[1] == NotificationStatus.FAILED) c[2] += n;
+        }
+        List<BotStatsDto.DayStatus> status = new ArrayList<>();
+        long queued = 0, delivered = 0, failed = 0;
+        for (LocalDate d = first; !d.isAfter(now.toLocalDate()); d = d.plusDays(1)) {
+            long[] c = byDay.getOrDefault(d, new long[3]);
+            status.add(new BotStatsDto.DayStatus(d, c[0], c[1], c[2]));
+            queued += c[0];
+            delivered += c[1];
+            failed += c[2];
+        }
+        dto.setMessagesPerDay(status);
+        dto.setMessages30(queued);
+        dto.setDelivered30(delivered);
+        dto.setFailed30(failed);
+
+        dto.setAppeals30(appealRepository.countSince(schoolId, now.minusDays(30)));
+        Double minutes = appealMessageRepository.averageFirstReplyMinutes(schoolId, now.minusDays(30));
+        dto.setAvgReplyMinutes(minutes == null ? null : Math.round(minutes * 10) / 10.0);
+
+        // weakest coverage first: these classes need a reminder at the next parents' meeting
+        classes.sort(Comparator.comparing((BotStatsDto.ClassCoverage cc) -> cc.getPercent() == null ? 0.0 : cc.getPercent())
+                .thenComparing(BotStatsDto.ClassCoverage::getClassName));
         return dto;
     }
 }

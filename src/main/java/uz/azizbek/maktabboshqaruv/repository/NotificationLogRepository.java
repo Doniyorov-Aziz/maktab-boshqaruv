@@ -58,4 +58,43 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     @Query("update NotificationLog n set n.status = uz.azizbek.maktabboshqaruv.entity.NotificationStatus.SKIPPED, " +
             "n.lastError = :reason where n.chatId = :chatId and n.status = uz.azizbek.maktabboshqaruv.entity.NotificationStatus.PENDING")
     int skipPendingForChat(@Param("chatId") Long chatId, @Param("reason") String reason);
+
+    /** Delivery result of several broadcasts in one query: [broadcastId, status, count]. */
+    @Query("select n.referenceId, n.status, count(n) from NotificationLog n " +
+            "where n.type = uz.azizbek.maktabboshqaruv.entity.NotificationType.BROADCAST and n.referenceId in :ids " +
+            "group by n.referenceId, n.status")
+    List<Object[]> broadcastStatusCounts(@Param("ids") java.util.Collection<Long> ids);
+
+    /**
+     * Who a broadcast went to: student, class, the parent's name, status and time.
+     * {@code status} '' = any; {@code q} '' = no search.
+     */
+    @Query(value = """
+            select new uz.azizbek.maktabboshqaruv.dto.BroadcastRecipientDto(n.id, s.id,
+                   concat(s.lastName, ' ', s.firstName), c.gradeNumber, c.sectionLetter,
+                   (select max(l.firstName) from ParentTelegramLink l where l.student = s and l.chatId = n.chatId),
+                   cast(n.status as string), n.createdAt, n.sentAt, n.lastError)
+            from NotificationLog n join n.student s join s.schoolClass c
+            where n.type = uz.azizbek.maktabboshqaruv.entity.NotificationType.BROADCAST and n.referenceId = :id
+              and (:status = '' or cast(n.status as string) = :status)
+              and (:classId is null or c.id = :classId)
+              and (:q = '' or lower(concat(s.lastName, ' ', s.firstName)) like :q)
+            order by c.gradeNumber, c.sectionLetter, s.lastName, s.firstName
+            """,
+            countQuery = """
+            select count(n) from NotificationLog n join n.student s join s.schoolClass c
+            where n.type = uz.azizbek.maktabboshqaruv.entity.NotificationType.BROADCAST and n.referenceId = :id
+              and (:status = '' or cast(n.status as string) = :status)
+              and (:classId is null or c.id = :classId)
+              and (:q = '' or lower(concat(s.lastName, ' ', s.firstName)) like :q)
+            """)
+    org.springframework.data.domain.Page<uz.azizbek.maktabboshqaruv.dto.BroadcastRecipientDto> broadcastRecipients(
+            @Param("id") Long broadcastId, @Param("status") String status, @Param("classId") Long classId,
+            @Param("q") String q, Pageable pageable);
+
+    /** For the 30-day chart: [day the message was queued, status, count]. */
+    @Query("select cast(n.createdAt as LocalDate), n.status, count(n) from NotificationLog n " +
+            "where n.school.id = :schoolId and n.createdAt >= :since " +
+            "group by cast(n.createdAt as LocalDate), n.status")
+    List<Object[]> statusPerDay(@Param("schoolId") Long schoolId, @Param("since") LocalDateTime since);
 }
