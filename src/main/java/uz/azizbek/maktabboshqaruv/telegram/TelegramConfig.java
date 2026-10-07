@@ -20,9 +20,17 @@ public class TelegramConfig {
 
     public static final ZoneId ZONE = ZoneId.of("Asia/Tashkent");
 
+    /**
+     * The application's clock (Asia/Tashkent). For demos and browser tests only: {@code app.fake-now}
+     * (e.g. 2026-10-07T10:40) starts the clock at that moment and lets it run on. Empty = real time.
+     */
     @Bean
-    public Clock clock() {
-        return Clock.system(ZONE);
+    public Clock clock(@org.springframework.beans.factory.annotation.Value("${app.fake-now:}") String fakeNow) {
+        Clock real = Clock.system(ZONE);
+        if (fakeNow == null || fakeNow.isBlank()) return real;
+        java.time.Instant start = java.time.LocalDateTime.parse(fakeNow.trim()).atZone(ZONE).toInstant();
+        log.warn("DIQQAT: soxta vaqt yoqilgan (app.fake-now={}) — faqat sinov uchun", fakeNow.trim());
+        return Clock.offset(real, java.time.Duration.between(real.instant(), start));
     }
 
     /**

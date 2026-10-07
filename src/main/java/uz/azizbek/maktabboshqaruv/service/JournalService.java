@@ -1,6 +1,6 @@
 package uz.azizbek.maktabboshqaruv.service;
 
-import uz.azizbek.maktabboshqaruv.entity.*;
+import uz.azizbek.maktabboshqaruv.entity.GradeType;
 import uz.azizbek.maktabboshqaruv.repository.*;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,9 @@ import java.util.*;
 /**
  * The class journal ("Baholar jurnali"): a month of one subject for one class, the class
  * overview panel (homeroom teacher, today's lessons) and a teacher's current lesson.
- * Every method is 1–3 SQL queries; averages and "what is on now" are computed by the page.
+ * Every method is 1–3 SQL statements: the queries select columns, not entities, so no
+ * eager relation is ever loaded one by one (checked by JournalQueryCountTest).
+ * Averages and "what is on now" are computed by the page.
  */
 @Service
 public class JournalService {
@@ -60,6 +62,15 @@ public class JournalService {
                                 LocalTime start, LocalTime end) {
     }
 
+    /** One timetable row of a class (from {@link LessonSlotRepository#weekOfClass}). */
+    private record Slot(String weekday, LocalTime start, LocalTime end, Long subjectId, String subjectName,
+                        boolean subjectActive, Person teacher) {
+        static Slot of(Object[] r) {
+            return new Slot((String) r[0], (LocalTime) r[1], (LocalTime) r[2], (Long) r[3], (String) r[4],
+                    r[5] == null || (Boolean) r[5], person((Long) r[6], (String) r[7], (String) r[8], (String) r[9]));
+        }
+    }
+
     private final GradeRepository grades;
     private final LessonSlotRepository slots;
     private final CalendarEventRepository events;
@@ -77,7 +88,7 @@ public class JournalService {
         this.clock = clock;
     }
 
-    /** 3 queries: the class's lessons, students + grades, days off. */
+    /** 3 statements: the class's week, students + grades, days off. */
     @Transactional(readOnly = true)
     public Journal journal(Long classId, Long subjectId, YearMonth month) {
         LocalDate from = month.atDay(1);
@@ -86,10 +97,11 @@ public class JournalService {
 
         Set<String> lessonDays = new HashSet<>();
         Person teacher = null;
-        for (LessonSlot l : slots.findWeekWithTeachers(classId)) {
-            if (!l.getSubject().getId().equals(subjectId)) continue;
-            lessonDays.add(l.getWeekday());
-            if (teacher == null) teacher = person(l.getEmployee());
+        for (Object[] r : slots.weekOfClass(classId)) {
+            Slot s = Slot.of(r);
+            if (!s.subjectId().equals(subjectId)) continue;
+            lessonDays.add(s.weekday());
+            if (teacher == null) teacher = s.teacher();
         }
         Map<LocalDate, String> daysOff = daysOff(classId, from, to);
 
@@ -104,63 +116,60 @@ public class JournalService {
         List<StudentRow> students = new ArrayList<>();
         List<GradeCell> cells = new ArrayList<>();
         Long last = null;
-        for (Object[] row : grades.journal(classId, subjectId, from, to)) {
-            Student s = (Student) row[0];
-            if (!s.getId().equals(last)) {
-                students.add(new StudentRow(s.getId(), s.getLastName() + " " + s.getFirstName()));
-                last = s.getId();
+        for (Object[] r : grades.journal(classId, subjectId, from, to)) {
+            Long studentId = (Long) r[0];
+            if (!studentId.equals(last)) {
+                students.add(new StudentRow(studentId, r[1] + " " + r[2]));
+                last = studentId;
             }
-            if (row[1] instanceof Grade g) {
-                cells.add(new GradeCell(g.getId(), s.getId(), g.getGradeDate(), g.getScore(), g.getType().name(),
-                        g.getComment(), g.getCreatedBy(), g.getCreatedDate()));
+            if (r[3] != null) {
+                cells.add(new GradeCell((Long) r[3], studentId, (LocalDate) r[4], (Integer) r[5],
+                        ((GradeType) r[6]).name(), (String) r[7], (String) r[8], (LocalDateTime) r[9]));
             }
         }
         return new Journal(classId, subjectId, month.toString(), today, days, students, cells, teacher);
     }
 
-    /** 3 queries (4 when the class has no timetable yet): class + teacher, its week, today's day off. */
+    /** 3 statements (4 when the class has no timetable yet): class header, its week, today's day off. */
     @Transactional(readOnly = true)
     public Overview overview(Long classId) {
-        SchoolClass c = classes.findWithTeacher(classId).orElseThrow(() -> new IllegalStateException("Sinf topilmadi"));
+        List<Object[]> header = classes.header(classId);
+        if (header.isEmpty()) throw new IllegalStateException("Sinf topilmadi");
+        Object[] h = header.get(0);
+        String className = h[1] + "-" + h[2];
+        Long schoolId = (Long) h[3];
+        Person homeroom = h[4] == null ? null : person((Long) h[4], (String) h[5], (String) h[6], (String) h[7]);
+
         LocalDate today = LocalDate.now(clock);
         String weekday = WEEKDAY.get(today.getDayOfWeek());
-
-        List<LessonSlot> week = slots.findWeekWithTeachers(classId);
-        List<LocalTime> starts = week.stream().map(LessonSlot::getStartTime).distinct().sorted().toList();
+        List<Slot> week = slots.weekOfClass(classId).stream().map(Slot::of).toList();
+        List<LocalTime> starts = week.stream().map(Slot::start).distinct().sorted().toList();
         List<Lesson> lessons = week.stream()
-                .filter(l -> l.getWeekday().equals(weekday))
-                .sorted(Comparator.comparing(LessonSlot::getStartTime))
-                .map(l -> new Lesson(starts.indexOf(l.getStartTime()) + 1, l.getStartTime(), l.getEndTime(),
-                        l.getSubject().getId(), l.getSubject().getName(), person(l.getEmployee())))
+                .filter(s -> s.weekday().equals(weekday))
+                .sorted(Comparator.comparing(Slot::start))
+                .map(s -> new Lesson(starts.indexOf(s.start()) + 1, s.start(), s.end(), s.subjectId(), s.subjectName(),
+                        s.teacher()))
                 .toList();
 
         // subjects taught in this class (active ones), each with its teacher; all active subjects otherwise
         Map<Long, SubjectOption> taught = new LinkedHashMap<>();
-        week.stream().sorted(Comparator.comparing((LessonSlot l) -> l.getSubject().getName()))
-                .filter(l -> l.getSubject().isActive())
-                .forEach(l -> taught.putIfAbsent(l.getSubject().getId(),
-                        new SubjectOption(l.getSubject().getId(), l.getSubject().getName(), person(l.getEmployee()))));
+        week.stream().filter(Slot::subjectActive).sorted(Comparator.comparing(Slot::subjectName))
+                .forEach(s -> taught.putIfAbsent(s.subjectId(), new SubjectOption(s.subjectId(), s.subjectName(), s.teacher())));
         List<SubjectOption> subjectOptions = new ArrayList<>(taught.values());
         if (subjectOptions.isEmpty()) {
-            subjects.findActiveBySchoolId(c.getAcademicYear().getSchool().getId(), PageRequest.of(0, 500)).forEach(s ->
+            subjects.findActiveBySchoolId(schoolId, PageRequest.of(0, 500)).forEach(s ->
                     subjectOptions.add(new SubjectOption(s.getId(), s.getName(), null)));
             subjectOptions.sort(Comparator.comparing(SubjectOption::name));
         }
 
-        String dayOff = null;
-        if (today.getDayOfWeek() == DayOfWeek.SUNDAY) {
-            dayOff = "Yakshanba";
-        } else {
-            dayOff = daysOff(classId, today, today).get(today);
-        }
-        return new Overview(c.getId(), c.getGradeNumber() + "-" + c.getSectionLetter(),
-                c.getClassTeacher() == null ? null : person(c.getClassTeacher()), today, weekday,
+        String dayOff = today.getDayOfWeek() == DayOfWeek.SUNDAY ? "Yakshanba" : daysOff(classId, today, today).get(today);
+        return new Overview(classId, className, homeroom, today, weekday,
                 dayOff == null ? lessons : List.of(), dayOff != null, dayOff, subjectOptions);
     }
 
     /**
-     * The lesson a teacher is giving now — or ended at most 15 minutes ago. 2 queries.
-     * Empty outside lessons (breaks, before and after school, days off).
+     * The lesson a teacher is giving now — or ended at most 15 minutes ago. 2 statements.
+     * Empty outside lessons (free periods, before and after school, days off).
      */
     @Transactional(readOnly = true)
     public Optional<CurrentLesson> currentLesson(Long employeeId) {
@@ -169,36 +178,37 @@ public class JournalService {
         String weekday = WEEKDAY.get(now.getDayOfWeek());
         if (weekday == null) return Optional.empty();
         LocalTime t = now.toLocalTime();
-        LessonSlot current = null;
-        for (LessonSlot l : slots.findOfTeacherOnDay(employeeId, weekday)) {
-            boolean during = !t.isBefore(l.getStartTime()) && t.isBefore(l.getEndTime());
-            boolean justEnded = !t.isBefore(l.getEndTime()) && !t.isAfter(l.getEndTime().plus(GRACE));
-            if (during) {
-                current = l;
+        Object[] current = null;
+        for (Object[] r : slots.ofTeacherOnDay(employeeId, weekday)) {
+            LocalTime start = (LocalTime) r[0];
+            LocalTime end = (LocalTime) r[1];
+            if (!t.isBefore(start) && t.isBefore(end)) {
+                current = r;
                 break;
             }
-            if (justEnded) current = l;
+            if (!t.isBefore(end) && !t.isAfter(end.plus(GRACE))) current = r;
         }
         if (current == null) return Optional.empty();
-        SchoolClass c = current.getSchoolClass();
-        int no = slots.startTimesOfClass(c.getId()).indexOf(current.getStartTime()) + 1;
-        return Optional.of(new CurrentLesson(c.getId(), c.getGradeNumber() + "-" + c.getSectionLetter(),
-                current.getSubject().getId(), current.getSubject().getName(), no,
-                current.getStartTime(), current.getEndTime()));
+        Long classId = (Long) current[2];
+        LocalTime start = (LocalTime) current[0];
+        int no = slots.startTimesOfClass(classId).indexOf(start) + 1;
+        return Optional.of(new CurrentLesson(classId, current[3] + "-" + current[4], (Long) current[5],
+                (String) current[6], no, start, (LocalTime) current[1]));
     }
 
     private Map<LocalDate, String> daysOff(Long classId, LocalDate from, LocalDate to) {
         Map<LocalDate, String> map = new HashMap<>();
-        for (CalendarEvent e : events.daysOffOfClass(classId, from, to)) {
-            for (LocalDate d = e.getStartDate().isBefore(from) ? from : e.getStartDate();
-                 !d.isAfter(e.getEndDate()) && !d.isAfter(to); d = d.plusDays(1)) {
-                map.putIfAbsent(d, e.getTitle());
+        for (Object[] e : events.daysOffOfClass(classId, from, to)) {
+            LocalDate start = (LocalDate) e[0];
+            LocalDate end = (LocalDate) e[1];
+            for (LocalDate d = start.isBefore(from) ? from : start; !d.isAfter(end) && !d.isAfter(to); d = d.plusDays(1)) {
+                map.putIfAbsent(d, (String) e[2]);
             }
         }
         return map;
     }
 
-    static Person person(Employee e) {
-        return e == null ? null : new Person(e.getId(), e.getLastName() + " " + e.getFirstName(), e.getPhone());
+    private static Person person(Long id, String lastName, String firstName, String phone) {
+        return id == null ? null : new Person(id, lastName + " " + firstName, phone);
     }
 }

@@ -936,6 +936,17 @@ watch(
       router.replace({ query: {} })
       openCreateDialog()
     }
+    // ?edit=<id> opens that record's form (e.g. "Biriktirish" from the journal's class panel)
+    if (route.query.edit && canEdit.value) {
+      const id = Number(route.query.edit)
+      router.replace({ query: {} })
+      try {
+        const res = await api.get(`${module.value.endpoint}/${id}`)
+        openEditDialog(res.data)
+      } catch {
+        // the record is gone or not ours — just show the list
+      }
+    }
   },
   { immediate: true }
 )

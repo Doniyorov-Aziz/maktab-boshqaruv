@@ -24,10 +24,11 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
     @Query("select e from CalendarEvent e where e.school.id = :schoolId and e.startDate >= :from order by e.startDate")
     List<CalendarEvent> findUpcoming(@Param("schoolId") Long schoolId, @Param("from") LocalDate from, Pageable pageable);
 
-    /** Days off (holidays, vacations) of a class's school in a period — found from the class in one query. */
-    @Query("select e from CalendarEvent e, SchoolClass c where c.id = :classId and e.school = c.academicYear.school " +
+    /** Days off (holidays, vacations) of a class's school in a period, found from the class in one query: [startDate, endDate, title]. */
+    @Query("select e.startDate, e.endDate, e.title from CalendarEvent e, SchoolClass c " +
+            "where c.id = :classId and e.school = c.academicYear.school " +
             "and e.type in (uz.azizbek.maktabboshqaruv.entity.CalendarEventType.HOLIDAY, " +
             "uz.azizbek.maktabboshqaruv.entity.CalendarEventType.VACATION) " +
             "and e.startDate <= :to and e.endDate >= :from order by e.startDate")
-    List<CalendarEvent> daysOffOfClass(@Param("classId") Long classId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+    List<Object[]> daysOffOfClass(@Param("classId") Long classId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

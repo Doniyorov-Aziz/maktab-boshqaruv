@@ -84,14 +84,22 @@ public interface LessonSlotRepository extends JpaRepository<LessonSlot, Long> {
                                        @Param("endTime") LocalTime endTime,
                                        @Param("excludeId") Long excludeId);
 
-    /** A class's week with subject and teacher in one query (journal and class overview). */
-    @Query("select l from LessonSlot l join fetch l.subject join fetch l.employee where l.schoolClass.id = :classId")
-    List<LessonSlot> findWeekWithTeachers(@Param("classId") Long classId);
+    /**
+     * A class's week, columns only (no entities → no eager loads): [weekday, startTime, endTime,
+     * subjectId, subjectName, subjectActive, teacherId, teacherLastName, teacherFirstName, teacherPhone].
+     */
+    @Query("select l.weekday, l.startTime, l.endTime, sub.id, sub.name, sub.active, e.id, e.lastName, e.firstName, e.phone " +
+            "from LessonSlot l join l.subject sub join l.employee e where l.schoolClass.id = :classId")
+    List<Object[]> weekOfClass(@Param("classId") Long classId);
 
-    /** A teacher's lessons on one weekday with their class (the teacher's "current lesson"). */
-    @Query("select l from LessonSlot l join fetch l.subject join fetch l.schoolClass " +
+    /**
+     * A teacher's lessons on one weekday, columns only: [startTime, endTime, classId, gradeNumber,
+     * sectionLetter, subjectId, subjectName] (the teacher's "current lesson").
+     */
+    @Query("select l.startTime, l.endTime, c.id, c.gradeNumber, c.sectionLetter, sub.id, sub.name " +
+            "from LessonSlot l join l.schoolClass c join l.subject sub " +
             "where l.employee.id = :employeeId and l.weekday = :weekday order by l.startTime")
-    List<LessonSlot> findOfTeacherOnDay(@Param("employeeId") Long employeeId, @Param("weekday") String weekday);
+    List<Object[]> ofTeacherOnDay(@Param("employeeId") Long employeeId, @Param("weekday") String weekday);
 
     /** The class's lesson start times, in order: their position is the lesson number ("3-dars"). */
     @Query("select distinct l.startTime from LessonSlot l where l.schoolClass.id = :classId order by l.startTime")

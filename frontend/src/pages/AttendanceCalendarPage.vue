@@ -28,37 +28,13 @@
       />
     </template>
 
-    <!-- parallel first (1…11), then its letters (1-A, 1-B) -->
     <div class="brand-card q-pa-sm q-mb-md">
-      <div class="row items-center q-gutter-xs">
-        <span class="ac-label">Sinf:</span>
-        <q-btn
-          v-for="g in grades"
-          :key="g"
-          :label="String(g)"
-          dense
-          unelevated
-          no-caps
-          class="ac-grade"
-          :color="g === grade ? 'primary' : 'grey-3'"
-          :text-color="g === grade ? 'white' : 'grey-9'"
-          @click="pickGrade(g)"
-        />
-      </div>
-      <div v-if="letters.length" class="row items-center q-gutter-xs q-mt-xs">
-        <span class="ac-label"></span>
-        <q-chip
-          v-for="c in letters"
-          :key="c.id"
-          clickable
-          :outline="c.id !== classId"
-          :color="c.id === classId ? 'primary' : undefined"
-          :text-color="c.id === classId ? 'white' : undefined"
-          class="ac-letter"
-          @click="pickClass(c.id)"
-          >{{ c.gradeNumber }}-{{ c.sectionLetter }}</q-chip
-        >
-      </div>
+      <class-picker
+        :classes="classes"
+        :model-value="classId"
+        @update:model-value="pickClass"
+        @update:grade="g => (grade = g)"
+      />
     </div>
 
     <div v-if="loading && !data" class="brand-card q-pa-md">
@@ -261,6 +237,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
+import ClassPicker from '@/components/ClassPicker.vue'
 import { useSchoolStore } from '@/stores/school'
 import { formatDate } from '@/utils/date'
 import { guardianLabel, guardianShort } from '@/utils/guardian'
@@ -318,14 +295,6 @@ const data = ref(null)
 const loading = ref(false)
 const selectedDay = ref(null)
 
-const grades = computed(() =>
-  [...new Set(classes.value.map(c => c.gradeNumber))].sort((a, b) => a - b)
-)
-const letters = computed(() =>
-  classes.value
-    .filter(c => c.gradeNumber === grade.value)
-    .sort((a, b) => String(a.sectionLetter).localeCompare(b.sectionLetter))
-)
 const monthTitle = computed(() => {
   const [y, m] = month.value.split('-').map(Number)
   return `${MONTHS[m - 1]} ${y}`
@@ -356,12 +325,14 @@ async function loadClasses() {
   if (classId.value && !classes.value.some(c => c.id === classId.value))
     classId.value = null
   if (!classId.value && classes.value.length) {
-    const first = [...classes.value].sort(
-      (a, b) =>
-        a.gradeNumber - b.gradeNumber ||
-        String(a.sectionLetter).localeCompare(b.sectionLetter)
-    )[0]
-    classId.value = first.id
+    const first = classes.value
+      .filter(c => c.studentCount == null || c.studentCount > 0)
+      .sort(
+        (a, b) =>
+          a.gradeNumber - b.gradeNumber ||
+          String(a.sectionLetter).localeCompare(b.sectionLetter)
+      )[0]
+    classId.value = first?.id ?? null
   }
   const current = classes.value.find(c => c.id === classId.value)
   if (current) grade.value = current.gradeNumber
@@ -388,12 +359,6 @@ async function loadMonth() {
   } finally {
     loading.value = false
   }
-}
-
-function pickGrade(g) {
-  grade.value = g
-  const first = letters.value[0]
-  if (first) pickClass(first.id)
 }
 
 function pickClass(id) {
@@ -541,21 +506,6 @@ watch(
   text-align: center;
   font-weight: 700;
   font-size: 16px;
-}
-
-.ac-label {
-  width: 40px;
-  font-weight: 600;
-  color: var(--brand-text-muted);
-}
-
-.ac-grade {
-  min-width: 38px;
-  font-weight: 700;
-}
-
-.ac-letter {
-  font-weight: 600;
 }
 
 .ac-card {

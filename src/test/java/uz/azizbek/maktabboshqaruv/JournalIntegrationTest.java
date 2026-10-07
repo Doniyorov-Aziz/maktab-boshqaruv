@@ -231,7 +231,10 @@ class JournalIntegrationTest {
     void currentLesson_duringTheLesson_andInAFreePeriod() throws Exception {
         Employee teacher = slot.getEmployee();
         ApiClient t = as(Role.EDITOR, teacher);
-        List<LessonSlot> day = slots.findOfTeacherOnDay(teacher.getId(), "Chorshanba");
+        List<LessonSlot> day = slots.findAll().stream()
+                .filter(l -> l.getEmployee().getId().equals(teacher.getId()) && l.getWeekday().equals("Chorshanba"))
+                .sorted(Comparator.comparing(LessonSlot::getStartTime))
+                .toList();
         LessonSlot first = day.get(0);
 
         clock.set(DAY.atTime(first.getStartTime().plusMinutes(10)));
