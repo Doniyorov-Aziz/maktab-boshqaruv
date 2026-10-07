@@ -89,6 +89,8 @@ class AppealFlowIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
     @Autowired
+    private SchoolClassRepository schoolClasses;
+    @Autowired
     private uz.azizbek.maktabboshqaruv.telegram.TelegramProperties telegramProperties;
 
     private MockTelegramClient mock;
@@ -281,6 +283,14 @@ class AppealFlowIntegrationTest {
         assertEquals(AppealEnums.Status.NEW, appeals.findById(appeal.getId()).orElseThrow().getStatus());
         assertEquals(10, appealMessages.visibleOf(appeal.getId()).size());
 
+        // "Yopish"; the parent writes again → the same appeal opens again
+        assertEquals(200, api.send("POST", "/api/appeals/" + appeal.getId() + "/close", null).status());
+        assertEquals(AppealEnums.Status.CLOSED, appeals.findById(appeal.getId()).orElseThrow().getStatus());
+        tap("msg:a:re:ap:" + appeal.getId());
+        send(message("Yana bir savol", null, null, null, null, null, null));
+        tap("msg:a:ok");
+        assertEquals(AppealEnums.Status.NEW, appeals.findById(appeal.getId()).orElseThrow().getStatus());
+
         // the Telegram file URL (it contains the bot token) is nowhere: database, API answers
         Integer leaks = jdbc.queryForObject("select count(*) from appeal_message where file_id like '%api.telegram.org%' " +
                 "or storage_path like '%api.telegram.org%' or text like '%api.telegram.org/file/bot%'", Integer.class);
@@ -298,6 +308,67 @@ class AppealFlowIntegrationTest {
                 + "&status=NEW&target=CLASS_TEACHER&classId=" + student.getSchoolClass().getId()).status());
         assertEquals(0, api.get("/api/appeals?schoolId=" + schoolId + "&q=%23" + appeal.getId() + "&from=2001-01-01&to=2001-01-02")
                 .json().get("totalElements").asInt());
+    }
+
+    @Test
+    void classTeacherAppeal_isSeenByThatClassTeacherAndAdmin_only() throws Exception {
+        tap("msg:a:to:to:CT");
+        send(message("Sinf rahbariga savol", null, null, null, null, null, null));
+        Long toTeacher = appeals.findFirstByChatIdAndStatusOrderByIdDesc(chatId, AppealEnums.Status.DRAFT).orElseThrow().getId();
+        tap("msg:a:ok");
+        tap("msg:a:to:to:AD");
+        send(message("Direktorga savol", null, null, null, null, null, null));
+        Long toAdmins = appeals.findFirstByChatIdAndStatusOrderByIdDesc(chatId, AppealEnums.Status.DRAFT).orElseThrow().getId();
+        tap("msg:a:ok");
+
+        School school = student.getSchoolClass().getAcademicYear().getSchool();
+        SchoolClass cls = schoolClasses.findById(student.getSchoolClass().getId()).orElseThrow();
+        Employee previous = cls.getClassTeacher();
+        int n = ThreadLocalRandom.current().nextInt(1_000_000);
+        Employee teacher = employee(school, "Sinf", "Rahbar", n);
+        Employee other = employee(school, "Boshqa", "Ustoz", n + 1);
+        User teacherUser = editor("sinf_rahbar_" + n, teacher);
+        User otherUser = editor("boshqa_ustoz_" + n, other);
+        cls.setClassTeacher(teacher);
+        schoolClasses.save(cls);
+        try {
+            ApiClient t = new ApiClient(port).login(teacherUser.getUsername(), PASSWORD);
+            ApiClient o = new ApiClient(port).login(otherUser.getUsername(), PASSWORD);
+            String list = "/api/appeals?schoolId=" + school.getId() + "&q=%23";
+            assertEquals(1, t.get(list + toTeacher).json().get("totalElements").asInt(), "the class teacher sees it");
+            assertEquals(200, t.get("/api/appeals/" + toTeacher).status());
+            assertEquals(0, t.get(list + toAdmins).json().get("totalElements").asInt(), "not the administration's mail");
+            assertEquals(403, t.get("/api/appeals/" + toAdmins).status());
+            assertEquals(0, o.get(list + toTeacher).json().get("totalElements").asInt(), "another teacher does not");
+            assertEquals(403, o.get("/api/appeals/" + toTeacher).status());
+            assertEquals(0L, o.get("/api/appeals/unread?schoolId=" + school.getId()).json().asLong());
+        } finally {
+            cls.setClassTeacher(previous);
+            schoolClasses.save(cls);
+            users.delete(teacherUser);
+            users.delete(otherUser);
+            employees.delete(teacher);
+            employees.delete(other);
+        }
+    }
+
+    private Employee employee(School school, String first, String last, int n) {
+        Employee e = new Employee();
+        e.setSchool(school);
+        e.setPosition(positions.findAll().get(0));
+        e.setFirstName(first);
+        e.setLastName(last);
+        e.setPhone("+9989" + (20_000_000 + n));
+        return employees.save(e);
+    }
+
+    private User editor(String username, Employee e) {
+        User u = new User();
+        u.setUsername(username);
+        u.setPassword(encoder.encode(PASSWORD));
+        u.setRole(Role.EDITOR);
+        u.setEmployee(e);
+        return users.save(u);
     }
 
     @Test

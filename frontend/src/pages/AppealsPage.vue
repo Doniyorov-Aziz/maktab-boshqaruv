@@ -131,7 +131,12 @@
                 }}</span>
               </q-item-label>
               <q-item-label caption class="ellipsis">
-                #{{ a.id }} · {{ a.studentName }} · {{ a.className }}
+                <q-icon
+                  :name="a.target === 'CLASS_TEACHER' ? 'school' : 'apartment'"
+                  size="13px"
+                />
+                {{ targets[a.target]?.label }} · #{{ a.id }} ·
+                {{ a.studentName }} · {{ a.className }}
               </q-item-label>
               <q-item-label caption class="row items-center no-wrap">
                 <span class="ellipsis col">{{ a.lastPreview || '📎' }}</span>
@@ -143,7 +148,6 @@
                   class="q-ml-xs"
                 />
                 <q-badge
-                  v-else
                   :color="statuses[a.status]?.color"
                   :label="statuses[a.status]?.label"
                   class="q-ml-xs status-badge"
