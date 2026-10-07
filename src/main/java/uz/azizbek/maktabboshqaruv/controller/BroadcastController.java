@@ -40,9 +40,11 @@ public class BroadcastController {
                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                    @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                                    @RequestParam(required = false) String q,
+                                   @RequestParam(required = false) Long classId,
+                                   @RequestParam(required = false) String status,
                                    Pageable pageable) {
         access.requireSchool(schoolId);
-        return broadcastService.list(schoolId, from, to, q, pageable);
+        return broadcastService.list(schoolId, from, to, q, classId, status, pageable);
     }
 
     @GetMapping("/{id}")

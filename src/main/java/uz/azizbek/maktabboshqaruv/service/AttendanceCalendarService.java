@@ -37,7 +37,7 @@ public class AttendanceCalendarService {
     public record Cell(String status, String comment) {
     }
 
-    public record Row(Long studentId, String fullName, String guardianName, String guardianPhone,
+    public record Row(Long studentId, String fullName, String guardianName, String guardianPhone, String guardianRelation,
                       Map<LocalDate, Cell> cells) {
     }
 
@@ -110,7 +110,7 @@ public class AttendanceCalendarService {
 
         List<Row> rows = studentRepository.findBySchoolClassIdOrderByLastNameAscFirstNameAsc(classId).stream()
                 .map(s -> new Row(s.getId(), s.getFirstName() + " " + s.getLastName(), s.getGuardianName(),
-                        s.getGuardianPhone(), cells.getOrDefault(s.getId(), Map.of())))
+                        s.getGuardianPhone(), s.getGuardianRelation() == null ? null : s.getGuardianRelation().name(), cells.getOrDefault(s.getId(), Map.of())))
                 .toList();
         return new Month(classId, c.getGradeNumber() + "-" + c.getSectionLetter(), ym.toString(), days, rows,
                 marked, present, late, absent, excused, rate);

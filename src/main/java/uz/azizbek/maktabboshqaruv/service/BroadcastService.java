@@ -146,11 +146,13 @@ public class BroadcastService {
 
     /** History, newest first; optional date range and text search. Counts and files come in two batch queries. */
     @Transactional(readOnly = true)
-    public Page<BroadcastDto> list(Long schoolId, LocalDate from, LocalDate to, String q, Pageable pageable) {
+    public Page<BroadcastDto> list(Long schoolId, LocalDate from, LocalDate to, String q, Long classId, String status,
+                                   Pageable pageable) {
         LocalDateTime since = (from == null ? LocalDate.of(2000, 1, 1) : from).atStartOfDay();
         LocalDateTime until = (to == null ? LocalDate.of(9999, 1, 1) : to.plusDays(1)).atStartOfDay();
         String like = q == null || q.isBlank() ? "" : "%" + q.strip().toLowerCase(Locale.ROOT) + "%";
-        Page<Broadcast> page = broadcastRepository.search(schoolId, since, until, like, pageable);
+        Page<Broadcast> page = broadcastRepository.search(schoolId, since, until, like, classId,
+                status == null ? "" : status, pageable);
         List<Long> ids = page.getContent().stream().map(Broadcast::getId).toList();
         Map<Long, Map<NotificationStatus, Long>> counts = counts(ids);
         Map<Long, List<BroadcastAttachment>> files = new HashMap<>();

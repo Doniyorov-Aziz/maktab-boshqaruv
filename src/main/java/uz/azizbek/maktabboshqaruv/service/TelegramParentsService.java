@@ -28,7 +28,7 @@ public class TelegramParentsService {
     public record Parent(Long linkId, String name, String username, LocalDateTime linkedAt, String chatId) {
     }
 
-    public record Row(Long studentId, String studentName, String guardianName, String guardianPhone,
+    public record Row(Long studentId, String studentName, String guardianName, String guardianRelation, String guardianPhone,
                       boolean linked, List<Parent> parents, String inviteLink) {
     }
 
@@ -79,7 +79,8 @@ public class TelegramParentsService {
                     .map(l -> new Parent(l.getId(), l.getFirstName(), l.getTelegramUsername(), l.getLinkedAt(),
                             admin ? mask(l.getChatId()) : null))
                     .toList();
-            rows.add(new Row(s.getId(), s.getLastName() + " " + s.getFirstName(), s.getGuardianName(), s.getGuardianPhone(),
+            rows.add(new Row(s.getId(), s.getLastName() + " " + s.getFirstName(), s.getGuardianName(),
+                    s.getGuardianRelation() == null ? null : s.getGuardianRelation().name(), s.getGuardianPhone(),
                     isLinked, parents, editor && !isLinked ? telegram.deepLink(s.getTelegramLinkCode()) : null));
         }
         return new ClassParents(c.getId(), ParentDataService.className(c), all.size(), linked, rows);

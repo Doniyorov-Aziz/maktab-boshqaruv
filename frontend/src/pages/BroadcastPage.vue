@@ -336,10 +336,10 @@
     <!-- history -->
     <div class="brand-card overflow-hidden q-mt-md">
       <div class="q-pa-md row items-center q-col-gutter-sm">
-        <div class="col-12 col-md text-subtitle1 text-weight-semibold"
+        <div class="col-12 text-subtitle1 text-weight-semibold"
           >Yuborilgan xabarlar</div
         >
-        <div class="col-12 col-sm-4 col-md-3">
+        <div class="col-12 col-md-3">
           <q-input
             v-model="historyQuery"
             dense
@@ -347,23 +347,49 @@
             clearable
             debounce="400"
             placeholder="Matn bo'yicha qidirish"
-            @update:model-value="loadHistory"
+            @update:model-value="() => loadHistory()"
           >
             <template #prepend><q-icon name="search" /></template>
           </q-input>
         </div>
-        <div class="col-6 col-sm-4 col-md-2">
+        <div class="col-6 col-sm-3 col-md-2">
+          <q-select
+            v-model="historyClass"
+            dense
+            outlined
+            clearable
+            emit-value
+            map-options
+            label="Sinf"
+            :options="classOptions"
+            @update:model-value="() => loadHistory()"
+          />
+        </div>
+        <div class="col-6 col-sm-3 col-md-2">
+          <q-select
+            v-model="historyStatus"
+            dense
+            outlined
+            clearable
+            emit-value
+            map-options
+            label="Holat"
+            :options="historyStatusOptions"
+            @update:model-value="() => loadHistory()"
+          />
+        </div>
+        <div class="col-6 col-sm-3 col-md-2">
           <date-field
             v-model="historyFrom"
             label="Sanadan"
-            @update:model-value="loadHistory"
+            @update:model-value="() => loadHistory()"
           />
         </div>
-        <div class="col-6 col-sm-4 col-md-2">
+        <div class="col-6 col-sm-3 col-md-2">
           <date-field
             v-model="historyTo"
             label="Sanagacha"
-            @update:model-value="loadHistory"
+            @update:model-value="() => loadHistory()"
           />
         </div>
       </div>
@@ -824,6 +850,14 @@ const loadingHistory = ref(false)
 const historyQuery = ref('')
 const historyFrom = ref('')
 const historyTo = ref('')
+const historyClass = ref(null)
+const historyStatus = ref(null)
+// a message matches a status if at least one of its recipients is in it
+const historyStatusOptions = [
+  { value: 'SENT', label: 'Yetkazilgan' },
+  { value: 'PENDING', label: 'Navbatda (yuborilmoqda)' },
+  { value: 'FAILED', label: 'Xatosi bor' }
+]
 
 const columns = [
   {
@@ -858,7 +892,9 @@ async function loadHistory({ quiet = false } = {}) {
           size: 50,
           q: historyQuery.value?.trim() || undefined,
           from: historyFrom.value || undefined,
-          to: historyTo.value || undefined
+          to: historyTo.value || undefined,
+          classId: historyClass.value || undefined,
+          status: historyStatus.value || undefined
         }
       })
     ).data.content

@@ -191,6 +191,8 @@ public class OperationalDataSeeder implements CommandLineRunner {
             String stem = GUARDIAN_SURNAME_STEMS[random.nextInt(GUARDIAN_SURNAME_STEMS.length)];
             String last = male ? stem : stem + "a";
             s.setGuardianName(first + " " + last);
+            s.setGuardianRelation(male ? uz.azizbek.maktabboshqaruv.entity.GuardianRelation.FATHER
+                    : uz.azizbek.maktabboshqaruv.entity.GuardianRelation.MOTHER);
             guardianPhoneSequence++;
             s.setGuardianPhone("+998" + guardianPhoneSequence);
         }

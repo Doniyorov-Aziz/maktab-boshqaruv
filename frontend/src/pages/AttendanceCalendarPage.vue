@@ -98,7 +98,9 @@
                   <td class="ac-name-col">
                     <div class="ac-student ellipsis">{{ s.fullName }}</div>
                     <div class="ac-parent ellipsis">
-                      {{ s.guardianName ? 'Ota-ona: ' + s.guardianName : '—' }}
+                      {{
+                        guardianShort(s.guardianName, s.guardianRelation) || '—'
+                      }}
                     </div>
                   </td>
                   <td
@@ -180,7 +182,10 @@
                 >
                   <div class="text-weight-medium">{{ item.fullName }}</div>
                   <div class="text-caption muted-text">
-                    {{ item.guardianName || 'Ota-ona kiritilmagan' }}
+                    {{
+                      guardianLabel(item.guardianName, item.guardianRelation) ||
+                      'Ota-ona kiritilmagan'
+                    }}
                     <template v-if="item.guardianPhone">
                       · {{ item.guardianPhone }}</template
                     >
@@ -258,6 +263,7 @@ import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
 import { useSchoolStore } from '@/stores/school'
 import { formatDate } from '@/utils/date'
+import { guardianLabel, guardianShort } from '@/utils/guardian'
 
 const route = useRoute()
 const router = useRouter()

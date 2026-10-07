@@ -28,6 +28,16 @@ public class StudentRequestDto {
 
     private String guardianPhone;
 
+    private uz.azizbek.maktabboshqaruv.entity.GuardianRelation guardianRelation;
+
+    public uz.azizbek.maktabboshqaruv.entity.GuardianRelation getGuardianRelation() {
+        return guardianRelation;
+    }
+
+    public void setGuardianRelation(uz.azizbek.maktabboshqaruv.entity.GuardianRelation guardianRelation) {
+        this.guardianRelation = guardianRelation;
+    }
+
     public String getGuardianName() {
         return guardianName;
     }

@@ -13,6 +13,15 @@ public class StudentResponseDto {
     private String className;
     private String guardianName;
     private String guardianPhone;
+    private String guardianRelation;
+
+    public String getGuardianRelation() {
+        return guardianRelation;
+    }
+
+    public void setGuardianRelation(String guardianRelation) {
+        this.guardianRelation = guardianRelation;
+    }
 
     public String getGuardianName() {
         return guardianName;

@@ -1,4 +1,5 @@
 import { formatDate } from '@/utils/date'
+import { guardianLabel, guardianRelationOptions } from '@/utils/guardian'
 
 const dateFormat = val => (val ? formatDate(val) : '')
 
@@ -355,7 +356,7 @@ export const modules = [
       {
         name: 'guardianName',
         label: 'Ota-ona',
-        field: 'guardianName',
+        field: row => guardianLabel(row.guardianName, row.guardianRelation),
         align: 'left'
       }
     ],
@@ -383,6 +384,13 @@ export const modules = [
         label: 'Ota-ona F.I.Sh.',
         type: 'text',
         required: false
+      },
+      {
+        key: 'guardianRelation',
+        label: "Kim bo'ladi",
+        type: 'select',
+        required: false,
+        options: guardianRelationOptions
       },
       {
         key: 'guardianPhone',

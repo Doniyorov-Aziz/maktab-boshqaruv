@@ -206,6 +206,13 @@ class TelegramAdminIntegrationTest {
         assertEquals(2, admin.get("/api/broadcasts/" + id + "/recipients?classId=" + student.getSchoolClass().getId())
                 .json().get("totalElements").asInt());
         assertTrue(admin.get("/api/broadcasts?schoolId=" + schoolId + "&q=ochiq%20dars").json().get("totalElements").asInt() >= 1);
+        // history filters: class (reached a parent of it) and status (any recipient in it)
+        assertTrue(ids(admin.get("/api/broadcasts?schoolId=" + schoolId + "&size=200&classId=" + student.getSchoolClass().getId())).contains(id));
+        assertTrue(ids(admin.get("/api/broadcasts?schoolId=" + schoolId + "&size=200&status=SENT")).contains(id));
+        assertFalse(ids(admin.get("/api/broadcasts?schoolId=" + schoolId + "&size=200&status=FAILED")).contains(id));
+        Long otherClass = jdbc.queryForObject("select c.id from school_class c join academic_year y on y.id = c.academic_year_id "
+                + "where y.school_id = ? and c.id <> ? order by c.id limit 1", Long.class, schoolId, student.getSchoolClass().getId());
+        assertFalse(ids(admin.get("/api/broadcasts?schoolId=" + schoolId + "&size=200&classId=" + otherClass)).contains(id));
 
         // another school's admin cannot read it
         School other = schools.findAll().stream().filter(s -> !s.getId().equals(schoolId)).findFirst().orElseThrow();
@@ -221,6 +228,30 @@ class TelegramAdminIntegrationTest {
         assertEquals(403, stranger.get("/api/broadcasts/" + id + "/recipients").status());
         assertEquals(403, stranger.get("/api/broadcasts?schoolId=" + schoolId).status());
         assertEquals(403, stranger.get("/api/telegram/parents?classId=" + student.getSchoolClass().getId()).status());
+    }
+
+    private static List<Long> ids(ApiClient.Response r) {
+        assertEquals(200, r.status(), r.body());
+        List<Long> ids = new ArrayList<>();
+        for (JsonNode b : r.json().get("content")) ids.add(b.get("id").asLong());
+        return ids;
+    }
+
+    @Test
+    void parentsPage_showsTheGuardiansRelation() throws Exception {
+        GuardianRelation before = student.getGuardianRelation();
+        student.setGuardianRelation(GuardianRelation.FATHER);
+        students.save(student);
+        try {
+            JsonNode rows = as(Role.ADMIN, null).get("/api/telegram/parents?classId=" + student.getSchoolClass().getId()).json().get("rows");
+            JsonNode row = null;
+            for (JsonNode r : rows) if (r.get("studentId").asLong() == student.getId()) row = r;
+            assertNotNull(row);
+            assertEquals("FATHER", row.get("guardianRelation").asString());
+        } finally {
+            student.setGuardianRelation(before);
+            students.save(student);
+        }
     }
 
     @Test

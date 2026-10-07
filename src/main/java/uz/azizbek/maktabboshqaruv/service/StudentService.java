@@ -55,6 +55,7 @@ public class StudentService {
         student.setBirthDate(request.getBirthDate());
         student.setGuardianName(request.getGuardianName());
         student.setGuardianPhone(request.getGuardianPhone());
+        student.setGuardianRelation(request.getGuardianRelation());
 
         Student saved = studentRepository.save(student);
         activityLogService.record(
@@ -79,6 +80,7 @@ public class StudentService {
         student.setBirthDate(request.getBirthDate());
         student.setGuardianName(request.getGuardianName());
         student.setGuardianPhone(request.getGuardianPhone());
+        student.setGuardianRelation(request.getGuardianRelation());
 
         Student updated = studentRepository.save(student);
         botCache.evictAllChats();
@@ -105,6 +107,7 @@ public class StudentService {
         dto.setClassName(student.getSchoolClass().getGradeNumber() + "-" + student.getSchoolClass().getSectionLetter());
         dto.setGuardianName(student.getGuardianName());
         dto.setGuardianPhone(student.getGuardianPhone());
+        dto.setGuardianRelation(student.getGuardianRelation() == null ? null : student.getGuardianRelation().name());
         return dto;
     }
 }

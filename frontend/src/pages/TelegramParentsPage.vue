@@ -126,7 +126,12 @@
         </template>
         <template v-slot:body-cell-parent="props">
           <q-td :props="props">
-            <div>{{ props.row.guardianName || '—' }}</div>
+            <div>{{
+              guardianLabel(
+                props.row.guardianName,
+                props.row.guardianRelation
+              ) || '—'
+            }}</div>
             <div
               v-for="p in props.row.parents"
               :key="p.linkId"
@@ -201,6 +206,7 @@ import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
 import { useSchoolStore } from '@/stores/school'
 import { useAuthStore } from '@/stores/auth'
+import { guardianLabel } from '@/utils/guardian'
 import { formatDate } from '@/utils/date'
 
 const $q = useQuasar()

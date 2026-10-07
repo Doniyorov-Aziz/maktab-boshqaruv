@@ -27,6 +27,19 @@ public class Student {
 
     private String guardianPhone;
 
+    /** otasi / onasi / boshqa — shown as "Furqat, otasi". Nullable: old records keep working. */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 16)
+    private GuardianRelation guardianRelation;
+
+    public GuardianRelation getGuardianRelation() {
+        return guardianRelation;
+    }
+
+    public void setGuardianRelation(GuardianRelation guardianRelation) {
+        this.guardianRelation = guardianRelation;
+    }
+
     // Nullable on purpose: ddl-auto=update can only add a nullable column to a
     // table that already has rows. Existing students get a code from
     // TelegramLinkCodeBackfill at startup; new ones from @PrePersist below.
