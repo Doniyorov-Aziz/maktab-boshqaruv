@@ -83,4 +83,17 @@ public interface LessonSlotRepository extends JpaRepository<LessonSlot, Long> {
                                        @Param("startTime") LocalTime startTime,
                                        @Param("endTime") LocalTime endTime,
                                        @Param("excludeId") Long excludeId);
+
+    /** A class's week with subject and teacher in one query (journal and class overview). */
+    @Query("select l from LessonSlot l join fetch l.subject join fetch l.employee where l.schoolClass.id = :classId")
+    List<LessonSlot> findWeekWithTeachers(@Param("classId") Long classId);
+
+    /** A teacher's lessons on one weekday with their class (the teacher's "current lesson"). */
+    @Query("select l from LessonSlot l join fetch l.subject join fetch l.schoolClass " +
+            "where l.employee.id = :employeeId and l.weekday = :weekday order by l.startTime")
+    List<LessonSlot> findOfTeacherOnDay(@Param("employeeId") Long employeeId, @Param("weekday") String weekday);
+
+    /** The class's lesson start times, in order: their position is the lesson number ("3-dars"). */
+    @Query("select distinct l.startTime from LessonSlot l where l.schoolClass.id = :classId order by l.startTime")
+    List<java.time.LocalTime> startTimesOfClass(@Param("classId") Long classId);
 }

@@ -23,4 +23,9 @@ public interface SchoolClassRepository extends JpaRepository<SchoolClass, Long> 
     /** Every class an employee leads (a teacher may lead more than one). */
     @org.springframework.data.jpa.repository.Query("select c.id from SchoolClass c where c.classTeacher.id = :employeeId")
     List<Long> classIdsLedBy(@org.springframework.data.repository.query.Param("employeeId") Long employeeId);
+
+    /** The class with its homeroom teacher and academic year in one query (class overview). */
+    @org.springframework.data.jpa.repository.Query("select c from SchoolClass c left join fetch c.classTeacher " +
+            "join fetch c.academicYear where c.id = :id")
+    java.util.Optional<SchoolClass> findWithTeacher(@org.springframework.data.repository.query.Param("id") Long id);
 }

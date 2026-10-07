@@ -25,6 +25,24 @@ public class GradeResponseDto {
     private Integer score;
     private GradeType type;
     private String comment;
+    private String createdBy;
+    private java.time.LocalDateTime createdAt;
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public java.time.LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.time.LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
     public Long getId() {
         return id;

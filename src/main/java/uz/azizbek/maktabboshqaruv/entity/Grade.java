@@ -40,6 +40,18 @@ public class Grade {
     @Column(updatable = false)
     private LocalDateTime createdDate;
 
+    /** Who put the grade ("Karimova D."); null for grades made before this column existed. */
+    @Column(length = 120)
+    private String createdBy;
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
     public Long getId() {
         return id;
     }

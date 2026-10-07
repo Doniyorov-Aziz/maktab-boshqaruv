@@ -44,11 +44,16 @@ public class GradeService {
     @Autowired
     private java.time.Clock clock;
 
+    public static final String SUNDAY_MESSAGE = "Uzr, bu kun yakshanba — maktab ishlamaydi. Baho qo'yib bo'lmaydi.";
+
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.repository.UserRepository userRepository;
+
     /** Grades only on school days that have already come: never on a Sunday, never ahead of today (409). */
     void validateGradeDate(LocalDate date) {
         if (date == null) return;
         if (date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
-            throw new IllegalStateException("Yakshanba kuni baho qo'yilmaydi");
+            throw new IllegalStateException(SUNDAY_MESSAGE);
         }
         if (date.isAfter(LocalDate.now(clock))) {
             throw new IllegalStateException("Kelajak sanaga baho qo'yilmaydi");
@@ -98,6 +103,7 @@ public class GradeService {
         grade.setScore(request.getScore());
         grade.setType(request.getType());
         grade.setComment(request.getComment());
+        grade.setCreatedBy(currentAuthor());
 
         Grade saved = gradeRepository.save(grade);
         activityLogService.record(
@@ -156,6 +162,17 @@ public class GradeService {
         gradeRepository.deleteById(id);
     }
 
+    /** "Karimova D." for a staff account linked to an employee, otherwise the username. */
+    private String currentAuthor() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) return null;
+        return userRepository.findByUsername(auth.getName())
+                .map(u -> u.getEmployee() == null ? u.getUsername()
+                        : u.getEmployee().getLastName() + " " + u.getEmployee().getFirstName().charAt(0) + ".")
+                .orElse(auth.getName());
+    }
+
     private static void requireActive(Subject subject) {
         if (!subject.isActive()) {
             throw new IllegalStateException("«" + subject.getName() + "» fani nofaol — yangi baho qo'yib bo'lmaydi");
@@ -181,6 +198,8 @@ public class GradeService {
         dto.setScore(grade.getScore());
         dto.setType(grade.getType());
         dto.setComment(grade.getComment());
+        dto.setCreatedBy(grade.getCreatedBy());
+        dto.setCreatedAt(grade.getCreatedDate());
         return dto;
     }
 }

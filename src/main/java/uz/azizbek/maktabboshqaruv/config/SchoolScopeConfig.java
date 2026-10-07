@@ -38,7 +38,7 @@ public class SchoolScopeConfig implements WebMvcConfigurer {
 
     /** Path segment (followed by a numeric id) → what the id names. */
     static final Map<String, Kind> PATH = Map.ofEntries(
-            Map.entry("schools", Kind.SCHOOL), Map.entry("school-classes", Kind.CLASS), Map.entry("class", Kind.CLASS),
+            Map.entry("schools", Kind.SCHOOL), Map.entry("school-classes", Kind.CLASS), Map.entry("class", Kind.CLASS), Map.entry("classes", Kind.CLASS),
             Map.entry("students", Kind.STUDENT), Map.entry("student", Kind.STUDENT),
             Map.entry("employees", Kind.EMPLOYEE), Map.entry("teacher", Kind.EMPLOYEE),
             Map.entry("academic-years", Kind.YEAR), Map.entry("buildings", Kind.BUILDING), Map.entry("rooms", Kind.ROOM),

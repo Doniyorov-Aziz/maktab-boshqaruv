@@ -83,7 +83,7 @@ class GradeDateIntegrationTest {
         LocalDate lastSunday = LocalDate.now().with(TemporalAdjusters.previous(DayOfWeek.SUNDAY));
         ApiClient.Response r = grade(lastSunday);
         assertEquals(409, r.status());
-        assertEquals("Yakshanba kuni baho qo'yilmaydi", r.body());
+        assertEquals("Uzr, bu kun yakshanba — maktab ishlamaydi. Baho qo'yib bo'lmaydi.", r.body());
     }
 
     @Test

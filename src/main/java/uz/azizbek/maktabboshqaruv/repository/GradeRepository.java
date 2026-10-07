@@ -73,4 +73,17 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
             "where g.student.schoolClass.academicYear.school.id = :schoolId and g.gradeDate between :from and :to " +
             "group by g.gradeDate order by g.gradeDate")
     List<Object[]> dailyAverageTrend(@Param("schoolId") Long schoolId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
+     * The journal in one query: every student of the class (alphabetical by surname) with that
+     * month's grades in the subject — [Student, Grade or null] rows.
+     */
+    @Query("""
+            select s, g from Student s
+            left join Grade g on g.student = s and g.subject.id = :subjectId and g.gradeDate between :from and :to
+            where s.schoolClass.id = :classId
+            order by s.lastName, s.firstName, s.id, g.gradeDate, g.id
+            """)
+    List<Object[]> journal(@Param("classId") Long classId, @Param("subjectId") Long subjectId,
+                           @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

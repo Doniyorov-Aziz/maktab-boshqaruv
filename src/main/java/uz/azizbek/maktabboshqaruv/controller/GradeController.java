@@ -4,6 +4,7 @@ import uz.azizbek.maktabboshqaruv.dto.GradeRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.GradeResponseDto;
 import uz.azizbek.maktabboshqaruv.dto.GradebookResponseDto;
 import uz.azizbek.maktabboshqaruv.service.GradeService;
+import uz.azizbek.maktabboshqaruv.service.JournalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,12 @@ public class GradeController {
     @Autowired
     private GradeService gradeService;
 
+    @Autowired
+    private JournalService journalService;
+
+    @Autowired
+    private java.time.Clock clock;
+
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
     public Page<GradeResponseDto> getAllGrades(@RequestParam Long schoolId, Pageable pageable) {
@@ -37,6 +44,16 @@ public class GradeController {
         return gradeService.getGradebook(schoolClassId, subjectId, from, to);
     }
 
+    /** The class journal: a month of one subject — days, students (by surname), grades, subject teacher. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/journal")
+    public JournalService.Journal journal(@RequestParam Long classId, @RequestParam Long subjectId,
+                                          @RequestParam(required = false) String month) {
+        java.time.YearMonth ym = month == null || month.isBlank()
+                ? java.time.YearMonth.now(clock) : java.time.YearMonth.parse(month);
+        return journalService.journal(classId, subjectId, ym);
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     @PostMapping
     public ResponseEntity<GradeResponseDto> createGrade(@Valid @RequestBody GradeRequestDto request) {
@@ -50,7 +67,8 @@ public class GradeController {
         return ResponseEntity.ok(gradeService.updateGrade(id, request));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // teachers fix their own mistakes from the journal (with an undo), so EDITOR may delete too
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteGrade(@PathVariable Long id) {
         gradeService.deleteGrade(id);
