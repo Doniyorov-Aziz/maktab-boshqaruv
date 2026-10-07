@@ -53,17 +53,37 @@ public class OutboxMedia {
     }
 
     public void send(NotificationLog n) {
-        List<File> files = resolve(n.getMedia());
-        if (files.isEmpty()) {
-            telegram.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
-            return;
+        send(n, done -> {
+        });
+    }
+
+    /**
+     * Sends the row in parts (each album or single file, then the text). Parts already
+     * delivered ({@link NotificationLog#getMediaParts()}) are skipped; {@code progress} is told
+     * after every delivered part, so a retry after a 429 continues instead of repeating.
+     */
+    public void send(NotificationLog n, java.util.function.IntConsumer progress) {
+        List<Runnable> parts = parts(n);
+        int start = n.getMediaParts() == null ? 0 : n.getMediaParts();
+        for (int i = start; i < parts.size(); i++) {
+            parts.get(i).run();
+            n.setMediaParts(i + 1);
+            if (i + 1 < parts.size()) progress.accept(i + 1);
         }
+    }
+
+    private List<Runnable> parts(NotificationLog n) {
+        List<File> files = resolve(n.getMedia());
         long chatId = n.getChatId();
+        List<Runnable> parts = new ArrayList<>();
+        if (files.isEmpty()) {
+            parts.add(() -> telegram.sendMessage(chatId, n.getText(), n.getReplyMarkup()));
+            return parts;
+        }
         if (files.size() == 1 && visibleLength(n.getText()) <= MAX_CAPTION) {
             File f = files.get(0);
-            SentMedia sent = telegram.sendMedia(chatId, item(f, n.getText()), n.getReplyMarkup());
-            remember(f, sent);
-            return;
+            parts.add(() -> remember(f, telegram.sendMedia(chatId, item(f, n.getText()), n.getReplyMarkup())));
+            return parts;
         }
         // albums by compatible kinds (Telegram does not mix documents or audio with photos)
         Map<String, List<File>> groups = new LinkedHashMap<>();
@@ -72,14 +92,17 @@ public class OutboxMedia {
             for (int from = 0; from < group.size(); from += 10) {
                 List<File> chunk = group.subList(from, Math.min(group.size(), from + 10));
                 if (chunk.size() == 1 || chunk.get(0).kind() == MediaKind.VOICE) {
-                    for (File f : chunk) remember(f, telegram.sendMedia(chatId, item(f, null), null));
+                    for (File f : chunk) parts.add(() -> remember(f, telegram.sendMedia(chatId, item(f, null), null)));
                 } else {
-                    List<SentMedia> sent = telegram.sendMediaGroup(chatId, chunk.stream().map(f -> item(f, null)).toList());
-                    for (int i = 0; i < chunk.size() && i < sent.size(); i++) remember(chunk.get(i), sent.get(i));
+                    parts.add(() -> {
+                        List<SentMedia> sent = telegram.sendMediaGroup(chatId, chunk.stream().map(f -> item(f, null)).toList());
+                        for (int i = 0; i < chunk.size() && i < sent.size(); i++) remember(chunk.get(i), sent.get(i));
+                    });
                 }
             }
         }
-        telegram.sendMessage(chatId, n.getText(), n.getReplyMarkup());
+        parts.add(() -> telegram.sendMessage(chatId, n.getText(), n.getReplyMarkup()));
+        return parts;
     }
 
     List<File> resolve(String media) {

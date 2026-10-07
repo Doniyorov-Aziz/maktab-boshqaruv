@@ -189,7 +189,8 @@ public class NotificationSender {
         try {
             if (n.getMedia() != null) {
                 // files first (by file_id when Telegram already has them), then the text with its buttons
-                outboxMedia.send(n);
+                // each delivered part is remembered at once: a 429 halfway does not resend the album
+                outboxMedia.send(n, done -> notificationLogRepository.save(n));
             } else {
                 telegramClient.sendMessage(n.getChatId(), n.getText(), n.getReplyMarkup());
             }

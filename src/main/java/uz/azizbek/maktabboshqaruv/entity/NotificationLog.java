@@ -84,6 +84,22 @@ public class NotificationLog {
     @Column(length = 255)
     private String media;
 
+    /**
+     * How many parts of a media message (albums / single files, then the text) were already
+     * delivered. A retry (e.g. after 429 between the album and the text) continues from here,
+     * so the parent never gets the same album twice.
+     */
+    @Column(columnDefinition = "integer default 0")
+    private Integer mediaParts = 0;
+
+    public Integer getMediaParts() {
+        return mediaParts;
+    }
+
+    public void setMediaParts(Integer mediaParts) {
+        this.mediaParts = mediaParts;
+    }
+
     public String getMedia() {
         return media;
     }
