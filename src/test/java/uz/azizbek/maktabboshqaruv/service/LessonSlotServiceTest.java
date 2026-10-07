@@ -38,6 +38,9 @@ class LessonSlotServiceTest {
     private LessonSlotRepository lessonSlotRepository;
 
     @Mock
+    private uz.azizbek.maktabboshqaruv.service.BotCache botCache;
+
+    @Mock
     private SchoolClassRepository schoolClassRepository;
 
     @Mock

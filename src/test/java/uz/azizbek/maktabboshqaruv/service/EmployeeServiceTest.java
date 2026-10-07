@@ -30,6 +30,9 @@ class EmployeeServiceTest {
     private EmployeeRepository employeeRepository;
 
     @Mock
+    private uz.azizbek.maktabboshqaruv.service.BotCache botCache;
+
+    @Mock
     private PositionRepository positionRepository;
 
     @Mock

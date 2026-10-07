@@ -35,6 +35,9 @@ class LinkingServiceTest {
     private StudentRepository studentRepository;
 
     @Mock
+    private uz.azizbek.maktabboshqaruv.service.BotCache botCache;
+
+    @Mock
     private ParentTelegramLinkRepository linkRepository;
 
     @InjectMocks

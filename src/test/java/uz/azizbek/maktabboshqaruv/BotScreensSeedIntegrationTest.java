@@ -148,13 +148,28 @@ class BotScreensSeedIntegrationTest {
         java.util.regex.Matcher m = Pattern.compile("gr:v:det:id:(\\d+)").matcher(keyboard);
         if (m.find()) assertPage("Fan tafsiloti", tap("gr:v:det:id:" + m.group(1)));
 
-        // Picture pages are real PNG files.
+        // Old "picture" buttons in earlier messages open the text page now — nothing is drawn per request:
+        // the only photo is the section's static banner.
         for (String data : new String[]{"att:k:m:v:img", "gr:v:chart", "rep:t:week:v:img"}) {
             List<MockTelegramClient.SentMessage> ops = tap(data);
-            MockTelegramClient.SentMessage photo = ops.stream().filter(o -> "photo".equals(o.op())).findFirst().orElseThrow(() -> new AssertionError(data));
-            byte[] png = mock.downloadFile(photo.photoId());
-            assertTrue(png.length > 10_000 && (png[0] & 0xFF) == 0x89 && png[1] == 'P', data + ": PNG emas");
+            MockTelegramClient.SentMessage last = ops.get(ops.size() - 1);
+            assertFalse(last.text() == null || last.text().isBlank(), data + ": matn yo'q");
+            for (MockTelegramClient.SentMessage o : ops) {
+                if (o.photoId() != null) assertTrue(isStaticBanner(mock.downloadFile(o.photoId())), data + ": dinamik rasm");
+            }
         }
+    }
+
+    /** Byte-for-byte one of resources/bot/banners/*.png. */
+    private static boolean isStaticBanner(byte[] png) {
+        for (String section : uz.azizbek.maktabboshqaruv.bot.BotBanners.SECTIONS) {
+            try (java.io.InputStream in = BotScreensSeedIntegrationTest.class.getResourceAsStream("/bot/banners/" + section + ".png")) {
+                if (in != null && java.util.Arrays.equals(in.readAllBytes(), png)) return true;
+            } catch (java.io.IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        }
+        return false;
     }
 
     @Test
@@ -167,9 +182,8 @@ class BotScreensSeedIntegrationTest {
             assertNotNull(last.photoId(), code);
             assertNotNull(last.keyboard(), code + ": tugmalar yo'q");
             assertFalse(last.text().isBlank(), code + ": caption bo'sh");
-            java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(mock.downloadFile(last.photoId())));
-            assertEquals(1280, img.getWidth(), code);
-            assertEquals(640, img.getHeight(), code);
+            // the static section banner (uploaded once, then reused by file_id) — never drawn per parent
+            assertTrue(isStaticBanner(mock.downloadFile(last.photoId())), code + ": statik banner emas");
         }
         // Moving between cards edits the same message instead of sending a new one.
         List<MockTelegramClient.SentMessage> ops = tap("att:k:m:v:cal");

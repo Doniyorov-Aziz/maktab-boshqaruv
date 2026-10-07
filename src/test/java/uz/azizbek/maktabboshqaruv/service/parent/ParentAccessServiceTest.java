@@ -27,6 +27,9 @@ class ParentAccessServiceTest {
     private ParentTelegramLinkRepository linkRepository;
     @Mock
     private ParentSessionRepository sessionRepository;
+    /** the real cache: it must call the loader on a miss */
+    @org.mockito.Spy
+    private uz.azizbek.maktabboshqaruv.service.BotCache cache = new uz.azizbek.maktabboshqaruv.service.BotCache();
 
     @InjectMocks
     private ParentAccessService access;
@@ -39,11 +42,7 @@ class ParentAccessServiceTest {
         own.setId(100L);
         own.setFirstName("Ali");
         own.setBirthDate(LocalDate.of(2015, 1, 1));
-        ParentTelegramLink link = new ParentTelegramLink();
-        link.setStudent(own);
-        link.setChatId(CHAT);
-        link.setActive(true);
-        when(linkRepository.findByChatIdAndActiveTrue(CHAT)).thenReturn(List.of(link));
+        when(linkRepository.findLinkedStudents(CHAT)).thenReturn(List.of(own));
     }
 
     @Test

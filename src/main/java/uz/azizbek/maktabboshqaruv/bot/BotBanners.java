@@ -39,12 +39,16 @@ public class BotBanners {
 
     private final BotAssetRepository repository;
     private final Clock clock;
+    /** Mock file ids restart with every run, so they are kept in memory only, never in the database. */
+    private final boolean persist;
     private final Map<String, String> fileIds = new ConcurrentHashMap<>();
     private final Map<String, byte[]> bytes = new ConcurrentHashMap<>();
 
-    public BotBanners(BotAssetRepository repository, Clock clock) {
+    public BotBanners(BotAssetRepository repository, Clock clock,
+                      uz.azizbek.maktabboshqaruv.telegram.TelegramProperties properties) {
         this.repository = repository;
         this.clock = clock;
+        this.persist = !properties.isMock();
     }
 
     /** The banner of a section, or null for a section without one. */
@@ -54,6 +58,7 @@ public class BotBanners {
 
     /** Telegram's file_id for the banner, or null if it was never uploaded. */
     public String fileId(Banner banner) {
+        if (!persist) return fileIds.get(banner.key());
         return fileIds.computeIfAbsent(banner.key(),
                 k -> repository.findById(k).map(BotAsset::getFileId).orElse(null));
     }
@@ -74,6 +79,7 @@ public class BotBanners {
     public void remember(Banner banner, String fileId) {
         if (fileId == null || fileId.equals(fileIds.get(banner.key()))) return;
         fileIds.put(banner.key(), fileId);
+        if (!persist) return;
         BotAsset asset = repository.findById(banner.key()).orElseGet(BotAsset::new);
         asset.setKey(banner.key());
         asset.setFileId(fileId);
@@ -84,6 +90,6 @@ public class BotBanners {
     /** Telegram no longer knows the id (e.g. the bot token changed): upload again next time. */
     public void forget(Banner banner) {
         fileIds.remove(banner.key());
-        repository.deleteById(banner.key());
+        if (persist) repository.deleteById(banner.key());
     }
 }

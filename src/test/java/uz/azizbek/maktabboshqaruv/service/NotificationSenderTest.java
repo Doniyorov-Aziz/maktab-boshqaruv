@@ -33,6 +33,9 @@ class NotificationSenderTest {
     private NotificationLogRepository notificationLogRepository;
 
     @Mock
+    private uz.azizbek.maktabboshqaruv.service.BotCache botCache;
+
+    @Mock
     private ParentTelegramLinkRepository linkRepository;
 
     @Mock
