@@ -10,4 +10,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
     java.util.List<User> findByEmployeeId(Long employeeId);
     java.util.List<User> findByRole(uz.azizbek.maktabboshqaruv.entity.Role role);
+
+    org.springframework.data.domain.Page<User> findByEmployeeSchoolId(Long schoolId, org.springframework.data.domain.Pageable pageable);
 }

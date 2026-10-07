@@ -28,7 +28,16 @@ public class SchoolService {
     @Autowired
     private SchoolClassRepository schoolClassRepository;
 
+    @Autowired
+    private SchoolAccessService access;
+
+    /** A user of one school sees only that school; a user without a school sees all. */
     public Page<SchoolResponseDto> getAllSchools(Pageable pageable) {
+        Long own = access.caller().schoolId();
+        if (own != null) {
+            java.util.List<SchoolResponseDto> one = schoolRepository.findById(own).map(this::toResponseDto).stream().toList();
+            return new org.springframework.data.domain.PageImpl<>(one, pageable, one.size());
+        }
         return schoolRepository.findAll(pageable)
                 .map(this::toResponseDto);
     }

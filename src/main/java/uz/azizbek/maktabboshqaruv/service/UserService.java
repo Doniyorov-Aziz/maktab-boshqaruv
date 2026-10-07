@@ -27,8 +27,13 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private SchoolAccessService access;
+
+    /** A school's own admin sees that school's users only. */
     public Page<UserResponseDto> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable)
+        Long school = access.caller().schoolId();
+        return (school == null ? userRepository.findAll(pageable) : userRepository.findByEmployeeSchoolId(school, pageable))
                 .map(this::toResponseDto);
     }
 
@@ -58,6 +63,7 @@ public class UserService {
     public UserResponseDto updateUser(Long id, UserUpdateRequestDto request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Bunday foydalanuvchi topilmadi: " + id));
+        access.forget(user.getUsername());
 
         if (!user.getUsername().equals(request.getUsername()) && userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalStateException("Bu username bilan foydalanuvchi allaqachon mavjud");

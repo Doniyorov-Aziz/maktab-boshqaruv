@@ -30,6 +30,8 @@ public class MockTelegramClient implements TelegramClient {
     }
 
     private final List<SentMessage> sent = Collections.synchronizedList(new ArrayList<>());
+    /** How many of the oldest operations were dropped (only the last KEEP are kept). */
+    private int trimmed;
     private final Map<String, byte[]> files = new ConcurrentHashMap<>();
     private final AtomicLong messageIds = new AtomicLong(1000);
     private final AtomicLong fileIds = new AtomicLong(1);
@@ -143,24 +145,34 @@ public class MockTelegramClient implements TelegramClient {
     }
 
     private void record(SentMessage m) {
-        sent.add(m);
         synchronized (sent) {
-            while (sent.size() > KEEP) sent.remove(0);
+            sent.add(m);
+            while (sent.size() > KEEP) {
+                sent.remove(0);
+                trimmed++;
+            }
         }
     }
 
-    /** Operations for a chat after the given index — the bot's reaction to one simulated update. */
+    /**
+     * Operations for a chat after the given position — the bot's reaction to one simulated
+     * update. Positions keep counting after old entries are dropped, so {@code since(size())}
+     * stays correct however many operations were recorded before.
+     */
     public List<SentMessage> since(int index, long chatId) {
         synchronized (sent) {
             List<SentMessage> result = new ArrayList<>();
-            for (int i = Math.max(0, index); i < sent.size(); i++) {
+            for (int i = Math.max(0, index - trimmed); i < sent.size(); i++) {
                 if (sent.get(i).chatId() == chatId) result.add(sent.get(i));
             }
             return result;
         }
     }
 
+    /** The position after the last recorded operation (keeps growing; see {@link #since}). */
     public int size() {
-        return sent.size();
+        synchronized (sent) {
+            return trimmed + sent.size();
+        }
     }
 }

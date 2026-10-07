@@ -42,12 +42,26 @@ public class SchoolAccessService {
         return caller(auth.getName());
     }
 
+    /** Every request asks who the caller is; a minute is short enough for role or school changes. */
+    private final com.github.benmanes.caffeine.cache.Cache<String, Caller> callers =
+            com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+                    .maximumSize(5_000).expireAfterWrite(java.time.Duration.ofMinutes(1)).build();
+
     @Transactional(readOnly = true)
     public Caller caller(String username) {
+        Caller cached = callers.getIfPresent(username);
+        if (cached != null) return cached;
         User u = users.findByUsername(username).orElseThrow(() -> new ForbiddenException("Foydalanuvchi topilmadi"));
         Long schoolId = u.getEmployee() != null && u.getEmployee().getSchool() != null
                 ? u.getEmployee().getSchool().getId() : null;
-        return new Caller(u.getUsername(), u.getRole(), schoolId, u.getEmployee() != null ? u.getEmployee().getId() : null);
+        Caller c = new Caller(u.getUsername(), u.getRole(), schoolId, u.getEmployee() != null ? u.getEmployee().getId() : null);
+        callers.put(username, c);
+        return c;
+    }
+
+    /** After a user's role or employee changes. */
+    public void forget(String username) {
+        callers.invalidate(username);
     }
 
     /** 403 unless the caller may work with this school. */

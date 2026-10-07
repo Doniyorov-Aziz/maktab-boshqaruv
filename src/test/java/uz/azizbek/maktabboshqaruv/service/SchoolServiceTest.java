@@ -42,11 +42,16 @@ class SchoolServiceTest {
     @Mock
     private SchoolClassRepository schoolClassRepository;
 
+    @Mock
+    private SchoolAccessService access;
+
     @InjectMocks
     private SchoolService schoolService;
 
     @Test
     void getAllSchools_returnsMappedPage() {
+        // a user without a school (super admin) sees every school
+        when(access.caller()).thenReturn(new SchoolAccessService.Caller("admin", uz.azizbek.maktabboshqaruv.entity.Role.ADMIN, null, null));
         School school = new School();
         school.setId(1L);
         school.setName("Maktab 1");
