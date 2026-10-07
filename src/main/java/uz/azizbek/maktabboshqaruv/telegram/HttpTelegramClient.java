@@ -228,8 +228,11 @@ public class HttpTelegramClient implements TelegramClient {
         }
         try {
             return fileClient.get().uri("/" + file.filePath()).retrieve().body(byte[].class);
+        } catch (org.springframework.web.client.RestClientResponseException e) {
+            // never the exception text: it holds the file URL, i.e. api.telegram.org/file/bot<TOKEN>/…
+            throw new TelegramApiException(e.getStatusCode().value(), "Faylni yuklab bo'lmadi (HTTP " + e.getStatusCode().value() + ")", null);
         } catch (RuntimeException e) {
-            throw new TelegramApiException(0, TokenMasker.mask(e.getMessage(), token), null);
+            throw new TelegramApiException(0, "Faylni yuklab bo'lmadi (" + e.getClass().getSimpleName() + ")", null);
         }
     }
 
