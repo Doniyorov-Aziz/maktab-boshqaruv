@@ -49,6 +49,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(415).body("So'rov multipart/form-data bo'lishi kerak");
     }
 
+    /**
+     * An address nothing answers (e.g. a new page talking to an older backend): a plain 404 for
+     * the user instead of Spring's internal "No static resource …" text.
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<java.util.Map<String, String>> handleNoResource(Exception e) {
+        log.warn("Manzil topilmadi: {}", e.getMessage());
+        return ResponseEntity.status(404).body(java.util.Map.of("message", "Manzil topilmadi"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGeneral(Exception e) {
         // Spring's own errors (404, 405, 415, ...) keep their status instead of becoming 500

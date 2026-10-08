@@ -85,3 +85,17 @@ Testlar: `JournalIntegrationTest`, `JournalQueryCountTest`, `support/MutableCloc
 
 Backend qayta ishga tushirilishi kerak (`grade.created_by` ustuni `ddl-auto=update` bilan qo'shiladi; eski
 baholarda bo'sh — tooltip'da muallif ko'rinmaydi). Jonli botda: `C:\Users\A.Doniyorov\maktab-live\update.ps1`.
+
+## Tuzatish (2026-10-08): «No static resource api/classes/1/overview»
+
+Sabab: eature/journal main ga qo'shilgach jonli frontend (`npm run dev`) yangi sahifani darhol oldi, jonli backend esa
+eski jar'da qolgan edi — unda jurnal endpointlari yo'q, so'rov statik fayl deb qidirildi. Endpoint manzillari
+backend va frontendda aynan bir xil (`/api/classes/{id}/overview`, `/api/grades/journal`, `/api/me/current-lesson`).
+
+- Backend: `NoResourceFoundException` → 404 `{"message": "Manzil topilmadi"}` (Spring ichki matni chiqmaydi).
+- Frontend: overview xato bersa panel skeletonda qolmaydi — «Sinf ma'lumotini yuklab bo'lmadi · Qayta urinish»;
+  fanlar maktabning faol fanlaridan olinadi, jurnal ishlayveradi. JSON xato xabarlari (`message`) ham ko'rsatiladi.
+- Fanlar: sinfga dars jadvali orqali bog'langan faol fanlar; bog'lanmagan bo'lsa — barcha faol fanlar (backend).
+- Tekshiruv: `./gradlew build` 225 test ✅, `npm run build` ✅; curl (JWT) — overview 200, journal 200,
+  current-lesson 200 (o'qituvchi, dars vaqtida; admin uchun 204), noma'lum manzil 404 JSON; Playwright 11/11 ✅
+  (`docs/images/journal/fix-overview.png`, `fix-overview-error.png`).

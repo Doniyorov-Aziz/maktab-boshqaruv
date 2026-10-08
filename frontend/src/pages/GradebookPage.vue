@@ -39,7 +39,7 @@
             map-options
             options-dense
             :options="subjectOptions"
-            :disable="!overview"
+            :disable="!subjectOptions.length"
             placeholder="Fanni tanlang"
             @update:model-value="onSubjectChange"
           />
@@ -87,8 +87,32 @@
     </div>
 
     <!-- 2. class panel -->
+    <!-- the panel could not be loaded: say so, offer a retry — the journal below still works -->
+    <div
+      v-if="classId && overviewError"
+      class="brand-card q-pa-md q-mb-md row items-center no-wrap jr-panel-error"
+      role="alert"
+    >
+      <q-icon
+        name="error_outline"
+        size="22px"
+        class="q-mr-sm"
+        color="negative"
+      />
+      <span class="col">Sinf ma'lumotini yuklab bo'lmadi</span>
+      <q-btn
+        flat
+        dense
+        no-caps
+        color="primary"
+        icon="refresh"
+        label="Qayta urinish"
+        :loading="overviewRetrying"
+        @click="retryOverview"
+      />
+    </div>
     <class-overview-panel
-      v-if="classId"
+      v-else-if="classId"
       class="q-mb-md"
       :overview="overview"
       :now-minutes="now.minutes"
@@ -454,8 +478,13 @@ const loading = ref(false)
 const autoLesson = ref(null)
 const highlightDate = ref(null)
 
+const overviewError = ref(false)
+const fallbackSubjects = ref([])
 const subjectOptions = computed(() =>
-  (overview.value?.subjects || []).map(s => ({ value: s.id, label: s.name }))
+  (
+    overview.value?.subjects ||
+    (overviewError.value ? fallbackSubjects.value : [])
+  ).map(s => ({ value: s.id, label: s.name }))
 )
 const subjectTeacher = computed(() => {
   if (journal.value?.subjectTeacher) return journal.value.subjectTeacher
@@ -500,6 +529,7 @@ async function loadClasses() {
 async function loadOverview() {
   if (!classId.value) return
   const id = classId.value
+  overviewError.value = false
   try {
     const res = await api.get(`/api/classes/${id}/overview`)
     if (id !== classId.value) return
@@ -512,9 +542,37 @@ async function loadOverview() {
       subjectId.value = null
       syncUrl()
     }
-  } catch (e) {
-    notifyError(e)
+  } catch {
+    if (id !== classId.value) return
+    // the panel shows an error with a retry; subjects still come from the school's active list
+    overview.value = null
+    overviewError.value = true
+    await loadFallbackSubjects()
   }
+}
+
+/** Without the class overview: every active subject of the school. */
+async function loadFallbackSubjects() {
+  if (fallbackSubjects.value.length || !schoolStore.activeSchoolId) return
+  try {
+    const res = await api.get('/api/subjects', {
+      background: true,
+      params: { schoolId: schoolStore.activeSchoolId, size: 500, sort: 'name' }
+    })
+    fallbackSubjects.value = res.data.content.map(s => ({
+      id: s.id,
+      name: s.name
+    }))
+  } catch {
+    fallbackSubjects.value = []
+  }
+}
+
+const overviewRetrying = ref(false)
+async function retryOverview() {
+  overviewRetrying.value = true
+  await loadOverview()
+  overviewRetrying.value = false
 }
 
 async function loadJournal() {
@@ -548,6 +606,7 @@ function pickClass(id) {
   if (id === classId.value) return
   classId.value = id
   overview.value = null
+  overviewError.value = false
   journal.value = null
   autoLesson.value = null
   syncUrl()
@@ -1081,6 +1140,8 @@ watch(
       classId.value = null
       subjectId.value = null
       overview.value = null
+      overviewError.value = false
+      fallbackSubjects.value = []
       journal.value = null
     }
     await loadClasses().catch(notifyError)
@@ -1104,6 +1165,15 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.jr-panel-error {
+  color: var(--text-primary);
+  border-color: color-mix(
+    in srgb,
+    var(--brand-border) 50%,
+    var(--color-danger)
+  );
+}
+
 .jr-label {
   width: 40px;
   flex: none;

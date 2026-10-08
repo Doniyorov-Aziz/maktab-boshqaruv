@@ -23,9 +23,12 @@ function friendlyMessage(error) {
   if (status >= 500) {
     return "Serverda xatolik yuz berdi. Birozdan so'ng qayta urinib ko'ring."
   }
-  return typeof error.response.data === 'string' && error.response.data
-    ? error.response.data
-    : 'Xatolik yuz berdi'
+  const data = error.response.data
+  if (typeof data === 'string' && data) return data
+  // JSON errors: { "message": "Manzil topilmadi" }
+  if (data && typeof data.message === 'string' && data.message)
+    return data.message
+  return 'Xatolik yuz berdi'
 }
 
 // One thin bar at the top for every API call (driven here, not by Quasar's XHR hijack).

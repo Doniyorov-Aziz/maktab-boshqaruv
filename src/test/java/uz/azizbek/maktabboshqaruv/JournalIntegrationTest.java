@@ -272,6 +272,14 @@ class JournalIntegrationTest {
     }
 
     @Test
+    void unknownAddress_is404Json_withoutSpringInternals() throws Exception {
+        ApiClient.Response r = as(Role.ADMIN, null).get("/api/classes/" + cls.getId() + "/no-such-thing");
+        assertEquals(404, r.status());
+        assertEquals("Manzil topilmadi", r.json().get("message").asString());
+        assertFalse(r.body().contains("static resource"), r.body());
+    }
+
+    @Test
     void anotherSchoolsClass_is403() throws Exception {
         SchoolClass other = classes.findAll().stream()
                 .filter(c -> !c.getAcademicYear().getSchool().getId().equals(schoolId)).findFirst().orElseThrow();
