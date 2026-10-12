@@ -896,7 +896,9 @@ async function createGrade(
   type = 'CURRENT',
   comment = ''
 ) {
-  const temp = {
+  // reactive: the same proxy the grades array hands out, so the id swap below re-renders the chip
+  // and the rollback filter finds it
+  const temp = reactive({
     id: `tmp-${++tmpId}`,
     studentId,
     date,
@@ -905,7 +907,7 @@ async function createGrade(
     comment: comment || null,
     createdBy: null,
     createdAt: null
-  }
+  })
   journal.value.grades.push(temp)
   try {
     const res = await api.post(
