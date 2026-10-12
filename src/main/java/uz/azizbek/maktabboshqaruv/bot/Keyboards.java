@@ -14,15 +14,14 @@ import java.util.Map;
  * The persistent bottom keyboard — the bot's main menu — and the reverse
  * lookup from what the parent typed or tapped to the screen it opens.
  *
- * Layout (two columns, the last item on a full row), with an optional
- * "📱 Kundalikni ochish" Mini App row on top:
+ * Layout (two columns), with an optional "📱 Kundalikni ochish" Mini App row on top:
  * <pre>
- *   📅 Dars jadvali   | ✅ Davomat
- *   📘 Baholar        | 📊 Hisobot
- *   📢 E'lonlar       | 🗓 Tadbirlar
- *   👩‍🏫 O'qituvchilar  | ✉️ Ma'muriyatga xat
- *   🤒 Sababli ariza  | ⚙️ Sozlamalar
- *   👨‍👩‍👧 Farzandlarim
+ *   📅 Dars jadvali     | ✅ Davomat
+ *   📘 Baholar          | 📊 Hisobot
+ *   📢 E'lonlar         | 🗓 Tadbirlar
+ *   👩‍🏫 O'qituvchilar    | ✉️ Ma'muriyatga xat
+ *   🤒 Sababli ariza    | ⚙️ Sozlamalar
+ *   📚 Kitob mutolaasi  | 👨‍👩‍👧 Farzandlarim
  * </pre>
  * Buttons carry a Bot API 9.4 color style: sections "primary", the absence
  * request "danger"; Telegram apps older than February 2026 show them plain.
@@ -38,7 +37,7 @@ public final class Keyboards {
             new String[]{"kb.announcements", "ann"}, new String[]{"kb.events", "ev"},
             new String[]{"kb.teachers", "tch"}, new String[]{"kb.write", "msg"},
             new String[]{"kb.absence", "abs"}, new String[]{"kb.settings", "set"},
-            new String[]{"kb.children", "ch"});
+            new String[]{"kb.library", "lib"}, new String[]{"kb.children", "ch"});
 
     /** Other labels that open a screen when typed (inline menu names, section names). */
     private static final List<String[]> ALIASES = List.of(
@@ -50,6 +49,7 @@ public final class Keyboards {
             new String[]{"sec.teachers", "tch"}, new String[]{"sec.absence", "abs"},
             new String[]{"sec.school", "info"}, new String[]{"sec.settings", "set"},
             new String[]{"sec.children", "ch"}, new String[]{"kb.home", "home"},
+            new String[]{"sec.library", "lib"},
             // the label of the old "write to school" button still on parents' keyboards
             new String[]{"kb.write_legacy", "msg"});
 

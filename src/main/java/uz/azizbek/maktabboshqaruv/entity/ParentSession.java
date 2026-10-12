@@ -50,6 +50,8 @@ public class ParentSession {
     private Boolean notifyWeeklyReport;
     private Boolean notifyEventReminder;
     private Boolean notifyMorningDigest;
+    /** Friday's book picks ("📚 Dam olish kunlari uchun 3 ta kitob"); null = on */
+    private Boolean notifyLibrary;
 
     private LocalTime scheduleTime;
 
@@ -76,8 +78,10 @@ public class ParentSession {
             case WEEKLY_REPORT -> notifyWeeklyReport;
             case EVENT_REMINDER -> notifyEventReminder;
             case MORNING_DIGEST -> notifyMorningDigest;
-            // Replies, decisions and school broadcasts are personal/official — always delivered.
-            case MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST -> Boolean.TRUE;
+            case LIBRARY_WEEKLY -> notifyLibrary;
+            // Replies, decisions and school broadcasts are personal/official — always delivered;
+            // a book is sent because the parent just asked for it.
+            case MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST, BOOK_DOWNLOAD -> Boolean.TRUE;
         };
         return !Boolean.FALSE.equals(flag);
     }
@@ -223,6 +227,14 @@ public class ParentSession {
 
     public Boolean getNotifyMorningDigest() {
         return notifyMorningDigest;
+    }
+
+    public Boolean getNotifyLibrary() {
+        return notifyLibrary;
+    }
+
+    public void setNotifyLibrary(Boolean notifyLibrary) {
+        this.notifyLibrary = notifyLibrary;
     }
 
     public void setNotifyMorningDigest(Boolean notifyMorningDigest) {

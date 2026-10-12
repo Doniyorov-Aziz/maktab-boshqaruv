@@ -49,6 +49,7 @@ public class BotSettingService {
         s.setWeeklyReportTime(LocalTime.parse(request.getWeeklyReportTime()));
         s.setEventReminderTime(LocalTime.parse(request.getEventReminderTime()));
         s.setLowGradeThreshold(request.getLowGradeThreshold());
+        if (request.getLibraryWeeklyEnabled() != null) s.setLibraryWeeklyEnabled(request.getLibraryWeeklyEnabled());
         return toDto(botSettingRepository.save(s));
     }
 
@@ -73,6 +74,7 @@ public class BotSettingService {
         dto.setWeeklyReportTime(s.getWeeklyReportTime().toString());
         dto.setEventReminderTime(s.getEventReminderTime().toString());
         dto.setLowGradeThreshold(s.getLowGradeThreshold());
+        dto.setLibraryWeeklyEnabled(s.isLibraryWeeklyOn());
         List<String> bells = new ArrayList<>();
         int n = 1;
         for (Object[] row : lessonSlotRepository.findDistinctPeriodsForWeekday(s.getSchool().getId(), "Dushanba")) {

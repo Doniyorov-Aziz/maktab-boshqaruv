@@ -2,7 +2,9 @@ package uz.azizbek.maktabboshqaruv.bot;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uz.azizbek.maktabboshqaruv.bot.screens.LibraryScreen;
 import uz.azizbek.maktabboshqaruv.bot.screens.MessageScreen;
+import uz.azizbek.maktabboshqaruv.service.library.LibrarySettings;
 import uz.azizbek.maktabboshqaruv.entity.ParentSession;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.service.BotUsageService;
@@ -63,6 +65,8 @@ public class BotRouter {
     private Clock clock;
     @Autowired
     private BotBanners banners;
+    @Autowired
+    private LibrarySettings librarySettings;
 
     public BotRouter(List<Screen> screenBeans, List<InputHandler> inputHandlers) {
         for (Screen s : screenBeans) screens.put(s.code(), s);
@@ -216,6 +220,18 @@ public class BotRouter {
         int at = command.indexOf('@');
         if (at > 0) command = command.substring(0, at); // "/start@MyBot"
 
+        // The library's search mode ends with another menu button, a command, or 10 idle minutes;
+        // the text is then handled as if no conversation were open (other modes are untouched).
+        String pending = ctx.session().getPendingAction();
+        if (pending != null && pending.startsWith(LibraryScreen.PENDING)
+                && (!command.isEmpty() || Keyboards.screenFor(text) != null
+                || LibraryScreen.isIdle(ctx.session(), clock.millis(), librarySettings.searchIdleMinutes()))) {
+            ctx.session().setPendingAction(null);
+            ctx.session().setPendingData(null);
+            access.save(ctx.session());
+            pending = null;
+        }
+
         if ("/start".equals(command)) {
             String code = text.contains(" ") ? text.substring(text.indexOf(' ') + 1).trim() : "";
             if (!code.isEmpty()) {
@@ -233,8 +249,7 @@ public class BotRouter {
             return BotView.of(ctx.t("help.text"), null).withReplyKeyboard(Keyboards.main(ctx.lang())).section("help");
         }
 
-        // A conversation is open (writing to school, absence request, adding a child).
-        String pending = ctx.session().getPendingAction();
+        // A conversation is open (writing to school, absence request, adding a child, library search).
         if (pending != null && command.isEmpty()) {
             for (InputHandler h : inputHandlers) {
                 if (h.pendingPrefixes().stream().anyMatch(pending::startsWith)) {

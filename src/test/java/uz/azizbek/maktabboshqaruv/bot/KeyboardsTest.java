@@ -18,7 +18,7 @@ class KeyboardsTest {
     }
 
     @Test
-    void mainMenu_isTwoColumns_withChildrenOnAFullRow() {
+    void mainMenu_isTwoColumns_withLibraryNextToChildren() {
         ReplyKeyboardMarkup kb = Keyboards.main("uz");
         List<List<KeyboardButton>> rows = kb.keyboard();
         assertEquals(6, rows.size());
@@ -27,7 +27,7 @@ class KeyboardsTest {
         assertEquals(List.of("📢 E'lonlar", "🗓 Tadbirlar"), rows.get(2).stream().map(KeyboardButton::text).toList());
         assertEquals(List.of("👩‍🏫 O'qituvchilar", "✉️ Ma'muriyatga xat"), rows.get(3).stream().map(KeyboardButton::text).toList());
         assertEquals(List.of("🤒 Sababli ariza", "⚙️ Sozlamalar"), rows.get(4).stream().map(KeyboardButton::text).toList());
-        assertEquals(List.of("👨‍👩‍👧 Farzandlarim"), rows.get(5).stream().map(KeyboardButton::text).toList());
+        assertEquals(List.of("📚 Kitob mutolaasi", "👨‍👩‍👧 Farzandlarim"), rows.get(5).stream().map(KeyboardButton::text).toList());
     }
 
     @Test

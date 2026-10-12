@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     public ResponseEntity<String> handleTooBig(Exception e) {
-        return ResponseEntity.status(413).body("Fayl juda katta (ko'pi bilan 20 MB)");
+        return ResponseEntity.status(413).body("Fayl juda katta (ilova — 20 MB gacha, kutubxona kitobi — 50 MB gacha)");
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

@@ -12,7 +12,8 @@ import java.time.YearMonth;
 import java.util.UUID;
 
 /**
- * Our own copy of appeal files on disk: {app.storage.path}/telegram/{schoolId}/{yyyy-MM}/{uuid}.ext.
+ * Our own copy of uploaded files on disk: {app.storage.path}/{area}/{schoolId}/{yyyy-MM}/{uuid}.ext —
+ * "telegram" for appeal and broadcast files, "library" for the school library's books and covers.
  * Names are random (never the uploader's name), and reading is confined to the
  * storage root, so a stored path can never point outside it.
  */
@@ -27,7 +28,12 @@ public class FileStorage {
 
     /** Writes the bytes and returns the path relative to the storage root. */
     public String save(Long schoolId, String ext, byte[] bytes) {
-        String relative = "telegram/" + schoolId + "/" + YearMonth.now() + "/" + UUID.randomUUID()
+        return save("telegram", schoolId, ext, bytes);
+    }
+
+    /** Same as {@link #save(Long, String, byte[])} under another top folder ({@code area} is ours, never a user's). */
+    public String save(String area, Long schoolId, String ext, byte[] bytes) {
+        String relative = area + "/" + schoolId + "/" + YearMonth.now() + "/" + UUID.randomUUID()
                 + (ext == null || ext.isBlank() ? "" : "." + ext);
         Path target = resolve(relative);
         try {
@@ -44,6 +50,16 @@ public class FileStorage {
             return Files.readAllBytes(resolve(relative));
         } catch (IOException e) {
             throw new UncheckedIOException("Fayl topilmadi", e);
+        }
+    }
+
+    /** Removes a stored file (e.g. a replaced cover); a missing file is fine. */
+    public void delete(String relative) {
+        if (relative == null) return;
+        try {
+            Files.deleteIfExists(resolve(relative));
+        } catch (IOException e) {
+            // an orphaned file only takes disk space; the record no longer points at it
         }
     }
 

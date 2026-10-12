@@ -38,7 +38,8 @@ public class SettingsScreen implements Screen {
             new Toggle("tom", "set.item.tomorrow", ParentSession::getNotifyTomorrowSchedule, ParentSession::setNotifyTomorrowSchedule),
             new Toggle("wk", "set.item.weekly", ParentSession::getNotifyWeeklyReport, ParentSession::setNotifyWeeklyReport),
             new Toggle("ev", "set.item.events", ParentSession::getNotifyEventReminder, ParentSession::setNotifyEventReminder),
-            new Toggle("md", "set.item.morning", ParentSession::getNotifyMorningDigest, ParentSession::setNotifyMorningDigest));
+            new Toggle("md", "set.item.morning", ParentSession::getNotifyMorningDigest, ParentSession::setNotifyMorningDigest),
+            new Toggle("lib", "set.item.library", ParentSession::getNotifyLibrary, ParentSession::setNotifyLibrary));
 
     @Autowired
     private ParentAccessService access;

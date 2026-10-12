@@ -46,7 +46,9 @@ public class SchoolScopeConfig implements WebMvcConfigurer {
             Map.entry("announcements", Kind.ANNOUNCEMENT), Map.entry("calendar-events", Kind.CALENDAR_EVENT),
             Map.entry("absence-requests", Kind.ABSENCE), Map.entry("behavior-records", Kind.BEHAVIOR),
             Map.entry("grades", Kind.GRADE), Map.entry("attendance", Kind.ATTENDANCE), Map.entry("users", Kind.USER),
-            Map.entry("appeals", Kind.APPEAL), Map.entry("broadcasts", Kind.BROADCAST)
+            Map.entry("appeals", Kind.APPEAL), Map.entry("broadcasts", Kind.BROADCAST),
+            // library: /api/library/books/{id}, /api/library/categories/{id}
+            Map.entry("books", Kind.BOOK), Map.entry("categories", Kind.BOOK_CATEGORY)
     );
 
     /** Query parameter / body field → what it names. */
@@ -55,7 +57,8 @@ public class SchoolScopeConfig implements WebMvcConfigurer {
             Map.entry("studentId", Kind.STUDENT), Map.entry("employeeId", Kind.EMPLOYEE), Map.entry("teacherId", Kind.EMPLOYEE),
             Map.entry("classTeacherId", Kind.EMPLOYEE), Map.entry("academicYearId", Kind.YEAR),
             Map.entry("buildingId", Kind.BUILDING), Map.entry("roomId", Kind.ROOM), Map.entry("subjectId", Kind.SUBJECT),
-            Map.entry("lessonSlotId", Kind.LESSON_SLOT)
+            Map.entry("lessonSlotId", Kind.LESSON_SLOT),
+            Map.entry("bookId", Kind.BOOK), Map.entry("categoryId", Kind.BOOK_CATEGORY)
     );
 
     private final SchoolAccessService access;

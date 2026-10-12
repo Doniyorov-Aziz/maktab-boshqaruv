@@ -296,7 +296,7 @@ public class NotificationService {
                 skipReason = "Ota-ona bot sozlamalarida bu turdagi xabarlarni o'chirgan";
             }
 
-            LocalDateTime scheduledAt = deliveryTime(now, settings, session);
+            LocalDateTime scheduledAt = type.onDemand() ? now : deliveryTime(now, settings, session);
 
             NotificationLog row = new NotificationLog();
             row.setSchool(school);

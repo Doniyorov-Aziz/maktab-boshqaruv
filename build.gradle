@@ -36,6 +36,8 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine'
     // timetable PDF (A4 landscape, embedded Inter font for Latin + Cyrillic)
     implementation 'com.github.librepdf:openpdf:2.0.3'
+    // library: page count and the cover drawn from a PDF's first page (once, at upload)
+    implementation 'org.apache.pdfbox:pdfbox:3.0.5'
 }
 
 tasks.named('test') {

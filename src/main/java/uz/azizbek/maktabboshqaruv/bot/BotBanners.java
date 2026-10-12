@@ -26,14 +26,20 @@ public class BotBanners {
             "announcements", "events", "teachers", "write", "absence", "settings", "children", "behavior",
             "school", "welcome");
 
-    /** A section's banner: what to send, and the key its file_id is stored under. */
-    public record Banner(String section) {
-        public String key() {
-            return "banner:" + section;
+    /**
+     * A card's picture: what to send, and the key its file_id is stored under. Section banners
+     * come from the jar; a library book's cover ({@link #cover}) is read from our storage — once,
+     * for its first upload — and is then sent by file_id like a banner.
+     */
+    public record Banner(String section, String key, String fileName, java.util.function.Supplier<byte[]> source) {
+        public Banner(String section) {
+            this(section, "banner:" + section, section + ".png", null);
         }
 
-        public String fileName() {
-            return section + ".png";
+        /** {@code version} changes with the cover file, so a replaced cover is uploaded again. */
+        public static Banner cover(Long bookId, String version, java.util.function.Supplier<byte[]> bytes) {
+            return new Banner("library", "cover:" + bookId + ":" + Integer.toHexString(version.hashCode()),
+                    "cover-" + bookId + ".jpg", bytes);
         }
     }
 
@@ -65,6 +71,7 @@ public class BotBanners {
 
     /** The PNG itself — read from the jar once, only for the very first upload. */
     public byte[] png(Banner banner) {
+        if (banner.source() != null) return banner.source().get();
         return bytes.computeIfAbsent(banner.section(), s -> {
             String path = "/bot/banners/" + s + ".png";
             try (InputStream in = BotBanners.class.getResourceAsStream(path)) {

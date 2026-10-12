@@ -58,6 +58,8 @@ public class NotificationSettings {
             // Scheduled digests are switched per parent in the bot; replies,
             // decisions and admin broadcasts are always delivered.
             case TOMORROW_SCHEDULE, WEEKLY_REPORT, EVENT_REMINDER, MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST, MORNING_DIGEST -> true;
+            // a book the parent asked for; the weekly picks have their own switch in Bot sozlamalari
+            case BOOK_DOWNLOAD, LIBRARY_WEEKLY -> true;
         };
     }
 

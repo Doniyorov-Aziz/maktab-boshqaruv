@@ -61,6 +61,8 @@ public class BotScheduledJobs {
     @Autowired
     private WeeklyReportService weeklyReports;
     @Autowired
+    private uz.azizbek.maktabboshqaruv.service.library.LibraryWeekly libraryWeekly;
+    @Autowired
     private Clock clock;
 
     private final BotI18n i18n = BotI18n.get();
@@ -74,6 +76,7 @@ public class BotScheduledJobs {
             runTomorrowSchedules(now, false);
             runWeeklyReports(now, false);
             runEventReminders(now, false);
+            libraryWeekly.run(now, false);
         } catch (Exception e) {
             log.error("Rejalashtirilgan xabarnomalarda xato", e);
         }

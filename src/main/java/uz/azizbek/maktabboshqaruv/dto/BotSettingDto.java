@@ -44,8 +44,19 @@ public class BotSettingDto {
     @Max(5)
     private Integer lowGradeThreshold;
 
+    /** Friday's book picks for parents (null in a request = unchanged). */
+    private Boolean libraryWeeklyEnabled;
+
     /** Read-only: bell schedule derived from the timetable, e.g. ["1 · 08:30–09:15", ...]. */
     private java.util.List<String> derivedBells;
+
+    public Boolean getLibraryWeeklyEnabled() {
+        return libraryWeeklyEnabled;
+    }
+
+    public void setLibraryWeeklyEnabled(Boolean libraryWeeklyEnabled) {
+        this.libraryWeeklyEnabled = libraryWeeklyEnabled;
+    }
 
     public String getPhone() {
         return phone;

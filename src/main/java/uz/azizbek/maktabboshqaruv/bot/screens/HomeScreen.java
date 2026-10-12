@@ -95,7 +95,7 @@ public class HomeScreen implements Screen {
                 section(ctx, "kb.events", "ev"), section(ctx, "kb.teachers", "tch"),
                 section(ctx, "kb.write", "msg"), ctx.btn(ctx.t("menu.absence"), "abs").styled("danger"),
                 section(ctx, "menu.school", "info"), section(ctx, "kb.settings", "set")), 2);
-        kb.row(section(ctx, "kb.children", "ch"));
+        kb.row(section(ctx, "kb.library", "lib"), section(ctx, "kb.children", "ch"));
         kb.row(ctx.switchRow("home").toArray(new InlineButton[0]));
         return BotView.of(sb.toString(), kb.build()).section("home");
     }

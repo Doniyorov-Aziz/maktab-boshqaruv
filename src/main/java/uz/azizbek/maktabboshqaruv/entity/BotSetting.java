@@ -57,7 +57,22 @@ public class BotSetting {
     /** Morning digest on school days; nullable column, existing rows fall back to 07:30. */
     private LocalTime morningDigestTime;
 
+    /** Friday's "📚 Dam olish kunlari uchun 3 ta kitob"; nullable column, null = on. */
+    private Boolean libraryWeeklyEnabled;
+
     public static final LocalTime DEFAULT_MORNING_DIGEST = LocalTime.of(7, 30);
+
+    public boolean isLibraryWeeklyOn() {
+        return !Boolean.FALSE.equals(libraryWeeklyEnabled);
+    }
+
+    public Boolean getLibraryWeeklyEnabled() {
+        return libraryWeeklyEnabled;
+    }
+
+    public void setLibraryWeeklyEnabled(Boolean libraryWeeklyEnabled) {
+        this.libraryWeeklyEnabled = libraryWeeklyEnabled;
+    }
 
     public static BotSetting defaults(School school) {
         BotSetting s = new BotSetting();

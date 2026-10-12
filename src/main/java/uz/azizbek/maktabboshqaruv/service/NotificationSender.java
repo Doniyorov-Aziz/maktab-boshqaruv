@@ -165,8 +165,10 @@ public class NotificationSender {
     }
 
     private boolean stillSubscribed(NotificationLog n) {
-        // An announcement row names just one of the parent's children, so any active link counts.
+        // An announcement row names just one of the parent's children, so any active link counts
+        // (library messages are for the parent too, not about one child).
         return n.getType() == NotificationType.ANNOUNCEMENT || n.getType() == NotificationType.BROADCAST
+                || n.getType() == NotificationType.BOOK_DOWNLOAD || n.getType() == NotificationType.LIBRARY_WEEKLY
                 ? !linkRepository.findByChatIdAndActiveTrue(n.getChatId()).isEmpty()
                 : linkRepository.findByStudentIdAndChatId(n.getStudent().getId(), n.getChatId())
                 .map(l -> Boolean.TRUE.equals(l.getActive()))
