@@ -20,7 +20,7 @@ public class SchoolOwnership {
 
     public enum Kind {
         SCHOOL, CLASS, STUDENT, EMPLOYEE, YEAR, BUILDING, ROOM, SUBJECT, LESSON_SLOT, ANNOUNCEMENT,
-        CALENDAR_EVENT, ABSENCE, BEHAVIOR, GRADE, ATTENDANCE, USER, APPEAL, BROADCAST, BOOK, BOOK_CATEGORY
+        CALENDAR_EVENT, ABSENCE, BEHAVIOR, GRADE, ATTENDANCE, USER, APPEAL, BROADCAST, BOOK, BOOK_CATEGORY, LIBRARY_PERMISSION
     }
 
     private static final String CLASS_SCHOOL =
@@ -52,7 +52,8 @@ public class SchoolOwnership {
             Map.entry(Kind.APPEAL, "select school_id from appeal where id = ?"),
             Map.entry(Kind.BROADCAST, "select school_id from broadcast where id = ?"),
             Map.entry(Kind.BOOK, "select school_id from book where id = ?"),
-            Map.entry(Kind.BOOK_CATEGORY, "select school_id from book_category where id = ?")
+            Map.entry(Kind.BOOK_CATEGORY, "select school_id from book_category where id = ?"),
+            Map.entry(Kind.LIBRARY_PERMISSION, "select school_id from library_permission where id = ?")
     );
 
     private final JdbcTemplate jdbc;

@@ -152,7 +152,8 @@ public class LibraryFiles {
         return (safe.isEmpty() ? "kitob" : safe) + ".pdf";
     }
 
-    static ResponseStatusException bad(String message) {
+    /** A 400 with the reason shown to the user (Uzbek). */
+    public static ResponseStatusException bad(String message) {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
     }
 }

@@ -80,6 +80,26 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     long countByCategoryId(Long categoryId);
 
+    List<Book> findByPermissionIdAndActiveTrue(Long permissionId);
+
+    long countByPermissionId(Long permissionId);
+
+    @Query("select b.permission.id, count(b) from Book b where b.school.id = :schoolId and b.permission is not null"
+            + " group by b.permission.id")
+    List<Object[]> countsByPermission(@Param("schoolId") Long schoolId);
+
+    @Query("select b from Book b where b.permission.id = :permissionId order by b.title")
+    List<Book> findByPermission(@Param("permissionId") Long permissionId);
+
+    boolean existsBySchoolIdAndSourceUrl(Long schoolId, String sourceUrl);
+
+    @Query("select b.sourceUrl from Book b where b.school.id = :schoolId and b.sourceUrl is not null")
+    List<String> sourceUrls(@Param("schoolId") Long schoolId);
+
+    /** Books saved before the author list: text in "author", no linked authors yet. */
+    @Query("select b from Book b where b.author is not null and b.authors is empty")
+    List<Book> unlinkedAuthors();
+
     /** Books per shelf (all states except drafts) — the counts on the shelves page, one query. */
     @Query("select b.category.id, count(b) from Book b where b.school.id = :schoolId and b.draft = false"
             + " and b.category is not null group by b.category.id")

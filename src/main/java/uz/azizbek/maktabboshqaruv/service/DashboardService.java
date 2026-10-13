@@ -34,6 +34,9 @@ public class DashboardService {
     private AttendanceRepository attendanceRepository;
 
     @Autowired
+    private uz.azizbek.maktabboshqaruv.service.library.LibraryPermissions libraryPermissions;
+
+    @Autowired
     private GradeRepository gradeRepository;
 
     @Autowired
@@ -455,6 +458,8 @@ public class DashboardService {
             }
         }
 
+        // library permissions that ended (their books left the bot) or end within 30 days
+        items.addAll(libraryPermissions.attention(schoolId));
         return items;
     }
 

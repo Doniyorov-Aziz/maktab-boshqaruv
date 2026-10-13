@@ -13,6 +13,7 @@ import uz.azizbek.maktabboshqaruv.entity.Book;
 import uz.azizbek.maktabboshqaruv.entity.BookCategory;
 import uz.azizbek.maktabboshqaruv.entity.LibraryEnums.AgeGroup;
 import uz.azizbek.maktabboshqaruv.entity.LibraryEnums.LegalBasis;
+import uz.azizbek.maktabboshqaruv.entity.LibraryPermission;
 import uz.azizbek.maktabboshqaruv.entity.School;
 import uz.azizbek.maktabboshqaruv.repository.BookCategoryRepository;
 import uz.azizbek.maktabboshqaruv.repository.BookRepository;
@@ -41,11 +42,15 @@ public class LibraryAdminService {
     private final LibraryDefaults defaults;
     private final BookMedia bookMedia;
     private final SchoolAccessService access;
+    private final LibraryLegal legal;
+    private final LibraryAuthors authors;
     private final Clock clock;
 
     public LibraryAdminService(BookRepository books, BookCategoryRepository categories, SchoolRepository schools,
                                LibraryFiles files, LibraryCatalog catalog, LibraryDefaults defaults, BookMedia bookMedia,
-                               SchoolAccessService access, Clock clock) {
+                               SchoolAccessService access, LibraryLegal legal, LibraryAuthors authors, Clock clock) {
+        this.legal = legal;
+        this.authors = authors;
         this.books = books;
         this.categories = categories;
         this.schools = schools;
@@ -70,7 +75,7 @@ public class LibraryAdminService {
                 language == null || language.isBlank() ? null : language, ageGroup, legalBasis, st,
                 PageRequest.of(Math.max(0, page), Math.min(Math.max(size, 1), 100),
                         Sort.by(Sort.Order.desc("draft"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"))));
-        return new PageDto<>(result.getContent().stream().map(LibraryAdminService::toDto).toList(),
+        return new PageDto<>(result.getContent().stream().map(this::toDto).toList(),
                 result.getTotalElements(), result.getNumber(), result.getSize());
     }
 
@@ -90,14 +95,23 @@ public class LibraryAdminService {
 
     @Transactional
     public BookDto create(Long schoolId, BookRequest request, MultipartFile pdf, MultipartFile cover, boolean allowDuplicate) {
+        if (pdf == null || pdf.isEmpty()) {
+            requireLegalBasis(request);
+            throw LibraryFiles.bad("PDF fayl tanlanmagan");
+        }
+        return createFromBytes(schoolId, request, bytes(pdf), cover == null || cover.isEmpty() ? null : bytes(cover),
+                allowDuplicate, null);
+    }
+
+    /** The one way a book is created (form, bulk upload, Wikisource import): file checks, then the legal checks. */
+    @Transactional
+    public BookDto createFromBytes(Long schoolId, BookRequest request, byte[] pdfBytes, byte[] coverBytes,
+                                   boolean allowDuplicate, String sourceUrl) {
         access.requireSchool(schoolId);
         School school = schools.findById(schoolId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Maktab topilmadi"));
         requireLegalBasis(request);
-        if (pdf == null || pdf.isEmpty()) throw LibraryFiles.bad("PDF fayl tanlanmagan");
-        byte[] pdfBytes = bytes(pdf);
         LibraryFiles.PdfInfo info = files.checkPdf(pdfBytes);
-        byte[] coverBytes = cover == null || cover.isEmpty() ? null : bytes(cover);
         String coverExt = coverBytes == null ? null : files.checkCover(coverBytes);
         if (!allowDuplicate) refuseDuplicate(schoolId, info.sha256(), null);
 
@@ -110,6 +124,7 @@ public class LibraryAdminService {
         b.setCreatedBy(access.caller().username());
         b.setCreatedAt(LocalDateTime.now(clock));
         apply(b, request, schoolId);
+        b.setSourceUrl(sourceUrl);
         if (b.getPages() == null) b.setPages(info.pages());
         storePdf(b, schoolId, pdfBytes, info);
         if (coverBytes != null) b.setCoverPath(files.saveCover(schoolId, coverExt, coverBytes));
@@ -160,11 +175,14 @@ public class LibraryAdminService {
      */
     @Transactional
     public BookDto createDraft(Long schoolId, MultipartFile pdf, Long categoryId, LegalBasis legalBasis, String legalNote,
-                               String language, AgeGroup ageGroup) {
+                               String language, AgeGroup ageGroup, Long authorId, Long permissionId,
+                               Boolean publishedInLifetime, Integer firstPublishedYear, Boolean noModernCommentary) {
         String name = pdf == null ? null : pdf.getOriginalFilename();
         String title = titleFromFileName(name);
-        BookDto created = create(schoolId, new BookRequest(title, null, categoryId, null,
-                language == null || language.isBlank() ? "uz" : language, ageGroup, null, null, legalBasis, legalNote,
+        // the same legal checks as one book: a protected author's file is not saved without a permission
+        BookDto created = create(schoolId, new BookRequest(title, null, authorId == null ? null : List.of(authorId),
+                categoryId, null, language == null || language.isBlank() ? "uz" : language, ageGroup, null, null,
+                legalBasis, legalNote, permissionId, publishedInLifetime, firstPublishedYear, noModernCommentary,
                 false, false), pdf, null, true);
         Book b = books.findById(created.id()).orElseThrow();
         b.setDraft(true);
@@ -289,7 +307,7 @@ public class LibraryAdminService {
 
     private void apply(Book b, BookRequest r, Long schoolId) {
         b.setTitle(r.title().strip());
-        b.setAuthor(blankToNull(r.author()));
+        legal.apply(b, r, schoolId); // authors, permission, public-domain confirmations — or a 400
         b.setCategory(r.categoryId() == null ? null : shelfOf(schoolId, r.categoryId()));
         b.setDescription(blankToNull(r.description()));
         b.setLanguage(r.language() == null || r.language().isBlank() ? "uz" : r.language());
@@ -360,12 +378,19 @@ public class LibraryAdminService {
         return s == null || s.isBlank() ? null : s.strip();
     }
 
-    static BookDto toDto(Book b) {
+    BookDto toDto(Book b) {
         BookCategory c = b.getCategory();
-        return new BookDto(b.getId(), b.getTitle(), b.getAuthor(), c == null ? null : c.getId(),
+        List<BookAuthorDto> bookAuthors = b.getAuthors().stream().map(a -> {
+            CopyrightRules.Status s = authors.status(a);
+            return new BookAuthorDto(a.getId(), a.getFullName(), a.getBirthYear(), a.getDeathYear(), s.state(), s.year());
+        }).toList();
+        LibraryPermission p = b.getPermission();
+        return new BookDto(b.getId(), b.getTitle(), b.getAuthor(), bookAuthors, c == null ? null : c.getId(),
                 c == null ? null : c.getNameUz(), c == null ? null : c.getEmoji(), b.getDescription(), b.getLanguage(),
                 b.getAgeGroup(), b.getPages(), b.getYear(), b.getCoverPath() != null, b.getPdfSize(), b.getPdfSha256(),
-                b.getLegalBasis(), b.getLegalNote(), Boolean.TRUE.equals(b.getActive()), Boolean.TRUE.equals(b.getFeatured()),
+                b.getLegalBasis(), b.getLegalNote(), p == null ? null : p.getId(), p == null ? null : p.getGrantorFullName(),
+                b.getPublishedInLifetime(), b.getFirstPublishedYear(), b.getNoModernCommentary(), b.getSourceUrl(),
+                Boolean.TRUE.equals(b.getActive()), Boolean.TRUE.equals(b.getFeatured()),
                 Boolean.TRUE.equals(b.getDraft()), b.getDownloadCount() == null ? 0 : b.getDownloadCount(),
                 b.getLikes() == null ? 0 : b.getLikes(), b.getDislikes() == null ? 0 : b.getDislikes(),
                 b.getCreatedBy(), b.getCreatedAt());

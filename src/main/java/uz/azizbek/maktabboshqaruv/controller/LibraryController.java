@@ -84,8 +84,14 @@ public class LibraryController {
                          @RequestParam LegalBasis legalBasis,
                          @RequestParam(required = false) String legalNote,
                          @RequestParam(required = false) String language,
-                         @RequestParam(required = false) AgeGroup ageGroup) {
-        return library.createDraft(schoolId, pdf, categoryId, legalBasis, legalNote, language, ageGroup);
+                         @RequestParam(required = false) AgeGroup ageGroup,
+                         @RequestParam(required = false) Long authorId,
+                         @RequestParam(required = false) Long permissionId,
+                         @RequestParam(required = false) Boolean publishedInLifetime,
+                         @RequestParam(required = false) Integer firstPublishedYear,
+                         @RequestParam(required = false) Boolean noModernCommentary) {
+        return library.createDraft(schoolId, pdf, categoryId, legalBasis, legalNote, language, ageGroup, authorId,
+                permissionId, publishedInLifetime, firstPublishedYear, noModernCommentary);
     }
 
     /** Makes the book inactive (the download history stays). */

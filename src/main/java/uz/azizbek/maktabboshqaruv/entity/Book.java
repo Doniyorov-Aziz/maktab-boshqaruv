@@ -35,8 +35,38 @@ public class Book {
     @Column(nullable = false, length = 255)
     private String title;
 
+    /**
+     * The authors' names as shown (and searched): kept in step with {@link #authors}. Books saved
+     * before the author reference list keep their text here and are linked by AuthorLinkMigration.
+     */
     @Column(length = 255)
     private String author;
+
+    /** the authors in the reference list, in order — the latest death year decides "Jamoat mulki" */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "book_author", joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "author_id"))
+    @OrderColumn(name = "position")
+    @org.hibernate.annotations.BatchSize(size = 100) // a page of books loads its authors in one query
+    private java.util.List<Author> authors = new java.util.ArrayList<>();
+
+    /** MUALLIF_RUXSATI / LITSENZIYA: the permission in force the book is handed out under */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "permission_id")
+    private LibraryPermission permission;
+
+    /** JAMOAT_MULKI: the work was published while the author lived (else firstPublishedYear decides) */
+    private Boolean publishedInLifetime;
+
+    /** JAMOAT_MULKI, published after the author's death: the year of the first edition */
+    private Integer firstPublishedYear;
+
+    /** JAMOAT_MULKI: confirmed that the file has no modern foreword, notes or commentary */
+    private Boolean noModernCommentary;
+
+    /** where an imported text came from (a Wikisource page URL) */
+    @Column(length = 500)
+    private String sourceUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
@@ -148,6 +178,54 @@ public class Book {
 
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public java.util.List<Author> getAuthors() {
+        return authors;
+    }
+
+    public void setAuthors(java.util.List<Author> authors) {
+        this.authors = authors;
+    }
+
+    public LibraryPermission getPermission() {
+        return permission;
+    }
+
+    public void setPermission(LibraryPermission permission) {
+        this.permission = permission;
+    }
+
+    public Boolean getPublishedInLifetime() {
+        return publishedInLifetime;
+    }
+
+    public void setPublishedInLifetime(Boolean publishedInLifetime) {
+        this.publishedInLifetime = publishedInLifetime;
+    }
+
+    public Integer getFirstPublishedYear() {
+        return firstPublishedYear;
+    }
+
+    public void setFirstPublishedYear(Integer firstPublishedYear) {
+        this.firstPublishedYear = firstPublishedYear;
+    }
+
+    public Boolean getNoModernCommentary() {
+        return noModernCommentary;
+    }
+
+    public void setNoModernCommentary(Boolean noModernCommentary) {
+        this.noModernCommentary = noModernCommentary;
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setSourceUrl(String sourceUrl) {
+        this.sourceUrl = sourceUrl;
     }
 
     public BookCategory getCategory() {

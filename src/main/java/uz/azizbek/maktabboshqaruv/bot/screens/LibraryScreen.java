@@ -246,7 +246,9 @@ public class LibraryScreen implements Screen, InputHandler {
         enterMode(ctx, null);
         StringBuilder sb = new StringBuilder(ctx.crumb(ctx.t("sec.library"))).append("\n\n")
                 .append("📕 <b>").append(e(b.getTitle())).append("</b>");
-        if (b.getAuthor() != null) sb.append("\n").append(ctx.t("lib.card.author", "author", e(b.getAuthor())));
+        // the author's name is always shown (the law keeps it with the work even in the public domain)
+        sb.append("\n").append(b.getAuthor() != null && !b.getAuthor().isBlank()
+                ? ctx.t("lib.card.author", "author", e(b.getAuthor())) : ctx.t("lib.card.author_unknown"));
         sb.append("\n");
         if (b.getCategory() != null) {
             sb.append("\n").append(ctx.t("lib.card.category", "category", e(b.getCategory().label(ctx.lang()))));
