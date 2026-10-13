@@ -55,6 +55,11 @@ public class LibraryWeekly {
 
     /** @param force ignore the day and time (mock demo, tests); everything else still applies. */
     public int run(LocalDateTime now, boolean force) {
+        return run(now, force, null);
+    }
+
+    /** @param onlyChatId just this parent (the mock demo and tests), or null for everyone */
+    public int run(LocalDateTime now, boolean force, Long onlyChatId) {
         LocalDate day = now.toLocalDate();
         LocalDateTime at = day.atTime(settings.weeklyTime());
         if (!force && (day.getDayOfWeek() != settings.weeklyDay() || now.isBefore(at) || !now.isBefore(at.plus(WINDOW)))) {
@@ -70,7 +75,10 @@ public class LibraryWeekly {
             School school = NotificationService.schoolOf(schoolLinks.get(0).getStudent());
             if (!botSettings.getOrDefault(school).isLibraryWeeklyOn() || catalog.totalBooks(school.getId()) == 0) continue;
             Map<Long, List<Student>> children = new LinkedHashMap<>();
-            for (ParentTelegramLink l : schoolLinks) children.computeIfAbsent(l.getChatId(), k -> new ArrayList<>()).add(l.getStudent());
+            for (ParentTelegramLink l : schoolLinks) {
+                if (onlyChatId != null && !onlyChatId.equals(l.getChatId())) continue;
+                children.computeIfAbsent(l.getChatId(), k -> new ArrayList<>()).add(l.getStudent());
+            }
 
             for (Map.Entry<Long, List<Student>> e : children.entrySet()) {
                 Long chatId = e.getKey();
