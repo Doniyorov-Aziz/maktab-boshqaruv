@@ -42,7 +42,21 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform {
-		excludeTags 'load'
+		excludeTags 'load', 'wikisource'
+	}
+}
+
+// the real Wikisource (internet): what is found and imported for five classics — `gradlew wikisourceCheck`
+tasks.register('wikisourceCheck', Test) {
+	description = 'Wikisource import against the real wikisource.org (needs internet and DB_URL of a test database)'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'wikisource'
+	}
+	testLogging {
+		showStandardStreams = true
 	}
 }
 

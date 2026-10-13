@@ -50,6 +50,7 @@ public class WikisourcePdf {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Document doc = new Document(PAGE, 46, 46, 50, 58);
         PdfWriter writer = PdfWriter.getInstance(doc, out);
+        writer.setSpaceCharRatio(PdfWriter.NO_SPACE_CHAR_RATIO); // justify by widening spaces, never letters
         writer.setPageEvent(new Footer());
         doc.addTitle(info.title());
         doc.addAuthor(info.author());
@@ -99,22 +100,38 @@ public class WikisourcePdf {
                     doc.add(s);
                     continue;
                 }
-                boolean verse = b.contains("\n"); // poems keep their lines
-                Paragraph p = new Paragraph(b, textFont);
-                p.setLeading(0, 1.45f);
-                p.setSpacingAfter(verse ? 9 : 5);
-                if (verse) {
+                if (isVerse(b)) { // poems keep their lines
+                    Paragraph p = new Paragraph(b, textFont);
+                    p.setLeading(0, 1.45f);
+                    p.setSpacingAfter(9);
                     p.setAlignment(Element.ALIGN_LEFT);
                     p.setIndentationLeft(18);
-                } else {
-                    p.setAlignment(Element.ALIGN_JUSTIFIED);
-                    p.setFirstLineIndent(16);
+                    doc.add(p);
+                    continue;
                 }
-                doc.add(p);
+                // prose: every line is a paragraph (pages without blank lines between paragraphs, too)
+                for (String line : b.split("\n")) {
+                    if (line.isBlank()) continue;
+                    Paragraph p = new Paragraph(line.strip(), textFont);
+                    p.setLeading(0, 1.45f);
+                    p.setSpacingAfter(4);
+                    // ragged right: without hyphenation, justified A5 lines of long Uzbek words get wide gaps
+                    p.setAlignment(Element.ALIGN_LEFT);
+                    p.setFirstLineIndent(16);
+                    doc.add(p);
+                }
             }
         }
         doc.close();
         return out.toByteArray();
+    }
+
+    /** A block of several mostly short lines is a poem (lines kept); long lines are prose paragraphs. */
+    static boolean isVerse(String block) {
+        String[] lines = block.split("\n");
+        if (lines.length < 2) return false;
+        long shortLines = java.util.Arrays.stream(lines).filter(l -> l.strip().length() <= 70).count();
+        return shortLines * 10 >= lines.length * 8;
     }
 
     /** The cover: a dark page with the title, the author, the years, the source and the school. */

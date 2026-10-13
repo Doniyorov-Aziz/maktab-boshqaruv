@@ -100,7 +100,7 @@ public class WikisourceImport {
     /** The author's page: searched by the name and every alias on each site, the best match first. */
     AuthorPage findAuthorPage(Author author) {
         for (Site site : SITES) {
-            for (String variant : LibraryAuthors.variants(author)) {
+            for (String variant : apostropheForms(LibraryAuthors.variants(author))) {
                 String wanted = LibraryText.normalize(variant);
                 if (wanted.isEmpty()) continue;
                 for (String title : api.search(site.host(), variant, site.authorNs(), 5)) {
@@ -113,6 +113,21 @@ public class WikisourceImport {
             }
         }
         return null;
+    }
+
+    /**
+     * Each name also with the other apostrophes of oʻ / gʻ: the wiki's search treats "Cho'lpon" and
+     * "Choʻlpon" as different words, while page titles use either.
+     */
+    static List<String> apostropheForms(List<String> names) {
+        LinkedHashSet<String> all = new LinkedHashSet<>();
+        for (String n : names) {
+            all.add(n);
+            if (n.matches(".*['ʻ‘’`].*")) {
+                for (String a : List.of("ʻ", "'", "‘", "’")) all.add(n.replaceAll("['ʻ‘’`]", a));
+            }
+        }
+        return List.copyOf(all);
     }
 
     // ------------------------------------------------------------------ importing

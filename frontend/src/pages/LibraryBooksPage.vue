@@ -22,6 +22,15 @@
         <template #table><q-tooltip>Jadval</q-tooltip></template>
       </q-btn-toggle>
       <q-btn
+        v-if="authStore.isAdmin"
+        outline
+        color="primary"
+        no-caps
+        icon="history_edu"
+        label="📜 Wikisource dan qo'shish"
+        @click="openWikisource"
+      />
+      <q-btn
         outline
         color="primary"
         no-caps
@@ -513,13 +522,46 @@
                   />
                 </div>
                 <div class="col-12 col-sm-7">
-                  <q-input
-                    v-model="form.author"
+                  <q-select
+                    v-model="form.authorIds"
                     dense
                     outlined
-                    label="Muallif"
-                    maxlength="255"
-                  />
+                    multiple
+                    use-chips
+                    use-input
+                    emit-value
+                    map-options
+                    input-debounce="0"
+                    :options="authorOptionsFiltered"
+                    label="Muallif(lar) — ma'lumotnomadan"
+                    @filter="filterAuthors"
+                  >
+                    <template #option="scope">
+                      <q-item v-bind="scope.itemProps">
+                        <q-item-section>
+                          <q-item-label>{{ scope.opt.label }}</q-item-label>
+                          <q-item-label caption>{{
+                            authorStatusText(scope.opt.author)
+                          }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                    <template #no-option>
+                      <q-item>
+                        <q-item-section class="text-caption muted-text">
+                          Topilmadi — «Mualliflar» bo'limida qo'shing
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                  <div
+                    v-if="selectedStatus"
+                    class="author-status q-mt-xs"
+                    :class="`author-status--${selectedStatus.kind}`"
+                    data-test="author-status"
+                  >
+                    {{ selectedStatus.text }}
+                  </div>
                 </div>
                 <div class="col-12 col-sm-5">
                   <q-select
@@ -621,6 +663,58 @@
                     outlined
                     maxlength="500"
                     label="Izoh (masalan, ruxsat xati raqami)"
+                  />
+                </div>
+                <!-- Jamoat mulki: the two confirmations the law asks for -->
+                <div
+                  v-if="form.legalBasis === 'JAMOAT_MULKI'"
+                  class="col-12 legal-box"
+                >
+                  <q-checkbox
+                    v-model="form.publishedInLifetime"
+                    dense
+                    label="Asar muallif tirikligida chop etilgan"
+                  />
+                  <q-input
+                    v-if="!form.publishedInLifetime"
+                    v-model.number="form.firstPublishedYear"
+                    dense
+                    outlined
+                    type="number"
+                    min="1000"
+                    max="2100"
+                    label="Birinchi nashr yili *"
+                    hint="Vafotdan keyin chop etilgan asar nashrdan keyin 70 yil himoyalanadi"
+                    class="q-mt-sm"
+                    style="max-width: 280px"
+                  />
+                  <q-checkbox
+                    v-model="form.noModernCommentary"
+                    dense
+                    class="q-mt-sm"
+                    label="Faylda zamonaviy so'zboshi, izoh yoki sharh yo'q"
+                  />
+                </div>
+                <!-- author's permission / licence: a permission in force -->
+                <div
+                  v-if="needsPermission(form.legalBasis)"
+                  class="col-12 col-sm-8"
+                >
+                  <q-select
+                    v-model="form.permissionId"
+                    dense
+                    outlined
+                    clearable
+                    emit-value
+                    map-options
+                    :options="permissionOptions"
+                    :disable="!authStore.isAdmin"
+                    label="Ruxsatnoma *"
+                    :hint="
+                      authStore.isAdmin
+                        ? 'Faqat amaldagi ruxsatnomalar'
+                        : 'Ruxsatnomani administrator bog\'laydi'
+                    "
                   />
                 </div>
                 <div class="col-12 row q-gutter-md">
@@ -748,6 +842,53 @@
                 label="Yosh toifasi"
               />
             </div>
+            <div class="col-12 col-sm-6">
+              <q-select
+                v-model="bulk.authorId"
+                dense
+                outlined
+                clearable
+                use-input
+                emit-value
+                map-options
+                input-debounce="0"
+                :options="authorOptionsFiltered"
+                label="Muallif (hammasiga, faylda o'zgartirsa bo'ladi)"
+                @filter="filterAuthors"
+              />
+            </div>
+            <div
+              v-if="needsPermission(bulk.legalBasis)"
+              class="col-12 col-sm-6"
+            >
+              <q-select
+                v-model="bulk.permissionId"
+                dense
+                outlined
+                clearable
+                emit-value
+                map-options
+                :options="permissionOptions"
+                :disable="!authStore.isAdmin"
+                label="Ruxsatnoma *"
+              />
+            </div>
+            <div
+              v-if="bulk.legalBasis === 'JAMOAT_MULKI'"
+              class="col-12 legal-box"
+            >
+              <q-checkbox
+                v-model="bulk.publishedInLifetime"
+                dense
+                label="Asarlar muallif tirikligida chop etilgan"
+              />
+              <q-checkbox
+                v-model="bulk.noModernCommentary"
+                dense
+                class="q-ml-md"
+                label="Fayllarda zamonaviy so'zboshi, izoh yoki sharh yo'q"
+              />
+            </div>
           </div>
           <div
             class="drop-zone q-mt-md"
@@ -801,6 +942,35 @@
                     · {{ f.error }}</span
                   >
                 </q-item-label>
+                <q-item-label
+                  v-if="fileStatus(f)"
+                  caption
+                  class="author-status q-mt-xs"
+                  :class="`author-status--${fileStatus(f).kind}`"
+                  data-test="bulk-file-status"
+                >
+                  {{ fileStatus(f).text }}
+                </q-item-label>
+              </q-item-section>
+              <q-item-section
+                v-if="f.state === 'waiting' && !bulkRunning"
+                side
+                style="min-width: 180px"
+              >
+                <q-select
+                  v-model="f.authorId"
+                  dense
+                  outlined
+                  clearable
+                  use-input
+                  emit-value
+                  map-options
+                  input-debounce="0"
+                  :options="authorOptionsFiltered"
+                  label="Muallif"
+                  style="width: 180px"
+                  @filter="filterAuthors"
+                />
               </q-item-section>
               <q-item-section v-if="f.state === 'waiting' && !bulkRunning" side>
                 <q-btn
@@ -837,6 +1007,130 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Wikisource import (admin): public-domain classics -->
+    <q-dialog v-model="wsOpen" :persistent="!!wsBusy">
+      <q-card class="ws-form">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">📜 Wikisource dan qo'shish</div>
+          <q-space />
+          <q-btn
+            flat
+            round
+            dense
+            icon="close"
+            aria-label="Yopish"
+            :disable="!!wsBusy"
+            v-close-popup
+          />
+        </q-card-section>
+        <q-card-section>
+          <q-banner dense rounded class="legal-banner q-mb-md">
+            <template #avatar><q-icon name="gavel" color="warning" /></template>
+            Faqat jamoat mulki bo'lgan mualliflar (vafotidan 70 yil o'tgan).
+            Matn Wikisource'dan olinadi va bir marta chiroyli PDF ga
+            aylantiriladi; muallif nomi saqlanadi, matn o'zgartirilmaydi.
+          </q-banner>
+          <div class="row q-col-gutter-sm items-start">
+            <div class="col-12 col-sm-8">
+              <q-select
+                v-model="ws.authorId"
+                dense
+                outlined
+                use-input
+                emit-value
+                map-options
+                input-debounce="0"
+                :options="freeAuthorOptions"
+                label="Muallif (jamoat mulki)"
+                @filter="filterFreeAuthors"
+              />
+            </div>
+            <div class="col-12 col-sm-4">
+              <q-btn
+                unelevated
+                no-caps
+                color="primary"
+                icon="travel_explore"
+                label="Asarlarni topish"
+                class="full-width"
+                :loading="wsBusy === 'search'"
+                :disable="!ws.authorId || !!wsBusy"
+                @click="wsSearch"
+              />
+            </div>
+            <div class="col-12">
+              <q-checkbox
+                v-model="ws.noModernCommentary"
+                dense
+                label="Tasdiqlayman: faylda zamonaviy so'zboshi, izoh yoki sharh bo'lmaydi"
+              />
+              <q-checkbox
+                v-model="ws.publishedInLifetime"
+                dense
+                class="q-ml-md"
+                label="Yili ko'rsatilmagan asarlar ham muallif tirikligida chop etilgan"
+              />
+            </div>
+          </div>
+          <div v-if="wsResult" class="q-mt-md">
+            <div class="text-caption muted-text q-mb-xs">
+              <a :href="wsResult.pageUrl" target="_blank" rel="noopener">{{
+                wsResult.page || 'Sahifa topilmadi'
+              }}</a>
+              · {{ wsResult.works.length }} ta asar
+              <span v-if="wsResult.message"> · {{ wsResult.message }}</span>
+            </div>
+            <q-input
+              v-model="wsFilter"
+              dense
+              outlined
+              clearable
+              placeholder="Asar nomi bo'yicha"
+              class="q-mb-xs"
+            />
+            <q-list dense separator class="ws-list">
+              <q-item v-for="w in wsWorks" :key="w.title">
+                <q-item-section>
+                  <q-item-label>{{ w.label }}</q-item-label>
+                  <q-item-label caption>
+                    {{ w.section || ''
+                    }}{{ w.year ? ' · ' + w.year : " · yili ko'rsatilmagan" }}
+                    <span
+                      v-if="wsState[w.title]?.message"
+                      :class="
+                        wsState[w.title].ok ? 'text-positive' : 'text-negative'
+                      "
+                    >
+                      · {{ wsState[w.title].message }}</span
+                    >
+                  </q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-badge
+                    v-if="w.imported || wsState[w.title]?.ok"
+                    color="positive"
+                    label="Kutubxonada"
+                  />
+                  <q-btn
+                    v-else
+                    flat
+                    dense
+                    no-caps
+                    color="primary"
+                    icon="download"
+                    label="Import"
+                    :loading="wsBusy === w.title"
+                    :disable="!!wsBusy"
+                    @click="wsImport(w)"
+                  />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </page-layout>
 </template>
 
@@ -855,14 +1149,96 @@ import {
   formatSize,
   sha256Hex,
   looksLikePdf,
-  LEGAL_WARNING
+  LEGAL_WARNING,
+  authorStatusText,
+  combinedAuthorStatus,
+  NEEDS_PERMISSION
 } from '@/utils/library'
+import { useAuthStore } from '@/stores/auth'
 
 const MAX_PDF_MB = 50
 const MAX_COVER_MB = 2
 
 const $q = useQuasar()
 const schoolStore = useSchoolStore()
+const authStore = useAuthStore()
+
+// ------------------------------------------------------------------ authors, permissions
+
+const authors = ref([])
+const authorQuery = ref('')
+const permissions = ref([])
+
+const authorOptions = computed(() =>
+  authors.value.map(a => ({
+    value: a.id,
+    label:
+      a.fullName +
+      (a.deathYear ? ` (${a.birthYear || '?'}–${a.deathYear})` : ''),
+    author: a,
+    search: `${a.fullName} ${a.aliases || ''}`.toLowerCase()
+  }))
+)
+const authorOptionsFiltered = computed(() => {
+  const q = authorQuery.value.trim().toLowerCase()
+  return q
+    ? authorOptions.value.filter(o => o.search.includes(q))
+    : authorOptions.value
+})
+const freeAuthorOptions = computed(() =>
+  authorOptionsFiltered.value.filter(o => o.author.status === 'FREE')
+)
+const permissionOptions = computed(() =>
+  permissions.value
+    .filter(p => p.status === 'ACTIVE' || p.status === 'ENDING')
+    .map(p => ({
+      value: p.id,
+      label: `${p.grantorFullName} · ${p.validUntil ? p.validUntil + ' gacha' : 'muddatsiz'}`
+    }))
+)
+
+function filterAuthors(text, update) {
+  update(() => {
+    authorQuery.value = text || ''
+  })
+}
+
+function filterFreeAuthors(text, update) {
+  filterAuthors(text, update)
+}
+
+function authorById(id) {
+  return authors.value.find(a => a.id === id)
+}
+
+function needsPermission(basis) {
+  return NEEDS_PERMISSION.includes(basis)
+}
+
+const selectedStatus = computed(() =>
+  combinedAuthorStatus((form.authorIds || []).map(authorById).filter(Boolean))
+)
+
+async function loadAuthors() {
+  try {
+    authors.value = (await api.get('/api/library/authors')).data
+  } catch (e) {
+    notifyError(e)
+  }
+}
+
+async function loadPermissions() {
+  if (!authStore.isAdmin || !schoolStore.activeSchoolId) return
+  try {
+    permissions.value = (
+      await api.get('/api/library/permissions', {
+        params: { schoolId: schoolStore.activeSchoolId }
+      })
+    ).data
+  } catch {
+    permissions.value = []
+  }
+}
 
 const view = ref(readView())
 const books = ref([])
@@ -1032,6 +1408,8 @@ watch(
     if (!id) return
     page.value = 1
     loadCategories()
+    loadAuthors()
+    loadPermissions()
     load()
   },
   { immediate: true }
@@ -1113,7 +1491,11 @@ function openCreate() {
   Object.assign(form, {
     id: null,
     title: '',
-    author: '',
+    authorIds: [],
+    permissionId: null,
+    publishedInLifetime: true,
+    firstPublishedYear: null,
+    noModernCommentary: false,
     categoryId: filters.categoryId || null,
     language: 'uz',
     ageGroup: 'KATTALAR',
@@ -1132,7 +1514,13 @@ function openCreate() {
 function openEdit(book) {
   resetFiles()
   Object.keys(form).forEach(k => delete form[k])
-  Object.assign(form, { ...book, active: book.draft ? true : book.active })
+  Object.assign(form, {
+    ...book,
+    authorIds: (book.authors || []).map(a => a.id),
+    publishedInLifetime: book.publishedInLifetime !== false,
+    noModernCommentary: !!book.noModernCommentary,
+    active: book.draft ? true : book.active
+  })
   formOpen.value = true
 }
 
@@ -1205,10 +1593,22 @@ function onCoverDrop(e) {
   pickCover(e.dataTransfer.files[0])
 }
 
+function warn(message) {
+  $q.notify({ type: 'warning', message })
+}
+
 function payload() {
   return {
     title: (form.title || '').trim(),
-    author: form.author || null,
+    authorIds: form.authorIds || [],
+    permissionId: needsPermission(form.legalBasis)
+      ? form.permissionId || null
+      : null,
+    publishedInLifetime: !!form.publishedInLifetime,
+    firstPublishedYear: form.publishedInLifetime
+      ? null
+      : form.firstPublishedYear || null,
+    noModernCommentary: !!form.noModernCommentary,
     categoryId: form.categoryId || null,
     description: form.description || null,
     language: form.language || 'uz',
@@ -1237,6 +1637,23 @@ async function save(allowDuplicate = false) {
   if (!form.id && !pdfFile.value) {
     $q.notify({ type: 'warning', message: 'PDF faylni tanlang' })
     return
+  }
+  // the same rules the server checks — told before a 50 MB upload, not after
+  if (form.legalBasis === 'JAMOAT_MULKI') {
+    const s = selectedStatus.value
+    if (!s) return warn('Jamoat mulki uchun muallifni tanlang')
+    if (s.kind !== 'free') return warn(s.text)
+    if (!form.publishedInLifetime && !form.firstPublishedYear) {
+      return warn('Birinchi nashr yilini kiriting')
+    }
+    if (!form.noModernCommentary) {
+      return warn(
+        "«Zamonaviy so'zboshi, izoh yoki sharh yo'q» tasdig'i majburiy"
+      )
+    }
+  }
+  if (needsPermission(form.legalBasis) && !form.permissionId) {
+    return warn("Amaldagi ruxsatnomani tanlang («Ruxsatnomalar» bo'limi)")
   }
   if (duplicates.value.length && allowDuplicate !== true) {
     $q.dialog({
@@ -1302,8 +1719,34 @@ const bulk = reactive({
   legalNote: '',
   categoryId: null,
   language: 'uz',
-  ageGroup: 'KATTALAR'
+  ageGroup: 'KATTALAR',
+  authorId: null,
+  permissionId: null,
+  publishedInLifetime: true,
+  noModernCommentary: false
 })
+
+// the batch author is every waiting file's author until a file gets its own
+watch(
+  () => bulk.authorId,
+  id => {
+    for (const f of bulkFiles.value) if (f.state === 'waiting') f.authorId = id
+  }
+)
+
+/** The author's state for one file, and whether it may be saved with the chosen legal basis. */
+function fileStatus(f) {
+  const a = authorById(f.authorId)
+  if (!a) return null
+  const s = combinedAuthorStatus([a])
+  if (s.kind !== 'free' && !needsPermission(bulk.legalBasis)) {
+    return {
+      kind: s.kind,
+      text: `${a.fullName}: ${s.text} — ruxsatnomasiz saqlanmaydi`
+    }
+  }
+  return { kind: s.kind, text: `${a.fullName}: ${s.text}` }
+}
 const bulkWaiting = computed(
   () => bulkFiles.value.filter(f => f.state === 'waiting').length
 )
@@ -1328,7 +1771,12 @@ async function addBulk(list) {
         error: `${MAX_PDF_MB} MB dan katta`
       })
     } else {
-      bulkFiles.value.push({ file, state: 'waiting', error: '' })
+      bulkFiles.value.push({
+        file,
+        state: 'waiting',
+        error: '',
+        authorId: bulk.authorId
+      })
     }
   }
 }
@@ -1362,6 +1810,20 @@ async function runBulk() {
       item.error = 'PDF emas'
       continue
     }
+    // a protected author's file is never saved without a permission (the server refuses it too)
+    const st = fileStatus(item)
+    if (bulk.legalBasis === 'JAMOAT_MULKI' && (!st || st.kind !== 'free')) {
+      item.state = 'error'
+      item.error = st
+        ? 'himoyadagi muallif — ruxsatnoma kerak'
+        : 'muallif tanlanmagan'
+      continue
+    }
+    if (needsPermission(bulk.legalBasis) && !bulk.permissionId) {
+      item.state = 'error'
+      item.error = 'ruxsatnoma tanlanmagan'
+      continue
+    }
     item.state = 'uploading'
     const data = new FormData()
     data.append('pdf', item.file)
@@ -1373,7 +1835,13 @@ async function runBulk() {
           legalNote: bulk.legalNote || undefined,
           categoryId: bulk.categoryId || undefined,
           language: bulk.language,
-          ageGroup: bulk.ageGroup
+          ageGroup: bulk.ageGroup,
+          authorId: item.authorId || undefined,
+          permissionId: needsPermission(bulk.legalBasis)
+            ? bulk.permissionId
+            : undefined,
+          publishedInLifetime: bulk.publishedInLifetime,
+          noModernCommentary: bulk.noModernCommentary
         }
       })
       item.state = 'done'
@@ -1391,6 +1859,90 @@ async function runBulk() {
     })
     filters.status = 'draft'
     load()
+  }
+}
+
+// ------------------------------------------------------------------ Wikisource (admin)
+
+const wsOpen = ref(false)
+const wsBusy = ref('')
+const wsResult = ref(null)
+const wsFilter = ref('')
+const wsState = reactive({})
+const ws = reactive({
+  authorId: null,
+  noModernCommentary: false,
+  publishedInLifetime: false
+})
+
+const wsWorks = computed(() => {
+  const list = wsResult.value?.works || []
+  const q = (wsFilter.value || '').trim().toLowerCase()
+  return q ? list.filter(w => w.label.toLowerCase().includes(q)) : list
+})
+
+function openWikisource() {
+  wsResult.value = null
+  wsFilter.value = ''
+  Object.keys(wsState).forEach(k => delete wsState[k])
+  wsOpen.value = true
+}
+
+async function wsSearch() {
+  wsBusy.value = 'search'
+  wsResult.value = null
+  try {
+    wsResult.value = (
+      await api.get('/api/library/wikisource/works', {
+        params: { schoolId: schoolStore.activeSchoolId, authorId: ws.authorId }
+      })
+    ).data
+  } catch (e) {
+    notifyError(e)
+  } finally {
+    wsBusy.value = ''
+  }
+}
+
+/** A work whose year is within the author's life counts as published in their lifetime. */
+function wsLifetime(w) {
+  const died = wsResult.value?.deathYear
+  return (w.year && died && w.year <= died) || ws.publishedInLifetime
+}
+
+async function wsImport(w) {
+  if (!ws.noModernCommentary) {
+    return warn(
+      "Avval tasdiqlang: faylda zamonaviy so'zboshi, izoh yoki sharh bo'lmaydi"
+    )
+  }
+  if (!wsLifetime(w)) {
+    return warn(
+      "Asar yili ko'rsatilmagan: muallif tirikligida chop etilganini tasdiqlang"
+    )
+  }
+  wsBusy.value = w.title
+  try {
+    const res = await api.post(
+      '/api/library/wikisource/import',
+      {
+        authorId: ws.authorId,
+        title: w.title,
+        publishedInLifetime: true,
+        noModernCommentary: true
+      },
+      { params: { schoolId: schoolStore.activeSchoolId } }
+    )
+    wsState[w.title] = {
+      ok: true,
+      message: `import qilindi · ${res.data.pages} bet`
+    }
+    coverEpoch.value++
+    load()
+  } catch (e) {
+    wsState[w.title] = { ok: false, message: e.friendlyMessage || 'Xatolik' }
+  } finally {
+    wsBusy.value = ''
   }
 }
 </script>
@@ -1445,6 +1997,47 @@ async function runBulk() {
 .bulk-form {
   width: 640px;
   max-width: 96vw;
+}
+.author-status {
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 3px 8px;
+  display: inline-block;
+}
+.author-status--free {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+}
+.author-status--protected {
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.12);
+}
+.author-status--unknown {
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.14);
+}
+:global(.body--dark) .author-status--free {
+  color: #6ee7b7;
+}
+:global(.body--dark) .author-status--protected {
+  color: #fca5a5;
+}
+:global(.body--dark) .author-status--unknown {
+  color: #fcd34d;
+}
+.legal-box {
+  border: 1px dashed rgba(148, 163, 184, 0.6);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.ws-form {
+  width: 760px;
+  max-width: 96vw;
+}
+.ws-list {
+  max-height: 360px;
+  overflow-y: auto;
 }
 .status-filter {
   border: 1px solid rgba(148, 163, 184, 0.45);

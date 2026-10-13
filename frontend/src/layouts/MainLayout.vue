@@ -608,8 +608,22 @@ const groupedModules = computed(() => {
           icon: 'category',
           color: '#0ea5e9'
         },
+        {
+          key: 'library-authors',
+          path: '/library/authors',
+          title: 'Mualliflar',
+          icon: 'history_edu',
+          color: '#0f766e'
+        },
         ...(authStore.isAdmin
           ? [
+              {
+                key: 'library-permissions',
+                path: '/library/permissions',
+                title: 'Ruxsatnomalar',
+                icon: 'gavel',
+                color: '#b45309'
+              },
               {
                 key: 'library-stats',
                 path: '/library/stats',
@@ -748,6 +762,8 @@ watch(() => route.path, loadBotCounts)
 function goNotification(n) {
   if (n.linkModule === 'students') router.push(`/profiles/student/${n.linkId}`)
   else if (n.linkModule === 'attendance-take') router.push('/attendance')
+  else if (n.linkModule === 'library-permissions' && authStore.isAdmin)
+    router.push('/library/permissions')
 }
 
 // --- global search ---

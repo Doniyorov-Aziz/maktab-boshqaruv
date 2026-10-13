@@ -116,6 +116,17 @@ const routes = [
         meta: { editorOnly: true }
       },
       {
+        path: 'library/authors',
+        component: () => import('@/pages/LibraryAuthorsPage.vue'),
+        meta: { editorOnly: true }
+      },
+      {
+        // rights holders' permissions with their signed scans — administrators only
+        path: 'library/permissions',
+        component: () => import('@/pages/LibraryPermissionsPage.vue'),
+        meta: { adminOnly: true }
+      },
+      {
         // who read what, with parents' phones — administrators only
         path: 'library/stats',
         component: () => import('@/pages/LibraryStatsPage.vue'),

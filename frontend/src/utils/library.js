@@ -53,6 +53,41 @@ export const downloadSources = {
 export const LEGAL_WARNING =
   'Faqat tarqatishga huquqingiz bor kitoblarni yuklang.'
 
+/**
+ * An author's public-domain state as the server computes it (qonun, 35-modda: vafotdan keyin 70 yil):
+ * status FREE (statusYear = free since), PROTECTED (statusYear = protected until) or UNKNOWN.
+ */
+export function authorStatusText(a) {
+  if (!a) return ''
+  if (a.status === 'FREE') return `✅ Jamoat mulki (${a.statusYear}-yildan)`
+  if (a.status === 'PROTECTED') return `🔒 Himoyada (${a.statusYear}-yilgacha)`
+  return '❔ Vafot yili kiritilmagan'
+}
+
+/** Several authors: the one who died last decides; an unknown year means it cannot be told. */
+export function combinedAuthorStatus(list) {
+  if (!list || !list.length) return null
+  if (list.some(a => a.status === 'UNKNOWN')) {
+    return {
+      kind: 'unknown',
+      text: "❔ Muallifning vafot yili kiritilmagan — jamoat mulki ekanini aniqlab bo'lmaydi"
+    }
+  }
+  const protectedUntil = Math.max(
+    ...list.filter(a => a.status === 'PROTECTED').map(a => a.statusYear),
+    0
+  )
+  if (protectedUntil) {
+    return {
+      kind: 'protected',
+      text: `🔒 ${protectedUntil}-yilgacha himoyada — faqat ruxsatnoma bilan`
+    }
+  }
+  return { kind: 'free', text: '✅ Jamoat mulki — yuklash mumkin' }
+}
+
+export const NEEDS_PERMISSION = ['MUALLIF_RUXSATI', 'LITSENZIYA']
+
 export function labelOf(list, value) {
   return list.find(x => x.value === value)?.label || value || '—'
 }
