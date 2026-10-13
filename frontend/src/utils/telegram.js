@@ -34,7 +34,17 @@ export const notificationTypes = {
     icon: 'task_alt',
     color: '#22c55e'
   },
-  BROADCAST: { label: 'Umumiy xabar', icon: 'campaign', color: '#ec4899' }
+  BROADCAST: { label: 'Umumiy xabar', icon: 'campaign', color: '#ec4899' },
+  BOOK_DOWNLOAD: {
+    label: 'Kitob (PDF)',
+    icon: 'menu_book',
+    color: '#6366f1'
+  },
+  LIBRARY_WEEKLY: {
+    label: 'Haftalik kitob tavsiyasi',
+    icon: 'auto_stories',
+    color: '#8b5cf6'
+  }
 }
 
 export const absenceReasons = {
@@ -77,6 +87,7 @@ export const botSections = {
   school: 'Maktab haqida',
   settings: 'Sozlamalar',
   children: 'Farzandlarim',
+  library: 'Kitob mutolaasi',
   onboarding: 'Ulanish',
   welcome: 'Kutib olish',
   help: 'Yordam',

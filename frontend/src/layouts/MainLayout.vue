@@ -589,6 +589,39 @@ const groupedModules = computed(() => {
       }
     )
   }
+  // the school library ("📚 Kitob mutolaasi" in the parents' bot)
+  if (authStore.isEditor) {
+    groups.push({
+      name: 'Kutubxona',
+      items: [
+        {
+          key: 'library-books',
+          path: '/library/books',
+          title: 'Kitoblar',
+          icon: 'local_library',
+          color: '#6366f1'
+        },
+        {
+          key: 'library-categories',
+          path: '/library/categories',
+          title: "Bo'limlar",
+          icon: 'category',
+          color: '#0ea5e9'
+        },
+        ...(authStore.isAdmin
+          ? [
+              {
+                key: 'library-stats',
+                path: '/library/stats',
+                title: 'Mutolaa statistikasi',
+                icon: 'auto_stories',
+                color: '#8b5cf6'
+              }
+            ]
+          : [])
+      ]
+    })
+  }
   // viewers may still look at who is linked to the bot (no chat ids, no invite links)
   if (!authStore.isEditor) {
     groups.push({

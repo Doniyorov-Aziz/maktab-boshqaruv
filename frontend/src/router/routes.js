@@ -106,6 +106,22 @@ const routes = [
         meta: { editorOnly: true }
       },
       {
+        path: 'library/books',
+        component: () => import('@/pages/LibraryBooksPage.vue'),
+        meta: { editorOnly: true }
+      },
+      {
+        path: 'library/categories',
+        component: () => import('@/pages/LibraryCategoriesPage.vue'),
+        meta: { editorOnly: true }
+      },
+      {
+        // who read what, with parents' phones — administrators only
+        path: 'library/stats',
+        component: () => import('@/pages/LibraryStatsPage.vue'),
+        meta: { adminOnly: true }
+      },
+      {
         path: 'profiles/student/:id',
         component: () => import('@/pages/StudentProfilePage.vue')
       },

@@ -151,6 +151,19 @@
                 ohangdagi xabar boradi.
               </div>
             </div>
+            <div class="col-12">
+              <q-toggle
+                v-model="form.libraryWeeklyEnabled"
+                color="primary"
+                :disable="!canEdit"
+                label="📚 Haftalik kitob tavsiyasi (juma 19:00)"
+              />
+              <div class="text-caption muted-text q-ml-sm">
+                «Dam olish kunlari uchun 3 ta kitob» — har bir ota-onaga o'z
+                tavsiyalaridan. Ota-ona botdagi «⚙️ Sozlamalar»da o'zi ham
+                o'chira oladi.
+              </div>
+            </div>
           </div>
         </div>
       </div>

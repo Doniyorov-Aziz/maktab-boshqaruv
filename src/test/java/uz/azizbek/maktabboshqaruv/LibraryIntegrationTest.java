@@ -37,8 +37,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * reuse, and the reading statistics being admin-only.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        // the same properties as SchoolScopeIntegrationTest: one shared Spring context (and DB pool)
         "telegram.mock=true",
-        "telegram.bot-username=maktab_test_bot",
         "telegram.send-initial-delay-ms=3600000",
         "telegram.jobs-initial-delay-ms=3600000"
 })
