@@ -41,10 +41,7 @@
                 <template v-else>{{ k.value }}</template>
               </div>
               <div class="text-caption muted-text">{{ k.label }}</div>
-              <div
-                v-if="overview && k.hint"
-                class="text-caption muted-text ellipsis"
-              >
+              <div v-if="overview && k.hint" class="text-caption muted-text">
                 {{ k.hint }}
               </div>
             </div>

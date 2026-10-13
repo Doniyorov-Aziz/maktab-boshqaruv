@@ -48,8 +48,58 @@
               c.nameUz
             }}</q-item-label>
             <q-item-label caption>{{ c.nameRu || '—' }}</q-item-label>
+            <q-item-label caption class="lt-sm tabular-nums">
+              {{ c.bookCount }} ta kitob{{ c.active ? '' : ' · yashirin' }}
+            </q-item-label>
           </q-item-section>
-          <q-item-section side>
+          <!-- phone: one menu instead of four buttons -->
+          <q-item-section side class="lt-sm">
+            <q-btn
+              flat
+              round
+              dense
+              icon="more_vert"
+              :aria-label="`${c.nameUz} — amallar`"
+            >
+              <q-menu auto-close>
+                <q-list dense style="min-width: 170px">
+                  <q-item
+                    clickable
+                    :disable="i === 0 || saving"
+                    @click="move(i, -1)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="arrow_upward"
+                    /></q-item-section>
+                    <q-item-section>Yuqoriga</q-item-section>
+                  </q-item>
+                  <q-item
+                    clickable
+                    :disable="i === items.length - 1 || saving"
+                    @click="move(i, 1)"
+                  >
+                    <q-item-section avatar
+                      ><q-icon name="arrow_downward"
+                    /></q-item-section>
+                    <q-item-section>Pastga</q-item-section>
+                  </q-item>
+                  <q-item clickable @click="openForm(c)">
+                    <q-item-section avatar
+                      ><q-icon name="edit"
+                    /></q-item-section>
+                    <q-item-section>Tahrirlash</q-item-section>
+                  </q-item>
+                  <q-item clickable class="text-negative" @click="remove(c)">
+                    <q-item-section avatar
+                      ><q-icon name="delete"
+                    /></q-item-section>
+                    <q-item-section>O'chirish</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </q-btn>
+          </q-item-section>
+          <q-item-section side class="gt-xs">
             <div class="row items-center no-wrap q-gutter-xs">
               <q-badge
                 outline

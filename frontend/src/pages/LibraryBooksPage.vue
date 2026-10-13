@@ -111,7 +111,9 @@
           unelevated
           no-caps
           rounded
+          padding="4px 14px"
           toggle-color="primary"
+          class="status-filter"
           :options="statusOptions"
         />
         <q-space />
@@ -561,7 +563,7 @@
                     type="number"
                     min="1"
                     label="Bet soni"
-                    hint="Bo'sh bo'lsa — PDF dan"
+                    hint="Bo'sh — PDF dan"
                   />
                 </div>
                 <div class="col-6 col-sm-3">
@@ -1311,10 +1313,13 @@ function openBulk() {
   bulkOpen.value = true
 }
 
-function addBulk(list) {
+async function addBulk(list) {
   dragBulk.value = false
-  for (const file of Array.from(list || [])) {
-    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+  const files = Array.from(list || [])
+  if (bulkInput.value) bulkInput.value.value = ''
+  for (const file of files) {
+    // checked by content ("%PDF"), not by name — a renamed file is marked at once
+    if (!(await looksLikePdf(file))) {
       bulkFiles.value.push({ file, state: 'error', error: 'PDF emas' })
     } else if (file.size > MAX_PDF_MB * 1024 * 1024) {
       bulkFiles.value.push({
@@ -1326,7 +1331,6 @@ function addBulk(list) {
       bulkFiles.value.push({ file, state: 'waiting', error: '' })
     }
   }
-  if (bulkInput.value) bulkInput.value.value = ''
 }
 
 function onBulkDrop(e) {
@@ -1441,6 +1445,9 @@ async function runBulk() {
 .bulk-form {
   width: 640px;
   max-width: 96vw;
+}
+.status-filter {
+  border: 1px solid rgba(148, 163, 184, 0.45);
 }
 .legal-banner {
   background: rgba(245, 158, 11, 0.12);
