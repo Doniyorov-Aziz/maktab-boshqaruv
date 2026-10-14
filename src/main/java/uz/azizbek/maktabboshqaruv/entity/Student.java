@@ -119,20 +119,27 @@ public class Student {
         this.apartmentNumber = apartmentNumber;
     }
 
-    /** "Navro'z mahallasi, Bunyodkor ko'chasi, 12-dom, 45-kvartira" / "..., 17-uy"; null when nothing is set */
+    /** "Furqat mahallasi, Yangizamon ko'chasi, 10-uy, 65-xonadon" / "..., 17-uy"; null when nothing is set */
     public String addressLine() {
         List<String> parts = new ArrayList<>();
         if (mahalla != null && !mahalla.isBlank()) parts.add(mahalla.trim());
         if (street != null && !street.isBlank()) parts.add(street.trim());
         if (houseNumber != null && !houseNumber.isBlank()) {
             if (housingType == HousingType.KVARTIRA) {
-                parts.add(houseNumber.trim() + "-dom");
-                if (apartmentNumber != null && !apartmentNumber.isBlank()) parts.add(apartmentNumber.trim() + "-kvartira");
+                parts.add(houseNumber.trim() + "-uy");
+                if (apartmentNumber != null && !apartmentNumber.isBlank()) parts.add(apartmentNumber.trim() + "-xonadon");
             } else {
                 parts.add(houseNumber.trim() + "-uy");
             }
         }
         return parts.isEmpty() ? null : String.join(", ", parts);
+    }
+
+    /** The whole home address to find the house: "Toshkent shahri, Mirzo Ulug'bek tumani, Furqat mahallasi, ..." */
+    public String fullAddress() {
+        String line = addressLine();
+        if (residenceDistrict == null) return line;
+        return line == null ? residenceDistrict.placeName() : residenceDistrict.placeName() + ", " + line;
     }
 
     public GuardianRelation getGuardianRelation() {

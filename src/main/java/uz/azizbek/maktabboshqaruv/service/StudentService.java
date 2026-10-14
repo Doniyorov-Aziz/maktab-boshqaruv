@@ -120,14 +120,14 @@ public class StudentService {
         String apartment = blankToNull(request.getApartmentNumber());
         HousingType type = request.getHousingType();
         if (type == null && (house != null || apartment != null)) {
-            throw bad("Uy turini tanlang: kvartira yoki hovli");
+            throw bad("Uy turini tanlang: ko'p qavatli uy yoki hovli");
         }
         if (type == HousingType.KVARTIRA && (house == null || apartment == null)) {
-            throw bad("Kvartira uchun dom raqami va kvartira raqami kiritilishi shart");
+            throw bad("Ko'p qavatli uy uchun uy raqami va xonadon raqami kiritilishi shart");
         }
         if (type == HousingType.HOVLI) {
             if (house == null) throw bad("Hovli uchun uy raqami kiritilishi shart");
-            if (apartment != null) throw bad("Hovlida kvartira raqami bo'lmaydi");
+            if (apartment != null) throw bad("Hovlida xonadon raqami bo'lmaydi");
         }
         student.setBirthDistrict(birth);
         student.setResidenceDistrict(residence);
@@ -172,6 +172,7 @@ public class StudentService {
         dto.setHouseNumber(student.getHouseNumber());
         dto.setApartmentNumber(student.getApartmentNumber());
         dto.setAddress(student.addressLine());
+        dto.setFullAddress(student.fullAddress());
         return dto;
     }
 }

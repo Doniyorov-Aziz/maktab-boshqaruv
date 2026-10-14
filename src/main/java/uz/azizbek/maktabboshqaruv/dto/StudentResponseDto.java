@@ -28,6 +28,8 @@ public class StudentResponseDto {
     private String birthPlace;
     private String residencePlace;
     private String address;
+    /** viloyat, tuman, mahalla, ko'cha, uy, xonadon — the address to find the home */
+    private String fullAddress;
 
     public String getGuardianRelation() {
         return guardianRelation;
@@ -203,5 +205,13 @@ public class StudentResponseDto {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getFullAddress() {
+        return fullAddress;
+    }
+
+    public void setFullAddress(String fullAddress) {
+        this.fullAddress = fullAddress;
     }
 }

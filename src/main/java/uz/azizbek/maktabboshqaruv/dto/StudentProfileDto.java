@@ -20,6 +20,8 @@ public class StudentProfileDto {
     private String birthPlace;
     private String residencePlace;
     private String address;
+    /** viloyat, tuman, mahalla, ko'cha, uy, xonadon — the address to find the home */
+    private String fullAddress;
     private String housingType;
 
     private Double attendanceRate;
@@ -206,5 +208,13 @@ public class StudentProfileDto {
 
     public void setHousingType(String housingType) {
         this.housingType = housingType;
+    }
+
+    public String getFullAddress() {
+        return fullAddress;
+    }
+
+    public void setFullAddress(String fullAddress) {
+        this.fullAddress = fullAddress;
     }
 }

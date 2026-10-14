@@ -16,7 +16,7 @@ const weekdayOptions = [
 const roleOptions = ['ADMIN', 'EDITOR', 'VIEWER']
 
 const housingTypeOptions = [
-  { label: "Kvartira (ko'p qavatli uy)", value: 'KVARTIRA' },
+  { label: "Ko'p qavatli uy (xonadon)", value: 'KVARTIRA' },
   { label: 'Hovli (xususiy uy)', value: 'HOVLI' }
 ]
 
@@ -391,9 +391,9 @@ export const modules = [
         align: 'left'
       },
       {
-        name: 'residencePlace',
-        label: 'Yashash joyi',
-        field: row => row.residencePlace || '—',
+        name: 'fullAddress',
+        label: 'Yashash manzili',
+        field: row => row.fullAddress || '—',
         align: 'left'
       }
     ],
@@ -454,16 +454,16 @@ export const modules = [
         options: housingTypeOptions
       },
       {
-        // kvartira: dom raqami; hovli: uy raqami
+        // ko'p qavatli uy yoki hovli raqami
         key: 'houseNumber',
-        label: 'Dom / uy raqami',
+        label: 'Uy raqami',
         type: 'text',
         required: true,
         showIf: form => !!form.housingType
       },
       {
         key: 'apartmentNumber',
-        label: 'Kvartira raqami',
+        label: 'Xonadon raqami',
         type: 'text',
         required: true,
         showIf: form => form.housingType === 'KVARTIRA'

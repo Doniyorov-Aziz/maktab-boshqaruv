@@ -58,17 +58,9 @@
               {{ profile.birthPlace || 'kiritilmagan' }}
             </div>
           </div>
-          <div class="col-12 col-sm-4">
+          <div class="col-12 col-sm-8">
             <div class="text-caption muted-text">
-              <q-icon name="location_city" size="16px" /> Yashash joyi
-            </div>
-            <div :class="{ 'muted-text': !profile.residencePlace }">
-              {{ profile.residencePlace || 'kiritilmagan' }}
-            </div>
-          </div>
-          <div class="col-12 col-sm-4">
-            <div class="text-caption muted-text">
-              <q-icon name="home" size="16px" /> Uy manzili
+              <q-icon name="home" size="16px" /> Yashash manzili
               <q-badge
                 v-if="profile.housingType"
                 outline
@@ -77,8 +69,8 @@
                 :label="housingLabel(profile.housingType)"
               />
             </div>
-            <div :class="{ 'muted-text': !profile.address }">
-              {{ profile.address || 'kiritilmagan' }}
+            <div :class="{ 'muted-text': !profile.fullAddress }">
+              {{ profile.fullAddress || 'kiritilmagan' }}
             </div>
           </div>
         </div>
@@ -321,7 +313,7 @@ function statusLabel(s) {
 }
 
 function housingLabel(type) {
-  return type === 'KVARTIRA' ? 'kvartira' : 'hovli'
+  return type === 'KVARTIRA' ? "ko'p qavatli uy" : 'hovli'
 }
 
 function initials(name) {

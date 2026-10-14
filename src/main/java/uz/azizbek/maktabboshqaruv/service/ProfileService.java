@@ -54,6 +54,7 @@ public class ProfileService {
         dto.setBirthPlace(student.getBirthDistrict() == null ? null : student.getBirthDistrict().placeName());
         dto.setResidencePlace(student.getResidenceDistrict() == null ? null : student.getResidenceDistrict().placeName());
         dto.setAddress(student.addressLine());
+        dto.setFullAddress(student.fullAddress());
         dto.setHousingType(student.getHousingType() == null ? null : student.getHousingType().name());
 
         LocalDate today = LocalDate.now();

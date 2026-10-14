@@ -117,12 +117,15 @@ class StudentAddressIntegrationTest {
         students.add(id);
         assertEquals("Samarqand viloyati, Urgut tumani", created.json().get("birthPlace").asString());
         assertEquals("Toshkent shahri, Chilonzor tumani", created.json().get("residencePlace").asString());
-        assertEquals("Navro'z mahallasi, Bunyodkor ko'chasi, 12-dom, 45-kvartira", created.json().get("address").asString());
+        assertEquals("Navro'z mahallasi, Bunyodkor ko'chasi, 12-uy, 45-xonadon", created.json().get("address").asString());
+        assertEquals("Toshkent shahri, Chilonzor tumani, Navro'z mahallasi, Bunyodkor ko'chasi, 12-uy, 45-xonadon",
+                created.json().get("fullAddress").asString());
         assertEquals(toshkent, created.json().get("residenceRegionId").asLong(), "the edit form gets the hudud back");
 
         JsonNode profile = api.get("/api/profiles/students/" + id).json();
         assertEquals("Samarqand viloyati, Urgut tumani", profile.get("birthPlace").asString());
-        assertEquals("Navro'z mahallasi, Bunyodkor ko'chasi, 12-dom, 45-kvartira", profile.get("address").asString());
+        assertEquals("Toshkent shahri, Chilonzor tumani, Navro'z mahallasi, Bunyodkor ko'chasi, 12-uy, 45-xonadon",
+                profile.get("fullAddress").asString());
         assertEquals("KVARTIRA", profile.get("housingType").asString());
 
         // a hovli has a house number and no apartment
@@ -132,12 +135,13 @@ class StudentAddressIntegrationTest {
         body.put("apartmentNumber", null);
         ApiClient.Response hovli = api.put("/api/students/" + id, body);
         assertEquals(200, hovli.status(), hovli.body());
-        assertEquals("Navro'z mahallasi, Bunyodkor ko'chasi, 17-uy", hovli.json().get("address").asString());
+        assertEquals("Toshkent shahri, Chilonzor tumani, Navro'z mahallasi, Bunyodkor ko'chasi, 17-uy",
+                hovli.json().get("fullAddress").asString());
 
         // the list (what the table shows) carries the place too
         String list = api.get("/api/students?schoolId=" + c.getAcademicYear().getSchool().getId()
                 + "&schoolClassId=" + c.getId() + "&size=2000").body();
-        assertTrue(list.contains("Toshkent shahri, Chilonzor tumani"), list);
+        assertTrue(list.contains("Toshkent shahri, Chilonzor tumani, Navro'z mahallasi, Bunyodkor ko'chasi, 17-uy"), list);
     }
 
     @Test
