@@ -1,6 +1,8 @@
 package uz.azizbek.maktabboshqaruv.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -27,8 +29,9 @@ public class Region {
     @Column(name = "name_uz", nullable = false, length = 100)
     private String nameUz;
 
-    /** A = faol, P = o'chirilgan */
-    @Column(nullable = false, columnDefinition = "char(1) default 'A'")
+    /** A = faol, P = o'chirilgan. CHAR(1) as in the table, so ddl-auto=update sees nothing to change. */
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(nullable = false, length = 1)
     private String state = ACTIVE;
 
     @Column(name = "created_at", nullable = false, updatable = false)
