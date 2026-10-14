@@ -1,6 +1,8 @@
 package uz.azizbek.maktabboshqaruv.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "students")
@@ -31,6 +33,107 @@ public class Student {
     @Enumerated(EnumType.STRING)
     @Column(length = 16)
     private GuardianRelation guardianRelation;
+
+    // ---- tug'ilgan joyi va yashash manzili (all nullable: older records and quick entries have none)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "birth_district_id")
+    private District birthDistrict;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "residence_district_id")
+    private District residenceDistrict;
+
+    @Column(length = 100)
+    private String mahalla;
+
+    /** ko'cha (or massiv / kvartal) */
+    @Column(length = 150)
+    private String street;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "housing_type", length = 16)
+    private HousingType housingType;
+
+    /** KVARTIRA: dom raqami; HOVLI: uy raqami ("12", "12A") */
+    @Column(name = "house_number", length = 20)
+    private String houseNumber;
+
+    /** KVARTIRA only */
+    @Column(name = "apartment_number", length = 20)
+    private String apartmentNumber;
+
+    public District getBirthDistrict() {
+        return birthDistrict;
+    }
+
+    public void setBirthDistrict(District birthDistrict) {
+        this.birthDistrict = birthDistrict;
+    }
+
+    public District getResidenceDistrict() {
+        return residenceDistrict;
+    }
+
+    public void setResidenceDistrict(District residenceDistrict) {
+        this.residenceDistrict = residenceDistrict;
+    }
+
+    public String getMahalla() {
+        return mahalla;
+    }
+
+    public void setMahalla(String mahalla) {
+        this.mahalla = mahalla;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    public HousingType getHousingType() {
+        return housingType;
+    }
+
+    public void setHousingType(HousingType housingType) {
+        this.housingType = housingType;
+    }
+
+    public String getHouseNumber() {
+        return houseNumber;
+    }
+
+    public void setHouseNumber(String houseNumber) {
+        this.houseNumber = houseNumber;
+    }
+
+    public String getApartmentNumber() {
+        return apartmentNumber;
+    }
+
+    public void setApartmentNumber(String apartmentNumber) {
+        this.apartmentNumber = apartmentNumber;
+    }
+
+    /** "Navro'z mahallasi, Bunyodkor ko'chasi, 12-dom, 45-kvartira" / "..., 17-uy"; null when nothing is set */
+    public String addressLine() {
+        List<String> parts = new ArrayList<>();
+        if (mahalla != null && !mahalla.isBlank()) parts.add(mahalla.trim());
+        if (street != null && !street.isBlank()) parts.add(street.trim());
+        if (houseNumber != null && !houseNumber.isBlank()) {
+            if (housingType == HousingType.KVARTIRA) {
+                parts.add(houseNumber.trim() + "-dom");
+                if (apartmentNumber != null && !apartmentNumber.isBlank()) parts.add(apartmentNumber.trim() + "-kvartira");
+            } else {
+                parts.add(houseNumber.trim() + "-uy");
+            }
+        }
+        return parts.isEmpty() ? null : String.join(", ", parts);
+    }
 
     public GuardianRelation getGuardianRelation() {
         return guardianRelation;

@@ -2,6 +2,8 @@ package uz.azizbek.maktabboshqaruv.service;
 
 import uz.azizbek.maktabboshqaruv.dto.StudentRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.StudentResponseDto;
+import uz.azizbek.maktabboshqaruv.entity.District;
+import uz.azizbek.maktabboshqaruv.entity.HousingType;
 import uz.azizbek.maktabboshqaruv.entity.SchoolClass;
 import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.repository.SchoolClassRepository;
@@ -9,8 +11,10 @@ import uz.azizbek.maktabboshqaruv.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class StudentService {
@@ -27,16 +31,22 @@ public class StudentService {
     @Autowired
     private ActivityLogService activityLogService;
 
+    @Autowired
+    private DistrictService districtService;
+
+    @Transactional(readOnly = true)
     public Page<StudentResponseDto> getAllStudents(Long schoolId, Pageable pageable) {
         return getAllStudents(schoolId, null, null, pageable);
     }
 
+    @Transactional(readOnly = true)
     public Page<StudentResponseDto> getAllStudents(Long schoolId, Long schoolClassId, String q, Pageable pageable) {
         String like = q == null || q.isBlank() ? null : "%" + q.trim().toLowerCase().replaceAll("\\s+", " ") + "%";
         return studentRepository.search(schoolId, schoolClassId, like, pageable)
                 .map(this::toResponseDto);
     }
 
+    @Transactional(readOnly = true)
     public StudentResponseDto getStudentById(Long id) {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi topilmadi: " + id));
@@ -56,6 +66,7 @@ public class StudentService {
         student.setGuardianName(request.getGuardianName());
         student.setGuardianPhone(request.getGuardianPhone());
         student.setGuardianRelation(request.getGuardianRelation());
+        applyAddress(student, request);
 
         Student saved = studentRepository.save(student);
         activityLogService.record(
@@ -81,6 +92,7 @@ public class StudentService {
         student.setGuardianName(request.getGuardianName());
         student.setGuardianPhone(request.getGuardianPhone());
         student.setGuardianRelation(request.getGuardianRelation());
+        applyAddress(student, request);
 
         Student updated = studentRepository.save(student);
         botCache.evictAllChats();
@@ -96,6 +108,44 @@ public class StudentService {
         botCache.evictAllChats();
     }
 
+    /**
+     * Tug'ilgan joyi, yashash joyi va uy manzili — all optional, but what is given must fit together:
+     * each district belongs to its chosen region; a dom/uy number needs the housing type; an
+     * apartment (KVARTIRA) has a dom and a kvartira number, a hovli (HOVLI) only its house number.
+     */
+    private void applyAddress(Student student, StudentRequestDto request) {
+        District birth = districtService.forAddress(request.getBirthDistrictId(), request.getBirthRegionId(), "Tug'ilgan joyi");
+        District residence = districtService.forAddress(request.getResidenceDistrictId(), request.getResidenceRegionId(), "Yashash joyi");
+        String house = blankToNull(request.getHouseNumber());
+        String apartment = blankToNull(request.getApartmentNumber());
+        HousingType type = request.getHousingType();
+        if (type == null && (house != null || apartment != null)) {
+            throw bad("Uy turini tanlang: kvartira yoki hovli");
+        }
+        if (type == HousingType.KVARTIRA && (house == null || apartment == null)) {
+            throw bad("Kvartira uchun dom raqami va kvartira raqami kiritilishi shart");
+        }
+        if (type == HousingType.HOVLI) {
+            if (house == null) throw bad("Hovli uchun uy raqami kiritilishi shart");
+            if (apartment != null) throw bad("Hovlida kvartira raqami bo'lmaydi");
+        }
+        student.setBirthDistrict(birth);
+        student.setResidenceDistrict(residence);
+        student.setMahalla(blankToNull(request.getMahalla()));
+        student.setStreet(blankToNull(request.getStreet()));
+        student.setHousingType(type);
+        student.setHouseNumber(house);
+        student.setApartmentNumber(type == HousingType.KVARTIRA ? apartment : null);
+    }
+
+    private static ResponseStatusException bad(String message) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
+    }
+
     private StudentResponseDto toResponseDto(Student student) {
         StudentResponseDto dto = new StudentResponseDto();
         dto.setId(student.getId());
@@ -108,6 +158,20 @@ public class StudentService {
         dto.setGuardianName(student.getGuardianName());
         dto.setGuardianPhone(student.getGuardianPhone());
         dto.setGuardianRelation(student.getGuardianRelation() == null ? null : student.getGuardianRelation().name());
+        District birth = student.getBirthDistrict();
+        District residence = student.getResidenceDistrict();
+        dto.setBirthRegionId(birth == null ? null : birth.getRegion().getId());
+        dto.setBirthDistrictId(birth == null ? null : birth.getId());
+        dto.setBirthPlace(birth == null ? null : birth.placeName());
+        dto.setResidenceRegionId(residence == null ? null : residence.getRegion().getId());
+        dto.setResidenceDistrictId(residence == null ? null : residence.getId());
+        dto.setResidencePlace(residence == null ? null : residence.placeName());
+        dto.setMahalla(student.getMahalla());
+        dto.setStreet(student.getStreet());
+        dto.setHousingType(student.getHousingType() == null ? null : student.getHousingType().name());
+        dto.setHouseNumber(student.getHouseNumber());
+        dto.setApartmentNumber(student.getApartmentNumber());
+        dto.setAddress(student.addressLine());
         return dto;
     }
 }

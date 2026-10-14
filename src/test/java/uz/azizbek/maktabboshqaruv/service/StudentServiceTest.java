@@ -36,6 +36,9 @@ class StudentServiceTest {
     @Mock
     private ActivityLogService activityLogService;
 
+    @Mock
+    private DistrictService districtService;
+
     @InjectMocks
     private StudentService studentService;
 

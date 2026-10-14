@@ -47,6 +47,41 @@
             </div>
           </div>
         </div>
+
+        <q-separator class="q-my-md" />
+        <div class="row q-col-gutter-md personal-info">
+          <div class="col-12 col-sm-4">
+            <div class="text-caption muted-text">
+              <q-icon name="child_friendly" size="16px" /> Tug'ilgan joyi
+            </div>
+            <div :class="{ 'muted-text': !profile.birthPlace }">
+              {{ profile.birthPlace || 'kiritilmagan' }}
+            </div>
+          </div>
+          <div class="col-12 col-sm-4">
+            <div class="text-caption muted-text">
+              <q-icon name="location_city" size="16px" /> Yashash joyi
+            </div>
+            <div :class="{ 'muted-text': !profile.residencePlace }">
+              {{ profile.residencePlace || 'kiritilmagan' }}
+            </div>
+          </div>
+          <div class="col-12 col-sm-4">
+            <div class="text-caption muted-text">
+              <q-icon name="home" size="16px" /> Uy manzili
+              <q-badge
+                v-if="profile.housingType"
+                outline
+                color="primary"
+                class="q-ml-xs"
+                :label="housingLabel(profile.housingType)"
+              />
+            </div>
+            <div :class="{ 'muted-text': !profile.address }">
+              {{ profile.address || 'kiritilmagan' }}
+            </div>
+          </div>
+        </div>
       </div>
 
       <q-tabs
@@ -283,6 +318,10 @@ function statusLabel(s) {
       NONE: "Ma'lumot yo'q"
     }[s] || s
   )
+}
+
+function housingLabel(type) {
+  return type === 'KVARTIRA' ? 'kvartira' : 'hovli'
 }
 
 function initials(name) {

@@ -4,8 +4,10 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import uz.azizbek.maktabboshqaruv.dto.DistrictResponseDto;
 import uz.azizbek.maktabboshqaruv.dto.RegionRequestDto;
 import uz.azizbek.maktabboshqaruv.dto.RegionResponseDto;
+import uz.azizbek.maktabboshqaruv.service.DistrictService;
 import uz.azizbek.maktabboshqaruv.service.RegionService;
 
 import java.util.List;
@@ -15,9 +17,11 @@ import java.util.List;
 public class RegionController {
 
     private final RegionService regionService;
+    private final DistrictService districtService;
 
-    public RegionController(RegionService regionService) {
+    public RegionController(RegionService regionService, DistrictService districtService) {
         this.regionService = regionService;
+        this.districtService = districtService;
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
@@ -30,6 +34,13 @@ public class RegionController {
     @GetMapping("/{id}")
     public RegionResponseDto getById(@PathVariable Long id) {
         return regionService.getById(id);
+    }
+
+    /** the region's active districts — what the district picker shows once a region is chosen */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/{id}/districts")
+    public List<DistrictResponseDto> getDistricts(@PathVariable Long id) {
+        return districtService.getByRegion(id);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")

@@ -1,6 +1,7 @@
 package uz.azizbek.maktabboshqaruv.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @Entity
 // the constraint carries the name PostgreSQL gave the table's UNIQUE(code), so Hibernate does not add a second one
 @Table(name = "region", uniqueConstraints = @UniqueConstraint(name = "region_code_key", columnNames = "code"))
+@BatchSize(size = 20) // districts' regions load in one query
 public class Region {
 
     public static final String ACTIVE = "A";

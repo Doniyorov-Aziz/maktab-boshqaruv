@@ -35,6 +35,7 @@ public class ProfileService {
     @Autowired
     private LessonSlotRepository lessonSlotRepository;
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public StudentProfileDto getStudentProfile(Long studentId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi topilmadi: " + studentId));
@@ -50,6 +51,10 @@ public class ProfileService {
         dto.setClassName(student.getSchoolClass().getGradeNumber() + "-" + student.getSchoolClass().getSectionLetter());
         dto.setGuardianName(student.getGuardianName());
         dto.setGuardianPhone(student.getGuardianPhone());
+        dto.setBirthPlace(student.getBirthDistrict() == null ? null : student.getBirthDistrict().placeName());
+        dto.setResidencePlace(student.getResidenceDistrict() == null ? null : student.getResidenceDistrict().placeName());
+        dto.setAddress(student.addressLine());
+        dto.setHousingType(student.getHousingType() == null ? null : student.getHousingType().name());
 
         LocalDate today = LocalDate.now();
         LocalDate from = today.minusDays(89);

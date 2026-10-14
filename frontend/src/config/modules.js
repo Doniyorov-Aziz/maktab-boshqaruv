@@ -15,6 +15,37 @@ const weekdayOptions = [
 
 const roleOptions = ['ADMIN', 'EDITOR', 'VIEWER']
 
+const housingTypeOptions = [
+  { label: "Kvartira (ko'p qavatli uy)", value: 'KVARTIRA' },
+  { label: 'Hovli (xususiy uy)', value: 'HOVLI' }
+]
+
+// hudud → tuman pair for a student's place (prefix 'birth' / 'residence'); only the tuman is stored
+function placeFields(prefix, label) {
+  return [
+    {
+      key: `${prefix}RegionId`,
+      label: `${label}: hudud`,
+      type: 'select',
+      required: false,
+      optionsEndpoint: '/api/regions',
+      optionValue: 'id',
+      optionLabel: 'nameUz'
+    },
+    {
+      key: `${prefix}DistrictId`,
+      label: `${label}: tuman / shahar`,
+      type: 'select',
+      required: false,
+      optionsEndpoint: '/api/districts',
+      optionValue: 'id',
+      optionLabel: 'nameUz',
+      parentKey: `${prefix}RegionId`,
+      parentValue: 'regionId'
+    }
+  ]
+}
+
 const roomTypeLabels = {
   CLASSROOM: 'Sinfxona',
   LAB: 'Laboratoriya',
@@ -358,6 +389,12 @@ export const modules = [
         label: 'Ota-ona',
         field: row => guardianLabel(row.guardianName, row.guardianRelation),
         align: 'left'
+      },
+      {
+        name: 'residencePlace',
+        label: 'Yashash joyi',
+        field: row => row.residencePlace || '—',
+        align: 'left'
       }
     ],
     fields: [
@@ -397,6 +434,39 @@ export const modules = [
         label: 'Ota-ona telefoni',
         type: 'text',
         required: false
+      },
+      // tug'ilgan joyi: hudud → tuman (only the tuman is stored; the hudud filters the list)
+      ...placeFields('birth', "Tug'ilgan joyi"),
+      // yashash joyi va uy manzili
+      ...placeFields('residence', 'Yashash joyi'),
+      { key: 'mahalla', label: 'Mahalla', type: 'text', required: false },
+      {
+        key: 'street',
+        label: "Ko'cha (massiv, kvartal)",
+        type: 'text',
+        required: false
+      },
+      {
+        key: 'housingType',
+        label: 'Uy turi',
+        type: 'select',
+        required: false,
+        options: housingTypeOptions
+      },
+      {
+        // kvartira: dom raqami; hovli: uy raqami
+        key: 'houseNumber',
+        label: 'Dom / uy raqami',
+        type: 'text',
+        required: true,
+        showIf: form => !!form.housingType
+      },
+      {
+        key: 'apartmentNumber',
+        label: 'Kvartira raqami',
+        type: 'text',
+        required: true,
+        showIf: form => form.housingType === 'KVARTIRA'
       }
     ]
   },

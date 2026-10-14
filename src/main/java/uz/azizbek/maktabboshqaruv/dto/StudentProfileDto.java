@@ -16,6 +16,12 @@ public class StudentProfileDto {
     private String guardianName;
     private String guardianPhone;
 
+    // "Samarqand viloyati, Urgut tumani"; "Navro'z mahallasi, ..., 12-dom, 45-kvartira"
+    private String birthPlace;
+    private String residencePlace;
+    private String address;
+    private String housingType;
+
     private Double attendanceRate;
     private Double averageGrade;
     private Long rewardCount;
@@ -168,5 +174,37 @@ public class StudentProfileDto {
 
     public void setWeeklySchedule(List<TimetableEntryDto> weeklySchedule) {
         this.weeklySchedule = weeklySchedule;
+    }
+
+    public String getBirthPlace() {
+        return birthPlace;
+    }
+
+    public void setBirthPlace(String birthPlace) {
+        this.birthPlace = birthPlace;
+    }
+
+    public String getResidencePlace() {
+        return residencePlace;
+    }
+
+    public void setResidencePlace(String residencePlace) {
+        this.residencePlace = residencePlace;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getHousingType() {
+        return housingType;
+    }
+
+    public void setHousingType(String housingType) {
+        this.housingType = housingType;
     }
 }

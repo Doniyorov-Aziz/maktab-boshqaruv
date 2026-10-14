@@ -572,7 +572,8 @@
                 v-if="!field.autoSchool && field.type === 'select'"
                 v-model="formModel[field.key]"
                 :label="field.label"
-                :options="fieldOptions[field.key] || []"
+                :options="optionsFor(field)"
+                @update:model-value="clearOrphanChildren(field)"
                 option-value="value"
                 option-label="label"
                 emit-value
@@ -1015,6 +1016,25 @@ function fieldRules(field) {
   return rules
 }
 
+// a select with parentKey (e.g. tuman → hudud) offers only the options of the chosen parent
+function optionsFor(field) {
+  const all = fieldOptions[field.key] || []
+  if (!field.parentKey) return all
+  const parent = formModel[field.parentKey]
+  return parent == null ? [] : all.filter(o => o.parent === parent)
+}
+
+// choosing another hudud drops a tuman that is not in it
+function clearOrphanChildren(parentField) {
+  for (const child of module.value.fields) {
+    if (child.parentKey !== parentField.key) continue
+    const value = formModel[child.key]
+    if (value != null && !optionsFor(child).some(o => o.value === value)) {
+      formModel[child.key] = null
+    }
+  }
+}
+
 async function loadFieldOptions() {
   for (const field of module.value.fields) {
     if (field.autoSchool || field.type !== 'select') continue
@@ -1033,13 +1053,17 @@ async function loadFieldOptions() {
           params.schoolId = schoolStore.activeSchoolId
         }
         const response = await api.get(field.optionsEndpoint, { params })
-        const items = response.data.content
+        // paged lists come as { content }, reference lists (regions, districts) as a plain array
+        const items = Array.isArray(response.data)
+          ? response.data
+          : response.data.content
         fieldOptions[field.key] = items.map(item => ({
           value: item[field.optionValue],
           label:
             typeof field.optionLabel === 'function'
               ? field.optionLabel(item)
-              : item[field.optionLabel]
+              : item[field.optionLabel],
+          parent: field.parentKey ? item[field.parentValue] : undefined
         }))
       } catch {
         fieldOptions[field.key] = []
