@@ -45,3 +45,4 @@ public class TelegramLinkCodeBackfill implements CommandLineRunner {
         log.info("Migratsiya: {} ta o'quvchi uchun Telegram bog'lash kodi yaratildi", missing.size());
     }
 }
+

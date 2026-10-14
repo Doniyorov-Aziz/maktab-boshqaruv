@@ -2,6 +2,7 @@ package uz.azizbek.maktabboshqaruv.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import uz.azizbek.maktabboshqaruv.exception.ForbiddenException;
 import uz.azizbek.maktabboshqaruv.service.SchoolAccessService;
 import uz.azizbek.maktabboshqaruv.service.SchoolOwnership;
@@ -72,7 +73,7 @@ public class SchoolScopeConfig implements WebMvcConfigurer {
     }
 
     @Override
-    public void addInterceptors(InterceptorRegistry registry) {
+    public void addInterceptors(@NonNull InterceptorRegistry registry) {
         registry.addInterceptor(new HandlerInterceptor() {
             @Override
             public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
