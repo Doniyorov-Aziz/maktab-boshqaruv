@@ -132,3 +132,106 @@ mutolaasi» «Farzandlarim» yonida).
 - Jonli tizimga o'tkazish: merge → `maktab-live\update.ps1` (avval `maktab_db` zaxirasi). Jadvallar Hibernate
   `ddl-auto=update` bilan o'zi yaratiladi; standart bo'limlar maktab kutubxonasi birinchi ochilganda yaratiladi;
   `dev` seed jonli (`local`) profilda ishlamaydi.
+
+---
+
+# ⚖️ Huquqiy qism — mualliflar, ruxsatnomalar, Wikisource
+
+Branch: `feature/library-legal` (`6056215` backend + testlar, `769154b` sayt sahifalari, PDF tipografiyasi, jonli tekshiruv).
+
+**Qonuniy asos** (`service/library/CopyrightRules` izohida ham): «Mualliflik huquqi va turdosh huquqlar to'g'risida»gi
+qonun, 35-modda — huquq muallif hayoti davomida va vafotidan keyin 70 yil amal qiladi, muddat voqea yuz bergan yildan
+keyingi yilning 1-yanvaridan hisoblanadi; vafotidan keyin birinchi marta chop etilgan asar nashrdan keyin 70 yil
+himoyalanadi. 37-modda — muddat tugagach asar ijtimoiy mulkka o'tadi, muallif nomi saqlanadi, asar buzilmaydi.
+Hisob: D-yilda vafot etgan muallif asari D+70-yilning 31-dekabrigacha himoyada, D+71-yilning 1-yanvaridan jamoat mulki
+(`deathYear + 70 < joriy yil`, Asia/Tashkent). Bir nechta muallif bo'lsa — eng oxirgi vafot etgani hal qiladi.
+
+## Bandlar
+
+| # | Band | Holat |
+|---|---|---|
+| 1 | **Mualliflar ma'lumotnomasi:** `Author` (fullName, aliases — lotin/kirill/taxalluslar, birthYear, deathYear, note), `Book` ↔ `Author` (`book_author`, ko'p muallif). Eski matnli `author` maydoni o'chirilmagan — eski kitoblar ishga tushishda nomi bo'yicha mualliflarga bog'lanadi. 19 ta mumtoz muallif barcha muhitlarda seed qilinadi (faqat ma'lumotnoma, kitob emas). Saytda «Mualliflar» sahifasi: qidiruv (kirillcha ham), «✅ Jamoat mulki (YYYY-yildan)» / «🔒 Himoyada (YYYY-yilgacha)» / «Vafot yili kiritilmagan» belgilari va filtrlari, qo'shish/tahrirlash | ✅ |
+| 2 | **JAMOAT_MULKI tekshiruvi (backend):** vafot yili majburiy; himoyadagi muallif → 400 «Bu muallif asarlari YYYY-yilgacha … ruxsati kerak.»; «tirikligida chop etilgan» belgilanmasa birinchi nashr yili majburiy va u ham +70 qoidasidan o'tadi; «zamonaviy so'zboshi/izoh/sharh yo'q» tasdig'i majburiy. Muallif nomi sayt va bot kartochkasida doim ko'rsatiladi | ✅ |
+| 3 | **Wikisource'dan import (faqat ADMIN):** «📜 Wikisource dan qo'shish» → faqat jamoat mulki mualliflari → wikisource.org (o'zbekcha matnlar shu ko'p tilli saytda; alohida uz.wikisource yo'q), so'ng ru.wikisource.org'dan muallif sahifasi va asarlar ro'yxati → import. Matn bo'limlari bilan olinadi, wiki-belgilar tozalanadi, OpenPDF bilan **bir marta** A5 PDF yaratiladi: muqova (nom, muallif, hayot yillari, «Jamoat mulki · Manba: Wikisource», maktab nomi), mundarija, har bob yangi sahifadan, Noto Serif ichiga joylangan. `legalNote = "Wikisource: <URL>"` avtomatik, 2-banddagi tekshiruvlardan o'tadi. To'liq bo'lmagan («tayyorlanmoqda»), qisqa (< 1000 belgi) yoki boblari yo'q sahifa import qilinmaydi — sababi ko'rsatiladi. So'rovlar backendda: User-Agent da loyiha nomi, butun ilova bo'yicha sekundiga ≤ 1 ta, timeout 30 s | ✅ |
+| 4 | **Qo'lda yuklashga yordam:** muallif tanlanishi bilan holat («✅ Jamoat mulki — yuklash mumkin» / «🔒 YYYY-yilgacha himoyada — faqat ruxsatnoma bilan»); ommaviy yuklashda har fayl uchun holat, himoyadagi muallif fayli ruxsatnomasiz saqlanmaydi | ✅ |
+| 5 | **Ruxsatnomalar:** `LibraryPermission` (grantor — muallif/merosxo'r/nashriyot, F.I.Sh., telefon, kitoblar, scope, validFrom, validUntil — bo'sh = muddatsiz, imzolangan skan PDF/JPG/PNG — majburiy, izoh). MUALLIF_RUXSATI / LITSENZIYA kitobi faqat amaldagi ruxsatnoma bilan saqlanadi. «Ruxsatnomalar» sahifasi (ADMIN): holat (amalda / 30 kunda tugaydi / muddati o'tgan / bekor qilingan), filtr. «Bekor qilish» → bog'langan kitoblar darhol nofaol. Kunlik job (06:15, Asia/Tashkent): muddati o'tgan ruxsatnoma kitoblarini nofaol qiladi (bot va qidiruvdan yo'qoladi), faoliyat jurnaliga yozadi; 30 kun qolganda bir marta ogohlantiradi. Adminga bildirishnoma — saytdagi qo'ng'iroqcha (🔔). «📄 Ruxsat xati shablonini yuklab olish» — maktab va kitob nomi bilan to'ldirilgan A4 PDF, topshiriqdagi matn bilan | ✅ |
+
+API (`LibraryLegalController`, `/api/library`): `GET/POST/PUT/DELETE /authors`, `GET/POST/PUT /permissions` (multipart),
+`POST /permissions/{id}/revoke`, `GET /permissions/{id}/document`, `GET /permissions/template`,
+`GET /wikisource/works`, `POST /wikisource/import`.
+
+## Tekshiruv natijalari
+
+**L1.** `DB_URL=…/maktab_tg_test ./gradlew build` — BUILD SUCCESSFUL, 247 test, 0 xato (2026-10-13). `npm run lint` va
+`npm run build` — xatosiz.
+
+**L2 — `LibraryLegalIntegrationTest` (11/11):**
+1. Abdulla Qodiriy (1938) + JAMOAT_MULKI → saqlanadi.
+2. Oybek (1968) + JAMOAT_MULKI → 400, «2038-yilgacha».
+3. Vafot yili yo'q muallif + JAMOAT_MULKI → 400.
+4. «Tirikligida chop etilgan» belgilanmagan, nashr yili 1990 → 400 («2060-yilgacha»); nashr yilisiz → 400.
+5. «Zamonaviy so'zboshi yo'q» tasdig'isiz → 400.
+6. MUALLIF_RUXSATI ruxsatnomasiz → 400.
+7. Muddati o'tgan ruxsatnoma → job kitobni nofaol qiladi, botda chiqmaydi.
+8. Bekor qilingan ruxsatnoma → kitoblar darhol nofaol.
+9. Ruxsat xati shabloni — PDF, ichida maktab nomi va matn.
+10. Wikisource import (API mock bilan) → PDF yaratiladi; PDFBox bilan qayta o'qilganda o'zbek lotin (o', g', sh, ch)
+    va kirill harflari to'g'ri.
+11. Qisqa va «tayyorlanmoqda» sahifalar hamda himoyadagi muallif — import qilinmaydi.
+
+**L3 — haqiqiy Wikisource** (`DB_URL=…/maktab_tg_test ./gradlew wikisourceCheck --rerun`; import 2026-10-13, qayta
+tekshiruv 2026-10-14). Faqat yili muallif hayotiga to'g'ri keladigan asarlar avtomatik import qilinadi; yili noma'lum
+asarlar uchun «tirikligida chop etilgan»ni admin dialogda tasdiqlaydi.
+
+| Muallif | Wikisource sahifasi | Ro'yxatda | Yili hayotiga to'g'ri keladi | Import qilindi |
+|---|---|---|---|---|
+| Abdulla Qodiriy | `Author:Abdulla_Qodiriy` | 89 | 85 | «O'tkan kunlar» (1926) — 527 bet, 772 KB; «Baxtsiz kuyov» (1915) — 27 bet, 80 KB |
+| Abdulhamid Cho'lpon | `Author:Abdulhamid_Choʻlpon` | 425 | 80 | «Kecha va kunduz» (1936) — 369 bet, 564 KB; «Yorqin oy» (1920) — 142 bet, 237 KB |
+| Abdurauf Fitrat | `Author:Abdurauf_Fitrat` | 26 | 19 | «Musulmon sevgisi» (1917) — 4 bet; «Sho'royi islomiya»ning xatosi (1917) — 4 bet |
+| Alisher Navoiy | `Author:Alisher_Navoiy` | 52 (g'azallar) | 0 | yo'q — yili ko'rsatilmagan; sinov uchun admin tasdig'i bilan urinilgan «Ashraqat min...» rad etildi: «Matn juda qisqa (882 belgi)» |
+| Zahiriddin Muhammad Bobur | `Author:Bobur` | 45 (g'azallar, ruboiylar) | 0 | yo'q — yili ko'rsatilmagan; «Bahor ayyomidur...» rad etildi: «Matn juda qisqa (493 belgi)» |
+
+Xulosa: Wikisource'da Navoiy va Bobur faqat alohida g'azallar sifatida bor (har biri 1000 belgidan qisqa) — ularni
+alohida kitob qilib import qilish mantiqsiz, yirik asarlar («Xamsa», «Boburnoma») qo'lda yuklanadi.
+Import qilingan PDF sahifalari: `legal-wikisource-1-cover-otkan-kunlar`, `-2-contents`, `-3-text-qodiriy`,
+`-4-cover-kecha-va-kunduz`, `-5-text-cholpon`, `-6-drama-baxtsiz-kuyov` — muqova, mundarija va matn, harflar buzilmagan.
+
+**L4 — Playwright** (test backend, test bazasi): `legal-01` Mualliflar (dark / light / mobile) — holat belgilari;
+`legal-02` kitob formasi — himoyadagi muallif ogohlantirishi; `legal-03` jamoat mulki muallifi; `legal-04` ommaviy
+yuklash — har fayl uchun holat; `legal-05` Wikisource asarlar ro'yxati; `legal-06` rad etish sababi; `legal-07`
+Ruxsatnomalar (dark / light / mobile); `legal-08` ruxsatnoma formasi; `legal-09` shablon dialogi; `legal-10`
+qo'ng'iroqchadagi muddat ogohlantirishi.
+
+## Yangi sozlama
+
+| Kalit | Standart |
+|---|---|
+| `app.library.permission-check-cron` | `0 15 6 * * *` (Asia/Tashkent) |
+
+Yangi shrift: `src/main/resources/fonts/NotoSerif-{Regular,Bold,Italic}.ttf` (SIL OFL, `NotoSerif-OFL.txt`).
+
+## O'zgargan fayllar
+
+**Backend — yangi:** `entity/{Author, LibraryPermission}`, `repository/{AuthorRepository, LibraryPermissionRepository}`,
+`controller/LibraryLegalController`, `config/AuthorSeeder`, `service/library/{CopyrightRules, LibraryLegal,
+LibraryAuthors, LibraryPermissions, PermissionTemplatePdf, LibraryPdfFonts}`, `service/library/wikisource/{WikisourceApi,
+HttpWikisourceApi, WikiText, WikisourceImport, WikisourcePdf}`.
+
+**Backend — o'zgargan:** `Book` (+authors, permission, publishedInLifetime, firstPublishedYear, noModernCommentary,
+sourceUrl), `BookRepository`, `LibraryAdminService`, `LibraryFiles`, `LibraryController`, `LibraryDtos`,
+`LibraryScreen` (muallif nomi), `DashboardService` (qo'ng'iroqcha), `SchoolOwnership`/`SchoolScopeConfig`, i18n uz/ru/cy,
+`build.gradle` (`wikisourceCheck` vazifasi).
+
+**Frontend — yangi:** `pages/{LibraryAuthorsPage, LibraryPermissionsPage}.vue`. **O'zgargan:** `pages/LibraryBooksPage.vue`
+(holat, Wikisource dialogi, ommaviy yuklash), `utils/library.js`, `router/routes.js`, `layouts/MainLayout.vue`.
+
+**Testlar:** `LibraryLegalIntegrationTest` (yangi), `WikisourceLiveCheck` (build'ga kirmaydi, `gradlew wikisourceCheck`).
+
+## Eslatmalar (huquqiy qism)
+
+- Jonli tizimga o'tkazish: merge → `maktab-live\update.ps1` (avval `maktab_db` zaxirasi). `maktab_db` da hali `author`,
+  `library_permission`, `book.source_url` va boshqa yangi ustunlar yo'q — `ddl-auto=update` ularni birinchi ishga
+  tushishda yaratadi, 19 ta muallif seed qilinadi, mavjud kitoblar mualliflarga bog'lanadi.
+- `WikisourceLiveCheck` PDF sahifalarini rasmga aylantirishda (`WIKISOURCE_SHOTS`) kitob fayllarini joriy
+  `app.storage.path` dan qidiradi — import boshqa storage papkasida qilingan bo'lsa, `NoSuchFileException` beradi
+  (hisobot baribir yoziladi).
