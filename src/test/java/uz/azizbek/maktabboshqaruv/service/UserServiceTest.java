@@ -7,6 +7,7 @@ import uz.azizbek.maktabboshqaruv.entity.Role;
 import uz.azizbek.maktabboshqaruv.entity.User;
 import uz.azizbek.maktabboshqaruv.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +23,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +42,12 @@ class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
+
+    /** A platform admin (no school) unless a test says otherwise. */
+    @BeforeEach
+    void platformCaller() {
+        lenient().when(access.caller()).thenReturn(new SchoolAccessService.Caller("admin", Role.ADMIN, null, null));
+    }
 
     @AfterEach
     void clearSecurityContext() {

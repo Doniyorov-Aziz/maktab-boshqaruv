@@ -136,6 +136,43 @@ class SchoolScopeIntegrationTest {
     }
 
     @Test
+    void schoolAdmin_managesOnlyOwnSchoolUsers() throws Exception {
+        ApiClient superAdmin = userOf(null, Role.ADMIN);
+        long platformUser = createdUsers.get(createdUsers.size() - 1).getId();
+        ApiClient bAdmin = userOf(school(b), Role.ADMIN);
+        long ownEmployee = createdEmployees.get(createdEmployees.size() - 1).getId();
+        int n = ThreadLocalRandom.current().nextInt(1_000_000);
+
+        // a user without an employee would be a platform account: not for a school admin
+        assertEquals(403, bAdmin.post("/api/users", Map.of("username", "scope_nope_" + n,
+                "password", PASSWORD, "role", "ADMIN")).status());
+        assertTrue(users.findByUsername("scope_nope_" + n).isEmpty());
+
+        // a platform account is not one of school B's users: no reading, changing or deleting it
+        assertEquals(403, bAdmin.get("/api/users/" + platformUser).status());
+        assertEquals(403, bAdmin.put("/api/users/" + platformUser, Map.of("username", "scope_x_" + n,
+                "password", PASSWORD, "role", "ADMIN", "employeeId", ownEmployee)).status());
+        assertEquals(403, bAdmin.delete("/api/users/" + platformUser).status());
+        assertTrue(users.findById(platformUser).isPresent());
+
+        // an own-school user cannot be turned into a platform account
+        long ownUser = createdUsers.get(createdUsers.size() - 1).getId();
+        assertEquals(403, bAdmin.put("/api/users/" + ownUser, Map.of("username",
+                createdUsers.get(createdUsers.size() - 1).getUsername(), "role", "ADMIN")).status());
+        assertNotNull(users.findById(ownUser).orElseThrow().getEmployee());
+
+        // a user for an own-school employee still works
+        assertEquals(201, bAdmin.post("/api/users", Map.of("username", "scope_ok_" + n,
+                "password", PASSWORD, "role", "VIEWER", "employeeId", ownEmployee)).status());
+        createdUsers.add(users.findByUsername("scope_ok_" + n).orElseThrow());
+
+        // the platform admin is not limited
+        assertEquals(201, superAdmin.post("/api/users", Map.of("username", "scope_free_" + n,
+                "password", PASSWORD, "role", "VIEWER")).status());
+        createdUsers.add(users.findByUsername("scope_free_" + n).orElseThrow());
+    }
+
+    @Test
     void userWithoutSchool_isNotLimited() throws Exception {
         ApiClient superAdmin = userOf(null, Role.ADMIN);
         assertEquals(200, superAdmin.get("/api/students/" + a.getId()).status());
