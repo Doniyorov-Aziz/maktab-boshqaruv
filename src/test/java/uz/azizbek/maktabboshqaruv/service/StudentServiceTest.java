@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,7 +57,7 @@ class StudentServiceTest {
         StudentRequestDto request = validRequest();
         when(schoolClassRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> studentService.createStudent(request));
+        assertThrows(ResponseStatusException.class, () -> studentService.createStudent(request));
         verify(studentRepository, never()).save(any());
     }
 
@@ -94,13 +95,13 @@ class StudentServiceTest {
     void updateStudent_notFound_throws() {
         when(studentRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> studentService.updateStudent(1L, validRequest()));
+        assertThrows(ResponseStatusException.class, () -> studentService.updateStudent(1L, validRequest()));
     }
 
     @Test
     void deleteStudent_notFound_throws() {
         when(studentRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> studentService.deleteStudent(1L));
+        assertThrows(ResponseStatusException.class, () -> studentService.deleteStudent(1L));
     }
 }

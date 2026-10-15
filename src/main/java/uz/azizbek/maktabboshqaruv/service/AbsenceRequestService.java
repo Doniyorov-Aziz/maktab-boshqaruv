@@ -20,6 +20,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * "🤒 Sababli ariza": created by a parent in the bot, decided by the class
@@ -82,7 +84,7 @@ public class AbsenceRequestService {
     }
 
     public AbsenceRequest get(Long id) {
-        return repository.findById(id).orElseThrow(() -> new IllegalStateException("Bunday ariza topilmadi: " + id));
+        return repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday ariza topilmadi: " + id));
     }
 
     @Transactional

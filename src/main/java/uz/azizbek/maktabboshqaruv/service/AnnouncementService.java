@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AnnouncementService {
@@ -51,14 +53,14 @@ public class AnnouncementService {
 
     public AnnouncementResponseDto getAnnouncementById(Long id) {
         Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday e'lon topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday e'lon topilmadi: " + id));
         return toResponseDto(announcement);
     }
 
     @Transactional
     public AnnouncementResponseDto createAnnouncement(AnnouncementRequestDto request) {
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         Announcement announcement = new Announcement();
         announcement.setSchool(school);
@@ -73,10 +75,10 @@ public class AnnouncementService {
     @Transactional
     public AnnouncementResponseDto updateAnnouncement(Long id, AnnouncementRequestDto request) {
         Announcement announcement = announcementRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday e'lon topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday e'lon topilmadi: " + id));
 
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         announcement.setSchool(school);
         applyFields(announcement, request);
@@ -88,7 +90,7 @@ public class AnnouncementService {
     @Transactional
     public void deleteAnnouncement(Long id) {
         if (!announcementRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday e'lon topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday e'lon topilmadi: " + id);
         }
         announcementRepository.deleteById(id);
     }
@@ -105,7 +107,7 @@ public class AnnouncementService {
                 throw new IllegalStateException("Sinf tanlanishi shart");
             }
             SchoolClass schoolClass = schoolClassRepository.findById(request.getSchoolClassId())
-                    .orElseThrow(() -> new IllegalStateException("Bunday sinf mavjud emas"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf mavjud emas"));
             announcement.setSchoolClass(schoolClass);
         } else {
             announcement.setSchoolClass(null);

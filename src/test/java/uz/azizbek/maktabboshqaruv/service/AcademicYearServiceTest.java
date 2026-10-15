@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -95,13 +96,13 @@ class AcademicYearServiceTest {
         request.setStartDate(LocalDate.of(2025, 9, 1));
         request.setEndDate(LocalDate.of(2026, 6, 1));
 
-        assertThrows(IllegalStateException.class, () -> academicYearService.updateAcademicYear(1L, request));
+        assertThrows(ResponseStatusException.class, () -> academicYearService.updateAcademicYear(1L, request));
     }
 
     @Test
     void deleteAcademicYear_notFound_throws() {
         when(academicYearRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> academicYearService.deleteAcademicYear(1L));
+        assertThrows(ResponseStatusException.class, () -> academicYearService.deleteAcademicYear(1L));
     }
 }

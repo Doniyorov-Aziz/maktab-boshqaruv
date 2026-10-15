@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -180,6 +181,6 @@ class UserServiceTest {
     void deleteUser_notFound_throws() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> userService.deleteUser(1L));
+        assertThrows(ResponseStatusException.class, () -> userService.deleteUser(1L));
     }
 }

@@ -11,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class BehaviorRecordService {
@@ -37,7 +39,7 @@ public class BehaviorRecordService {
     @Transactional
     public BehaviorRecordResponseDto createRecord(BehaviorRecordRequestDto request) {
         Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi mavjud emas"));
 
         BehaviorRecord record = new BehaviorRecord();
         record.setStudent(student);
@@ -53,9 +55,9 @@ public class BehaviorRecordService {
     @Transactional
     public BehaviorRecordResponseDto updateRecord(Long id, BehaviorRecordRequestDto request) {
         BehaviorRecord record = behaviorRecordRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday xulq yozuvi topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xulq yozuvi topilmadi: " + id));
         Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi mavjud emas"));
 
         record.setStudent(student);
         record.setRecordDate(request.getRecordDate());
@@ -69,7 +71,7 @@ public class BehaviorRecordService {
     @Transactional
     public void deleteRecord(Long id) {
         if (!behaviorRecordRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday xulq yozuvi topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xulq yozuvi topilmadi: " + id);
         }
         behaviorRecordRepository.deleteById(id);
     }

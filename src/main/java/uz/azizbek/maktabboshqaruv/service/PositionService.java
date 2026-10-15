@@ -8,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PositionService {
@@ -22,7 +24,7 @@ public class PositionService {
 
     public PositionResponseDto getPositionById(Long id) {
         Position position = positionRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday positsiya topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday positsiya topilmadi: " + id));
         return toResponseDto(position);
     }
 
@@ -42,7 +44,7 @@ public class PositionService {
     @Transactional
     public PositionResponseDto updatePosition(Long id, PositionRequestDto request) {
         Position position = positionRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday position topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday position topilmadi: " + id));
 
         if (!position.getTitle().equals(request.getTitle()) && positionRepository.existsByTitle(request.getTitle())) {
             throw new IllegalStateException("Bunday position allaqachon mavjud");
@@ -57,7 +59,7 @@ public class PositionService {
     @Transactional
     public void deletePosition(Long id) {
         if (!positionRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday position topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday position topilmadi: " + id);
         }
         positionRepository.deleteById(id);
     }

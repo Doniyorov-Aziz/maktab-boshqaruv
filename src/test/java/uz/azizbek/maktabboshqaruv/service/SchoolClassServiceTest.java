@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -107,6 +108,6 @@ class SchoolClassServiceTest {
     void deleteSchoolClass_notFound_throws() {
         when(schoolClassRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> schoolClassService.deleteSchoolClass(1L));
+        assertThrows(ResponseStatusException.class, () -> schoolClassService.deleteSchoolClass(1L));
     }
 }

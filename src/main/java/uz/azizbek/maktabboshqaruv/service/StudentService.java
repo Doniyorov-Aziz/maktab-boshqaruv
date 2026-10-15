@@ -49,14 +49,14 @@ public class StudentService {
     @Transactional(readOnly = true)
     public StudentResponseDto getStudentById(Long id) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi topilmadi: " + id));
         return toResponseDto(student);
     }
 
     @Transactional
     public StudentResponseDto createStudent(StudentRequestDto request) {
         SchoolClass schoolClass = schoolClassRepository.findById(request.getSchoolClassId())
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf mavjud emas"));
 
         Student student = new Student();
         student.setSchoolClass(schoolClass);
@@ -80,10 +80,10 @@ public class StudentService {
     @Transactional
     public StudentResponseDto updateStudent(Long id, StudentRequestDto request) {
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi topilmadi: " + id));
 
         SchoolClass schoolClass = schoolClassRepository.findById(request.getSchoolClassId())
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf mavjud emas"));
 
         student.setSchoolClass(schoolClass);
         student.setFirstName(request.getFirstName());
@@ -102,7 +102,7 @@ public class StudentService {
     @Transactional
     public void deleteStudent(Long id) {
         if (!studentRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday o'quvchi topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi topilmadi: " + id);
         }
         studentRepository.deleteById(id);
         botCache.evictAllChats();

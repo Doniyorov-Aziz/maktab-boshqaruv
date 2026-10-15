@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,7 +52,7 @@ class SubjectServiceTest {
         SubjectRequestDto request = validRequest();
         when(schoolRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> subjectService.createSubject(request));
+        assertThrows(ResponseStatusException.class, () -> subjectService.createSubject(request));
         verify(subjectRepository, never()).save(any());
     }
 
@@ -92,7 +93,7 @@ class SubjectServiceTest {
     void deleteSubject_notFound_throws() {
         when(subjectRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> subjectService.deleteSubject(1L));
+        assertThrows(ResponseStatusException.class, () -> subjectService.deleteSubject(1L));
     }
 
     @Test

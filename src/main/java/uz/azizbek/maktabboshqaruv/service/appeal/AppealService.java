@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Parent appeals ("✉️ Ma'muriyatga xat").
@@ -310,7 +312,7 @@ public class AppealService {
     /** Opens the chat: marks it seen, gives every file a short-lived signed link. */
     @Transactional
     public AppealViews.Chat chat(Caller c, Long id) {
-        Appeal a = appeals.findWithStudent(id).orElseThrow(() -> new IllegalStateException("Bunday murojaat topilmadi"));
+        Appeal a = appeals.findWithStudent(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday murojaat topilmadi"));
         requireVisible(c, a);
         if (a.getUnreadCount() > 0 || a.getStatus() == Status.NEW) {
             a.setUnreadCount(0);
@@ -326,7 +328,7 @@ public class AppealService {
     /** A reply (text and/or files) — saved, then sent to the parent through the outbox. */
     @Transactional
     public AppealViews.Chat reply(Caller c, Long id, String text, List<MultipartFile> uploads) {
-        Appeal a = appeals.findWithStudent(id).orElseThrow(() -> new IllegalStateException("Bunday murojaat topilmadi"));
+        Appeal a = appeals.findWithStudent(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday murojaat topilmadi"));
         requireVisible(c, a);
         String body = text == null ? "" : text.strip();
         List<MultipartFile> fileList = uploads == null ? List.of() : uploads.stream().filter(f -> !f.isEmpty()).toList();
@@ -403,7 +405,7 @@ public class AppealService {
 
     @Transactional
     public AppealViews.Row close(Caller c, Long id) {
-        Appeal a = appeals.findWithStudent(id).orElseThrow(() -> new IllegalStateException("Bunday murojaat topilmadi"));
+        Appeal a = appeals.findWithStudent(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday murojaat topilmadi"));
         requireVisible(c, a);
         a.setStatus(Status.CLOSED);
         a.setUnreadCount(0);
@@ -417,7 +419,7 @@ public class AppealService {
     @Transactional
     public AppealViews.Row createManual(Caller c, Long studentId, Target target, String text, LocalDateTime at,
                                         String parentName) {
-        Student s = students.findById(studentId).orElseThrow(() -> new IllegalStateException("Bunday o'quvchi topilmadi"));
+        Student s = students.findById(studentId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi topilmadi"));
         School school = NotificationService.schoolOf(s);
         access.requireSchool(c, school.getId());
         if (text == null || text.isBlank()) throw new IllegalStateException("Murojaat matni kerak");
@@ -449,11 +451,11 @@ public class AppealService {
     /** The file of one message — after the same visibility check as the chat. */
     @Transactional(readOnly = true)
     public AppealMessage attachment(Caller c, Long appealId, Long messageId) {
-        Appeal a = appeals.findWithStudent(appealId).orElseThrow(() -> new IllegalStateException("Bunday murojaat topilmadi"));
+        Appeal a = appeals.findWithStudent(appealId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday murojaat topilmadi"));
         requireVisible(c, a);
         AppealMessage m = messages.findById(messageId)
                 .filter(x -> x.getAppeal().getId().equals(appealId) && x.hasFile() && !x.isPending())
-                .orElseThrow(() -> new IllegalStateException("Fayl topilmadi"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fayl topilmadi"));
         if (m.getFileState() != FileState.STORED || m.getStoragePath() == null) {
             throw new IllegalStateException("Fayl hali yuklanmoqda");
         }

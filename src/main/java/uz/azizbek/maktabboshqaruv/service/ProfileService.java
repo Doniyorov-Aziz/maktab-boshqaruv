@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class ProfileService {
@@ -38,7 +40,7 @@ public class ProfileService {
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public StudentProfileDto getStudentProfile(Long studentId) {
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi topilmadi: " + studentId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi topilmadi: " + studentId));
 
         StudentProfileDto dto = new StudentProfileDto();
         dto.setId(student.getId());
@@ -118,7 +120,7 @@ public class ProfileService {
 
     public TeacherProfileDto getTeacherProfile(Long employeeId) {
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new IllegalStateException("Bunday xodim topilmadi: " + employeeId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xodim topilmadi: " + employeeId));
 
         TeacherProfileDto dto = new TeacherProfileDto();
         dto.setId(employee.getId());
@@ -150,7 +152,7 @@ public class ProfileService {
 
     public ClassProfileDto getClassProfile(Long schoolClassId) {
         SchoolClass schoolClass = schoolClassRepository.findById(schoolClassId)
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf topilmadi: " + schoolClassId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf topilmadi: " + schoolClassId));
 
         ClassProfileDto dto = new ClassProfileDto();
         dto.setId(schoolClass.getId());

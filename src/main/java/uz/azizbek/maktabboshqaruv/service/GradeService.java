@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class GradeService {
@@ -88,9 +90,9 @@ public class GradeService {
     @Transactional
     public GradeResponseDto createGrade(GradeRequestDto request) {
         Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi mavjud emas"));
         Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new IllegalStateException("Bunday fan mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday fan mavjud emas"));
 
         validateSameSchool(student, subject);
         requireActive(subject);
@@ -118,12 +120,12 @@ public class GradeService {
     @Transactional
     public GradeResponseDto updateGrade(Long id, GradeRequestDto request) {
         Grade grade = gradeRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday baho yozuvi topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday baho yozuvi topilmadi: " + id));
 
         Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi mavjud emas"));
         Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new IllegalStateException("Bunday fan mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday fan mavjud emas"));
 
         validateSameSchool(student, subject);
         // an old grade of a now-inactive subject can still be corrected; moving a grade to it cannot
@@ -157,7 +159,7 @@ public class GradeService {
     @Transactional
     public void deleteGrade(Long id) {
         if (!gradeRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday baho yozuvi topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday baho yozuvi topilmadi: " + id);
         }
         gradeRepository.deleteById(id);
     }

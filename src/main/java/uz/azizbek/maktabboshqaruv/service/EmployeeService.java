@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class EmployeeService {
@@ -58,7 +60,7 @@ public class EmployeeService {
 
     public EmployeeResponseDto getEmployeeById(Long id) {
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday xodim topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xodim topilmadi: " + id));
         return withTeaching(List.of(employee)).get(0);
     }
 
@@ -69,9 +71,9 @@ public class EmployeeService {
         }
 
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
         Position position = positionRepository.findById(request.getPositionId())
-                .orElseThrow(() -> new IllegalStateException("Bunday lavozim mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday lavozim mavjud emas"));
 
         Employee employee = new Employee();
         employee.setSchool(school);
@@ -88,16 +90,16 @@ public class EmployeeService {
     @Transactional
     public EmployeeResponseDto updateEmployee(Long id, EmployeeRequestDto request) {
         Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday xodim topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xodim topilmadi: " + id));
 
         if (!employee.getPhone().equals(request.getPhone()) && employeeRepository.existsByPhone(request.getPhone())) {
             throw new IllegalStateException("Bu telefon raqam bilan xodim allaqachon mavjud");
         }
 
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
         Position position = positionRepository.findById(request.getPositionId())
-                .orElseThrow(() -> new IllegalStateException("Bunday lavozim mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday lavozim mavjud emas"));
 
         employee.setSchool(school);
         employee.setFirstName(request.getFirstName());
@@ -131,7 +133,7 @@ public class EmployeeService {
     @Transactional
     public void deleteEmployee(Long id) {
         if (!employeeRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday xodim topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xodim topilmadi: " + id);
         }
         employeeRepository.deleteById(id);
     }

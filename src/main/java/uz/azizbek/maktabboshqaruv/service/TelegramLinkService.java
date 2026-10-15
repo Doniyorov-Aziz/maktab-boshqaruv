@@ -17,6 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Admin-side management of parent links and link codes. */
 @Service
@@ -74,7 +76,7 @@ public class TelegramLinkService {
     @Transactional
     public void unlink(Long linkId) {
         ParentTelegramLink link = linkRepository.findById(linkId)
-                .orElseThrow(() -> new IllegalStateException("Bunday bog'lanish topilmadi: " + linkId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday bog'lanish topilmadi: " + linkId));
         link.setActive(false);
         linkRepository.save(link);
         botCache.evictChat(link.getChatId());
@@ -83,7 +85,7 @@ public class TelegramLinkService {
     @Transactional
     public ClassTelegramCodesDto getClassCodes(Long schoolClassId) {
         SchoolClass schoolClass = schoolClassRepository.findById(schoolClassId)
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf mavjud emas"));
         Map<Long, Integer> counts = new HashMap<>();
         for (Object[] row : linkRepository.countActiveByStudentInClass(schoolClassId)) {
             counts.put((Long) row[0], ((Long) row[1]).intValue());
@@ -120,7 +122,7 @@ public class TelegramLinkService {
 
     private Student findStudent(Long id) {
         return studentRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi topilmadi: " + id));
     }
 
     private StudentTelegramDto toDto(Student s, int linkedCount) {

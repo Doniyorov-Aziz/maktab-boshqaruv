@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class SchoolClassService {
@@ -44,14 +46,14 @@ public class SchoolClassService {
 
     public SchoolClassResponseDto getSchoolClassById(Long id) {
         SchoolClass schoolClass = schoolClassRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf topilmadi: " + id));
         return toResponseDto(schoolClass);
     }
 
     @Transactional
     public SchoolClassResponseDto createSchoolClass(SchoolClassRequestDto request) {
         AcademicYear academicYear = academicYearRepository.findById(request.getAcademicYearId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quv yili mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quv yili mavjud emas"));
 
         if (schoolClassRepository.existsByAcademicYearAndGradeNumberAndSectionLetter(
                 academicYear, request.getGradeNumber(), request.getSectionLetter())) {
@@ -72,10 +74,10 @@ public class SchoolClassService {
     @Transactional
     public SchoolClassResponseDto updateSchoolClass(Long id, SchoolClassRequestDto request) {
         SchoolClass schoolClass = schoolClassRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf topilmadi: " + id));
 
         AcademicYear academicYear = academicYearRepository.findById(request.getAcademicYearId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quv yili mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quv yili mavjud emas"));
 
         boolean changed = !academicYear.getId().equals(schoolClass.getAcademicYear().getId())
                 || !request.getGradeNumber().equals(schoolClass.getGradeNumber())
@@ -101,13 +103,13 @@ public class SchoolClassService {
             return null;
         }
         return employeeRepository.findById(classTeacherId)
-                .orElseThrow(() -> new IllegalStateException("Bunday xodim mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xodim mavjud emas"));
     }
 
     @Transactional
     public void deleteSchoolClass(Long id) {
         if (!schoolClassRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday sinf topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf topilmadi: " + id);
         }
         schoolClassRepository.deleteById(id);
     }

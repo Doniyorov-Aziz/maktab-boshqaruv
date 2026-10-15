@@ -14,6 +14,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Monthly attendance calendar of one class: students down, days across, one dot per
@@ -70,7 +72,7 @@ public class AttendanceCalendarService {
     @Transactional(readOnly = true)
     public Month month(Long classId, YearMonth ym) {
         SchoolClass c = classRepository.findById(classId)
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf topilmadi"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf topilmadi"));
         LocalDate from = ym.atDay(1);
         LocalDate to = ym.atEndOfMonth();
 
@@ -123,7 +125,7 @@ public class AttendanceCalendarService {
     @Transactional
     public Cell setDay(Long studentId, LocalDate date, AttendanceStatus status, String comment) {
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi topilmadi"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi topilmadi"));
         if (date.getDayOfWeek() == DayOfWeek.SUNDAY) throw new IllegalStateException("Yakshanba — dars yo'q");
         if (date.isAfter(LocalDate.now(clock))) throw new IllegalStateException("Kelajak kunga davomat qo'yilmaydi");
         SchoolClass c = student.getSchoolClass();

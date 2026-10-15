@@ -20,6 +20,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class BuildingService {
@@ -47,14 +49,14 @@ public class BuildingService {
 
     public BuildingResponseDto getBuildingById(Long id) {
         Building building = buildingRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday bino topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday bino topilmadi: " + id));
         return toResponseDto(building);
     }
 
     @Transactional
     public BuildingResponseDto createBuilding(BuildingRequestDto request) {
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         Building building = new Building();
         building.setSchool(school);
@@ -67,10 +69,10 @@ public class BuildingService {
     @Transactional
     public BuildingResponseDto updateBuilding(Long id, BuildingRequestDto request) {
         Building building = buildingRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday bino topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday bino topilmadi: " + id));
 
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         building.setSchool(school);
         building.setName(request.getName());
@@ -82,7 +84,7 @@ public class BuildingService {
     @Transactional
     public void deleteBuilding(Long id) {
         if (!buildingRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday bino topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday bino topilmadi: " + id);
         }
         buildingRepository.deleteById(id);
     }

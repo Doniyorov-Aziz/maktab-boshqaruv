@@ -15,6 +15,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class UserService {
@@ -87,7 +89,7 @@ public class UserService {
     /** The user by id; a school's own admin gets 403 for a user outside that school (including platform accounts). */
     private User findVisible(Long id, Long school) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday foydalanuvchi topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday foydalanuvchi topilmadi: " + id));
         requireOwnSchool(school, user);
         return user;
     }
@@ -107,7 +109,7 @@ public class UserService {
     private Employee resolveEmployee(Long employeeId) {
         if (employeeId == null) return null;
         return employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new IllegalStateException("Bunday xodim mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xodim mavjud emas"));
     }
 
     @Transactional

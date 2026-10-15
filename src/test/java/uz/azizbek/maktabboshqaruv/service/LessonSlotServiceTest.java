@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalTime;
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -255,6 +256,6 @@ class LessonSlotServiceTest {
     void deleteLessonSlot_notFound_throws() {
         when(lessonSlotRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> lessonSlotService.deleteLessonSlot(1L));
+        assertThrows(ResponseStatusException.class, () -> lessonSlotService.deleteLessonSlot(1L));
     }
 }

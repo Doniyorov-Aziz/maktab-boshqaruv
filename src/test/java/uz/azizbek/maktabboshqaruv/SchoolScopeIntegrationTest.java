@@ -178,5 +178,12 @@ class SchoolScopeIntegrationTest {
         assertEquals(200, superAdmin.get("/api/students/" + a.getId()).status());
         assertEquals(200, superAdmin.get("/api/students/" + b.getId()).status());
         assertTrue(superAdmin.get("/api/schools").json().get("totalElements").asInt() >= 2);
+
+        // an id nothing has: 404 with the reason, not 409
+        ApiClient.Response missing = superAdmin.get("/api/students/" + Long.MAX_VALUE);
+        assertEquals(404, missing.status());
+        assertTrue(missing.body().contains("topilmadi"), missing.body());
+        assertEquals(404, superAdmin.delete("/api/buildings/" + Long.MAX_VALUE).status());
+        assertEquals(404, userOf(school(b), Role.ADMIN).get("/api/students/" + Long.MAX_VALUE).status());
     }
 }

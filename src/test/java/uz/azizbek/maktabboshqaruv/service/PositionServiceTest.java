@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -61,7 +62,7 @@ class PositionServiceTest {
         PositionRequestDto request = new PositionRequestDto();
         request.setTitle("Direktor");
 
-        assertThrows(IllegalStateException.class, () -> positionService.updatePosition(1L, request));
+        assertThrows(ResponseStatusException.class, () -> positionService.updatePosition(1L, request));
     }
 
     @Test
@@ -100,6 +101,6 @@ class PositionServiceTest {
     void deletePosition_notFound_throws() {
         when(positionRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> positionService.deletePosition(1L));
+        assertThrows(ResponseStatusException.class, () -> positionService.deletePosition(1L));
     }
 }

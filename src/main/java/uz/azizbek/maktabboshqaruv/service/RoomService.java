@@ -21,6 +21,8 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class RoomService {
@@ -46,14 +48,14 @@ public class RoomService {
 
     public RoomResponseDto getRoomById(Long id) {
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday xona topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xona topilmadi: " + id));
         return toResponseDto(room);
     }
 
     @Transactional
     public RoomResponseDto createRoom(RoomRequestDto request) {
         Building building = buildingRepository.findById(request.getBuildingId())
-                .orElseThrow(() -> new IllegalStateException("Bunday bino mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday bino mavjud emas"));
 
         Room room = new Room();
         room.setBuilding(building);
@@ -71,10 +73,10 @@ public class RoomService {
     @Transactional
     public RoomResponseDto updateRoom(Long id, RoomRequestDto request) {
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday xona topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xona topilmadi: " + id));
 
         Building building = buildingRepository.findById(request.getBuildingId())
-                .orElseThrow(() -> new IllegalStateException("Bunday bino mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday bino mavjud emas"));
 
         room.setBuilding(building);
         room.setRoomNumber(request.getRoomNumber());
@@ -91,7 +93,7 @@ public class RoomService {
     @Transactional
     public void deleteRoom(Long id) {
         if (!roomRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday xona topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xona topilmadi: " + id);
         }
         roomRepository.deleteById(id);
     }

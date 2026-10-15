@@ -23,6 +23,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Read side of the outbox for the "Xabarnomalar" page, plus manual retry. */
 @Service
@@ -82,7 +84,7 @@ public class NotificationQueryService {
     @Transactional
     public NotificationLogDto retry(Long id) {
         NotificationLog n = notificationLogRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday xabarnoma topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xabarnoma topilmadi: " + id));
         if (n.getStatus() != NotificationStatus.FAILED) {
             throw new IllegalStateException("Faqat xato (FAILED) holatidagi xabarni qayta yuborish mumkin");
         }

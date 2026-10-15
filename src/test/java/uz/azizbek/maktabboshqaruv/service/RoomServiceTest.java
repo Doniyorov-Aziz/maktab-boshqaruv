@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,7 +51,7 @@ class RoomServiceTest {
         RoomRequestDto request = validRequest();
         when(buildingRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> roomService.createRoom(request));
+        assertThrows(ResponseStatusException.class, () -> roomService.createRoom(request));
         verify(roomRepository, never()).save(any());
     }
 
@@ -79,6 +80,6 @@ class RoomServiceTest {
     void deleteRoom_notFound_throws() {
         when(roomRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> roomService.deleteRoom(1L));
+        assertThrows(ResponseStatusException.class, () -> roomService.deleteRoom(1L));
     }
 }

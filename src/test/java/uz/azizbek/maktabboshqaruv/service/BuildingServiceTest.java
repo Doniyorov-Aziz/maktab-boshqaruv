@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,7 +49,7 @@ class BuildingServiceTest {
         request.setName("Asosiy bino");
         when(schoolRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> buildingService.createBuilding(request));
+        assertThrows(ResponseStatusException.class, () -> buildingService.createBuilding(request));
         verify(buildingRepository, never()).save(any());
     }
 
@@ -79,14 +80,14 @@ class BuildingServiceTest {
     void getBuildingById_notFound_throws() {
         when(buildingRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> buildingService.getBuildingById(1L));
+        assertThrows(ResponseStatusException.class, () -> buildingService.getBuildingById(1L));
     }
 
     @Test
     void deleteBuilding_notFound_throws() {
         when(buildingRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> buildingService.deleteBuilding(1L));
+        assertThrows(ResponseStatusException.class, () -> buildingService.deleteBuilding(1L));
     }
 
     @Test

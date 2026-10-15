@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Subjects are never deleted. "O'chirish" makes a subject inactive; renaming a subject
@@ -66,7 +68,7 @@ public class SubjectService {
     @Transactional
     public SubjectResponseDto createSubject(SubjectRequestDto request) {
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         if (subjectRepository.existsActiveBySchoolIdAndName(school.getId(), request.getName())) {
             throw new IllegalStateException("Bu fan ushbu maktabda allaqachon mavjud");
@@ -83,7 +85,7 @@ public class SubjectService {
     public SubjectResponseDto updateSubject(Long id, SubjectRequestDto request) {
         Subject subject = find(id);
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         boolean renamed = !request.getName().equals(subject.getName());
         if (!renamed) return toResponseDto(subject);
@@ -132,7 +134,7 @@ public class SubjectService {
 
     private Subject find(Long id) {
         return subjectRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday fan topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday fan topilmadi: " + id));
     }
 
     private SubjectResponseDto toResponseDto(Subject subject) {

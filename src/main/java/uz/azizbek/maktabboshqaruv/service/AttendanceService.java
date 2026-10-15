@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AttendanceService {
@@ -90,7 +92,7 @@ public class AttendanceService {
 
     public List<AttendanceRosterEntryDto> getRoster(Long lessonSlotId, LocalDate date) {
         LessonSlot lessonSlot = lessonSlotRepository.findById(lessonSlotId)
-                .orElseThrow(() -> new IllegalStateException("Bunday dars mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars mavjud emas"));
 
         List<Student> students = studentRepository
                 .findBySchoolClassIdOrderByLastNameAscFirstNameAsc(lessonSlot.getSchoolClass().getId());
@@ -119,7 +121,7 @@ public class AttendanceService {
     @Transactional
     public List<AttendanceRosterEntryDto> bulkMark(AttendanceBulkRequestDto request) {
         LessonSlot lessonSlot = lessonSlotRepository.findById(request.getLessonSlotId())
-                .orElseThrow(() -> new IllegalStateException("Bunday dars mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars mavjud emas"));
 
         Map<Long, Attendance> existing = new HashMap<>();
         for (Attendance a : attendanceRepository.findByLessonSlotIdAndRecordDate(request.getLessonSlotId(), request.getRecordDate())) {
@@ -128,7 +130,7 @@ public class AttendanceService {
 
         for (AttendanceBulkRequestDto.Entry entry : request.getEntries()) {
             Student student = studentRepository.findById(entry.getStudentId())
-                    .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi mavjud emas: " + entry.getStudentId()));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi mavjud emas: " + entry.getStudentId()));
             if (!student.getSchoolClass().getId().equals(lessonSlot.getSchoolClass().getId())) {
                 throw new IllegalStateException("O'quvchi ushbu darsning sinfiga tegishli emas: " + entry.getStudentId());
             }
@@ -159,9 +161,9 @@ public class AttendanceService {
     @Transactional
     public AttendanceResponseDto createAttendance(AttendanceRequestDto request) {
         LessonSlot lessonSlot = lessonSlotRepository.findById(request.getLessonSlotId())
-                .orElseThrow(() -> new IllegalStateException("Bunday dars mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars mavjud emas"));
         Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quvchi mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi mavjud emas"));
 
         if (!student.getSchoolClass().getId().equals(lessonSlot.getSchoolClass().getId())) {
             throw new IllegalStateException("O'quvchi ushbu darsning sinfiga tegishli emas");
@@ -186,7 +188,7 @@ public class AttendanceService {
     @Transactional
     public AttendanceResponseDto updateAttendance(Long id, AttendanceRequestDto request) {
         Attendance attendance = attendanceRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday davomat yozuvi topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday davomat yozuvi topilmadi: " + id));
 
         AttendanceStatus previousStatus = attendance.getStatus();
         attendance.setStatus(request.getStatus());
@@ -208,7 +210,7 @@ public class AttendanceService {
     @Transactional
     public void deleteAttendance(Long id) {
         if (!attendanceRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday davomat yozuvi topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday davomat yozuvi topilmadi: " + id);
         }
         attendanceRepository.deleteById(id);
     }

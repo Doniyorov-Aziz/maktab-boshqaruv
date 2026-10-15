@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,7 +85,7 @@ class EmployeeServiceTest {
         when(employeeRepository.existsByPhone(request.getPhone())).thenReturn(false);
         when(schoolRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> employeeService.createEmployee(request));
+        assertThrows(ResponseStatusException.class, () -> employeeService.createEmployee(request));
         verify(positionRepository, never()).findById(any());
         verify(employeeRepository, never()).save(any());
     }
@@ -96,7 +97,7 @@ class EmployeeServiceTest {
         when(schoolRepository.findById(1L)).thenReturn(Optional.of(school()));
         when(positionRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> employeeService.createEmployee(request));
+        assertThrows(ResponseStatusException.class, () -> employeeService.createEmployee(request));
         verify(employeeRepository, never()).save(any());
     }
 
@@ -171,6 +172,6 @@ class EmployeeServiceTest {
     void deleteEmployee_notFound_throws() {
         when(employeeRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> employeeService.deleteEmployee(1L));
+        assertThrows(ResponseStatusException.class, () -> employeeService.deleteEmployee(1L));
     }
 }

@@ -14,6 +14,8 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /** "Bot sozlamalari": school contacts and automatic-message times for the parent bot. */
 @Service
@@ -55,7 +57,7 @@ public class BotSettingService {
 
     private School findSchool(Long schoolId) {
         return schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
     }
 
     private static String blankToNull(String s) {

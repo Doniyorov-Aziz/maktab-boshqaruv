@@ -19,6 +19,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -147,7 +148,7 @@ class TelegramMockFlowIntegrationTest {
         parentOpensDeepLink();
 
         // Second entry references a non-existent student -> exception -> whole transaction rolls back.
-        assertThrows(IllegalStateException.class,
+        assertThrows(ResponseStatusException.class,
                 () -> attendanceService.bulkMark(mark(AttendanceStatus.ABSENT, Long.MAX_VALUE)));
 
         assertTrue(attendanceRepository.findByLessonSlotIdAndRecordDate(slot.getId(), DATE).isEmpty());

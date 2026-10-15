@@ -11,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AcademicYearService {
@@ -28,7 +30,7 @@ public class AcademicYearService {
 
     public AcademicYearResponseDto getAcademicYearById(Long id) {
         AcademicYear academicYear = academicYearRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quv yili topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quv yili topilmadi: " + id));
         return toResponseDto(academicYear);
     }
 
@@ -37,7 +39,7 @@ public class AcademicYearService {
         validateDateRange(request);
 
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         AcademicYear academicYear = new AcademicYear();
         academicYear.setSchool(school);
@@ -52,12 +54,12 @@ public class AcademicYearService {
     @Transactional
     public AcademicYearResponseDto updateAcademicYear(Long id, AcademicYearRequestDto request) {
         AcademicYear academicYear = academicYearRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday o'quv yili topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quv yili topilmadi: " + id));
 
         validateDateRange(request);
 
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         academicYear.setSchool(school);
         academicYear.setTitle(request.getTitle());
@@ -71,7 +73,7 @@ public class AcademicYearService {
     @Transactional
     public void deleteAcademicYear(Long id) {
         if (!academicYearRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday o'quv yili topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quv yili topilmadi: " + id);
         }
         academicYearRepository.deleteById(id);
     }

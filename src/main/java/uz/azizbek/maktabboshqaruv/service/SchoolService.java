@@ -12,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class SchoolService {
@@ -44,7 +46,7 @@ public class SchoolService {
 
     public SchoolResponseDto getSchoolById(Long id) {
         School school = schoolRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab topilmadi: " + id));
         return toResponseDto(school);
 
     }
@@ -64,7 +66,7 @@ public class SchoolService {
     public SchoolResponseDto updateSchool(Long id, SchoolRequestDto request){
 
         School school = schoolRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab topilmadi: " + id));
 
         school.setName(request.getName());
         school.setAddress(request.getAddress());
@@ -77,7 +79,7 @@ public class SchoolService {
     @Transactional
     public void deleteSchool(Long id){
         if(!schoolRepository.existsById(id)){
-            throw new IllegalStateException("Bunday maktab topilmadi: " + id) ;
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab topilmadi: " + id) ;
 
         }
         schoolRepository.deleteById(id);

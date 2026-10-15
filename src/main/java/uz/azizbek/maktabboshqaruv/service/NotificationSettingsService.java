@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class NotificationSettingsService {
@@ -34,14 +36,14 @@ public class NotificationSettingsService {
 
     public NotificationSettingsDto getSettings(Long schoolId) {
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
         return toDto(getOrDefault(school));
     }
 
     @Transactional
     public NotificationSettingsDto updateSettings(Long schoolId, NotificationSettingsDto request) {
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
         NotificationSettings settings = getOrDefault(school);
 
         settings.setAttendanceEnabled(request.getAttendanceEnabled());

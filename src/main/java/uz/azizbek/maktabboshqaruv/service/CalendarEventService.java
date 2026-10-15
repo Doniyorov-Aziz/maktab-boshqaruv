@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CalendarEventService {
@@ -46,7 +48,7 @@ public class CalendarEventService {
     @Transactional
     public CalendarEventResponseDto createEvent(CalendarEventRequestDto request) {
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
         validateDateRange(request);
 
         CalendarEvent event = new CalendarEvent();
@@ -61,9 +63,9 @@ public class CalendarEventService {
     @Transactional
     public CalendarEventResponseDto updateEvent(Long id, CalendarEventRequestDto request) {
         CalendarEvent event = calendarEventRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday tadbir topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday tadbir topilmadi: " + id));
         School school = schoolRepository.findById(request.getSchoolId())
-                .orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
         validateDateRange(request);
 
         event.setSchool(school);
@@ -77,7 +79,7 @@ public class CalendarEventService {
     @Transactional
     public void deleteEvent(Long id) {
         if (!calendarEventRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday tadbir topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday tadbir topilmadi: " + id);
         }
         calendarEventRepository.deleteById(id);
         botCache.evictEvents();

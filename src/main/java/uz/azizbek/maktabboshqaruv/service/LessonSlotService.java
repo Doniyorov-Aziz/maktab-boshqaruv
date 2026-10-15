@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class LessonSlotService {
@@ -82,7 +84,7 @@ public class LessonSlotService {
 
     public LessonSlotResponseDto getLessonSlotById(Long id) {
         LessonSlot lessonSlot = lessonSlotRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday dars jadvali topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars jadvali topilmadi: " + id));
         return toResponseDto(lessonSlot);
     }
 
@@ -91,13 +93,13 @@ public class LessonSlotService {
         validateTimeRange(request);
 
         SchoolClass schoolClass = schoolClassRepository.findById(request.getSchoolClassId())
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf mavjud emas"));
         Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new IllegalStateException("Bunday fan mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday fan mavjud emas"));
         Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'qituvchi mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'qituvchi mavjud emas"));
         Room room = roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new IllegalStateException("Bunday xona mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xona mavjud emas"));
 
         validateSameSchool(schoolClass, subject, employee, room);
         if (!subject.isActive()) {
@@ -122,18 +124,18 @@ public class LessonSlotService {
     @Transactional
     public LessonSlotResponseDto updateLessonSlot(Long id, LessonSlotRequestDto request) {
         LessonSlot lessonSlot = lessonSlotRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("Bunday dars jadvali topilmadi: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars jadvali topilmadi: " + id));
 
         validateTimeRange(request);
 
         SchoolClass schoolClass = schoolClassRepository.findById(request.getSchoolClassId())
-                .orElseThrow(() -> new IllegalStateException("Bunday sinf mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf mavjud emas"));
         Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new IllegalStateException("Bunday fan mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday fan mavjud emas"));
         Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new IllegalStateException("Bunday o'qituvchi mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'qituvchi mavjud emas"));
         Room room = roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new IllegalStateException("Bunday xona mavjud emas"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday xona mavjud emas"));
 
         validateSameSchool(schoolClass, subject, employee, room);
         if (!subject.isActive() && (lessonSlot.getSubject() == null || !lessonSlot.getSubject().getId().equals(subject.getId()))) {
@@ -157,7 +159,7 @@ public class LessonSlotService {
     @Transactional
     public void deleteLessonSlot(Long id) {
         if (!lessonSlotRepository.existsById(id)) {
-            throw new IllegalStateException("Bunday dars jadvali topilmadi: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars jadvali topilmadi: " + id);
         }
         lessonSlotRepository.deleteById(id);
         botCache.evictAllClasses();

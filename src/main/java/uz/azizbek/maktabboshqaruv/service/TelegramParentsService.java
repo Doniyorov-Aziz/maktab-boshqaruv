@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * "Sinf bo'yicha ota-onalar": every student of a class with the parents linked in the
@@ -55,7 +57,7 @@ public class TelegramParentsService {
     /** {@code status}: ALL, LINKED or NOT_LINKED. Two queries whatever the class size. */
     @Transactional(readOnly = true)
     public ClassParents byClass(SchoolAccessService.Caller caller, Long classId, String status) {
-        SchoolClass c = classes.findById(classId).orElseThrow(() -> new IllegalStateException("Sinf topilmadi"));
+        SchoolClass c = classes.findById(classId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sinf topilmadi"));
         if (caller.schoolId() != null && !caller.schoolId().equals(c.getAcademicYear().getSchool().getId())) {
             throw new ForbiddenException("Boshqa maktab ma'lumotiga ruxsat yo'q");
         }

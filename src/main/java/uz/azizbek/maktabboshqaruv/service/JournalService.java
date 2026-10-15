@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.util.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * The class journal ("Baholar jurnali"): a month of one subject for one class, the class
@@ -134,7 +136,7 @@ public class JournalService {
     @Transactional(readOnly = true)
     public Overview overview(Long classId) {
         List<Object[]> header = classes.header(classId);
-        if (header.isEmpty()) throw new IllegalStateException("Sinf topilmadi");
+        if (header.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sinf topilmadi");
         Object[] h = header.get(0);
         String className = h[1] + "-" + h[2];
         Long schoolId = (Long) h[3];

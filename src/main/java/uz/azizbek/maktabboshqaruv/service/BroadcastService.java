@@ -29,6 +29,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * "Ota-onalarga xabar" (ADMIN): one message — text and/or up to 10 photos, videos or
@@ -241,11 +243,11 @@ public class BroadcastService {
     }
 
     private School school(Long schoolId) {
-        return schoolRepository.findById(schoolId).orElseThrow(() -> new IllegalStateException("Bunday maktab mavjud emas"));
+        return schoolRepository.findById(schoolId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
     }
 
     private Broadcast find(Long id) {
-        return broadcastRepository.findById(id).orElseThrow(() -> new IllegalStateException("Xabar topilmadi"));
+        return broadcastRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Xabar topilmadi"));
     }
 
     private List<String> classNames(List<Long> ids) {

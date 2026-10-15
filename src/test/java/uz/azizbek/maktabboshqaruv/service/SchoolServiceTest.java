@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -69,7 +70,7 @@ class SchoolServiceTest {
     void getSchoolById_notFound_throws() {
         when(schoolRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> schoolService.getSchoolById(1L));
+        assertThrows(ResponseStatusException.class, () -> schoolService.getSchoolById(1L));
     }
 
     @Test
@@ -98,14 +99,14 @@ class SchoolServiceTest {
         request.setName("Maktab 1");
         request.setAddress("Toshkent");
 
-        assertThrows(IllegalStateException.class, () -> schoolService.updateSchool(1L, request));
+        assertThrows(ResponseStatusException.class, () -> schoolService.updateSchool(1L, request));
     }
 
     @Test
     void deleteSchool_notFound_throws() {
         when(schoolRepository.existsById(1L)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> schoolService.deleteSchool(1L));
+        assertThrows(ResponseStatusException.class, () -> schoolService.deleteSchool(1L));
         verify(schoolRepository, never()).deleteById(any());
     }
 
