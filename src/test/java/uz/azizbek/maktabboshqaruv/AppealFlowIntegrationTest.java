@@ -19,6 +19,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -88,6 +89,10 @@ class AppealFlowIntegrationTest {
     private PasswordEncoder encoder;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private TransactionTemplate tx;
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.appeal.AppealService appealService;
     @Autowired
     private SchoolClassRepository schoolClasses;
     @Autowired
@@ -437,6 +442,37 @@ class AppealFlowIntegrationTest {
                 + "/attachments/" + (file.getId() + 1) + "?t=" + token)).GET().build(), HttpResponse.BodyHandlers.discarding()).statusCode());
         assertEquals(403, http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + url + "x")).GET().build(),
                 HttpResponse.BodyHandlers.discarding()).statusCode());
+    }
+
+    /**
+     * The file download (its own thread) and "✅ Yuborish" change the same row at the same time:
+     * each must keep the other's change — the sent file stays visible and its state stays STORED.
+     */
+    @Test
+    void sendingWhileTheFileDownloads_losesNeitherChange() throws Exception {
+        tap("msg:a:to:to:AD");
+        send(message(null, null, null, null, null,
+                new TelegramModels.Document(upload("%PDF-1.4"), "u30", "b.pdf", "application/pdf", 8L), null));
+        Long appealId = appeals.findFirstByChatIdAndStatusOrderByIdDesc(chatId, AppealEnums.Status.DRAFT).orElseThrow().getId();
+        Long fileId = appealMessages.pendingOf(appealId).get(0).getId();
+
+        // the download has read the row (still composing) when the parent presses "Yuborish"
+        tx.executeWithoutResult(s -> {
+            AppealMessage m = appealMessages.findById(fileId).orElseThrow();
+            Thread submit = new Thread(() -> appealService.submit(chatId, appealId));
+            submit.start();
+            try {
+                submit.join();
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+            m.setStoragePath("x/b.pdf");
+            m.setFileState(AppealEnums.FileState.STORED);
+        });
+
+        AppealMessage after = appealMessages.findById(fileId).orElseThrow();
+        assertEquals(1, appealMessages.visibleOf(appealId).size(), "the sent file is visible to the school");
+        assertEquals(AppealEnums.FileState.STORED, after.getFileState());
     }
 
     private String login(String username) throws Exception {

@@ -1,6 +1,7 @@
 package uz.azizbek.maktabboshqaruv.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.LocalDateTime;
 
@@ -9,8 +10,13 @@ import java.time.LocalDateTime;
  * document, round video). Files are kept on our own disk ({@code storagePath},
  * relative to app.storage.path) — never as a Telegram file URL, which would
  * contain the bot token.
+ * <p>
+ * {@code @DynamicUpdate}: an UPDATE writes only the columns that changed. The file download
+ * (its own thread) and "✅ Yuborish" change the same row at the same time — one sets the
+ * file state, the other {@code pending} — and neither may write back the other's old value.
  */
 @Entity
+@DynamicUpdate
 @Table(name = "appeal_message", indexes = {
         @Index(name = "idx_appeal_message_appeal_created", columnList = "appeal_id, created_at")
 })
