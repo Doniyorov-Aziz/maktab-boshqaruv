@@ -40,6 +40,10 @@
       </li>
     </ul>
 
+    <template v-if="data && data.length" #footer>
+      Raqamli qator bosilsa — to'liq ro'yxat va amallar ochiladi
+    </template>
+
     <SidePanel
       v-model="panelOpen"
       :title="current?.title || ''"

@@ -318,3 +318,10 @@ body.body--dark {
   --avatar-4: #be185d;
   --avatar-5: #b45309;
 }
+
+// wide screens: a bigger health ring (declared after the home page tokens above)
+@media (min-width: 1920px) {
+  :root {
+    --ring-hero: 210px;
+  }
+}
