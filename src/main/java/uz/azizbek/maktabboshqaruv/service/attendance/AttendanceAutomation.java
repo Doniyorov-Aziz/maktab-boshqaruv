@@ -111,6 +111,12 @@ public class AttendanceAutomation {
         return new Result(carried, simulated, reminders, false);
     }
 
+    /** One pass for one school (tests, and a manual "run now"). */
+    @Transactional
+    public Result runFor(long schoolId) {
+        return runForSchool(schoolId);
+    }
+
     Result runForSchool(long schoolId) {
         LocalDateTime nowDt = LocalDateTime.now(clock);
         LocalDate today = nowDt.toLocalDate();

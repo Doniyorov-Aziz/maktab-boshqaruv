@@ -418,7 +418,7 @@ public class HomeDashboardService {
         for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
                 select class_id, (d >= :month) as cur,
                        count(*) filter (where status in ('PRESENT', 'LATE')) as present, count(*) as marked
-                  from day group by class_id, (d >= :month)""",
+                  from day group by 1, 2""",
                 p(schoolId).addValue("from", prevStart).addValue("to", today).addValue("month", monthStart))) {
             long[] v = att.computeIfAbsent(l(r.get("class_id")), k -> new long[4]);
             int off = Boolean.TRUE.equals(r.get("cur")) ? 0 : 2;
@@ -432,7 +432,7 @@ public class HomeDashboardService {
                   from grade g join students st on st.id = g.student_id
                   join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
                  where y.school_id = :s and g.grade_date between :from and :to
-                 group by st.class_id, (g.grade_date >= :month)""",
+                 group by 1, 2""",
                 p(schoolId).addValue("from", prevStart).addValue("to", today).addValue("month", monthStart))) {
             long[] v = gr.computeIfAbsent(l(r.get("class_id")), k -> new long[6]);
             int off = Boolean.TRUE.equals(r.get("cur")) ? 0 : 3;

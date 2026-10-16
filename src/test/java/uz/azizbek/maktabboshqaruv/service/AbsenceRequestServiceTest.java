@@ -3,6 +3,7 @@ package uz.azizbek.maktabboshqaruv.service;
 import uz.azizbek.maktabboshqaruv.entity.*;
 import uz.azizbek.maktabboshqaruv.repository.AbsenceRequestRepository;
 import uz.azizbek.maktabboshqaruv.repository.AttendanceRepository;
+import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter;
 import uz.azizbek.maktabboshqaruv.repository.CalendarEventRepository;
 import uz.azizbek.maktabboshqaruv.repository.LessonSlotRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,8 @@ class AbsenceRequestServiceTest {
     private AbsenceRequestRepository repository;
     @Mock
     private AttendanceRepository attendanceRepository;
+    @Mock
+    private AttendanceWriter writer;
     @Mock
     private LessonSlotRepository lessonSlotRepository;
     @Mock
@@ -73,24 +76,16 @@ class AbsenceRequestServiceTest {
     }
 
     @Test
-    void approve_marksEveryLessonOfTheDaysExcused_updatingOrCreating() {
-        Attendance existing = new Attendance();
-        existing.setLessonSlot(wed1);
-        existing.setStudent(ali);
-        existing.setRecordDate(LocalDate.of(2026, 9, 30));
-        existing.setStatus(AttendanceStatus.ABSENT);
+    void approve_marksEveryLessonOfTheDaysExcused_asTheApprover() {
         when(calendarEventRepository.findInRange(anyLong(), any(), any())).thenReturn(List.of());
-        when(attendanceRepository.findByLessonSlotIdAndStudentIdAndRecordDate(eq(1L), eq(100L), any())).thenReturn(Optional.of(existing));
-        when(attendanceRepository.findByLessonSlotIdAndStudentIdAndRecordDate(eq(2L), eq(100L), any())).thenReturn(Optional.empty());
-        when(attendanceRepository.findByLessonSlotIdAndStudentIdAndRecordDate(eq(3L), eq(100L), any())).thenReturn(Optional.empty());
 
         var dto = service.approve(7L, "sinf_rahbari");
 
-        ArgumentCaptor<Attendance> saved = ArgumentCaptor.forClass(Attendance.class);
-        verify(attendanceRepository, times(3)).save(saved.capture());
-        assertTrue(saved.getAllValues().stream().allMatch(a -> a.getStatus() == AttendanceStatus.EXCUSED));
-        assertSame(existing, saved.getAllValues().get(0), "the ABSENT record is turned into EXCUSED, not duplicated");
-        assertEquals(LocalDate.of(2026, 10, 1), saved.getAllValues().get(2).getRecordDate(), "Thursday's lesson is created in advance");
+        // Wednesday: two lessons, Thursday: one — each an EXCUSED manual mark by the approver
+        verify(writer).saveManual(anyLong(), eq(1L), eq(LocalDate.of(2026, 9, 30)),
+                eq(List.of(new AttendanceWriter.ManualMark(100L, AttendanceStatus.EXCUSED, "Sababli ariza #7"))), eq("sinf_rahbari"));
+        verify(writer).saveManual(anyLong(), eq(2L), eq(LocalDate.of(2026, 9, 30)), any(), eq("sinf_rahbari"));
+        verify(writer).saveManual(anyLong(), eq(3L), eq(LocalDate.of(2026, 10, 1)), any(), eq("sinf_rahbari"));
         assertEquals(AbsenceStatus.APPROVED, request.getStatus());
         assertEquals(3, dto.getExcusedLessons());
         verify(notificationService).enqueueDirect(eq(school), eq(ali), eq(555L), eq(NotificationType.ABSENCE_DECISION),
@@ -104,7 +99,6 @@ class AbsenceRequestServiceTest {
         holiday.setStartDate(LocalDate.of(2026, 10, 1));
         holiday.setEndDate(LocalDate.of(2026, 10, 1));
         when(calendarEventRepository.findInRange(anyLong(), any(), any())).thenReturn(List.of(holiday));
-        when(attendanceRepository.findByLessonSlotIdAndStudentIdAndRecordDate(anyLong(), eq(100L), any())).thenReturn(Optional.empty());
 
         assertEquals(2, service.approve(7L, "admin").getExcusedLessons(), "only Wednesday's two lessons");
     }
@@ -115,7 +109,7 @@ class AbsenceRequestServiceTest {
         service.reject(7L, "Ma'lumotnoma kerak", "admin");
         assertEquals(AbsenceStatus.REJECTED, request.getStatus());
         assertEquals("Ma'lumotnoma kerak", request.getDecisionNote());
-        verify(attendanceRepository, never()).save(any());
+        verify(writer, never()).saveManual(anyLong(), anyLong(), any(), any(), any());
         verify(notificationService).enqueueDirect(any(), any(), eq(555L), eq(NotificationType.ABSENCE_DECISION), eq(7L), any(), any(), isNull());
     }
 
