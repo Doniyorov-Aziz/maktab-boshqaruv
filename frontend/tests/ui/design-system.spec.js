@@ -68,12 +68,12 @@ function checkControls() {
     if (r !== (sm ? RS : RM))
       bad.push(`AppButton ${name(btn)} radius ${r} ≠ ${sm ? RS : RM}`)
   }
-  // every button we write is an AppButton (Quasar's own inside dates, tables, toggles aside)
+  // every button we write is an AppButton (Quasar draws its own in toasts, dates, tables and toggles)
   for (const btn of document.querySelectorAll('.q-btn:not(.app-btn)')) {
     if (
       !visible(btn) ||
       btn.closest(
-        '.q-date, .q-time, .q-table__bottom, .q-btn-toggle, .q-btn-group, .q-tabs, .q-dialog__inner > .q-card > .q-card__actions .q-btn-group'
+        '.q-notification, .q-date, .q-time, .q-table__bottom, .q-btn-toggle, .q-btn-group, .q-tabs'
       )
     )
       continue

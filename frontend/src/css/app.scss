@@ -91,6 +91,7 @@
 }
 
 body.body--dark {
+  --c-border-control: rgba(255, 255, 255, 0.18);
   --page-bg: #{$brand-page-bg-dark};
   --card-bg: #{$brand-card-bg-dark};
   --surface-2: #{$brand-surface-2-dark};

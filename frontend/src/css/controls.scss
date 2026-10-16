@@ -7,12 +7,17 @@
   border-radius: var(--radius-md);
 
   &::before {
-    border: var(--border);
+    border: var(--border-control);
   }
 
   &::after {
     border-radius: var(--radius-md);
   }
+}
+
+// Quasar's dark theme paints the frame almost white; ours follows the token
+.q-field--dark.q-field--outlined .q-field__control::before {
+  border-color: var(--c-border-control);
 }
 
 // read-only (date fields, pickers) and disabled look like any other field: never dashed

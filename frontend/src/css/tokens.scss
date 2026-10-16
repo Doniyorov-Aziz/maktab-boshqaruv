@@ -25,11 +25,8 @@
   --space-7: 40px;
   --space-8: 48px;
 
-  // Borders read the theme colors (app.scss flips them for dark mode).
-  --c-border: var(--brand-border);
-  --c-primary: var(--q-primary);
-  --border: 1px solid var(--c-border);
-  --border-focus: 2px solid var(--c-primary);
+  // fields and outlined buttons need a little more contrast than a card edge
+  --c-border-control: #cbd5e1;
 
   // Icon tiles: three sizes only.
   --tile-sm: 32px;
@@ -126,6 +123,16 @@
   --wa-chart-h: 190px;
   --hairline: 1px;
   --accent-bar: 3px;
+}
+
+// Borders read the theme colours. They are declared on body (where app.scss
+// switches the theme with body--dark), so they pick up the dark values too.
+body {
+  --c-border: var(--brand-border);
+  --c-primary: var(--q-primary);
+  --border: 1px solid var(--c-border);
+  --border-control: 1px solid var(--c-border-control);
+  --border-focus: 2px solid var(--c-primary);
 }
 
 @media (min-width: 600px) {

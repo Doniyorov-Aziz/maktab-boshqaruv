@@ -16,30 +16,34 @@ Tekshiruv muhiti (sessiya uzilsa qayta ko'tarish):
 - ✅ Shu fayl
 
 ## 1. Tokenlar
-- ❌ `src/css/tokens.scss` — radius, control-h, space, border
-- ❌ Quasar SASS o'zgaruvchilari tokenlarga
-- ❌ `IconTile.vue` (32/40/48)
+- ✅ `src/css/tokens.scss` — radius, control-h, space, border (+ `controls.scss` — Quasar'ga qo'llanishi)
+- ✅ Quasar SASS o'zgaruvchilari tokenlarga
+- ✅ `IconTile.vue` (32/40/48)
 
 ## 2. Forma komponentlari
-- ❌ AppInput, AppSelect, AppDateInput, AppButton
-- ❌ Lint qoidasi: pages/ va layouts/ da q-input/q-select/q-btn taqiq
+- ✅ AppInput, AppSelect, AppDateInput, AppButton (+ AppTimeInput)
+- ✅ Lint qoidasi: `src/components/app/` dan tashqarida q-input/q-select/q-btn va QInput/QSelect/QBtn importi — xato (ESLint `eslint.config.js`)
 
 ## 3. Layout
-- ❌ PageLayout: max-width yo'q, padding breakpoint bo'yicha
-- ❌ Kartochkali sahifalar — auto-fill grid
-- ❌ Jadval/kalendar sahifalari — ichki scroll
-- ❌ Grafiklar — konteynerga moslashadi, 240/300/360
-- ❌ Sidebar ≥1024 ochiq, <1024 drawer
-- ❌ PageHeader bo'shliqlari --space-6
+- ✅ PageLayout: max-width yo'q, padding breakpoint bo'yicha
+- ✅ Kartochkali sahifalar — auto-fill grid
+- ✅ Jadval/kalendar sahifalari — ichki scroll
+- ✅ Grafiklar — konteynerga moslashadi, 240/300/360
+- ✅ Sidebar ≥1024 ochiq, <1024 drawer
+- ✅ PageHeader bo'shliqlari --space-6
 
 ## 4. Hamma sahifalar
-- ❌ Har sahifa va dialog yangi komponentlarga
-- ❌ Qattiq qiymatlar grep'i bo'sh
-- ❌ Dark/light tekshiruvi
+- ✅ Har sahifa va dialog yangi komponentlarga
+- ✅ Qattiq qiymatlar grep'i bo'sh
+- ✅ Dark/light tekshiruvi
 
 ## Tekshiruv
-- ❌ lint + build; lint qoidasi isboti
-- ❌ O'lcham testi (Playwright, 1440×900) — `npm test`
-- ❌ Layout testi (1920, 2560, 390)
-- ❌ `after/` skrinshotlari, ko'zdan tekshirish
-- ❌ `REPORT.md`
+- ✅ lint + build; lint qoidasi isboti
+- ✅ O'lcham testi (Playwright, 1440×900) — `npm test`
+- ✅ Layout testi (1920, 2560, 390)
+- ✅ `after/` skrinshotlari, ko'zdan tekshirish
+- ✅ `REPORT.md`
+
+## Holat
+
+Hammasi bajarildi (2026-10-16). Natijalar: `REPORT.md`. Branch `feature/ui-system` — push qilinmagan, main'ga merge qilinmagan.
