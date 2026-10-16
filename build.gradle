@@ -41,6 +41,8 @@ dependencies {
 }
 
 tasks.named('test') {
+	// many cached Spring test contexts (each with its own pool) need more than the 512 MB default
+	maxHeapSize = '1g'
 	useJUnitPlatform {
 		excludeTags 'load', 'wikisource'
 	}
