@@ -1,0 +1,97 @@
+// Design tokens — the one place sizes, radii, spacing and borders are written
+// as numbers. Everything else (pages, components, Quasar overrides) reads
+// these variables; tests/ui/hardcoded.js fails on raw px values elsewhere.
+
+:root {
+  // Radius: sm — chips, badges, small buttons, icon tiles; md — every input,
+  // select, date and button; lg — cards, panels, dialogs.
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  // One control height for every input / select / date / button on desktop;
+  // the small one only for compact buttons and chips inside tables.
+  --control-h: 40px;
+  --control-h-sm: 32px;
+
+  // Spacing scale.
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+
+  // Borders read the theme colors (app.scss flips them for dark mode).
+  --c-border: var(--brand-border);
+  --c-primary: var(--q-primary);
+  --border: 1px solid var(--c-border);
+  --border-focus: 2px solid var(--c-primary);
+
+  // Icon tiles: three sizes only.
+  --tile-sm: 32px;
+  --tile-md: 40px;
+  --tile-lg: 48px;
+
+  // Page frame. The side padding grows with the screen; the gap between the
+  // top bar, the page header and the content stays the same everywhere.
+  --page-pad: 12px;
+  --page-gap: var(--space-6);
+  --header-h: 56px;
+  --drawer-w: 240px;
+  --drawer-mini-w: 64px;
+
+  // Long forms (settings) keep a readable column inside full-width cards.
+  --form-max: 960px;
+
+  // Card grid: as many columns as fit, none narrower than this.
+  --grid-min: 320px;
+
+  // Charts follow the screen size.
+  --chart-h: 240px;
+
+  // Odd sizes that belong to one component (avatars, menus, dialogs, print).
+  --avatar-sm: 24px;
+  --avatar-md: 34px;
+  --avatar-lg: 52px;
+  --avatar-xl: 72px;
+  --menu-w: 240px;
+  --menu-w-lg: 360px;
+  --dialog-w-sm: 420px;
+  --dialog-w-md: 560px;
+  --dialog-w-lg: 760px;
+  --dialog-w-xl: 960px;
+  --list-max-h: 400px;
+  --thumb: 64px;
+  --hairline: 1px;
+  --accent-bar: 3px;
+}
+
+@media (min-width: 600px) {
+  :root {
+    --page-pad: 16px;
+    --chart-h: 300px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --page-pad: 24px;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --page-pad: 32px;
+    --chart-h: 360px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --page-pad: 40px;
+  }
+}

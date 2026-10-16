@@ -1,0 +1,177 @@
+// How every control looks, in one place. The App* components (src/components/app)
+// add the classes used here; Quasar's own parts (menus, tables, chips) are tuned
+// globally so they match without extra markup.
+
+// ---------------------------------------------------------------- fields
+.q-field--outlined .q-field__control {
+  border-radius: var(--radius-md);
+
+  &::before {
+    border: var(--border);
+  }
+
+  &::after {
+    border-radius: var(--radius-md);
+  }
+}
+
+// read-only (date fields, pickers) and disabled look like any other field: never dashed
+.q-field--outlined.q-field--readonly .q-field__control::before,
+.q-field--outlined.q-field--disabled .q-field__control::before {
+  border-style: solid;
+}
+
+.q-field--outlined.q-field--focused .q-field__control::after {
+  border: var(--border-focus);
+}
+
+.app-field {
+  .q-field__control,
+  .q-field__marginal {
+    min-height: var(--control-h);
+  }
+
+  &:not(.app-field--multiline) {
+    .q-field__control,
+    .q-field__marginal {
+      height: var(--control-h);
+    }
+  }
+
+  // a select with chips may grow, never shrink
+  &.q-select--with-chips .q-field__control {
+    height: auto;
+  }
+
+  &.app-field--clickable .q-field__native,
+  &.app-field--clickable .q-field__control {
+    cursor: pointer;
+  }
+}
+
+// ---------------------------------------------------------------- buttons
+.app-btn {
+  height: var(--control-h);
+  min-height: var(--control-h);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  padding: 0 var(--space-4);
+
+  .q-btn__content {
+    gap: var(--space-2);
+    flex-wrap: nowrap;
+  }
+
+  // the gap above spaces icon and text; Quasar's own margins would double it
+  .q-btn__content > .q-icon.on-left,
+  .q-btn__content > .q-icon.on-right {
+    margin: 0;
+  }
+
+  &.app-btn--sm {
+    height: var(--control-h-sm);
+    min-height: var(--control-h-sm);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-3);
+  }
+
+  &.app-btn--icon {
+    width: var(--control-h);
+    min-width: var(--control-h);
+    padding: 0;
+
+    &.app-btn--sm {
+      width: var(--control-h-sm);
+      min-width: var(--control-h-sm);
+    }
+  }
+
+  &.app-btn--block {
+    width: 100%;
+  }
+}
+
+// Buttons Quasar draws itself (dialogs, date pickers, table pagination) keep the same radius.
+.q-btn:not(.q-btn--round):not(.app-btn) {
+  border-radius: var(--radius-md);
+}
+
+// ---------------------------------------------------------------- cards
+.q-card,
+.brand-card {
+  border-radius: var(--radius-lg);
+}
+
+.q-card {
+  border: var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+.q-dialog .q-card {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.q-table__card {
+  border-radius: var(--radius-lg);
+}
+
+// ---------------------------------------------------------------- chips and badges
+.q-chip {
+  height: var(--control-h-sm);
+  border-radius: var(--radius-sm);
+}
+
+.q-badge:not(.q-badge--floating) {
+  border-radius: var(--radius-sm);
+}
+
+// ---------------------------------------------------------------- menus
+.q-menu {
+  border-radius: var(--radius-md);
+}
+
+// ---------------------------------------------------------------- layout helpers
+// A row of filters / controls: everything the same height, bottoms on one line.
+.app-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+
+  > * {
+    min-width: 0;
+  }
+}
+
+// Cards that fill the width: more columns on wide screens, fewer on narrow.
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--grid-min), 100%), 1fr));
+  gap: var(--space-4);
+}
+
+// A chart takes the width of its card and a height that follows the screen.
+.app-chart {
+  position: relative;
+  width: 100%;
+  height: var(--chart-h);
+}
+
+// A long form keeps a readable column inside a full-width card.
+.app-form-column {
+  max-width: var(--form-max);
+}
+
+// Tables and calendars fill the screen height and scroll inside, not the page.
+.app-fill {
+  height: calc(100vh - var(--header-h) - 2 * var(--page-gap));
+  min-height: calc(var(--control-h) * 8);
+  overflow: auto;
+}
+
+// The space between blocks of a page.
+.app-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}

@@ -37,3 +37,14 @@ $brand-text-muted-dark: #9497ad;
 // visually between --page-bg and --card-bg in both themes.
 $brand-surface-2: #f1f5f9;
 $brand-surface-2-dark: #23242f;
+
+// Quasar's own radii and button look, set to the design tokens (src/css/tokens.scss)
+// so components rendered by Quasar itself (menus, tables, tooltips) match ours.
+$generic-border-radius: 10px; // = --radius-md
+$button-border-radius: 10px; // = --radius-md
+$button-rounded-border-radius: 10px;
+$button-push-border-radius: 10px;
+$button-font-weight: 600;
+$chip-height: 32px; // = --control-h-sm
+$chip-dense-height: 32px;
+$table-border-radius: 16px; // = --radius-lg
