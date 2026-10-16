@@ -29,6 +29,10 @@ export function palette() {
     text: token('--chart-text'),
     grid: token('--chart-grid'),
     target: token('--chart-target'),
+    warn: token('--gr-3'),
+    quadrantLine: token('--quadrant-line'),
+    quadrantLabel: token('--quadrant-label'),
+    ringQuality: token('--ring-quality'),
     card: token('--card-bg'),
     textPrimary: token('--text-primary'),
     border: token('--brand-border')
@@ -45,6 +49,7 @@ export function applyChartTheme() {
   const d = Chart.defaults
   d.font.family = "'Inter', -apple-system, 'Segoe UI', sans-serif"
   d.font.size = 11
+  d.font.weight = 500
   d.color = p.text
   d.borderColor = p.grid
   d.responsive = true
@@ -61,8 +66,8 @@ export function applyChartTheme() {
     tip.bodyColor = p.textPrimary
     tip.borderColor = p.border
     tip.borderWidth = 1
-    tip.padding = 10
-    tip.cornerRadius = 8 // = --radius-sm
+    tip.padding = 12
+    tip.cornerRadius = 10 // = --radius-md
     tip.displayColors = true
     tip.boxPadding = 4
     tip.titleFont = { weight: '600', size: 12 }
@@ -98,4 +103,25 @@ export function useChartTheme() {
     () => requestAnimationFrame(refresh)
   )
   return { themeKey, colors }
+}
+
+/** A token colour (#rgb / #rrggbb / rgb()) with an alpha — canvas needs plain rgba. */
+export function alpha(color, a) {
+  const c = String(color || '').trim()
+  let m = /^#([0-9a-f]{3})$/i.exec(c)
+  if (m) {
+    const [r, g, b] = m[1].split('').map(h => parseInt(h + h, 16))
+    return `rgba(${r}, ${g}, ${b}, ${a})`
+  }
+  m = /^#([0-9a-f]{6})$/i.exec(c)
+  if (m) {
+    const n = parseInt(m[1], 16)
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`
+  }
+  m = /^rgba?\(([^)]+)\)$/i.exec(c)
+  if (m) {
+    const [r, g, b] = m[1].split(',').map(s => parseFloat(s))
+    return `rgba(${r}, ${g}, ${b}, ${a})`
+  }
+  return c
 }

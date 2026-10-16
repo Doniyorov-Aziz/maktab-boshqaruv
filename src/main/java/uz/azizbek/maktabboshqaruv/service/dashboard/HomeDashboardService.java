@@ -815,27 +815,28 @@ public class HomeDashboardService {
         }
         groups.add(group("APPEAL_OVERDUE", "orange", "Javobsiz murojaatlar (" + s.appealOverdueHours() + " soat+)", appeals, limit));
 
-        // grades dropped: last 2 weeks average ≥ 1.0 below the 4 weeks before
+        // grades dropped: a student's average over the last 2 weeks (all subjects) is 0.8+ below the 4 weeks
+        // before — each window with 4+ grades, so one bad mark is not a "drop"
         List<AttentionItem> drops = new ArrayList<>();
         for (Map<String, Object> r : jdbc.queryForList("""
                 select g.student_id, st.first_name, st.last_name, st.class_id, c.grade_number || '-' || c.section_letter as class_name,
-                       s.id as subject_id, s.name as subject,
-                       avg(g.score) filter (where g.grade_date < :mid) as before, avg(g.score) filter (where g.grade_date >= :mid) as now
-                  from grade g join students st on st.id = g.student_id join subject s on s.id = g.subject_id
+                       avg(g.score) filter (where g.grade_date < :mid) as before, avg(g.score) filter (where g.grade_date >= :mid) as now,
+                       count(*) filter (where g.grade_date >= :mid) as n
+                  from grade g join students st on st.id = g.student_id
                   join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
                  where y.school_id = :s and g.grade_date between :from and :to
-                 group by g.student_id, st.first_name, st.last_name, st.class_id, c.grade_number, c.section_letter, s.id, s.name
-                having count(*) filter (where g.grade_date < :mid) >= 2 and count(*) filter (where g.grade_date >= :mid) >= 2
-                   and avg(g.score) filter (where g.grade_date < :mid) - avg(g.score) filter (where g.grade_date >= :mid) >= 1.0
+                 group by g.student_id, st.first_name, st.last_name, st.class_id, c.grade_number, c.section_letter
+                having count(*) filter (where g.grade_date < :mid) >= 4 and count(*) filter (where g.grade_date >= :mid) >= 4
+                   and avg(g.score) filter (where g.grade_date < :mid) - avg(g.score) filter (where g.grade_date >= :mid) >= 0.8
                  order by avg(g.score) filter (where g.grade_date < :mid) - avg(g.score) filter (where g.grade_date >= :mid) desc""",
                 p(schoolId).addValue("from", today.minusWeeks(6)).addValue("mid", today.minusWeeks(2)).addValue("to", today))) {
             if (classIds != null && !classIds.contains(l(r.get("class_id")))) continue;
             double before = ((Number) r.get("before")).doubleValue();
             double now = ((Number) r.get("now")).doubleValue();
             drops.add(new AttentionItem("GRADE_DROP", "orange", r.get("first_name") + " " + r.get("last_name"),
-                    r.get("class_name") + " · " + r.get("subject"),
+                    r.get("class_name") + " · oxirgi 2 haftada " + r.get("n") + " ta baho",
                     String.format(java.util.Locale.ROOT, "%.1f → %.1f", before, now),
-                    Map.of("studentId", l(r.get("student_id")), "subjectId", l(r.get("subject_id")), "classId", l(r.get("class_id")))));
+                    Map.of("studentId", l(r.get("student_id")), "classId", l(r.get("class_id")))));
         }
         groups.add(group("GRADE_DROP", "orange", "Bahosi tushganlar", drops, limit));
 

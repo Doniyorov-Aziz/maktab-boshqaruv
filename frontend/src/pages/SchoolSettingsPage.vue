@@ -125,6 +125,47 @@
 
       <section class="brand-card q-pa-md settings-card">
         <div class="settings-card__head">
+          <IconTile
+            icon="monitor_heart"
+            size="32"
+            color="var(--chart-primary)"
+          />
+          <div>
+            <div class="text-subtitle1 text-weight-bold"
+              >Maktab salomatlik indeksi</div
+            >
+            <div class="text-caption muted"
+              >Bosh sahifadagi indeks to'rt qismdan iborat; og'irliklar
+              yig'indisi 100 bo'lishi kerak (hozir {{ weightSum }}).</div
+            >
+          </div>
+        </div>
+        <div class="settings-grid">
+          <AppInput
+            v-model.number="form.healthWeightAttendance"
+            type="number"
+            label="Davomat, %"
+          />
+          <AppInput
+            v-model.number="form.healthWeightQuality"
+            type="number"
+            label="Sifat (4 va 5), %"
+          />
+          <AppInput
+            v-model.number="form.healthWeightJournal"
+            type="number"
+            label="Jurnal to'liqligi, %"
+          />
+          <AppInput
+            v-model.number="form.healthWeightTelegram"
+            type="number"
+            label="Ota-onalar Telegramda, %"
+          />
+        </div>
+      </section>
+
+      <section class="brand-card q-pa-md settings-card">
+        <div class="settings-card__head">
           <IconTile icon="sensors" size="32" color="var(--st-present)" />
           <div class="col">
             <div class="text-subtitle1 text-weight-bold"
@@ -182,15 +223,15 @@
             <div class="text-subtitle1 text-weight-bold">Demo rejim</div>
             <div class="text-caption muted">
               <template v-if="demo">
-                Simulyator yoqilgan: qo'lda olinmagan davomat realistik taqsimot
-                bilan to'ldiriladi (manba «DEMO»). Ota-onalarga xabar
-                yuborilmaydi.
+                Demo yoqilgan: qo'lda kiritilmagan davomat va baholar har
+                daqiqada realistik taqsimot bilan to'ldiriladi (manba «DEMO»,
+                🤖). Ota-onalarga xabar yuborilmaydi; qo'lda kiritilganlarga
+                tegilmaydi.
               </template>
               <template v-else>
-                Simulyator o'chiq. U faqat
-                <code>application.properties</code> da
-                (<code>app.demo.attendance-simulator.enabled=true</code>)
-                yoqiladi va «prod» profilida ishlamaydi.
+                Demo o'chiq. U faqat <code>application.properties</code> da
+                (<code>app.demo.enabled=true</code>) yoqiladi va «prod»
+                profilida ishlamaydi.
               </template>
             </div>
           </div>
@@ -199,8 +240,16 @@
           <AppButton
             v-if="demo"
             variant="secondary"
+            icon="play_arrow"
+            label="Hozir to'ldirish"
+            :loading="busy === 'run'"
+            @click="runNow"
+          />
+          <AppButton
+            v-if="demo"
+            variant="secondary"
             icon="history"
-            label="Demo: oxirgi 30 kunni to'ldirish"
+            label="Oxirgi 30 kunni to'ldirish"
             :loading="busy === 'fill'"
             @click="backfill"
           />
@@ -372,15 +421,32 @@ function revoke(k) {
   })
 }
 
+async function runNow() {
+  busy.value = 'run'
+  try {
+    const res = await api.post('/api/demo/run', null, {
+      params: { schoolId: school.activeSchoolId }
+    })
+    $q.notify({
+      type: 'positive',
+      message: `Bugun: ${res.data.attendance} ta davomat, ${res.data.grades} ta baho qo'shildi`
+    })
+  } catch (e) {
+    fail(e)
+  } finally {
+    busy.value = ''
+  }
+}
+
 async function backfill() {
   busy.value = 'fill'
   try {
-    const res = await api.post('/api/demo/attendance/backfill', null, {
+    const res = await api.post('/api/demo/backfill', null, {
       params: { schoolId: school.activeSchoolId, days: 30 }
     })
     $q.notify({
       type: 'positive',
-      message: `${res.data.inserted} ta demo belgi qo'shildi (qo'lda qo'yilganlarga tegilmadi)`
+      message: `${res.data.attendance} ta davomat va ${res.data.grades} ta baho qo'shildi (qo'lda kiritilganlarga tegilmadi)`
     })
   } catch (e) {
     fail(e)
@@ -393,18 +459,18 @@ function clearDemo() {
   $q.dialog({
     title: "Demo ma'lumotlarini tozalash",
     message:
-      "Faqat «DEMO» manbali davomat o'chiriladi. Qo'lda, avtomatik va qurilma belgilariga tegilmaydi.",
+      "Faqat «DEMO» manbali davomat va baholar o'chiriladi. Qo'lda, avtomatik va qurilma yozuvlariga tegilmaydi.",
     cancel: { label: 'Yo‘q', flat: true, noCaps: true },
     ok: { label: 'Tozalash', color: 'negative', noCaps: true, unelevated: true }
   }).onOk(async () => {
     busy.value = 'clear'
     try {
-      const res = await api.delete('/api/demo/attendance', {
+      const res = await api.delete('/api/demo', {
         params: { schoolId: school.activeSchoolId }
       })
       $q.notify({
         type: 'positive',
-        message: `${res.data.deleted} ta demo belgi o'chirildi`
+        message: `${res.data.attendance} ta davomat va ${res.data.grades} ta baho o'chirildi`
       })
     } catch (e) {
       fail(e)
@@ -413,6 +479,15 @@ function clearDemo() {
     }
   })
 }
+
+const weightSum = computed(() =>
+  form.value
+    ? (form.value.healthWeightAttendance || 0) +
+      (form.value.healthWeightQuality || 0) +
+      (form.value.healthWeightJournal || 0) +
+      (form.value.healthWeightTelegram || 0)
+    : 0
+)
 
 onMounted(load)
 watch(() => school.activeSchoolId, load)

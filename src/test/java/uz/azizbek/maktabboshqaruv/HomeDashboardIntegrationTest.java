@@ -155,9 +155,9 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
     }
 
     @Test
-    void riskList_ranksAbsenceAndFallingGrades() {
+    void riskList_ranksAbsenceAndFallingGrades_fromForty() {
         at(10, 40);
-        // student 0: absent 6 school days in the last 30 → 35 points of absence
+        // student 0: absent 6 school days in the last 30 (35) and a 3 and a 2 lately (30 + 4)
         LocalDate d = LocalDate.of(2031, 3, 1);
         for (int k = 0, n = 0; n < 6; k++) {
             LocalDate day = d.minusDays(k);
@@ -165,20 +165,31 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
             put(0, 0, 0, day, AttendanceStatus.ABSENT, "MANUAL");
             n++;
         }
+        grade(0, 0, LocalDate.of(2031, 2, 25), 3);
+        grade(0, 0, LocalDate.of(2031, 2, 27), 2);
         // student 1: 5, 5 four weeks ago, 3, 2 in the last two weeks
         grade(0, 1, LocalDate.of(2031, 2, 3), 5);
         grade(0, 1, LocalDate.of(2031, 2, 5), 5);
         grade(0, 1, LocalDate.of(2031, 2, 24), 3);
         grade(0, 1, LocalDate.of(2031, 2, 26), 2);
+        // student 2: absent 6 days only — 35, under the list's 40
+        for (int k = 0, n = 0; n < 6; k++) {
+            LocalDate day = d.minusDays(k);
+            if (day.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue;
+            put(0, 0, 2, day, AttendanceStatus.ABSENT, "MANUAL");
+            n++;
+        }
         HomeDashboardService.RiskList list = home.riskStudents(school.id(), null, 6);
-        assertEquals(2, list.total());
+        assertEquals(2, list.total(), "student 2 (35) is not on the list");
         HomeDashboardService.RiskRow first = list.rows().get(0);
-        assertEquals(student(0, 1).getId(), first.studentId(), "falling grades and a 2 weigh more here");
-        assertEquals(2.5, first.avgNow());
-        assertEquals(5.0, first.avgBefore());
-        assertEquals(DashboardMetrics.risk(0, 2.5, 5.0, 1).score(), first.score());
-        assertEquals(35, list.rows().get(1).score());
-        assertEquals(6, list.rows().get(1).absentDays());
+        assertEquals(student(0, 0).getId(), first.studentId());
+        assertEquals(DashboardMetrics.risk(6, 2.5, null, 1).score(), first.score());
+        assertEquals(6, first.absentDays());
+        HomeDashboardService.RiskRow second = list.rows().get(1);
+        assertEquals(student(0, 1).getId(), second.studentId());
+        assertEquals(2.5, second.avgNow());
+        assertEquals(5.0, second.avgBefore());
+        assertEquals(DashboardMetrics.risk(0, 2.5, 5.0, 1).score(), second.score());
     }
 
     @Test

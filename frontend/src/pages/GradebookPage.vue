@@ -212,7 +212,10 @@
                     v-for="g in cells[s.id + '|' + d.date].slice(0, 2)"
                     :key="g.id"
                     class="jr-grade"
-                    :class="'jr-grade--' + g.value"
+                    :class="[
+                      'jr-grade--' + g.value,
+                      { 'jr-grade--auto': g.source && g.source !== 'MANUAL' }
+                    ]"
                     :data-grade="g.id"
                     :title="gradeTitle(g)"
                     >{{ g.value }}</span
@@ -733,6 +736,8 @@ function dayTitle(d) {
 
 function gradeTitle(g) {
   const parts = [`${g.value} · ${typeLabel[g.type] || ''}`]
+  if (g.source && g.source !== 'MANUAL')
+    parts.push('🤖 Demo: avtomatik qo‘yilgan (tahrirlansa — qo‘lda bo‘ladi)')
   if (g.createdBy) parts.push(`Qo'ydi: ${g.createdBy}`)
   if (g.createdAt) {
     const t = new Date(g.createdAt)
@@ -936,6 +941,8 @@ async function updateGrade(g, value, type, comment) {
       },
       { background: true }
     )
+    // a staff edit makes a demo grade the teacher's own
+    g.source = 'MANUAL'
   } catch (e) {
     Object.assign(g, before)
     notifyError(e)
@@ -1641,5 +1648,19 @@ thead .jr-name {
   .jr-scroll {
     max-height: none;
   }
+}
+
+/* a grade the demo simulator put: a tiny robot in the corner */
+.jr-grade--auto {
+  position: relative;
+}
+
+.jr-grade--auto::after {
+  content: '🤖';
+  position: absolute;
+  top: calc(var(--space-1) * -1.5);
+  right: calc(var(--space-1) * -1.5);
+  font-size: var(--space-2);
+  line-height: 1;
 }
 </style>

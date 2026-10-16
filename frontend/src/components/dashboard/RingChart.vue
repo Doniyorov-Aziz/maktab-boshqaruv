@@ -1,5 +1,9 @@
 <template>
-  <figure class="ring" :class="{ 'ring--sm': small }">
+  <figure
+    class="ring"
+    :class="{ 'ring--sm': small, 'ring--mid': mid }"
+    data-ring="parts"
+  >
     <svg viewBox="0 0 120 120" role="img" :aria-label="ariaLabel">
       <circle cx="60" cy="60" :r="R" class="ring__track" />
       <circle
@@ -10,8 +14,8 @@
         :r="R"
         class="ring__arc"
         :style="{ stroke: s.color }"
-        :stroke-dasharray="`${s.len} ${C - s.len}`"
-        :stroke-dashoffset="-s.offset"
+        :stroke-dasharray="`${grown ? s.len : 0} ${C}`"
+        :stroke-dashoffset="-(grown ? s.offset : 0)"
         transform="rotate(-90 60 60)"
       >
         <title>{{ s.label }}: {{ s.value }}</title>
@@ -26,15 +30,26 @@
 
 <script setup>
 // A ring (donut) of parts — e.g. present / late / absent / excused / unmarked — with
-// the main number in the middle. SVG, no chart library; a part of 0 is not drawn.
-import { computed } from 'vue'
+// the main number in the middle. SVG, no chart library; a part of 0 is not drawn. The
+// parts grow in over 800 ms when the ring appears (at once with prefers-reduced-motion).
+import { computed, ref, onMounted } from 'vue'
+import { reducedMotion } from '@/composables/useCountUp'
 
 const props = defineProps({
   // [{ key, label, value, color }]
   parts: { type: Array, default: () => [] },
   center: { type: String, default: '' },
   caption: { type: String, default: '' },
-  small: { type: Boolean, default: false }
+  small: { type: Boolean, default: false },
+  mid: { type: Boolean, default: false }
+})
+
+const grown = ref(reducedMotion())
+onMounted(() => {
+  if (!grown.value)
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => (grown.value = true))
+    )
 })
 
 const R = 48
@@ -76,6 +91,11 @@ const ariaLabel = computed(() =>
   height: var(--ring-size-sm);
 }
 
+.ring--mid {
+  width: var(--ring-mid);
+  height: var(--ring-mid);
+}
+
 .ring svg {
   width: 100%;
   height: 100%;
@@ -83,14 +103,16 @@ const ariaLabel = computed(() =>
 
 .ring__track {
   fill: none;
-  stroke: var(--surface-2);
-  stroke-width: 12;
+  stroke: var(--ring-track);
+  stroke-width: 10;
 }
 
 .ring__arc {
   fill: none;
-  stroke-width: 12;
-  transition: stroke-dasharray var(--dur) var(--ease-out);
+  stroke-width: 10;
+  transition:
+    stroke-dasharray var(--dur-ring) var(--ease-out),
+    stroke-dashoffset var(--dur-ring) var(--ease-out);
 }
 
 .ring__center {
@@ -109,8 +131,10 @@ const ariaLabel = computed(() =>
   line-height: 1.1;
 }
 
-.ring--sm .ring__value {
+.ring--sm .ring__value,
+.ring--mid .ring__value {
   font-size: var(--text-md);
+  letter-spacing: -0.02em;
 }
 
 .ring__caption {
@@ -122,5 +146,9 @@ const ariaLabel = computed(() =>
   .ring__arc {
     transition: none;
   }
+}
+
+.ring__value {
+  font-variant-numeric: tabular-nums;
 }
 </style>

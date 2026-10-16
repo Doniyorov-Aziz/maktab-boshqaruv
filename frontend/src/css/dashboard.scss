@@ -1,0 +1,101 @@
+// The home page's card surface, entrance, hover and skeleton — shared by every
+// widget (ChartCard, KpiCard) so they all look and move the same.
+
+.dash-card {
+  position: relative;
+  min-width: 0;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--dash-edge);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--dash-shadow);
+  transition:
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+  animation: dash-card-in 420ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+// a thin light line along the top edge
+.dash-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--space-5);
+  right: var(--space-5);
+  height: var(--hairline);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--dash-highlight),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.dash-card:hover {
+  transform: translateY(var(--lift));
+  box-shadow: var(--dash-shadow-hover);
+}
+
+@keyframes dash-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--enter-shift));
+  }
+}
+
+// a card-shaped skeleton with a soft shimmer (never a white flash)
+.skel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--skel-base);
+}
+
+.skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--skel-shine),
+    transparent
+  );
+  animation: skel-shimmer var(--dur-shimmer) ease-in-out infinite;
+}
+
+@keyframes skel-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+// big numbers: tabular, tight
+.dash-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dash-muted {
+  color: var(--brand-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-card {
+    animation: none;
+    transition: none;
+  }
+
+  .dash-card:hover {
+    transform: none;
+  }
+
+  .skel::after {
+    animation: none;
+  }
+}

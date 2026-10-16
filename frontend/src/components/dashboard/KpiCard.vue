@@ -2,59 +2,75 @@
   <component
     :is="to ? 'router-link' : 'div'"
     :to="to || undefined"
-    class="kpi brand-card"
+    class="kpi dash-card"
     :class="{ 'kpi--link': !!to }"
     :data-kpi="kpiKey"
+    :aria-busy="loading"
   >
-    <div class="kpi__top">
-      <div class="kpi__name">
-        <IconTile :icon="icon" size="40" :color="tileBg" :text-color="color" />
-        <span>{{ label }}</span>
+    <template v-if="loading && value === undefined">
+      <div class="kpi__head">
+        <div class="skel kpi__skel-icon" />
+        <div class="skel kpi__skel-name" />
       </div>
-      <DeltaPill
-        :value="delta"
-        :higher-is-better="higherIsBetter"
-        :percent="deltaPercent"
-        :digits="deltaDigits"
-        :title="deltaTitle"
+      <div class="skel kpi__skel-value" />
+      <div class="skel kpi__skel-spark" />
+    </template>
+    <template v-else>
+      <div class="kpi__head">
+        <IconTile
+          :icon="icon"
+          size="32"
+          :color="`color-mix(in srgb, ${color} 14%, transparent)`"
+          :text-color="color"
+        />
+        <span class="kpi__name">{{ label }}</span>
+        <DeltaPill
+          class="kpi__delta"
+          :value="delta"
+          :higher-is-better="higherIsBetter"
+          :percent="deltaPercent"
+          :digits="deltaDigits"
+          :title="deltaTitle"
+        />
+      </div>
+      <div class="kpi__value" :class="{ 'kpi__value--empty': emptyValue }">
+        <span v-if="emptyValue" class="kpi__empty">{{ emptyText }}</span>
+        <CountUp v-else :value="value" :format="format" />
+      </div>
+      <div class="kpi__note">
+        <slot name="note">{{ note }}</slot>
+      </div>
+      <Sparkline
+        class="kpi__spark"
+        large
+        :values="spark || []"
+        :color="color"
+        :min="sparkMin"
+        :max="sparkMax"
+        :label="`${label}: oxirgi 14 ish kuni`"
       />
-    </div>
-    <div v-if="loading && value === undefined" class="kpi__value">
-      <q-skeleton type="text" width="60%" />
-    </div>
-    <div v-else class="kpi__value" :class="{ 'kpi__value--none': emptyValue }">
-      {{ display }}
-    </div>
-    <div class="kpi__note">
-      <slot name="note">{{ note }}</slot>
-    </div>
-    <Sparkline
-      class="kpi__spark"
-      :values="spark || []"
-      :color="color"
-      :min="sparkMin"
-      :max="sparkMax"
-      :label="`${label}: oxirgi 14 ish kuni`"
-    />
+    </template>
   </component>
 </template>
 
 <script setup>
-// One KPI: tile + name, the change (pill), a big number, a note and a 14-school-day
-// sparkline. Clicking goes to the page behind the number (to).
-import { computed } from 'vue'
+// One hero number: name with its icon tile, the change (▲/▼), the big value counting
+// up, a note, and a smooth 14 school-day sparkline. The whole card links to the page
+// (with its filter) the number comes from.
 import IconTile from '@/components/app/IconTile.vue'
 import DeltaPill from './DeltaPill.vue'
 import Sparkline from './Sparkline.vue'
+import CountUp from './CountUp.vue'
 
-const props = defineProps({
-  kpiKey: { type: String, default: '' },
+defineProps({
+  kpiKey: { type: String, required: true },
   label: { type: String, required: true },
   icon: { type: String, required: true },
   color: { type: String, default: 'var(--chart-primary)' },
-  value: { type: [Number, String], default: undefined },
-  display: { type: String, default: '' },
+  value: { type: Number, default: undefined },
+  format: { type: Function, default: v => String(Math.round(v)) },
   emptyValue: { type: Boolean, default: false },
+  emptyText: { type: String, default: '—' },
   note: { type: String, default: '' },
   delta: { type: Number, default: null },
   higherIsBetter: { type: Boolean, default: true },
@@ -67,10 +83,6 @@ const props = defineProps({
   to: { type: [String, Object], default: null },
   loading: { type: Boolean, default: false }
 })
-
-const tileBg = computed(
-  () => `color-mix(in srgb, ${props.color} 14%, transparent)`
-)
 </script>
 
 <style scoped>
@@ -78,22 +90,14 @@ const tileBg = computed(
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-4);
-  min-width: 0;
-  height: 100%;
+  padding: var(--space-4) var(--space-5) var(--space-3);
   color: inherit;
   text-decoration: none;
+  overflow: hidden;
 }
 
 .kpi--link {
   cursor: pointer;
-  transition:
-    box-shadow var(--dur) var(--ease-out),
-    transform var(--dur) var(--ease-out);
-}
-
-.kpi--link:hover {
-  box-shadow: var(--shadow-card-hover);
 }
 
 .kpi--link:focus-visible {
@@ -101,53 +105,69 @@ const tileBg = computed(
   outline-offset: var(--hairline);
 }
 
-.kpi__top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.kpi__name {
+.kpi__head {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--brand-text-muted);
   min-width: 0;
 }
 
-.kpi__value {
-  font-size: var(--kpi-value);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.kpi__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--brand-text-muted);
+  line-height: 1.25;
 }
 
-.kpi__value--none {
-  font-size: var(--text-lg);
+.kpi__delta {
+  flex-shrink: 0;
+}
+
+.kpi__value {
+  font-size: var(--kpi-value-xl);
+  margin-top: var(--space-1);
+}
+
+.kpi__value--empty {
+  font-size: var(--text-xl);
+}
+
+.kpi__empty {
   color: var(--brand-text-muted);
   font-weight: 600;
-  line-height: calc(var(--kpi-value) * 1.1);
+  letter-spacing: -0.01em;
 }
 
 .kpi__note {
+  min-height: calc(var(--text-xs) * 1.5);
   font-size: var(--text-xs);
   color: var(--brand-text-muted);
-  min-height: calc(var(--text-xs) * 1.5);
 }
 
 .kpi__spark {
   margin-top: auto;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kpi--link {
-    transition: none;
-  }
+.kpi__skel-icon {
+  width: var(--tile-sm);
+  height: var(--tile-sm);
+}
+
+.kpi__skel-name {
+  flex: 1 1 auto;
+  height: var(--space-4);
+}
+
+.kpi__skel-value {
+  width: 55%;
+  height: var(--kpi-value-xl);
+  margin-top: var(--space-1);
+}
+
+.kpi__skel-spark {
+  height: var(--spark-h-lg);
+  margin-top: auto;
 }
 </style>

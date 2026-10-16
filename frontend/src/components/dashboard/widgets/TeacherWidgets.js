@@ -210,9 +210,8 @@ export const MyClass = {
                 ]),
                 h(Sparkline, {
                   values: d.value.spark,
-                  min: 0,
-                  max: 100,
-                  color: 'var(--st-present)',
+                  color: 'var(--chart-primary)',
+                  large: true,
                   label: '14 kunlik davomat'
                 }),
                 h(

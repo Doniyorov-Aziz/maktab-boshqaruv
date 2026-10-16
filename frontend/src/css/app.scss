@@ -7,6 +7,7 @@
 @import '@fontsource/inter/800.css';
 @import './tokens.scss';
 @import './controls.scss';
+@import './dashboard.scss';
 
 // Theme tokens. Every color that needs to flip between light and dark
 // goes through one of these — never a hardcoded #fff/#000 or a Quasar

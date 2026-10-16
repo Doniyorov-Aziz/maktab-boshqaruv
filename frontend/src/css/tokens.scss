@@ -227,10 +227,94 @@ body.body--dark {
   --heat-2: #166534;
   --heat-3: #a16207;
   --heat-4: #b91c1c;
-  --heat-none: #2d2e3d;
+  --heat-none: #252b3b;
   --heat-1-text: #ffffff;
   --heat-2-text: #dcfce7;
   --heat-3-text: #fef9c3;
   --heat-4-text: #ffffff;
   --heat-none-text: #9497ad;
+}
+
+// ---------------------------------------------------------------- home page v3
+// Sizes of the home page's rings, tiles and charts; its card surface (a 1px
+// faint edge, a thin light line along the top, a soft shadow), the hero glow,
+// skeleton shimmer and motion. Light and dark are equally finished.
+:root {
+  --ring-hero: 180px;
+  --ring-mid: 110px;
+  --ring-score: 44px;
+  --kpi-value-xl: 38px;
+  --today-max-h: 180px;
+  --today-tile-h: 30px;
+  --today-tile-gap: 3px;
+  --bubble-h: 340px;
+  --dyn-h: 280px;
+  --side-panel-w: 440px;
+  --legend-dot: 8px;
+  --bullet-h: 8px;
+  --dumbbell-h: 22px;
+  --dumbbell-dot: 10px;
+  --stack-h: 28px;
+  --spark-h-lg: 44px;
+  --glow-h: 420px;
+  --enter-shift: 8px;
+  --lift: -2px;
+  --stagger: 40ms;
+  --dur-count: 600ms;
+  --dur-ring: 800ms;
+  --dur-shimmer: 1.4s;
+}
+
+body {
+  --dash-edge: rgba(15, 23, 42, 0.07);
+  --dash-highlight: rgba(255, 255, 255, 0.95);
+  --dash-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px rgba(15, 23, 42, 0.045);
+  --dash-shadow-hover:
+    0 2px 6px rgba(15, 23, 42, 0.06), 0 16px 36px rgba(15, 23, 42, 0.08);
+  --dash-glow: rgba(109, 40, 217, 0.07);
+  --dash-glow-2: rgba(14, 165, 233, 0.04);
+  --skel-base: rgba(15, 23, 42, 0.05);
+  --skel-shine: rgba(15, 23, 42, 0.09);
+  --ring-track: rgba(15, 23, 42, 0.07);
+  --tile-none: rgba(100, 116, 139, 0.12);
+  --tile-stripe: rgba(100, 116, 139, 0.16);
+  --quadrant-line: rgba(100, 116, 139, 0.45);
+  --quadrant-label: rgba(100, 116, 139, 0.55);
+  // the health rings: attendance (brand), quality (good), journal (info), parents (warning)
+  --ring-attendance: #6d28d9;
+  --ring-quality: #16a34a;
+  --ring-journal: #0284c7;
+  --ring-telegram: #d97706;
+  --avatar-1: #6d28d9;
+  --avatar-2: #0284c7;
+  --avatar-3: #0f766e;
+  --avatar-4: #be185d;
+  --avatar-5: #b45309;
+}
+
+body.body--dark {
+  --dash-edge: rgba(255, 255, 255, 0.06);
+  --dash-highlight: rgba(255, 255, 255, 0.12);
+  --dash-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.28);
+  --dash-shadow-hover:
+    0 2px 6px rgba(0, 0, 0, 0.35), 0 18px 44px rgba(0, 0, 0, 0.4);
+  --dash-glow: rgba(139, 92, 246, 0.08);
+  --dash-glow-2: rgba(56, 189, 248, 0.035);
+  --skel-base: rgba(255, 255, 255, 0.04);
+  --skel-shine: rgba(255, 255, 255, 0.08);
+  --ring-track: rgba(255, 255, 255, 0.07);
+  --tile-none: rgba(148, 163, 184, 0.1);
+  --tile-stripe: rgba(148, 163, 184, 0.14);
+  --quadrant-line: rgba(148, 163, 184, 0.35);
+  --quadrant-label: rgba(148, 163, 184, 0.45);
+  --ring-attendance: #a78bfa;
+  --ring-quality: #4ade80;
+  --ring-journal: #38bdf8;
+  --ring-telegram: #fbbf24;
+  --avatar-1: #7c3aed;
+  --avatar-2: #0369a1;
+  --avatar-3: #0f766e;
+  --avatar-4: #be185d;
+  --avatar-5: #b45309;
 }

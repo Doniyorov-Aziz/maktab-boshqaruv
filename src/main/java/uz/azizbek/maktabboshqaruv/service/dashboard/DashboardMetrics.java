@@ -112,7 +112,7 @@ public final class DashboardMetrics {
     }
 
     /** From this score a student is on the "xavf ostida" list. */
-    public static final int RISK_LIST_FROM = 30;
+    public static final int RISK_LIST_FROM = 40;
 
     private static double clamp(double v, double lo, double hi) {
         return Math.max(lo, Math.min(hi, v));

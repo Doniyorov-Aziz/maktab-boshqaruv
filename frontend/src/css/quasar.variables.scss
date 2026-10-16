@@ -8,8 +8,8 @@ $primary: #4f46e5; // indigo-600
 $secondary: #0ea5e9; // sky-500
 $accent: #f59e0b; // amber-500
 
-$dark: #1a1b23;
-$dark-page: #13141a;
+$dark: #141824;
+$dark-page: #0b0d15;
 
 $positive: #10b981; // emerald-500
 $negative: #ef4444; // red-500
@@ -22,11 +22,11 @@ $warning: #f59e0b; // amber-500
 // sidebar/header sit on top of. They must differ (page slightly tinted,
 // card flat) so card edges stay visible in both themes.
 $brand-page-bg: #f8fafc;
-$brand-page-bg-dark: #13141a;
+$brand-page-bg-dark: #0b0d15;
 $brand-card-bg: #ffffff;
-$brand-card-bg-dark: #1e1f2b;
+$brand-card-bg-dark: #141824;
 $brand-border: #e2e8f0;
-$brand-border-dark: #2d2e3d;
+$brand-border-dark: #252b3b;
 $brand-text-primary: #0f172a;
 $brand-text-primary-dark: #f1f5f9;
 $brand-text-muted: #64748b;
@@ -36,7 +36,7 @@ $brand-text-muted-dark: #9497ad;
 // from a card — table stripes, input fills, inset panels. Must stay
 // visually between --page-bg and --card-bg in both themes.
 $brand-surface-2: #f1f5f9;
-$brand-surface-2-dark: #23242f;
+$brand-surface-2-dark: #1b2030;
 
 // Quasar's own radii and button look, set to the design tokens (src/css/tokens.scss)
 // so components rendered by Quasar itself (menus, tables, tooltips) match ours.

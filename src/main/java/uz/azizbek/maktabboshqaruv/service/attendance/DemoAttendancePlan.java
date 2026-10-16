@@ -15,8 +15,8 @@ import java.util.function.Predicate;
  * is asked (a hash of school, student and date, no random state), so a re-run or a page refresh
  * never changes a number.
  * <ul>
- *   <li>a new absence starts on 1.2–2.5 % of school days (more on Monday and Saturday), an
- *       illness then continues to the next school day with 55 % — together 2–5 % absent;</li>
+ *   <li>a new absence starts on 0.8–1.8 % of school days (more on Monday and Saturday), an
+ *       illness then continues to the next school day with 45 % — together 2–5 % absent;</li>
  *   <li>1–2 "chronic" students per class start an absence far more often, so the
  *       "3+ days absent" list on the home page has someone in it;</li>
  *   <li>about 1 % excused, 1–3 % late by 5–25 minutes (late in the first lesson only);</li>
@@ -29,8 +29,8 @@ public final class DemoAttendancePlan {
     public record Day(AttendanceStatus status, Integer lateMinutes) {
     }
 
-    private static final double CONTINUE_ILLNESS = 0.55;
-    private static final double CHRONIC_NEW_ABSENCE = 0.12;
+    private static final double CONTINUE_ILLNESS = 0.45;
+    private static final double CHRONIC_NEW_ABSENCE = 0.10;
     private static final int LOOKBACK = 6;
 
     private DemoAttendancePlan() {
@@ -47,7 +47,7 @@ public final class DemoAttendancePlan {
     private static Day of(long schoolId, long studentId, LocalDate date, boolean chronic,
                           Predicate<LocalDate> schoolDay, int depth) {
         double dayFactor = unit(mix(schoolId, date.toEpochDay(), 11));
-        double newAbsence = (chronic ? CHRONIC_NEW_ABSENCE : 0.012 + 0.013 * dayFactor)
+        double newAbsence = (chronic ? CHRONIC_NEW_ABSENCE : 0.008 + 0.010 * dayFactor)
                 + (date.getDayOfWeek() == DayOfWeek.MONDAY || date.getDayOfWeek() == DayOfWeek.SATURDAY ? 0.008 : 0);
         double excused = 0.006 + 0.008 * unit(mix(schoolId, date.toEpochDay(), 13));
         double late = 0.01 + 0.02 * unit(mix(schoolId, date.toEpochDay(), 17));

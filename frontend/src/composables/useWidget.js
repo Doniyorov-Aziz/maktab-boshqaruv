@@ -6,6 +6,7 @@ import { useSchoolStore } from '@/stores/school'
 
 const REFRESH_MS = 60_000
 
+// params may be a ref / computed (a widget's tab): a change reloads the widget
 export function useWidget(path, { params = {}, enabled = true } = {}) {
   const school = useSchoolStore()
   const data = ref(null)
@@ -20,7 +21,10 @@ export function useWidget(path, { params = {}, enabled = true } = {}) {
     if (!quiet) loading.value = true
     try {
       const res = await api.get(`/api/dashboard/${path}`, {
-        params: { schoolId: school.activeSchoolId, ...params },
+        params: {
+          schoolId: school.activeSchoolId,
+          ...(isRef(params) ? params.value : params)
+        },
         background: quiet
       })
       // widgets answer { asOf, data }; plain answers are used as they are
@@ -64,6 +68,7 @@ export function useWidget(path, { params = {}, enabled = true } = {}) {
     () => load()
   )
   if (isRef(enabled)) watch(enabled, v => v && load())
+  if (isRef(params)) watch(params, () => load(), { deep: true })
 
   return { data, asOf, loading, error, reload: () => load() }
 }

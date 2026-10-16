@@ -339,8 +339,8 @@
         role="status"
         data-testid="demo-banner"
       >
-        🧪 DEMO rejim: qo'lda olinmagan davomat avtomatik simulyatsiya
-        qilinmoqda
+        🧪 Demo rejim — qo'lda kiritilmagan davomat va baholar avtomatik
+        to'ldirilmoqda
       </div>
       <router-view v-slot="{ Component }">
         <transition name="content-fade" mode="out-in">
@@ -406,6 +406,7 @@ import { modules, getModule } from '@/config/modules'
 import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
 import { api } from '@/boot/axios'
+import { useSystemInfo } from '@/composables/useSystemInfo'
 
 const router = useRouter()
 const route = useRoute()
@@ -754,12 +755,9 @@ function onLogout() {
 
 // --- notifications ---
 const notifications = ref([])
-// the demo simulator is switched on in application.properties only; the page just shows it
-const demoMode = ref(false)
-api
-  .get('/api/system/info', { background: true })
-  .then(res => (demoMode.value = !!res.data.demoSimulator))
-  .catch(() => (demoMode.value = false))
+// demo mode is switched on in application.properties only; the page just shows it
+const systemInfo = useSystemInfo()
+const demoMode = computed(() => !!systemInfo.value.demoSimulator)
 const staffUnread = computed(
   () => notifications.value.filter(n => n.unread).length
 )
@@ -1005,11 +1003,12 @@ function selectResult(r) {
 .demo-banner {
   background: var(--login-warning-bg);
   color: var(--login-warning-text);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: 600;
   text-align: center;
-  padding: var(--space-2) var(--page-pad);
-  border-bottom: var(--border);
+  padding: var(--space-1) var(--page-pad);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--login-warning-text) 18%, transparent);
 }
 
 .bell-item--unread {

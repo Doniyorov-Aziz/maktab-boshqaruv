@@ -104,7 +104,10 @@ if (phase === 'v3-before') {
   const context = await openContext(
     browser,
     { width: 1920, height: 1080 },
-    { dark: true, recordVideo: { dir: videoDir, size: { width: 1920, height: 1080 } } }
+    {
+      dark: true,
+      recordVideo: { dir: videoDir, size: { width: 1920, height: 1080 } }
+    }
   )
   const page = await context.newPage()
   await visit(page, '/')
