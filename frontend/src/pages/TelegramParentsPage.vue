@@ -6,11 +6,9 @@
     :subtitle="`Sinf bo'yicha botga ulanish holati · ${schoolStore.activeSchoolName || ''}`"
   >
     <template #actions>
-      <q-btn
+      <AppButton
+        variant="secondary"
         v-if="authStore.isEditor && notLinkedWithLink.length"
-        outline
-        no-caps
-        color="primary"
         icon="content_copy"
         :label="`Taklif havolalari (${notLinkedWithLink.length})`"
         @click="copyAll"
@@ -19,19 +17,16 @@
           >Ulanmagan ota-onalar uchun havolalar ro'yxatini nusxalash (sinf
           chatiga yuborish uchun)</q-tooltip
         >
-      </q-btn>
+      </AppButton>
     </template>
 
     <div class="brand-card q-pa-md q-mb-md">
       <div class="row items-center q-col-gutter-md">
         <div class="col-12 col-sm-4 col-md-3">
-          <q-select
+          <AppSelect
             v-model="classId"
-            outlined
-            dense
             emit-value
             map-options
-            options-dense
             label="Sinf"
             :options="classOptions"
           />
@@ -180,12 +175,10 @@
         </template>
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-right">
-            <q-btn
-              v-if="props.row.inviteLink"
-              flat
-              dense
-              no-caps
+            <AppButton
+              variant="ghost"
               size="sm"
+              v-if="props.row.inviteLink"
               color="primary"
               icon="link"
               label="Taklif havolasini nusxalash"
@@ -199,6 +192,8 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
 import { ref, computed, watch } from 'vue'
 import { useQuasar, copyToClipboard } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'

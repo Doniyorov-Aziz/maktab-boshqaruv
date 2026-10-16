@@ -4,13 +4,10 @@
     <div class="row items-center no-wrap cp-row">
       <span class="cp-label">Sinf:</span>
       <div class="row items-center q-gutter-xs cp-scroll">
-        <q-btn
+        <AppButton
           v-for="g in GRADES"
           :key="g"
           :label="String(g)"
-          dense
-          unelevated
-          no-caps
           class="cp-grade"
           :class="{ 'cp-grade--on': g === grade }"
           :disable="!usable(g)"
@@ -21,7 +18,7 @@
           <q-tooltip v-if="!usable(g)"
             >{{ g }}-sinflarda o'quvchi yo'q</q-tooltip
           >
-        </q-btn>
+        </AppButton>
       </div>
     </div>
     <div v-if="letters.length" class="row items-center no-wrap cp-row q-mt-xs">
@@ -46,6 +43,7 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
 import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
@@ -132,7 +130,7 @@ watch(
   font-weight: 600;
   font-size: var(--text-sm, 13px);
   padding: 4px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1.5px solid var(--color-brand);
   background: transparent;
   color: var(--color-brand);

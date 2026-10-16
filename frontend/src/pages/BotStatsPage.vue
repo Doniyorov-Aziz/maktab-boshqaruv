@@ -6,16 +6,9 @@
     :subtitle="`Ota-onalar boti qanchalik ishlatilyapti · ${schoolStore.activeSchoolName || ''}`"
   >
     <template #actions>
-      <q-btn
-        flat
-        round
-        dense
-        icon="refresh"
-        aria-label="Yangilash"
-        @click="load"
-      >
+      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="load">
         <q-tooltip>Yangilash</q-tooltip>
-      </q-btn>
+      </AppButton>
     </template>
 
     <div class="row q-col-gutter-md q-mb-md">
@@ -153,10 +146,8 @@
         </template>
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-right">
-            <q-btn
-              flat
-              dense
-              no-caps
+            <AppButton
+              variant="ghost"
               size="sm"
               icon="qr_code_2"
               label="QR varaq"
@@ -171,6 +162,7 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { Bar, Line } from 'vue-chartjs'
@@ -492,7 +484,7 @@ watch(() => schoolStore.activeSchoolId, load, { immediate: true })
 }
 
 .chart-box {
-  height: 280px;
+  height: var(--chart-h);
 }
 
 .class-link {

@@ -6,16 +6,9 @@
     :subtitle="`Ota-onalar botda qaysi kitoblarni o'qiyapti · ${schoolStore.activeSchoolName || ''}`"
   >
     <template #actions>
-      <q-btn
-        flat
-        round
-        dense
-        icon="refresh"
-        aria-label="Yangilash"
-        @click="reloadAll"
-      >
+      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="reloadAll">
         <q-tooltip>Yangilash</q-tooltip>
-      </q-btn>
+      </AppButton>
     </template>
 
     <q-banner dense rounded class="privacy-banner q-mb-md">
@@ -202,9 +195,7 @@
           >Yuklashlar jurnali</div
         >
         <q-space />
-        <q-btn
-          unelevated
-          no-caps
+        <AppButton
           color="positive"
           icon="file_download"
           label="Excel"
@@ -214,16 +205,14 @@
       </div>
       <div class="row q-col-gutter-sm q-mb-sm">
         <div class="col-6 col-md-2">
-          <date-field v-model="filters.from" label="Dan" />
+          <AppDateInput v-model="filters.from" label="Dan" />
         </div>
         <div class="col-6 col-md-2">
-          <date-field v-model="filters.to" label="Gacha" />
+          <AppDateInput v-model="filters.to" label="Gacha" />
         </div>
         <div class="col-12 col-sm-6 col-md-2">
-          <q-select
+          <AppSelect
             v-model="filters.categoryId"
-            dense
-            outlined
             clearable
             emit-value
             map-options
@@ -232,10 +221,8 @@
           />
         </div>
         <div class="col-12 col-sm-6 col-md-3">
-          <q-select
+          <AppSelect
             v-model="filters.bookId"
-            dense
-            outlined
             clearable
             emit-value
             map-options
@@ -247,16 +234,9 @@
           />
         </div>
         <div class="col-12 col-md-3">
-          <q-input
-            v-model="filters.q"
-            dense
-            outlined
-            clearable
-            debounce="400"
-            label="Ota-ona (ism yoki telefon)"
-          >
+          <AppInput v-model="filters.q" clearable debounce="400" label="Ota-ona (ism yoki telefon)">
             <template #prepend><q-icon name="person_search" /></template>
-          </q-input>
+          </AppInput>
         </div>
       </div>
       <div class="row items-center q-mb-sm q-gutter-sm">
@@ -265,11 +245,9 @@
           :model-value="filters.classId"
           @update:model-value="v => (filters.classId = v)"
         />
-        <q-btn
+        <AppButton
+          variant="ghost"
           v-if="filters.classId || hasFilters"
-          flat
-          dense
-          no-caps
           icon="filter_alt_off"
           label="Filtrlarni tozalash"
           @click="clearFilters"
@@ -331,12 +309,7 @@
     <q-dialog v-model="parentOpen" position="right" full-height>
       <q-card class="parent-panel column no-wrap">
         <q-card-section class="row items-center q-pb-sm">
-          <q-avatar
-            color="primary"
-            text-color="white"
-            icon="person"
-            class="q-mr-sm"
-          />
+          <IconTile icon="person" size="40" color="var(--q-primary)" class="q-mr-sm" />
           <div class="col" style="min-width: 0">
             <div class="text-subtitle1 text-weight-bold ellipsis">
               {{ parent?.name || 'Ota-ona' }}
@@ -346,14 +319,7 @@
               }}{{ parent?.telegramName ? ' · ' + parent.telegramName : '' }}
             </div>
           </div>
-          <q-btn
-            flat
-            round
-            dense
-            icon="close"
-            aria-label="Yopish"
-            v-close-popup
-          />
+          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
         </q-card-section>
         <q-separator />
         <q-card-section v-if="parentLoading" class="col flex flex-center">
@@ -433,6 +399,11 @@
 </template>
 
 <script setup>
+import IconTile from '@/components/app/IconTile.vue'
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, reactive, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { Line, Bar, Doughnut } from 'vue-chartjs'
@@ -452,7 +423,6 @@ import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
 import BookCover from '@/components/BookCover.vue'
 import ClassPicker from '@/components/ClassPicker.vue'
-import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
 import { formatShortDate } from '@/utils/date'
 import { downloadSources } from '@/utils/library'
@@ -917,7 +887,7 @@ watch(
 }
 .chart-box {
   position: relative;
-  height: 260px;
+  height: var(--chart-h);
 }
 .empty-chart {
   height: 100%;

@@ -152,7 +152,7 @@ function select(i) {
   align-items: center;
   gap: 2px;
   padding: 8px 0 6px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--wa-border);
   background: var(--wa-card);
   color: var(--wa-text);
@@ -200,13 +200,13 @@ function select(i) {
 .day-dots {
   display: flex;
   gap: 2px;
-  height: 4px;
+  height: var(--space-1);
 }
 
 .day-dots i {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
+  width: var(--space-1);
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
   background: currentColor;
   opacity: 0.45;
 }
@@ -229,7 +229,7 @@ function select(i) {
   align-items: center;
   gap: 12px;
   padding: 10px 10px 10px 0;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   position: relative;
 }
 
@@ -263,9 +263,9 @@ function select(i) {
 }
 
 .lesson-emoji {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -279,8 +279,8 @@ function select(i) {
 }
 
 .lesson-bar {
-  height: 5px;
-  border-radius: 99px;
+  height: var(--space-1);
+  border-radius: var(--radius-pill);
   background: var(--wa-border);
   margin-top: 6px;
   overflow: hidden;
@@ -289,7 +289,7 @@ function select(i) {
 .lesson-bar div {
   height: 100%;
   background: var(--wa-good);
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
 }
 
 .now-pill {

@@ -4,14 +4,7 @@
       <q-card-section class="row items-center q-pb-sm">
         <div class="text-subtitle1 text-weight-semibold">{{ title }}</div>
         <q-space />
-        <q-btn
-          flat
-          round
-          dense
-          icon="close"
-          aria-label="Yopish"
-          v-close-popup
-        />
+        <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
       </q-card-section>
       <q-card-section class="q-pt-none text-center">
         <q-spinner v-if="loading" size="36px" color="primary" class="q-my-xl" />
@@ -26,6 +19,7 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { api } from '@/boot/axios'
 
@@ -75,7 +69,7 @@ onBeforeUnmount(release)
 <style scoped>
 .image-card {
   width: 100%;
-  max-width: 640px;
+  max-width: var(--dialog-w-lg);
   border-radius: var(--radius-lg);
 }
 

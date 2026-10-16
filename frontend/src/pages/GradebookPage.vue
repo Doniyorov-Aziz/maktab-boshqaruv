@@ -4,20 +4,18 @@
     color="#f59e0b"
     title="Baholar jurnali"
     :subtitle="subtitle"
+    fill
   >
     <template v-slot:actions>
-      <q-btn
+      <AppButton
         v-if="canGrade"
-        unelevated
-        no-caps
-        color="primary"
         icon="playlist_add_check"
         label="Baho qo'yish"
         :disable="!journal"
         @click="openBulk"
       >
         <q-tooltip>Bir kunga butun sinfga tez baho qo'yish</q-tooltip>
-      </q-btn>
+      </AppButton>
     </template>
 
     <!-- 1. class, subject, month -->
@@ -30,14 +28,11 @@
       <div class="row items-center q-col-gutter-sm q-mt-xs jr-filters">
         <div class="col-12 col-sm-6 col-md-4 row items-center no-wrap">
           <span class="jr-label">Fan:</span>
-          <q-select
+          <AppSelect
             v-model="subjectId"
             class="col"
-            dense
-            outlined
             emit-value
             map-options
-            options-dense
             :options="subjectOptions"
             :disable="!subjectOptions.length"
             placeholder="Fanni tanlang"
@@ -49,33 +44,21 @@
         </div>
         <q-space />
         <div class="col-auto row items-center no-wrap jr-month">
-          <q-btn
-            flat
-            round
-            dense
+          <AppButton
+            variant="ghost"
             icon="chevron_left"
             aria-label="Oldingi oy"
             @click="shiftMonth(-1)"
           />
           <div class="jr-month-title">{{ monthTitle }}</div>
-          <q-btn
-            flat
-            round
-            dense
+          <AppButton
+            variant="ghost"
             icon="chevron_right"
             aria-label="Keyingi oy"
             :disable="month >= now.month"
             @click="shiftMonth(1)"
           />
-          <q-btn
-            outline
-            dense
-            no-caps
-            color="primary"
-            label="Bugun"
-            class="q-ml-sm q-px-sm"
-            @click="goToday"
-          />
+          <AppButton variant="secondary" label="Bugun" class="q-ml-sm q-px-sm" @click="goToday" />
         </div>
       </div>
     </div>
@@ -100,10 +83,8 @@
         color="negative"
       />
       <span class="col">Sinf ma'lumotini yuklab bo'lmadi</span>
-      <q-btn
-        flat
-        dense
-        no-caps
+      <AppButton
+        variant="ghost"
         color="primary"
         icon="refresh"
         label="Qayta urinish"
@@ -327,27 +308,23 @@
         class="q-mb-sm"
         :options="typeOptions"
       />
-      <q-input
+      <AppInput
         v-model="pop.comment"
-        dense
-        outlined
         maxlength="200"
         placeholder="Izoh (ixtiyoriy)"
         @keydown.enter.prevent="pop.grade && choose(pop.grade.value)"
       />
       <div class="row items-center q-mt-sm">
-        <q-btn
+        <AppButton
+          variant="ghost"
           v-if="pop.grade"
-          flat
-          dense
-          no-caps
           color="negative"
           icon="delete_outline"
           label="O'chirish"
           @click="removeGrade(pop.grade)"
         />
         <q-space />
-        <q-btn flat dense no-caps label="Yopish" @click="closePop" />
+        <AppButton variant="ghost" label="Yopish" @click="closePop" />
       </div>
     </div>
 
@@ -357,11 +334,11 @@
         <q-card-section class="row items-center q-pb-sm">
           <div class="text-h6">Baho qo'yish · {{ overview?.className }}</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="row q-col-gutter-sm q-pt-none">
           <div class="col-12 col-sm-6">
-            <date-field v-model="bulk.date" label="Sana" no-sundays no-future />
+            <AppDateInput v-model="bulk.date" label="Sana" no-sundays no-future />
           </div>
           <div class="col-12 col-sm-6">
             <q-btn-toggle
@@ -402,11 +379,8 @@
           <span class="jr-muted q-mr-auto"
             >{{ bulkCount }} ta o'quvchiga baho</span
           >
-          <q-btn flat no-caps label="Bekor qilish" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            color="primary"
+          <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
+          <AppButton
             icon="save"
             label="Saqlash"
             :disable="!bulkCount || !bulk.date"
@@ -420,6 +394,10 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import {
   ref,
   reactive,
@@ -435,7 +413,6 @@ import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
 import ClassPicker from '@/components/ClassPicker.vue'
 import ClassOverviewPanel from '@/components/ClassOverviewPanel.vue'
-import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
 import { useAuthStore } from '@/stores/auth'
 import { monthName } from '@/utils/date'
@@ -1199,7 +1176,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(16, 185, 129, 0.12);
   color: var(--text-primary);
   font-size: var(--text-sm, 13px);
@@ -1226,10 +1203,11 @@ onBeforeUnmount(() => {
 }
 
 /* ---------------------------------------------------------------- table */
+/* the table takes what is left of the screen and scrolls inside (PageLayout fill) */
 .jr-scroll {
   overflow: auto;
-  max-height: calc(100vh - 230px);
-  min-height: 260px;
+  flex: 1 1 0;
+  min-height: var(--list-max-h-sm);
   padding: 0;
   transition: opacity 0.15s;
 }
@@ -1252,7 +1230,7 @@ onBeforeUnmount(() => {
   border-right: 1px solid var(--brand-border);
   border-bottom: 1px solid var(--brand-border);
   padding: 0;
-  height: 34px;
+  height: var(--control-h-sm);
   background: var(--card-bg);
 }
 
@@ -1260,7 +1238,7 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   z-index: 3;
-  height: 52px;
+  height: var(--cell-head-h);
   font-weight: 600;
   color: var(--brand-text-muted);
   background: var(--card-bg);
@@ -1285,7 +1263,7 @@ onBeforeUnmount(() => {
 .jr-name {
   width: 200px;
   min-width: 200px;
-  max-width: 200px;
+  max-width: var(--name-col);
   text-align: left;
   padding: 0 10px !important;
   white-space: nowrap;
@@ -1354,9 +1332,9 @@ thead .jr-name {
 .jr-day,
 .jr-cell,
 .jr-foot {
-  width: 44px;
-  min-width: 44px;
-  max-width: 44px;
+  width: var(--cell-narrow);
+  min-width: var(--cell-narrow);
+  max-width: var(--cell-narrow);
   text-align: center;
 }
 
@@ -1386,7 +1364,7 @@ thead .jr-name {
   display: inline-block;
   margin-top: 1px;
   padding: 0 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1442,10 +1420,10 @@ thead .jr-name {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
+  min-width: var(--space-5);
+  height: var(--space-5);
   padding: 0 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 700;
   font-size: 13px;
   color: #fff;
@@ -1461,7 +1439,7 @@ thead .jr-name {
 .jr-grade:has(+ .jr-grade),
 .jr-grade + .jr-grade {
   min-width: 16px;
-  height: 18px;
+  height: var(--space-4);
   padding: 0 2px;
   font-size: 11px;
   margin: 0;
@@ -1562,7 +1540,7 @@ thead .jr-name {
   z-index: 6000;
   width: 240px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
   color: var(--text-primary);
   border: 1px solid var(--brand-border);
@@ -1578,9 +1556,9 @@ thead .jr-name {
 
 .jr-pop-btn {
   flex: 1;
-  height: 42px;
+  height: var(--control-h);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font: inherit;
   font-size: 18px;
   font-weight: 800;
@@ -1607,7 +1585,7 @@ thead .jr-name {
 .jr-pop-btn--sm {
   flex: none;
   width: 36px;
-  height: 32px;
+  height: var(--control-h-sm);
   font-size: 15px;
   margin-left: 4px;
   opacity: 0.35;
@@ -1619,7 +1597,7 @@ thead .jr-name {
 
 .jr-bulk {
   width: 100%;
-  max-width: 560px;
+  max-width: var(--dialog-w-md);
   border-radius: var(--radius-lg);
 }
 
@@ -1640,7 +1618,7 @@ thead .jr-name {
   .jr-name {
     width: 130px;
     min-width: 130px;
-    max-width: 130px;
+    max-width: var(--name-col-sm);
   }
 
   /* on a phone only the names stay put; average and count scroll with the days */

@@ -264,7 +264,7 @@ const statusText = computed(() => {
   display: inline-block;
   margin-top: 12px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.18);
   font-weight: 600;
   font-size: 14px;
@@ -307,9 +307,9 @@ const statusText = computed(() => {
 }
 
 .live-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: var(--radius-pill);
   background: var(--wa-good);
   box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
   animation: pulse 1.8s infinite;
@@ -331,8 +331,8 @@ const statusText = computed(() => {
 }
 
 .bar {
-  height: 8px;
-  border-radius: 99px;
+  height: var(--dot);
+  border-radius: var(--radius-pill);
   background: var(--wa-border);
   overflow: hidden;
   margin-top: 10px;
@@ -340,7 +340,7 @@ const statusText = computed(() => {
 
 .bar-fill {
   height: 100%;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   background: linear-gradient(90deg, #10b981, #34d399);
   transition: width 0.6s ease;
 }
@@ -378,9 +378,9 @@ const statusText = computed(() => {
 }
 
 .num {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  border-radius: var(--radius-sm);
   color: #fff;
   display: flex;
   align-items: center;
@@ -395,7 +395,7 @@ const statusText = computed(() => {
 
 .now {
   background: rgba(16, 185, 129, 0.1);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding-left: 6px;
   padding-right: 6px;
 }

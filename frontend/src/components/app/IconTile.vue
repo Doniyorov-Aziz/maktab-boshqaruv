@@ -12,7 +12,7 @@
 // A coloured square with an icon — page headers, stat cards, list rows.
 // Three sizes only: 32 / 40 / 48 px; radius --radius-sm (48: --radius-md).
 //   <IconTile icon="school" size="48" color="var(--brand-gradient)" />
-//   <IconTile icon="event" size="32" color="#10b98122" text-color="#10b981" />
+//   <IconTile icon="event" size="32" color="rgba(16, 185, 129, 0.12)" text-color="var(--color-success)" />
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -24,7 +24,7 @@ const props = defineProps({
 })
 
 const bg = computed(() => props.color || 'var(--brand-gradient)')
-const fg = computed(() => props.textColor || (props.color ? 'currentColor' : 'white'))
+const fg = computed(() => props.textColor || 'white')
 </script>
 
 <style scoped>

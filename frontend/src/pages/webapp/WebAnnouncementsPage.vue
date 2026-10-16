@@ -146,14 +146,14 @@ function when(date) {
 }
 
 .count {
-  min-width: 18px;
-  height: 18px;
+  min-width: var(--space-4);
+  height: var(--space-4);
   padding: 0 5px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   background: var(--wa-bad);
   color: #fff;
   font-size: 11px;
-  line-height: 18px;
+  line-height: var(--space-4);
 }
 
 .ann {
@@ -206,7 +206,7 @@ function when(date) {
 .ev-date {
   width: 52px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--wa-accent) 12%, transparent);
   color: var(--wa-accent);
   display: flex;

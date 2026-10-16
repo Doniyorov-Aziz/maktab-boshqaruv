@@ -6,11 +6,8 @@
     subtitle="Mualliflik huquqi muallif vafotidan keyin 70 yil amal qiladi (qonun, 35-modda) — holat avtomatik hisoblanadi"
   >
     <template #actions>
-      <q-btn
+      <AppButton
         v-if="authStore.isAdmin"
-        unelevated
-        color="primary"
-        no-caps
         icon="person_add"
         label="Muallif qo'shish"
         @click="openForm()"
@@ -20,16 +17,14 @@
     <div class="brand-card q-pa-md q-mb-md">
       <div class="row q-col-gutter-sm items-center">
         <div class="col-12 col-md-5">
-          <q-input
+          <AppInput
             v-model="query"
-            dense
-            outlined
             clearable
             placeholder="Ism, taxallus yoki kirillcha yozilishi"
             aria-label="Qidirish"
           >
             <template #prepend><q-icon name="search" /></template>
-          </q-input>
+          </AppInput>
         </div>
         <div class="col-12 col-md-7">
           <q-btn-toggle
@@ -87,18 +82,16 @@
         <template #body-cell-actions="p">
           <q-td :props="p" auto-width>
             <template v-if="authStore.isAdmin">
-              <q-btn
-                flat
-                round
-                dense
+              <AppButton
+                variant="ghost"
+                size="sm"
                 icon="edit"
                 :aria-label="`${p.row.fullName} — tahrirlash`"
                 @click="openForm(p.row)"
               />
-              <q-btn
-                flat
-                round
-                dense
+              <AppButton
+                variant="ghost"
+                size="sm"
                 color="negative"
                 icon="delete"
                 :disable="p.row.bookCount > 0"
@@ -108,7 +101,7 @@
                 <q-tooltip v-if="p.row.bookCount > 0"
                   >Kitoblari bor — o'chirib bo'lmaydi</q-tooltip
                 >
-              </q-btn>
+              </AppButton>
             </template>
           </q-td>
         </template>
@@ -116,33 +109,18 @@
     </div>
 
     <q-dialog v-model="formOpen">
-      <q-card style="width: 560px; max-width: 96vw">
+      <q-card class="app-dialog app-dialog--md">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">
             {{ form.id ? 'Muallifni tahrirlash' : 'Yangi muallif' }}
           </div>
           <q-space />
-          <q-btn
-            flat
-            round
-            dense
-            icon="close"
-            aria-label="Yopish"
-            v-close-popup
-          />
+          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-input
-            v-model="form.fullName"
-            dense
-            outlined
-            maxlength="200"
-            label="To'liq ismi *"
-          />
-          <q-input
+          <AppInput v-model="form.fullName" maxlength="200" label="To'liq ismi *" />
+          <AppInput
             v-model="form.aliases"
-            dense
-            outlined
             autogrow
             type="textarea"
             label="Boshqa yozilishlari va taxalluslari (har biri yangi qatorda)"
@@ -150,19 +128,11 @@
           />
           <div class="row q-col-gutter-sm">
             <div class="col-6">
-              <q-input
-                v-model.number="form.birthYear"
-                dense
-                outlined
-                type="number"
-                label="Tug'ilgan yili"
-              />
+              <AppInput v-model.number="form.birthYear" type="number" label="Tug'ilgan yili" />
             </div>
             <div class="col-6">
-              <q-input
+              <AppInput
                 v-model.number="form.deathYear"
-                dense
-                outlined
                 type="number"
                 label="Vafot yili"
                 hint="Bo'sh — tirik yoki noma'lum"
@@ -176,25 +146,11 @@
           >
             {{ preview.text }}
           </div>
-          <q-input
-            v-model="form.note"
-            dense
-            outlined
-            maxlength="1000"
-            label="Izoh"
-          />
+          <AppInput v-model="form.note" maxlength="1000" label="Izoh" />
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <q-btn flat no-caps label="Bekor qilish" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            color="primary"
-            icon="save"
-            label="Saqlash"
-            :loading="saving"
-            @click="save"
-          />
+          <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
+          <AppButton icon="save" label="Saqlash" :loading="saving" @click="save" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -202,6 +158,8 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -383,7 +341,7 @@ onMounted(load)
 .author-status {
   font-size: 12px;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 3px 8px;
   display: inline-block;
   white-space: nowrap;
@@ -410,7 +368,7 @@ onMounted(load)
   color: #fcd34d;
 }
 .aliases {
-  max-width: 420px;
+  max-width: var(--cell-max-lg);
   white-space: normal;
 }
 .status-filter {

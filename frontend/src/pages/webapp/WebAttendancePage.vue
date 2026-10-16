@@ -228,9 +228,9 @@ onMounted(load)
 }
 
 .nav-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: var(--control-h);
+  height: var(--control-h);
+  border-radius: var(--radius-md);
   border: 1px solid var(--wa-border);
   background: transparent;
   color: var(--wa-text);
@@ -250,9 +250,9 @@ onMounted(load)
 
 /* Conic-gradient ring = attendance percentage. */
 .ring {
-  width: 104px;
-  height: 104px;
-  border-radius: 50%;
+  width: var(--wa-ring);
+  height: var(--wa-ring);
+  border-radius: var(--radius-pill);
   background: conic-gradient(var(--c) var(--p), rgba(148, 163, 184, 0.2) 0);
   display: flex;
   align-items: center;
@@ -261,9 +261,9 @@ onMounted(load)
 }
 
 .ring-inner {
-  width: 82px;
-  height: 82px;
-  border-radius: 50%;
+  width: var(--wa-ring-inner);
+  height: var(--wa-ring-inner);
+  border-radius: var(--radius-pill);
   background: var(--wa-card);
   display: flex;
   flex-direction: column;
@@ -285,9 +285,9 @@ onMounted(load)
 
 .dot {
   display: inline-block;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: var(--radius-pill);
   margin-right: 6px;
 }
 
@@ -305,7 +305,7 @@ onMounted(load)
 
 .day {
   aspect-ratio: 1;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 2px solid transparent;
   font: inherit;
   font-weight: 700;

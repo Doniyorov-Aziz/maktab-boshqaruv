@@ -53,19 +53,76 @@
   // Charts follow the screen size.
   --chart-h: 240px;
 
-  // Odd sizes that belong to one component (avatars, menus, dialogs, print).
-  --avatar-sm: 24px;
-  --avatar-md: 34px;
-  --avatar-lg: 52px;
+  // People's avatars (initials, photos) use the icon-tile sizes; profiles a large one.
+  --avatar-sm: 32px;
+  --avatar-md: 40px;
+  --avatar-lg: 48px;
   --avatar-xl: 72px;
+
+  // Thin progress bars and status dots.
+  --bar-h: 6px;
+  --dot: 8px;
+
+  // Menus, dialogs, lists and thumbnails.
   --menu-w: 240px;
   --menu-w-lg: 360px;
+  --picker-max-w: 220px;
+  --picker-max-w-sm: 120px;
   --dialog-w-sm: 420px;
   --dialog-w-md: 560px;
   --dialog-w-lg: 760px;
   --dialog-w-xl: 960px;
   --list-max-h: 400px;
   --thumb: 64px;
+
+  // Widths of fields that sit in a toolbar, and text cut off in table cells.
+  --field-w-sm: 200px;
+  --field-w: 280px;
+  --field-w-lg: 320px;
+  --cell-max: 280px;
+  --cell-max-lg: 420px;
+  --name-col: 200px;
+  --name-col-sm: 130px;
+  --cell-narrow: 44px;
+  --cell-head-h: 52px;
+
+  // Lists in dialogs and menus that scroll inside.
+  --list-max-h-sm: 260px;
+
+  // Text areas, media and drop zones.
+  --textarea-min-h: 120px;
+  --textarea-max-h: 140px;
+  --media-max-h: 320px;
+  --media-round: 240px;
+  --thumb-lg: 128px;
+  --dropzone-h: 120px;
+  --dropzone-h-lg: 150px;
+  --bubble-max: 440px;
+  --sparkline-h: 28px;
+
+  // Calendar day cells and two-pane pages.
+  --day-min-h-sm: 60px;
+  --day-min-h: 90px;
+  --day-min-h-week: 140px;
+  --panel-min-h: 480px;
+
+  // Login page: the brand panel's illustration and text column.
+  --login-text-max: 520px;
+  --login-lead-max: 420px;
+  --login-lead-max-lg: 440px;
+  --login-form-max: 440px;
+  --login-scene-h: 416px;
+  --login-scene-h-lg: 530px;
+  --login-glow: 320px;
+  --login-ring: 60px;
+
+  // Telegram Mini App (its own phone-first look).
+  --wa-main-max: 640px;
+  --wa-text-max: 280px;
+  --wa-art: 112px;
+  --wa-ring: 104px;
+  --wa-ring-inner: 82px;
+  --wa-chart-h: 190px;
   --hairline: 1px;
   --accent-bar: 3px;
 }

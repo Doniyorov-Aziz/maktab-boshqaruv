@@ -47,27 +47,21 @@
           <div class="text-caption muted-text q-mb-md">
             Ota-onalar botdagi «🏫 Maktab haqida» bo'limida ko'radi.
           </div>
-          <q-input
+          <AppInput
             v-model="form.phone"
-            outlined
-            dense
             label="Telefon"
             placeholder="+998 71 200-00-00"
             class="q-mb-md"
             :disable="!canEdit"
           />
-          <q-input
+          <AppInput
             v-model="form.directorName"
-            outlined
-            dense
             label="Direktor (F.I.Sh.)"
             class="q-mb-md"
             :disable="!canEdit"
           />
-          <q-input
+          <AppInput
             v-model="form.receptionHours"
-            outlined
-            dense
             autogrow
             type="textarea"
             label="Direktor qabul kunlari"
@@ -112,13 +106,11 @@
               />
             </div>
             <div class="col-12 col-sm-6">
-              <q-select
+              <AppSelect
                 v-model="form.weeklyReportDay"
                 :options="dayOptions"
                 emit-value
                 map-options
-                outlined
-                dense
                 label="Haftalik hisobot kuni"
                 :disable="!canEdit"
               />
@@ -191,9 +183,8 @@
               </div>
             </div>
             <div class="col-12 col-md-7">
-              <q-input
+              <AppInput
                 v-model="form.bellScheduleNote"
-                outlined
                 autogrow
                 type="textarea"
                 label="Qo'lda yozilgan jadval (ixtiyoriy)"
@@ -212,22 +203,16 @@
         >
           Faqat administrator o'zgartira oladi.
         </div>
-        <q-btn
-          v-if="canEdit"
-          unelevated
-          no-caps
-          color="primary"
-          icon="save"
-          label="Saqlash"
-          :loading="saving"
-          @click="save"
-        />
+        <AppButton v-if="canEdit" icon="save" label="Saqlash" :loading="saving" @click="save" />
       </div>
     </div>
   </page-layout>
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
 import { ref, computed, watch, defineComponent, h } from 'vue'
 import { useQuasar, QInput, QIcon, QPopupProxy, QTime } from 'quasar'
 import { api } from '@/boot/axios'

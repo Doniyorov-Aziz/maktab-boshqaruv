@@ -18,16 +18,9 @@
           · @{{ status.botUsername }}</template
         >
       </q-chip>
-      <q-btn
-        flat
-        round
-        dense
-        icon="refresh"
-        aria-label="Yangilash"
-        @click="loadAll"
-      >
+      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="loadAll">
         <q-tooltip>Yangilash</q-tooltip>
-      </q-btn>
+      </AppButton>
     </template>
 
     <!-- Bot not configured: warning + setup steps -->
@@ -185,12 +178,10 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
           </div>
           <div class="col-12 col-sm-auto">
             <div class="row items-center no-wrap q-gutter-sm">
-              <q-input
+              <AppInput
                 v-for="f in quietFields"
                 :key="f.key"
                 v-model="settings[f.key]"
-                outlined
-                dense
                 mask="time"
                 :rules="['time']"
                 hide-bottom-space
@@ -209,14 +200,11 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
                     </q-popup-proxy>
                   </q-icon>
                 </template>
-              </q-input>
+              </AppInput>
             </div>
           </div>
           <div v-if="authStore.isAdmin" class="col-12 col-sm-auto">
-            <q-btn
-              unelevated
-              no-caps
-              color="primary"
+            <AppButton
               icon="save"
               label="Saqlash"
               :loading="savingSettings"
@@ -234,49 +222,36 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
       <div class="brand-card q-pa-md q-mb-md">
         <div class="row q-col-gutter-sm items-end">
           <div class="col-12 col-sm-6 col-md-3">
-            <q-select
+            <AppSelect
               v-model="filters.type"
               :options="typeOptions"
               emit-value
               map-options
               clearable
-              outlined
-              dense
               label="Turi"
               @update:model-value="reload"
             />
           </div>
           <div class="col-12 col-sm-6 col-md-3">
-            <q-select
+            <AppSelect
               v-model="filters.status"
               :options="statusOptions"
               emit-value
               map-options
               clearable
-              outlined
-              dense
               label="Holati"
               @update:model-value="reload"
             />
           </div>
           <div class="col-6 col-md-2">
-            <date-field
-              v-model="filters.from"
-              label="Dan"
-              @update:model-value="reload"
-            />
+            <AppDateInput v-model="filters.from" label="Dan" @update:model-value="reload" />
           </div>
           <div class="col-6 col-md-2">
-            <date-field
-              v-model="filters.to"
-              label="Gacha"
-              @update:model-value="reload"
-            />
+            <AppDateInput v-model="filters.to" label="Gacha" @update:model-value="reload" />
           </div>
           <div class="col-12 col-md-2">
-            <q-btn
-              flat
-              no-caps
+            <AppButton
+              variant="ghost"
               class="full-width"
               icon="filter_alt_off"
               label="Tozalash"
@@ -391,22 +366,19 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
 
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="text-right no-wrap">
-              <q-btn
-                flat
-                round
-                dense
+              <AppButton
+                variant="ghost"
                 size="sm"
                 icon="visibility"
                 aria-label="Matnni ko'rish"
                 @click="preview = props.row"
               >
                 <q-tooltip>Matnni ko'rish</q-tooltip>
-              </q-btn>
-              <q-btn
+              </AppButton>
+              <AppButton
+                variant="ghost"
+                size="sm"
                 v-if="props.row.status === 'FAILED'"
-                flat
-                dense
-                no-caps
                 color="primary"
                 icon="replay"
                 label="Qayta yuborish"
@@ -424,7 +396,7 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Xabar matni</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-card-section v-if="preview">
           <div class="text-caption muted-text q-mb-sm">
@@ -444,11 +416,14 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
-import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -724,7 +699,7 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
   font-size: var(--text-xs);
   background: var(--surface-2);
   border: 1px solid var(--brand-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 1px 6px;
 }
 
@@ -745,7 +720,7 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--text-xs);
   font-weight: 600;
   white-space: nowrap;
@@ -753,7 +728,7 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
 
 .status-badge {
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
 }
 
@@ -770,7 +745,7 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
 
 .error-text {
   display: block;
-  max-width: 280px;
+  max-width: var(--cell-max);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -786,7 +761,7 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
 
 .preview-card {
   width: 100%;
-  max-width: 460px;
+  max-width: var(--bubble-max);
   border-radius: var(--radius-lg);
 }
 
@@ -794,7 +769,7 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
 .tg-bubble {
   background: var(--surface-2);
   border: 1px solid var(--brand-border);
-  border-radius: 14px 14px 14px 4px;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
   padding: 10px 14px;
   white-space: pre-wrap;
   line-height: 1.45;

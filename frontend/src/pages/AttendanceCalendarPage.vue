@@ -4,24 +4,21 @@
     color="#ef4444"
     title="Davomat kalendari"
     :subtitle="subtitle"
+    fill
   >
     <template v-slot:actions>
       <div class="ac-month row items-center no-wrap">
-        <q-btn flat round dense icon="chevron_left" @click="shiftMonth(-1)" />
+        <AppButton variant="ghost" icon="chevron_left" @click="shiftMonth(-1)" />
         <div class="ac-month__title">{{ monthTitle }}</div>
-        <q-btn
-          flat
-          round
-          dense
+        <AppButton
+          variant="ghost"
           icon="chevron_right"
           :disable="isCurrentMonth"
           @click="shiftMonth(1)"
         />
       </div>
-      <q-btn
-        outline
-        no-caps
-        color="primary"
+      <AppButton
+        variant="secondary"
         icon="fact_check"
         label="Dars bo'yicha belgilash"
         @click="router.push('/attendance')"
@@ -48,7 +45,7 @@
       Sinfni tanlang
     </div>
 
-    <div v-else-if="data" class="row q-col-gutter-md no-wrap-md">
+    <div v-else-if="data" class="row q-col-gutter-md no-wrap-md ac-body">
       <div class="col-12 col-md">
         <div class="brand-card ac-card">
           <div class="ac-scroll">
@@ -216,10 +213,8 @@
           <q-item-section>{{ opt.label }}</q-item-section>
         </q-item>
         <q-item>
-          <q-input
+          <AppInput
             v-model="menuComment"
-            dense
-            outlined
             class="full-width"
             label="Sabab / izoh (ixtiyoriy)"
             maxlength="300"
@@ -232,6 +227,8 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
 import { ref, shallowRef, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -515,8 +512,6 @@ watch(
 
 .ac-scroll {
   overflow: auto;
-  max-height: calc(100vh - 330px);
-  min-height: 240px;
 }
 
 .ac-table {
@@ -542,8 +537,8 @@ watch(
   left: 0;
   z-index: 1;
   background: var(--card-bg);
-  min-width: 170px;
-  max-width: 170px;
+  min-width: var(--name-col);
+  max-width: var(--name-col);
   text-align: left;
   padding: 6px 8px;
   border-right: 1px solid var(--brand-border);
@@ -589,7 +584,7 @@ thead .ac-name-col {
   text-align: center;
   cursor: pointer;
   padding: 0;
-  height: 40px;
+  height: var(--control-h);
 }
 
 .ac-cell:hover {
@@ -619,9 +614,9 @@ thead .ac-selected {
 
 .ac-dot {
   display: inline-block;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-pill);
   vertical-align: middle;
 }
 
@@ -644,8 +639,8 @@ thead .ac-selected {
 .ac-dot--NONE {
   background: transparent;
   border: 2px solid #cbd5e1;
-  width: 11px;
-  height: 11px;
+  width: var(--space-3);
+  height: var(--space-3);
 }
 
 .ac-day__num,
@@ -667,7 +662,6 @@ thead .ac-selected {
 
 .ac-side {
   width: 250px;
-  max-height: calc(100vh - 250px);
   overflow: auto;
 }
 
@@ -719,6 +713,28 @@ thead .ac-selected {
 @media (min-width: 1024px) {
   .no-wrap-md {
     flex-wrap: nowrap;
+  }
+
+  /* one screen high: the month table and the day panel scroll inside */
+  .ac-body {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .ac-body > div,
+  .ac-card,
+  .ac-side {
+    height: 100%;
+  }
+
+  .ac-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ac-scroll {
+    flex: 1 1 0;
+    min-height: 0;
   }
 }
 </style>

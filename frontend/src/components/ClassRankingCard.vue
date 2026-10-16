@@ -64,10 +64,8 @@
     </div>
 
     <div v-if="!loading && sortedFull.length > 10" class="text-center q-mt-sm">
-      <q-btn
-        flat
-        dense
-        no-caps
+      <AppButton
+        variant="ghost"
         color="primary"
         :label="`Barcha ${sortedFull.length} sinfni ko'rish`"
         @click="allDialogOpen = true"
@@ -75,12 +73,12 @@
     </div>
 
     <q-dialog v-model="allDialogOpen">
-      <q-card style="width: 100%; max-width: 560px; border-radius: 16px">
+      <q-card class="app-dialog app-dialog--md">
         <q-card-section class="row items-center justify-between q-pb-none">
           <div class="text-subtitle1 text-weight-bold"
             >Barcha sinflar reytingi</div
           >
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-pb-none">
           <div class="row items-center justify-between q-gutter-sm">
@@ -124,6 +122,7 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
 import { ref, computed, h, defineComponent } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -361,8 +360,8 @@ export default { name: 'ClassRankingCard' }
 
 .ranking-toggle :deep(.q-btn) {
   font-size: var(--text-xs);
-  min-height: 28px;
-  padding: 0 10px;
+  min-height: var(--control-h-sm);
+  padding: 0 var(--space-3);
 }
 
 .scale-label {
@@ -425,8 +424,8 @@ export default { name: 'ClassRankingCard' }
 
 :deep(.ranking-row__bar-track) {
   position: relative;
-  height: 6px;
-  border-radius: 999px;
+  height: var(--bar-h);
+  border-radius: var(--radius-pill);
   background: var(--brand-border);
   overflow: visible;
 }
@@ -435,7 +434,7 @@ export default { name: 'ClassRankingCard' }
   position: absolute;
   inset: 0 auto 0 0;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: width 0.3s ease;
 }
 

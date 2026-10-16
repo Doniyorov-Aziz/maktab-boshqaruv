@@ -32,7 +32,7 @@
             @update:model-value="resetPreview"
           />
 
-          <q-select
+          <AppSelect
             v-if="audience === 'CLASSES'"
             v-model="classIds"
             :options="classOptions"
@@ -40,8 +40,6 @@
             map-options
             multiple
             use-chips
-            outlined
-            dense
             label="Sinflar"
             class="q-mb-md"
             @update:model-value="resetPreview"
@@ -51,23 +49,19 @@
           <div v-if="audience === 'PARENTS'" class="parents-picker q-mb-md">
             <div class="row q-col-gutter-sm q-pa-sm">
               <div class="col-12 col-sm-7">
-                <q-input
+                <AppInput
                   v-model="parentQuery"
-                  dense
-                  outlined
                   clearable
                   debounce="300"
                   placeholder="Ota-ona yoki farzand ismi"
                   @update:model-value="loadChoices"
                 >
                   <template #prepend><q-icon name="search" /></template>
-                </q-input>
+                </AppInput>
               </div>
               <div class="col-12 col-sm-5">
-                <q-select
+                <AppSelect
                   v-model="parentClass"
-                  dense
-                  outlined
                   clearable
                   emit-value
                   map-options
@@ -90,12 +84,10 @@
               <span class="text-weight-semibold"
                 >Tanlandi: {{ linkIds.length }}</span
               >
-              <q-btn
-                v-if="linkIds.length"
-                flat
-                dense
-                no-caps
+              <AppButton
+                variant="ghost"
                 size="sm"
+                v-if="linkIds.length"
                 label="Tozalash"
                 class="q-ml-sm"
                 @click="clearPicked"
@@ -141,16 +133,15 @@
             </q-list>
           </div>
 
-          <q-input
+          <AppInput
             v-model="text"
             type="textarea"
-            outlined
             autogrow
             counter
             maxlength="3500"
             label="Xabar matni"
             placeholder="Masalan: Hurmatli ota-onalar! 7-oktabr kuni soat 18:00 da umumiy yig'ilish bo'lib o'tadi."
-            input-style="min-height: 120px"
+            input-style="min-height: var(--textarea-min-h)"
             @update:model-value="resetPreview"
           />
 
@@ -163,10 +154,8 @@
             @drop.prevent="onDrop"
           >
             <div class="row items-center q-gutter-sm">
-              <q-btn
-                outline
-                no-caps
-                color="primary"
+              <AppButton
+                variant="secondary"
                 icon="attach_file"
                 label="Rasm, video yoki fayl"
                 :disable="files.length >= MAX_FILES"
@@ -202,10 +191,8 @@
                 </div>
                 <div class="thumb-name ellipsis">{{ f.file.name }}</div>
                 <div class="thumb-size">{{ size(f.file.size) }}</div>
-                <q-btn
-                  round
-                  dense
-                  size="xs"
+                <AppButton
+                  size="sm"
                   icon="close"
                   class="thumb-remove"
                   :aria-label="`${f.file.name} ni olib tashlash`"
@@ -216,20 +203,15 @@
           </div>
 
           <div class="row q-gutter-sm q-mt-md">
-            <q-btn
-              outline
-              no-caps
-              color="primary"
+            <AppButton
+              variant="secondary"
               icon="visibility"
               label="Oldindan ko'rish"
               :disable="!canSend"
               :loading="previewing"
               @click="doPreview"
             />
-            <q-btn
-              unelevated
-              no-caps
-              color="primary"
+            <AppButton
               icon="send"
               label="Yuborish"
               :disable="!preview || !preview.recipientCount"
@@ -340,23 +322,19 @@
           >Yuborilgan xabarlar</div
         >
         <div class="col-12 col-md-3">
-          <q-input
+          <AppInput
             v-model="historyQuery"
-            dense
-            outlined
             clearable
             debounce="400"
             placeholder="Matn bo'yicha qidirish"
             @update:model-value="() => loadHistory()"
           >
             <template #prepend><q-icon name="search" /></template>
-          </q-input>
+          </AppInput>
         </div>
         <div class="col-6 col-sm-3 col-md-2">
-          <q-select
+          <AppSelect
             v-model="historyClass"
-            dense
-            outlined
             clearable
             emit-value
             map-options
@@ -366,10 +344,8 @@
           />
         </div>
         <div class="col-6 col-sm-3 col-md-2">
-          <q-select
+          <AppSelect
             v-model="historyStatus"
-            dense
-            outlined
             clearable
             emit-value
             map-options
@@ -379,14 +355,14 @@
           />
         </div>
         <div class="col-6 col-sm-3 col-md-2">
-          <date-field
+          <AppDateInput
             v-model="historyFrom"
             label="Sanadan"
             @update:model-value="() => loadHistory()"
           />
         </div>
         <div class="col-6 col-sm-3 col-md-2">
-          <date-field
+          <AppDateInput
             v-model="historyTo"
             label="Sanagacha"
             @update:model-value="() => loadHistory()"
@@ -473,12 +449,10 @@
         </template>
         <template v-slot:body-cell-open="props">
           <q-td :props="props" class="text-right">
-            <q-btn
-              flat
-              dense
-              no-caps
-              no-wrap
+            <AppButton
+              variant="ghost"
               size="sm"
+              no-wrap
               color="primary"
               icon="groups"
               label="Oluvchilar"
@@ -501,27 +475,23 @@
               {{ current.text || current.attachments.length + ' ta fayl' }}
             </div>
           </div>
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="row q-col-gutter-sm q-pt-none">
           <div class="col-12 col-sm-5">
-            <q-input
+            <AppInput
               v-model="recipientQuery"
-              dense
-              outlined
               clearable
               debounce="300"
               placeholder="O'quvchi ismi"
               @update:model-value="loadRecipients(1)"
             >
               <template #prepend><q-icon name="search" /></template>
-            </q-input>
+            </AppInput>
           </div>
           <div class="col-6 col-sm-3">
-            <q-select
+            <AppSelect
               v-model="recipientClass"
-              dense
-              outlined
               clearable
               emit-value
               map-options
@@ -531,10 +501,8 @@
             />
           </div>
           <div class="col-6 col-sm-4">
-            <q-select
+            <AppSelect
               v-model="recipientStatus"
-              dense
-              outlined
               clearable
               emit-value
               map-options
@@ -580,11 +548,14 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
-import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
 import { formatDateTime, telegramHtmlToSafe } from '@/utils/telegram'
 
@@ -1047,7 +1018,7 @@ watch(
 }
 
 .choices {
-  max-height: 260px;
+  max-height: var(--list-max-h-sm);
 }
 
 .dropzone {
@@ -1073,7 +1044,7 @@ watch(
 .thumb {
   position: relative;
   border: 1px solid var(--brand-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -1082,7 +1053,7 @@ watch(
 .thumb video,
 .thumb-file {
   width: 100%;
-  height: 76px;
+  height: var(--thumb);
   object-fit: cover;
   display: block;
 }
@@ -1117,12 +1088,12 @@ watch(
 .tg-bubble {
   background: var(--card-bg);
   border: 1px solid var(--brand-border);
-  border-radius: 14px 14px 14px 4px;
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
   padding: 10px 14px;
   white-space: pre-wrap;
   line-height: 1.45;
   font-size: var(--text-base);
-  max-width: 440px;
+  max-width: var(--bubble-max);
   box-shadow: var(--shadow-card);
 }
 
@@ -1137,7 +1108,7 @@ watch(
 .album {
   display: grid;
   gap: 3px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -1177,7 +1148,7 @@ watch(
 }
 
 .text-cell {
-  max-width: 360px;
+  max-width: var(--cell-max-lg);
   white-space: normal;
 }
 
@@ -1191,13 +1162,13 @@ watch(
 
 .recipients-card {
   width: 100%;
-  max-width: 860px;
+  max-width: var(--dialog-w-xl);
   border-radius: var(--radius-lg);
 }
 
 .status-badge {
   padding: 3px 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
 }
 </style>

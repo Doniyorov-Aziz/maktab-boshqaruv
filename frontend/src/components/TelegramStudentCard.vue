@@ -1,7 +1,7 @@
 <template>
   <div class="brand-card q-pa-md telegram-card">
     <div class="row items-center no-wrap q-mb-md">
-      <q-avatar size="40px" class="tg-avatar" text-color="white" icon="send" />
+      <IconTile icon="send" size="40" color="#229ed9" />
       <div class="col q-ml-sm">
         <div class="text-subtitle1 text-weight-semibold">Telegram</div>
         <div class="text-caption muted-text">
@@ -64,50 +64,38 @@
           <div class="text-caption muted-text q-mb-xs">Bog'lash kodi</div>
           <div class="row items-center q-gutter-sm q-mb-md">
             <code class="link-code">{{ info.linkCode }}</code>
-            <q-btn
-              flat
-              dense
-              round
+            <AppButton
+              variant="ghost"
               size="sm"
               icon="content_copy"
               aria-label="Kodni nusxalash"
               @click="copy(info.linkCode, 'Kod nusxalandi')"
             >
               <q-tooltip>Kodni nusxalash</q-tooltip>
-            </q-btn>
+            </AppButton>
           </div>
 
           <div class="text-caption muted-text q-mb-xs">Havola (deep link)</div>
-          <q-input
-            v-if="info.deepLink"
-            :model-value="info.deepLink"
-            readonly
-            outlined
-            dense
-            class="q-mb-md"
-          >
+          <AppInput v-if="info.deepLink" :model-value="info.deepLink" readonly class="q-mb-md">
             <template v-slot:append>
-              <q-btn
-                flat
-                dense
-                round
+              <AppButton
+                variant="ghost"
+                size="sm"
                 icon="content_copy"
                 aria-label="Havolani nusxalash"
                 @click="copy(info.deepLink, 'Havola nusxalandi')"
               >
                 <q-tooltip>Havolani nusxalash</q-tooltip>
-              </q-btn>
+              </AppButton>
             </template>
-          </q-input>
+          </AppInput>
           <div v-else class="text-caption text-warning q-mb-md">
             TELEGRAM_BOT_USERNAME sozlanmagan — havola va QR kod yaratib
             bo'lmaydi.
           </div>
 
-          <q-btn
-            outline
-            no-caps
-            color="primary"
+          <AppButton
+            variant="secondary"
             icon="autorenew"
             label="Kodni yangilash"
             :loading="regenerating"
@@ -131,7 +119,7 @@
       <q-list v-else separator class="parent-list">
         <q-item v-for="l in info.links" :key="l.id" class="q-px-none">
           <q-item-section avatar>
-            <q-avatar size="34px" class="tg-avatar" text-color="white">{{
+            <q-avatar size="var(--avatar-sm)" class="tg-avatar" text-color="white">{{
               (l.firstName || '?').charAt(0).toUpperCase()
             }}</q-avatar>
           </q-item-section>
@@ -143,10 +131,8 @@
             </q-item-label>
           </q-item-section>
           <q-item-section side>
-            <q-btn
-              flat
-              dense
-              no-caps
+            <AppButton
+              variant="ghost"
               color="negative"
               icon="link_off"
               label="Uzish"
@@ -160,6 +146,9 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import IconTile from '@/components/app/IconTile.vue'
+import AppInput from '@/components/app/AppInput.vue'
 import { ref, watch } from 'vue'
 import { useQuasar, copyToClipboard } from 'quasar'
 import { api } from '@/boot/axios'
@@ -309,6 +298,6 @@ watch(() => props.studentId, load, { immediate: true })
 }
 
 .parent-list :deep(.q-item) {
-  min-height: 52px;
+  min-height: calc(var(--control-h) + var(--space-3));
 }
 </style>

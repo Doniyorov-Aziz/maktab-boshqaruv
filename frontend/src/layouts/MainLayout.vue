@@ -1,19 +1,12 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <q-header class="app-surface app-header">
-      <q-toolbar class="q-py-xs">
-        <q-btn
-          flat
-          dense
-          round
-          :icon="menuIcon"
-          aria-label="Menu"
-          @click="toggleMenu"
-        >
+      <q-toolbar class="app-header__bar">
+        <AppButton variant="ghost" :icon="menuIcon" aria-label="Menu" @click="toggleMenu">
           <q-tooltip>{{
             $q.screen.gt.sm ? "Menyuni yig'ish" : 'Menyu'
           }}</q-tooltip>
-        </q-btn>
+        </AppButton>
 
         <q-breadcrumbs
           class="q-ml-sm breadcrumb-muted gt-xs"
@@ -32,23 +25,16 @@
 
         <q-space />
 
-        <q-btn
-          flat
-          round
-          dense
-          icon="search"
-          class="q-mr-xs"
-          @click="openSearch"
-        >
+        <AppButton variant="ghost" icon="search" class="q-mr-xs" @click="openSearch">
           <q-tooltip>Qidirish (Ctrl+K)</q-tooltip>
-        </q-btn>
+        </AppButton>
 
-        <q-btn flat round dense icon="notifications" class="q-mr-xs">
+        <AppButton variant="ghost" icon="notifications" class="q-mr-xs">
           <q-badge v-if="notificationCount" color="negative" floating rounded>{{
             notificationCount
           }}</q-badge>
           <q-menu anchor="bottom right" self="top right">
-            <q-list style="min-width: 300px; max-width: 360px">
+            <q-list class="menu-list menu-list--lg">
               <q-item-label header>Bildirishnomalar</q-item-label>
               <q-item v-if="!notifications.length">
                 <q-item-section class="muted-text"
@@ -69,20 +55,18 @@
               </q-item>
             </q-list>
           </q-menu>
-        </q-btn>
+        </AppButton>
 
-        <q-btn
+        <AppButton
+          variant="ghost"
           v-if="schoolStore.activeSchoolName"
-          flat
-          no-caps
-          dense
           icon="school"
           :label="schoolStore.activeSchoolName"
+          icon-right="expand_more"
           class="q-mr-sm school-picker-btn"
         >
-          <q-icon name="expand_more" size="18px" class="q-ml-xs" />
           <q-menu anchor="bottom right" self="top right">
-            <q-list style="min-width: 240px">
+            <q-list class="menu-list">
               <q-item-label header>Maktabni tanlang</q-item-label>
               <q-item
                 v-for="s in schoolStore.schools"
@@ -113,12 +97,10 @@
               </q-item>
             </q-list>
           </q-menu>
-        </q-btn>
+        </AppButton>
 
-        <q-btn
-          flat
-          round
-          dense
+        <AppButton
+          variant="ghost"
           :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
           class="q-mr-xs"
           @click="toggleDarkMode"
@@ -126,11 +108,11 @@
           <q-tooltip>{{
             $q.dark.isActive ? "Yorug' rejim" : "Qorong'u rejim"
           }}</q-tooltip>
-        </q-btn>
+        </AppButton>
 
-        <q-btn flat round dense no-caps class="q-pa-xs">
+        <AppButton variant="ghost" square aria-label="Hisob">
           <q-avatar
-            size="34px"
+            size="var(--avatar-sm)"
             color="primary"
             text-color="white"
             class="text-weight-bold"
@@ -138,7 +120,7 @@
             {{ userInitial }}
           </q-avatar>
           <q-menu anchor="bottom right" self="top right">
-            <q-list style="min-width: 200px">
+            <q-list class="menu-list">
               <q-item>
                 <q-item-section>
                   <q-item-label class="text-weight-semibold">{{
@@ -173,15 +155,15 @@
               </q-item>
             </q-list>
           </q-menu>
-        </q-btn>
+        </AppButton>
       </q-toolbar>
     </q-header>
 
     <q-dialog v-model="accountDialogOpen">
-      <q-card style="width: 100%; max-width: 380px; border-radius: 16px">
+      <q-card class="app-dialog app-dialog--sm">
         <q-card-section class="row items-center q-gutter-md">
           <q-avatar
-            size="52px"
+            size="var(--avatar-lg)"
             color="primary"
             text-color="white"
             class="text-weight-bold text-h6"
@@ -217,7 +199,7 @@
           </div>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn flat no-caps label="Yopish" v-close-popup />
+          <AppButton variant="ghost" label="Yopish" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -232,12 +214,7 @@
       :mini-width="64"
     >
       <div class="row items-center q-pa-md q-gutter-sm no-wrap">
-        <q-avatar
-          size="38px"
-          class="brand-gradient"
-          text-color="white"
-          icon="school"
-        />
+        <IconTile icon="school" size="40" />
         <div v-if="!mini">
           <div class="text-subtitle1 text-weight-bold" style="line-height: 1.1"
             >Maktab Boshqaruv</div
@@ -248,7 +225,7 @@
 
       <q-separator />
 
-      <q-scroll-area style="height: calc(100% - 76px)">
+      <q-scroll-area class="drawer-scroll">
         <q-list padding>
           <q-item
             clickable
@@ -338,13 +315,11 @@
     </q-page-container>
 
     <q-dialog v-model="searchOpen" position="top">
-      <q-card style="width: 100%; max-width: 560px; border-radius: 16px">
-        <q-input
+      <q-card class="app-dialog app-dialog--md">
+        <AppInput
           ref="searchInputRef"
           v-model="searchQuery"
           autofocus
-          borderless
-          dense
           class="q-pa-md"
           placeholder="O'quvchi, o'qituvchi, sinf yoki sahifa qidiring..."
           @keydown.down.prevent="moveSelection(1)"
@@ -355,9 +330,9 @@
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
-        </q-input>
+        </AppInput>
         <q-separator />
-        <q-list style="max-height: 400px; overflow-y: auto">
+        <q-list class="search-results">
           <q-item
             v-for="(r, i) in searchResults"
             :key="r.type + r.id"
@@ -386,6 +361,9 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import IconTile from '@/components/app/IconTile.vue'
+import AppInput from '@/components/app/AppInput.vue'
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -933,8 +911,31 @@ function selectResult(r) {
   color: var(--brand-text-muted);
 }
 
+.app-header__bar {
+  min-height: var(--header-h);
+  gap: var(--space-1);
+}
+
+.menu-list {
+  min-width: var(--menu-w);
+}
+
+.menu-list--lg {
+  max-width: var(--menu-w-lg);
+}
+
+.search-results {
+  max-height: var(--list-max-h);
+  overflow-y: auto;
+}
+
+/* the brand row above it: a 40px tile with 16px around it and a hairline */
+.drawer-scroll {
+  height: calc(100% - var(--tile-md) - 2 * var(--space-4) - var(--hairline));
+}
+
 .school-picker-btn {
-  max-width: 220px;
+  max-width: var(--picker-max-w);
 }
 
 .school-picker-btn :deep(.q-btn__content) {
@@ -949,7 +950,7 @@ function selectResult(r) {
 
 @media (max-width: 599px) {
   .school-picker-btn {
-    max-width: 120px;
+    max-width: var(--picker-max-w-sm);
   }
 }
 
@@ -984,7 +985,7 @@ function selectResult(r) {
   top: 8px;
   bottom: 8px;
   width: 3px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--q-primary);
 }
 

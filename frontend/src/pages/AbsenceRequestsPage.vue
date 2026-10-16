@@ -23,16 +23,9 @@
         ]"
         @update:model-value="reload"
       />
-      <q-btn
-        flat
-        round
-        dense
-        icon="refresh"
-        aria-label="Yangilash"
-        @click="reload"
-      >
+      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="reload">
         <q-tooltip>Yangilash</q-tooltip>
-      </q-btn>
+      </AppButton>
     </template>
 
     <q-banner rounded dense class="brand-card q-mb-md info-banner">
@@ -117,11 +110,10 @@
 
         <template v-slot:body-cell-photo="props">
           <q-td :props="props">
-            <q-btn
+            <AppButton
+              variant="ghost"
+              size="sm"
               v-if="props.row.hasPhoto"
-              flat
-              dense
-              round
               icon="image"
               color="primary"
               aria-label="Rasmni ko'rish"
@@ -133,7 +125,7 @@
               "
             >
               <q-tooltip>Ma'lumotnoma rasmi</q-tooltip>
-            </q-btn>
+            </AppButton>
             <span v-else class="muted-text">—</span>
           </q-td>
         </template>
@@ -175,10 +167,8 @@
               v-if="props.row.status === 'PENDING'"
               class="column items-stretch action-stack"
             >
-              <q-btn
-                unelevated
-                dense
-                no-caps
+              <AppButton
+                size="sm"
                 color="positive"
                 icon="check"
                 label="Tasdiqlash"
@@ -186,10 +176,9 @@
                 :loading="busy === props.row.id"
                 @click="approve(props.row)"
               />
-              <q-btn
-                outline
-                dense
-                no-caps
+              <AppButton
+                variant="secondary"
+                size="sm"
                 color="negative"
                 icon="close"
                 label="Rad etish"
@@ -211,7 +200,7 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Arizani rad etish</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-card-section v-if="rejecting">
           <div class="text-body2 q-mb-md">
@@ -219,10 +208,9 @@
             {{ formatDate(rejecting.dateFrom) }} –
             {{ formatDate(rejecting.dateTo) }}
           </div>
-          <q-input
+          <AppInput
             v-model="rejectReason"
             type="textarea"
-            outlined
             autogrow
             autofocus
             label="Sabab (ota-onaga ko'rsatiladi)"
@@ -230,17 +218,9 @@
           />
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <q-btn
-            flat
-            no-caps
-            label="Bekor qilish"
-            color="grey-7"
-            v-close-popup
-          />
-          <q-btn
-            unelevated
-            no-caps
-            color="negative"
+          <AppButton variant="ghost" label="Bekor qilish" color="grey-7" v-close-popup />
+          <AppButton
+            variant="danger"
             label="Rad etish"
             :disable="!rejectReason.trim()"
             :loading="busy === rejecting?.id"
@@ -259,6 +239,8 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
 import { ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -444,14 +426,14 @@ watch(() => schoolStore.activeSchoolId, reload, { immediate: true })
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--text-xs);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .comment-text {
-  max-width: 260px;
+  max-width: var(--cell-max);
   white-space: normal;
   color: var(--text-primary);
   margin-top: 4px;
@@ -459,7 +441,7 @@ watch(() => schoolStore.activeSchoolId, reload, { immediate: true })
 
 .status-badge {
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
 }
 
@@ -474,7 +456,7 @@ watch(() => schoolStore.activeSchoolId, reload, { immediate: true })
 
 .dialog-card {
   width: 100%;
-  max-width: 520px;
+  max-width: var(--dialog-w-md);
   border-radius: var(--radius-lg);
 }
 </style>

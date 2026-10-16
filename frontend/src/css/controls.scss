@@ -60,6 +60,15 @@
   .q-btn__content {
     gap: var(--space-2);
     flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+
+  .q-icon {
+    font-size: var(--text-lg);
+  }
+
+  &.app-btn--sm .q-icon {
+    font-size: var(--text-lead);
   }
 
   // the gap above spaces icon and text; Quasar's own margins would double it
@@ -174,4 +183,26 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+// ---------------------------------------------------------------- dialogs
+// A dialog card takes the screen width on a phone and one of four widths above.
+.app-dialog {
+  width: 100%;
+}
+
+.app-dialog--sm {
+  max-width: var(--dialog-w-sm);
+}
+
+.app-dialog--md {
+  max-width: var(--dialog-w-md);
+}
+
+.app-dialog--lg {
+  max-width: var(--dialog-w-lg);
+}
+
+.app-dialog--xl {
+  max-width: var(--dialog-w-xl);
 }

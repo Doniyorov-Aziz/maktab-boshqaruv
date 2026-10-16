@@ -1,63 +1,98 @@
 <template>
-  <q-page class="page-layout q-pa-md">
-    <div v-if="!noHeader" class="row items-center q-mb-lg q-col-gutter-md">
+  <q-page :class="['page-layout', { 'page-layout--fill': fill }]">
+    <div v-if="!noHeader" class="page-layout__header">
       <slot name="header">
-        <div class="col-auto">
-          <q-avatar
-            size="48px"
-            text-color="white"
-            :icon="icon"
-            :style="{ background: color || 'var(--brand-gradient)' }"
-          />
-        </div>
-        <div class="col page-layout__title-col">
+        <IconTile v-if="icon" :icon="icon" size="48" :color="color" />
+        <div class="page-layout__title">
           <div class="text-h5 text-weight-bold ellipsis">{{ title }}</div>
           <div v-if="subtitle" class="text-caption muted-text ellipsis">
             {{ subtitle }}
           </div>
         </div>
-        <div class="col-auto row items-center q-gutter-sm actions-col">
+        <div class="page-layout__actions">
           <slot name="actions" />
         </div>
       </slot>
     </div>
-    <slot />
+    <div class="page-layout__body">
+      <slot />
+    </div>
   </q-page>
 </template>
 
 <script setup>
+// Every page sits in this frame: it uses the whole width next to the sidebar,
+// the side padding follows the screen (--page-pad) and the space above the
+// header, under it and at the bottom is one token (--page-gap).
+// fill: the body takes the rest of the screen height (tables, calendars that
+// scroll inside instead of the page).
+import IconTile from '@/components/app/IconTile.vue'
+
 defineProps({
   icon: { type: String, default: '' },
   title: { type: String, default: '' },
   subtitle: { type: String, default: '' },
   color: { type: String, default: '' },
-  noHeader: { type: Boolean, default: false }
+  noHeader: { type: Boolean, default: false },
+  fill: { type: Boolean, default: false }
 })
 </script>
 
 <style scoped>
-/* Every page in the app shares this one wrapper so width, side padding and
-   the header block never drift page-to-page again. */
 .page-layout {
-  max-width: 1600px;
-  margin: 0 auto;
+  width: 100%;
+  padding: var(--page-gap) var(--page-pad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-gap);
+}
+
+.page-layout__header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.page-layout__title {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.page-layout__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.page-layout__body {
+  min-width: 0;
+}
+
+/* on a desktop the page is exactly one screen high and its table scrolls inside;
+   on a phone the blocks stack and the page scrolls as usual */
+@media (min-width: 1024px) {
+  .page-layout--fill {
+    height: calc(100vh - var(--header-h));
+    min-height: 0;
+  }
+
+  .page-layout--fill .page-layout__body {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .muted-text {
   color: var(--brand-text-muted);
 }
 
-.page-layout__title-col {
-  min-width: 0;
-}
-
-.actions-col {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 @media (max-width: 599px) {
-  .actions-col {
+  .page-layout__actions {
     width: 100%;
     justify-content: flex-start;
   }

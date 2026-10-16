@@ -6,14 +6,7 @@
     :subtitle="`Botdagi tartib — sudrab o'zgartiring · ${schoolStore.activeSchoolName || ''}`"
   >
     <template #actions>
-      <q-btn
-        unelevated
-        color="primary"
-        no-caps
-        icon="add"
-        label="Bo'lim qo'shish"
-        @click="openForm()"
-      />
+      <AppButton icon="add" label="Bo'lim qo'shish" @click="openForm()" />
     </template>
 
     <div class="brand-card">
@@ -54,13 +47,7 @@
           </q-item-section>
           <!-- phone: one menu instead of four buttons -->
           <q-item-section side class="lt-sm">
-            <q-btn
-              flat
-              round
-              dense
-              icon="more_vert"
-              :aria-label="`${c.nameUz} — amallar`"
-            >
+            <AppButton variant="ghost" icon="more_vert" :aria-label="`${c.nameUz} — amallar`">
               <q-menu auto-close>
                 <q-list dense style="min-width: 170px">
                   <q-item
@@ -97,7 +84,7 @@
                   </q-item>
                 </q-list>
               </q-menu>
-            </q-btn>
+            </AppButton>
           </q-item-section>
           <q-item-section side class="gt-xs">
             <div class="row items-center no-wrap q-gutter-xs">
@@ -108,36 +95,28 @@
                 :label="`${c.bookCount} ta kitob`"
               />
               <q-badge v-if="!c.active" color="grey-7" label="Yashirin" />
-              <q-btn
-                flat
-                round
-                dense
+              <AppButton
+                variant="ghost"
                 icon="arrow_upward"
                 :disable="i === 0 || saving"
                 :aria-label="`${c.nameUz} — yuqoriga`"
                 @click="move(i, -1)"
               />
-              <q-btn
-                flat
-                round
-                dense
+              <AppButton
+                variant="ghost"
                 icon="arrow_downward"
                 :disable="i === items.length - 1 || saving"
                 :aria-label="`${c.nameUz} — pastga`"
                 @click="move(i, 1)"
               />
-              <q-btn
-                flat
-                round
-                dense
+              <AppButton
+                variant="ghost"
                 icon="edit"
                 :aria-label="`${c.nameUz} — tahrirlash`"
                 @click="openForm(c)"
               />
-              <q-btn
-                flat
-                round
-                dense
+              <AppButton
+                variant="ghost"
                 color="negative"
                 icon="delete"
                 :aria-label="`${c.nameUz} — o'chirish`"
@@ -154,72 +133,42 @@
     </div>
 
     <q-dialog v-model="formOpen">
-      <q-card style="width: 520px; max-width: 96vw">
+      <q-card class="app-dialog app-dialog--md">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">{{
             form.id ? "Bo'limni tahrirlash" : "Yangi bo'lim"
           }}</div>
           <q-space />
-          <q-btn
-            flat
-            round
-            dense
-            icon="close"
-            aria-label="Yopish"
-            v-close-popup
-          />
+          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
           <div class="text-caption text-weight-semibold">Emoji</div>
           <div class="row q-gutter-xs">
-            <q-btn
+            <AppButton
+              variant="ghost"
               v-for="e in EMOJIS"
               :key="e"
-              flat
-              dense
               class="emoji-btn"
               :class="{ 'emoji-btn--on': form.emoji === e }"
               :aria-label="`Emoji ${e}`"
               :aria-pressed="form.emoji === e"
               @click="form.emoji = e"
-              >{{ e }}</q-btn
-            >
+              :label="e"
+            />
           </div>
-          <q-input
+          <AppInput
             v-model="form.emoji"
-            dense
-            outlined
             maxlength="16"
             label="Yoki o'zingiz yozing"
-            style="max-width: 200px"
+            style="max-width: var(--field-w-sm)"
           />
-          <q-input
-            v-model="form.nameUz"
-            dense
-            outlined
-            maxlength="80"
-            label="Nomi (o'zbekcha) *"
-          />
-          <q-input
-            v-model="form.nameRu"
-            dense
-            outlined
-            maxlength="80"
-            label="Nomi (ruscha)"
-          />
+          <AppInput v-model="form.nameUz" maxlength="80" label="Nomi (o'zbekcha) *" />
+          <AppInput v-model="form.nameRu" maxlength="80" label="Nomi (ruscha)" />
           <q-toggle v-model="form.active" label="Botda ko'rinadi" />
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <q-btn flat no-caps label="Bekor qilish" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            color="primary"
-            icon="save"
-            label="Saqlash"
-            :loading="saving"
-            @click="save"
-          />
+          <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
+          <AppButton icon="save" label="Saqlash" :loading="saving" @click="save" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -227,6 +176,8 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
 import { ref, reactive, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -430,7 +381,7 @@ watch(() => schoolStore.activeSchoolId, load, { immediate: true })
 .emoji-btn {
   font-size: 20px;
   min-width: 40px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 .emoji-btn--on {
   background: rgba(99, 102, 241, 0.16);

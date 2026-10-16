@@ -248,7 +248,7 @@ onBeforeUnmount(() => {
 
 .wa-card {
   background: var(--wa-card);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   padding: 14px 16px;
   margin-bottom: 12px;
   border: 1px solid var(--wa-border);
@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
   background: var(--wa-accent);
   color: var(--wa-accent-text);
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 10px 18px;
   font: inherit;
   font-weight: 600;
@@ -284,7 +284,7 @@ onBeforeUnmount(() => {
   display: flex;
   background: var(--wa-card);
   border: 1px solid var(--wa-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 3px;
   margin-bottom: 12px;
 }
@@ -297,7 +297,7 @@ onBeforeUnmount(() => {
   font: inherit;
   font-weight: 600;
   padding: 8px 4px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -323,15 +323,15 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 600;
 }
 
 .wa-score {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: var(--avatar-sm);
+  height: var(--avatar-sm);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--wa-border);
   background: transparent;
   color: var(--wa-text);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 4px 14px 4px 4px;
   font: inherit;
   white-space: nowrap;
@@ -405,9 +405,9 @@ onBeforeUnmount(() => {
 }
 
 .wa-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  width: var(--avatar-sm);
+  height: var(--avatar-sm);
+  border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -462,7 +462,7 @@ onBeforeUnmount(() => {
 .wa-main {
   flex: 1;
   padding: 12px 12px 84px;
-  max-width: 640px;
+  max-width: var(--wa-main-max);
   width: 100%;
   margin: 0 auto;
 }
@@ -509,7 +509,7 @@ onBeforeUnmount(() => {
   font-size: 11px;
   font-weight: 600;
   padding: 4px 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .wa-tab--active {

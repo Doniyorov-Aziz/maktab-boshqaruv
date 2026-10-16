@@ -16,7 +16,7 @@
             v-if="overview.homeroomTeacher"
             class="row items-center no-wrap q-gutter-x-sm"
           >
-            <q-avatar size="42px" class="cov-avatar">{{
+            <q-avatar size="var(--avatar-md)" class="cov-avatar">{{
               initials(overview.homeroomTeacher.fullName)
             }}</q-avatar>
             <div class="col" style="min-width: 0">
@@ -32,10 +32,8 @@
                   :href="`tel:${overview.homeroomTeacher.phone}`"
                   >📞 {{ formatPhone(overview.homeroomTeacher.phone) }}</a
                 >
-                <q-btn
-                  flat
-                  round
-                  dense
+                <AppButton
+                  variant="ghost"
                   size="sm"
                   icon="content_copy"
                   class="q-ml-xs cov-copy"
@@ -43,7 +41,7 @@
                   @click="copy(overview.homeroomTeacher.phone)"
                 >
                   <q-tooltip>Nusxalash</q-tooltip>
-                </q-btn>
+                </AppButton>
               </div>
               <div v-else class="cov-muted">Telefon kiritilmagan</div>
             </div>
@@ -123,10 +121,7 @@
         </section>
 
         <section v-if="canGrade && state.gradable" class="cov-part cov-action">
-          <q-btn
-            unelevated
-            no-caps
-            color="primary"
+          <AppButton
             icon="edit_note"
             label="Shu darsga baho qo'yish"
             class="cov-grade-btn"
@@ -136,7 +131,7 @@
               >{{ state.gradable.lessonNo }}-dars ·
               {{ state.gradable.subjectName }}</q-tooltip
             >
-          </q-btn>
+          </AppButton>
         </section>
       </div>
 
@@ -168,6 +163,7 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
 import { computed } from 'vue'
 import { useQuasar, copyToClipboard } from 'quasar'
 import {
@@ -291,7 +287,7 @@ async function copy(phone) {
 }
 
 .cov-now {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .cov-now-title {
@@ -344,7 +340,7 @@ async function copy(phone) {
   border: 1px solid var(--brand-border);
   background: var(--card-bg);
   color: var(--text-primary);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 3px 10px 3px 4px;
   cursor: pointer;
   display: inline-flex;
@@ -360,9 +356,9 @@ async function copy(phone) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-pill);
   background: var(--surface-2);
   font-size: 11px;
   font-weight: 700;

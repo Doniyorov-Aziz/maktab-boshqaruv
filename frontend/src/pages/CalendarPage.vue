@@ -16,21 +16,13 @@
           { label: 'Haftalik', value: 'week' }
         ]"
       />
-      <q-btn flat round dense icon="chevron_left" @click="shift(-1)" />
-      <q-btn flat no-caps dense label="Bugun" @click="goToday" />
+      <AppButton variant="ghost" icon="chevron_left" @click="shift(-1)" />
+      <AppButton variant="ghost" label="Bugun" @click="goToday" />
       <div class="text-subtitle1 text-weight-medium range-label">{{
         rangeLabel
       }}</div>
-      <q-btn flat round dense icon="chevron_right" @click="shift(1)" />
-      <q-btn
-        v-if="canCreate"
-        color="primary"
-        unelevated
-        no-caps
-        icon="add"
-        label="Tadbir"
-        @click="openCreateDialog"
-      />
+      <AppButton variant="ghost" icon="chevron_right" @click="shift(1)" />
+      <AppButton v-if="canCreate" icon="add" label="Tadbir" @click="openCreateDialog" />
     </template>
 
     <div class="row items-center q-gutter-sm q-mb-md legend-row">
@@ -98,13 +90,13 @@
     </div>
 
     <q-dialog v-model="dayDetailOpen">
-      <q-card style="width: 100%; max-width: 420px; border-radius: 18px">
+      <q-card class="app-dialog app-dialog--sm">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">{{
             dayDetailDate && formatDate(dayDetailDate)
           }}</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-list separator class="q-mt-sm">
           <q-item
@@ -115,13 +107,7 @@
             @click="openEditDialog(ev)"
           >
             <q-item-section avatar>
-              <q-avatar
-                :style="{ background: typeColor(ev.type) }"
-                text-color="white"
-                size="32px"
-              >
-                <q-icon name="event" size="16px" />
-              </q-avatar>
+              <IconTile icon="event" size="32" :color="typeColor(ev.type)" />
             </q-item-section>
             <q-item-section>
               <q-item-label>{{ ev.title }}</q-item-label>
@@ -133,32 +119,19 @@
     </q-dialog>
 
     <q-dialog v-model="dialogOpen" persistent>
-      <q-card style="width: 100%; max-width: 460px; border-radius: 18px">
+      <q-card class="app-dialog app-dialog--sm">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">{{
             editingId ? 'Tadbirni tahrirlash' : 'Yangi tadbir'
           }}</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-form @submit.prevent="saveEvent">
           <q-card-section class="q-gutter-md q-pt-md">
-            <q-input
-              v-model="form.title"
-              label="Nomi"
-              outlined
-              dense
-              :rules="[v => !!v || 'Majburiy']"
-            />
-            <q-input
-              v-model="form.description"
-              label="Tavsif"
-              type="textarea"
-              autogrow
-              outlined
-              dense
-            />
-            <q-select
+            <AppInput v-model="form.title" label="Nomi" :rules="[v => !!v || 'Majburiy']" />
+            <AppInput v-model="form.description" label="Tavsif" type="textarea" autogrow />
+            <AppSelect
               v-model="form.type"
               :options="[
                 { value: 'HOLIDAY', label: 'Bayram' },
@@ -171,20 +144,14 @@
               option-label="label"
               emit-value
               map-options
-              outlined
-              dense
               label="Turi"
             />
-            <date-field
+            <AppDateInput
               v-model="form.startDate"
               label="Boshlanish"
               :rules="[v => !!v || 'Majburiy']"
             />
-            <date-field
-              v-model="form.endDate"
-              label="Tugash"
-              :rules="[v => !!v || 'Majburiy']"
-            />
+            <AppDateInput v-model="form.endDate" label="Tugash" :rules="[v => !!v || 'Majburiy']" />
             <q-banner
               v-if="formError"
               class="bg-red-1 text-negative rounded-borders"
@@ -193,31 +160,17 @@
             >
           </q-card-section>
           <q-card-actions align="right" class="q-pa-md">
-            <q-btn
+            <AppButton
+              variant="ghost"
               v-if="editingId"
-              flat
-              no-caps
               color="negative"
               label="O'chirish"
               :loading="deleting"
               @click="deleteEvent"
             />
             <q-space />
-            <q-btn
-              flat
-              label="Bekor qilish"
-              no-caps
-              color="grey-7"
-              v-close-popup
-            />
-            <q-btn
-              type="submit"
-              color="primary"
-              label="Saqlash"
-              no-caps
-              unelevated
-              :loading="saving"
-            />
+            <AppButton variant="ghost" label="Bekor qilish" color="grey-7" v-close-popup />
+            <AppButton type="submit" label="Saqlash" :loading="saving" />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -226,11 +179,15 @@
 </template>
 
 <script setup>
+import IconTile from '@/components/app/IconTile.vue'
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
-import DateField from '@/components/DateField.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
 import { toLocalDateStr, todayStr, monthName, formatDate } from '@/utils/date'
@@ -496,7 +453,7 @@ onBeforeUnmount(() => {
   gap: 6px;
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--brand-border);
   cursor: pointer;
   user-select: none;
@@ -508,9 +465,9 @@ onBeforeUnmount(() => {
 }
 
 .legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: var(--radius-pill);
   display: inline-block;
 }
 
@@ -534,17 +491,17 @@ onBeforeUnmount(() => {
 }
 
 .day-cell {
-  min-height: 90px;
+  min-height: var(--day-min-h);
   min-width: 0;
   border: 1px solid var(--brand-border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 4px;
   cursor: pointer;
   overflow: hidden;
 }
 
 .calendar-grid--week .day-cell {
-  min-height: 140px;
+  min-height: var(--day-min-h-week);
 }
 
 .day-cell--muted {
@@ -572,7 +529,7 @@ onBeforeUnmount(() => {
   color: white;
   background: var(--q-primary);
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   margin-bottom: 3px;
   font-variant-numeric: tabular-nums;
 }
@@ -580,7 +537,7 @@ onBeforeUnmount(() => {
 .event-chip {
   font-size: 11px;
   color: white;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 2px 5px;
   margin-bottom: 2px;
   cursor: pointer;
@@ -603,7 +560,7 @@ onBeforeUnmount(() => {
 
 @media (max-width: 599px) {
   .day-cell {
-    min-height: 60px;
+    min-height: var(--day-min-h-sm);
   }
 
   .day-header {

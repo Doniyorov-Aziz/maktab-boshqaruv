@@ -2,12 +2,7 @@
   <page-layout>
     <template v-slot:header>
       <div class="col-auto">
-        <q-avatar
-          size="48px"
-          text-color="white"
-          icon="waving_hand"
-          style="background: var(--brand-gradient)"
-        />
+        <IconTile icon="waving_hand" size="48" />
       </div>
       <div class="col page-layout__title-col">
         <div class="text-h5 text-weight-bold ellipsis"
@@ -147,10 +142,8 @@
             {{ liveLessonsHeadline }}
           </div>
         </div>
-        <q-btn
-          flat
-          dense
-          no-caps
+        <AppButton
+          variant="ghost"
           color="primary"
           label="Jadvalni ko'rish"
           @click="router.push('/timetable')"
@@ -207,10 +200,8 @@
         </div>
       </div>
       <div v-if="liveLessons.length > 8" class="text-center q-mt-sm">
-        <q-btn
-          flat
-          dense
-          no-caps
+        <AppButton
+          variant="ghost"
           color="primary"
           :label="showAllLessons ? 'Kamroq ko\'rsatish' : 'Hammasini ko\'rish'"
           @click="showAllLessons = !showAllLessons"
@@ -414,7 +405,7 @@
     </div>
 
     <q-dialog v-model="absenteesDialogOpen">
-      <q-card style="width: 100%; max-width: 480px; border-radius: 16px">
+      <q-card class="app-dialog app-dialog--md">
         <q-card-section class="row items-center justify-between">
           <div class="text-subtitle1 text-weight-bold">Bugun kelmaganlar</div>
           <q-badge color="negative">{{ absentees.length }}</q-badge>
@@ -423,7 +414,7 @@
         <q-list
           v-if="absentees.length"
           separator
-          style="max-height: 420px; overflow-y: auto"
+          style="max-height: var(--list-max-h); overflow-y: auto"
         >
           <q-item
             v-for="(a, i) in absentees"
@@ -449,6 +440,8 @@
 </template>
 
 <script setup>
+import IconTile from '@/components/app/IconTile.vue'
+import AppButton from '@/components/app/AppButton.vue'
 import { ref, computed, onMounted, watch, h, defineComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar, QIcon } from 'quasar'
@@ -903,7 +896,7 @@ const Sparkline = defineComponent({
     return () => {
       const raw = props.data || []
       const values = raw.filter(v => v != null)
-      if (values.length < 2) return h('div', { style: 'height:28px' })
+      if (values.length < 2) return h('div', { style: 'height: var(--sparkline-h)' })
       const max = Math.max(...values, 1)
       const min = Math.min(...values, 0)
       const range = max - min || 1
@@ -1002,8 +995,8 @@ watch(() => schoolStore.activeSchoolId, loadAll)
 }
 
 .kpi-icon {
-  width: 40px;
-  height: 40px;
+  width: var(--tile-md);
+  height: var(--tile-md);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -1033,7 +1026,7 @@ watch(() => schoolStore.activeSchoolId, loadAll)
 
 .sparkline-svg {
   width: 100%;
-  height: 28px;
+  height: var(--sparkline-h);
   margin-top: 6px;
 }
 
@@ -1046,7 +1039,7 @@ watch(() => schoolStore.activeSchoolId, loadAll)
 }
 
 .chart-fill {
-  min-height: 260px;
+  min-height: var(--chart-h);
 }
 
 .live-lessons-table {
@@ -1089,7 +1082,7 @@ watch(() => schoolStore.activeSchoolId, loadAll)
 
 .attention-subitem {
   padding-left: 56px;
-  min-height: 36px;
+  min-height: var(--control-h-sm);
 }
 
 .event-date-block {

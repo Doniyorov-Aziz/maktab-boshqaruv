@@ -6,10 +6,8 @@
     :subtitle="schoolStore.activeSchoolName"
   >
     <template v-slot:actions>
-      <q-btn
-        outline
-        no-caps
-        color="primary"
+      <AppButton
+        variant="secondary"
         icon="calendar_month"
         label="Oylik kalendar"
         @click="$router.push('/attendance/calendar')"
@@ -69,46 +67,35 @@
     <div class="brand-card q-pa-md q-mb-md">
       <div class="row q-col-gutter-md items-end">
         <div class="col-12 col-sm-3">
-          <q-select
+          <AppSelect
             v-model="selectedClassId"
             :options="classOptions"
             option-value="value"
             option-label="label"
             emit-value
             map-options
-            outlined
-            dense
             label="Sinf"
             @update:model-value="onClassChange"
           />
         </div>
         <div class="col-12 col-sm-4">
-          <q-select
+          <AppSelect
             v-model="selectedLessonId"
             :options="lessonOptions"
             option-value="value"
             option-label="label"
             emit-value
             map-options
-            outlined
-            dense
             label="Dars"
             :disable="!selectedClassId"
             @update:model-value="loadRoster"
           />
         </div>
         <div class="col-12 col-sm-3">
-          <date-field
-            v-model="selectedDate"
-            label="Sana"
-            @update:model-value="loadRoster"
-          />
+          <AppDateInput v-model="selectedDate" label="Sana" @update:model-value="loadRoster" />
         </div>
         <div class="col-12 col-sm-2">
-          <q-btn
-            color="primary"
-            unelevated
-            no-caps
+          <AppButton
             class="full-width mark-all-btn"
             icon="done_all"
             label="Hammasi keldi"
@@ -167,7 +154,7 @@
           >
             <q-item-section avatar>
               <q-avatar
-                size="36px"
+                size="var(--avatar-sm)"
                 :style="{ background: avatarColor(entry.studentName) }"
                 text-color="white"
               >
@@ -195,26 +182,20 @@
       </q-list>
 
       <div class="row justify-end items-center q-pa-md">
-        <q-btn
-          color="primary"
-          unelevated
-          no-caps
-          icon="save"
-          label="Saqlash"
-          :loading="saving"
-          @click="saveAttendance"
-        />
+        <AppButton icon="save" label="Saqlash" :loading="saving" @click="saveAttendance" />
       </div>
     </div>
   </page-layout>
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
-import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
 import { useAuthStore } from '@/stores/auth'
 import { todayStr } from '@/utils/date'

@@ -2,12 +2,7 @@
   <page-layout v-if="module" :icon="module.icon" :color="module.color">
     <template v-slot:header>
       <div class="col-auto">
-        <q-avatar
-          size="48px"
-          text-color="white"
-          :icon="module.icon"
-          :style="{ background: module.color || 'var(--brand-gradient)' }"
-        />
+        <IconTile :icon="module.icon" size="48" :color="module.color || ''" />
       </div>
       <div class="col page-title-col">
         <div class="text-h5 text-weight-bold ellipsis">{{ module.title }}</div>
@@ -23,10 +18,8 @@
         </div>
       </div>
       <div class="col-auto row items-center q-gutter-sm no-wrap">
-        <q-input
+        <AppInput
           v-model="searchQuery"
-          dense
-          outlined
           clearable
           debounce="250"
           placeholder="Qidirish..."
@@ -36,23 +29,18 @@
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
-        </q-input>
-        <q-btn
-          flat
-          dense
-          no-caps
+        </AppInput>
+        <AppButton
+          variant="ghost"
           icon="file_download"
           label="Excel"
           color="grey-7"
           @click="exportCsv"
         />
-        <q-btn
+        <AppButton
           v-if="canCreate"
-          color="primary"
           icon="add"
           label="Yangi qo'shish"
-          unelevated
-          no-caps
           class="q-px-md"
           @click="openCreateDialog"
         />
@@ -75,7 +63,7 @@
         v-if="module.filters?.length || module.toggles?.length"
         class="row items-center q-gutter-sm q-mb-md"
       >
-        <q-select
+        <AppSelect
           v-for="f in module.filters || []"
           :key="f.key"
           v-model="activeFilters[f.key]"
@@ -84,8 +72,6 @@
           option-label="label"
           emit-value
           map-options
-          dense
-          outlined
           clearable
           :label="f.label"
           :placeholder="f.placeholder"
@@ -137,12 +123,7 @@
                   >
                 </div>
                 <div v-else class="row items-center q-gutter-sm no-wrap">
-                  <q-avatar
-                    :icon="module.icon"
-                    :style="{ background: module.color }"
-                    text-color="white"
-                    size="40px"
-                  />
+                  <IconTile :icon="module.icon" size="40" :color="module.color || ''" />
                   <div class="text-weight-bold text-subtitle1 ellipsis">{{
                     row.name
                   }}</div>
@@ -156,23 +137,19 @@
                   >Faol</q-badge
                 >
                 <div class="row no-wrap">
-                  <q-btn
-                    v-if="canEdit"
-                    flat
-                    dense
-                    round
+                  <AppButton
+                    variant="ghost"
                     size="sm"
+                    v-if="canEdit"
                     icon="edit"
                     color="primary"
                     @click.stop="openEditDialog(row)"
                     @keydown.enter.stop
                   />
-                  <q-btn
-                    v-if="canDelete"
-                    flat
-                    dense
-                    round
+                  <AppButton
+                    variant="ghost"
                     size="sm"
+                    v-if="canDelete"
                     icon="delete_outline"
                     color="negative"
                     @click.stop="confirmDelete(row)"
@@ -273,18 +250,14 @@
           class="row items-center justify-end q-mt-md q-gutter-sm"
         >
           <div class="text-caption muted-text">{{ cardPageLabel }}</div>
-          <q-btn
-            flat
-            dense
-            round
+          <AppButton
+            variant="ghost"
             icon="chevron_left"
             :disable="pagination.page <= 1"
             @click="changeCardPage(-1)"
           />
-          <q-btn
-            flat
-            dense
-            round
+          <AppButton
+            variant="ghost"
             icon="chevron_right"
             :disable="
               pagination.page * pagination.rowsPerPage >= pagination.rowsNumber
@@ -302,13 +275,11 @@
         <div class="text-subtitle2">{{
           searchQuery ? 'Hech narsa topilmadi' : "Hozircha ma'lumot yo'q"
         }}</div>
-        <q-btn
+        <AppButton
+          variant="secondary"
           v-if="canCreate && !searchQuery"
-          outline
-          color="primary"
           icon="add"
           label="Yangi qo'shish"
-          no-caps
           class="q-mt-md"
           @click="openCreateDialog"
         />
@@ -358,13 +329,11 @@
                   ? "Boshqa kalit so'z bilan qidirib ko'ring"
                   : "Boshlash uchun birinchi yozuvni qo'shing"
               }}</div>
-              <q-btn
+              <AppButton
+                variant="secondary"
                 v-if="canCreate && !searchQuery"
-                outline
-                color="primary"
                 icon="add"
                 label="Yangi qo'shish"
-                no-caps
                 @click="openCreateDialog"
               />
             </div>
@@ -429,41 +398,35 @@
 
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="row-actions">
-              <q-btn
+              <AppButton
+                variant="ghost"
+                size="sm"
                 v-if="
                   canEdit &&
                   module.key === 'subjects' &&
                   props.row.active === false
                 "
-                flat
-                dense
-                round
-                size="sm"
                 icon="restore"
                 color="positive"
                 :loading="busyRowId === props.row.id"
                 @click.stop="reactivate(props.row)"
               >
                 <q-tooltip>Qayta faollashtirish</q-tooltip>
-              </q-btn>
-              <q-btn
-                v-if="canEdit"
-                flat
-                dense
-                round
+              </AppButton>
+              <AppButton
+                variant="ghost"
                 size="sm"
+                v-if="canEdit"
                 icon="edit"
                 color="primary"
                 @click.stop="openEditDialog(props.row)"
               >
                 <q-tooltip>Tahrirlash</q-tooltip>
-              </q-btn>
-              <q-btn
-                v-if="canDelete && props.row.active !== false"
-                flat
-                dense
-                round
+              </AppButton>
+              <AppButton
+                variant="ghost"
                 size="sm"
+                v-if="canDelete && props.row.active !== false"
                 :icon="module.softDelete ? 'block' : 'delete_outline'"
                 color="negative"
                 :loading="busyRowId === props.row.id"
@@ -472,7 +435,7 @@
                 <q-tooltip>{{
                   module.softDelete ? 'Nofaol qilish' : "O'chirish"
                 }}</q-tooltip>
-              </q-btn>
+              </AppButton>
             </q-td>
           </template>
         </q-table>
@@ -480,13 +443,13 @@
     </template>
 
     <q-dialog v-model="roomOccupancyOpen">
-      <q-card style="width: 100%; max-width: 420px; border-radius: 18px">
+      <q-card class="app-dialog app-dialog--sm">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6"
             >{{ roomOccupancyRoom?.roomNumber }}-xona — bugungi jadval</div
           >
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-card-section>
           <div v-if="roomOccupancyLoading" class="column q-gutter-sm">
@@ -537,18 +500,17 @@
         class="form-drawer column full-height no-wrap"
       >
         <q-card-section class="row items-center q-pb-none">
-          <q-avatar
-            size="40px"
-            :color="isEditing ? 'primary' : 'positive'"
-            text-color="white"
+          <IconTile
             :icon="isEditing ? 'edit' : 'add'"
+            size="40"
+            :color="isEditing ? 'var(--q-primary)' : 'var(--q-positive)'"
             class="q-mr-sm"
           />
           <div class="text-h6">
             {{ isEditing ? 'Tahrirlash' : "Yangi qo'shish" }}
           </div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
 
         <q-form
@@ -568,7 +530,7 @@
               Maktab: {{ schoolStore.activeSchoolName || '—' }}
             </q-banner>
             <template v-for="field in formFields" :key="field.key">
-              <q-select
+              <AppSelect
                 v-if="!field.autoSchool && field.type === 'select'"
                 v-model="formModel[field.key]"
                 :label="field.label"
@@ -578,35 +540,29 @@
                 option-label="label"
                 emit-value
                 map-options
-                outlined
-                dense
                 :hint="field.hint"
                 :rules="fieldRules(field)"
               />
-              <q-input
+              <AppInput
                 v-else-if="!field.autoSchool && field.type === 'textarea'"
                 v-model="formModel[field.key]"
                 :label="field.label"
                 type="textarea"
                 autogrow
-                outlined
-                dense
                 :rules="fieldRules(field)"
               />
-              <date-field
+              <AppDateInput
                 v-else-if="!field.autoSchool && field.type === 'date'"
                 v-model="formModel[field.key]"
                 :label="field.label"
                 :rules="fieldRules(field)"
               />
-              <q-input
+              <AppInput
                 v-else-if="!field.autoSchool"
                 v-model="formModel[field.key]"
                 :label="field.label"
                 :type="inputType(field)"
                 :hint="field.hint"
-                outlined
-                dense
                 :rules="fieldRules(field)"
               />
             </template>
@@ -624,22 +580,8 @@
           </q-card-section>
 
           <q-card-actions align="right" class="q-pa-md">
-            <q-btn
-              flat
-              label="Bekor qilish"
-              no-caps
-              color="grey-7"
-              v-close-popup
-            />
-            <q-btn
-              type="submit"
-              color="primary"
-              label="Saqlash"
-              no-caps
-              unelevated
-              class="q-px-md"
-              :loading="saving"
-            />
+            <AppButton variant="ghost" label="Bekor qilish" color="grey-7" v-close-popup />
+            <AppButton type="submit" label="Saqlash" class="q-px-md" :loading="saving" />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -648,6 +590,11 @@
 </template>
 
 <script setup>
+import IconTile from '@/components/app/IconTile.vue'
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, reactive, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -656,7 +603,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
 import { getModule } from '@/config/modules'
 import PageLayout from '@/components/PageLayout.vue'
-import DateField from '@/components/DateField.vue'
 
 const route = useRoute()
 const router = useRouter()

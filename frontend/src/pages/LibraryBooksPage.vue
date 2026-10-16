@@ -21,54 +21,39 @@
         <template #grid><q-tooltip>Kartochkalar</q-tooltip></template>
         <template #table><q-tooltip>Jadval</q-tooltip></template>
       </q-btn-toggle>
-      <q-btn
+      <AppButton
+        variant="secondary"
         v-if="authStore.isAdmin"
-        outline
-        color="primary"
-        no-caps
         icon="history_edu"
         label="📜 Wikisource dan qo'shish"
         @click="openWikisource"
       />
-      <q-btn
-        outline
-        color="primary"
-        no-caps
+      <AppButton
+        variant="secondary"
         icon="drive_folder_upload"
         label="Ommaviy yuklash"
         @click="openBulk"
       />
-      <q-btn
-        unelevated
-        color="primary"
-        no-caps
-        icon="add"
-        label="Kitob qo'shish"
-        @click="openCreate"
-      />
+      <AppButton icon="add" label="Kitob qo'shish" @click="openCreate" />
     </template>
 
     <!-- filters -->
     <div class="brand-card q-pa-md q-mb-md">
       <div class="row q-col-gutter-sm items-center">
         <div class="col-12 col-md-4">
-          <q-input
+          <AppInput
             v-model="filters.q"
-            dense
-            outlined
             clearable
             debounce="350"
             placeholder="Nomi yoki muallif bo'yicha qidirish"
             aria-label="Qidirish"
           >
             <template #prepend><q-icon name="search" /></template>
-          </q-input>
+          </AppInput>
         </div>
         <div class="col-6 col-md-2">
-          <q-select
+          <AppSelect
             v-model="filters.categoryId"
-            dense
-            outlined
             clearable
             emit-value
             map-options
@@ -77,10 +62,8 @@
           />
         </div>
         <div class="col-6 col-md-2">
-          <q-select
+          <AppSelect
             v-model="filters.language"
-            dense
-            outlined
             clearable
             emit-value
             map-options
@@ -89,10 +72,8 @@
           />
         </div>
         <div class="col-6 col-md-2">
-          <q-select
+          <AppSelect
             v-model="filters.ageGroup"
-            dense
-            outlined
             clearable
             emit-value
             map-options
@@ -101,10 +82,8 @@
           />
         </div>
         <div class="col-6 col-md-2">
-          <q-select
+          <AppSelect
             v-model="filters.legalBasis"
-            dense
-            outlined
             clearable
             emit-value
             map-options
@@ -145,14 +124,7 @@
         <div class="text-caption muted-text q-mb-md">
           Filtrni o'zgartiring yoki birinchi kitobni qo'shing.
         </div>
-        <q-btn
-          unelevated
-          color="primary"
-          no-caps
-          icon="add"
-          label="Kitob qo'shish"
-          @click="openCreate"
-        />
+        <AppButton icon="add" label="Kitob qo'shish" @click="openCreate" />
       </div>
       <div v-else class="row q-col-gutter-md">
         <div
@@ -210,10 +182,8 @@
                 </span>
               </div>
             </div>
-            <q-btn
-              flat
-              round
-              dense
+            <AppButton
+              variant="ghost"
               size="sm"
               icon="more_vert"
               class="book-card__menu"
@@ -247,7 +217,7 @@
                   </q-item>
                 </q-list>
               </q-menu>
-            </q-btn>
+            </AppButton>
           </div>
         </div>
       </div>
@@ -309,28 +279,26 @@
         </template>
         <template #body-cell-actions="p">
           <q-td :props="p" auto-width>
-            <q-btn
-              flat
-              round
-              dense
+            <AppButton
+              variant="ghost"
+              size="sm"
               icon="picture_as_pdf"
               aria-label="PDF ni ko'rish"
               @click.stop="viewPdf(p.row)"
             >
               <q-tooltip>PDF ni ko'rish</q-tooltip>
-            </q-btn>
-            <q-btn
+            </AppButton>
+            <AppButton
+              variant="ghost"
+              size="sm"
               v-if="p.row.active"
-              flat
-              round
-              dense
               color="negative"
               icon="visibility_off"
               aria-label="Nofaol qilish"
               @click.stop="deactivate(p.row)"
             >
               <q-tooltip>Nofaol qilish</q-tooltip>
-            </q-btn>
+            </AppButton>
           </q-td>
         </template>
       </q-table>
@@ -356,14 +324,7 @@
             label="Qoralama — saqlansa faol bo'ladi"
           />
           <q-space />
-          <q-btn
-            flat
-            round
-            dense
-            icon="close"
-            aria-label="Yopish"
-            v-close-popup
-          />
+          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
         </q-card-section>
 
         <q-card-section>
@@ -423,12 +384,10 @@
                 class="hidden"
                 @change="e => pickPdf(e.target.files[0])"
               />
-              <q-btn
-                v-if="form.id"
-                flat
-                dense
-                no-caps
+              <AppButton
+                variant="ghost"
                 size="sm"
+                v-if="form.id"
                 icon="open_in_new"
                 label="Hozirgi PDF ni ko'rish"
                 class="q-mt-xs"
@@ -509,10 +468,8 @@
             <div class="col-12 col-md-8">
               <div class="row q-col-gutter-sm">
                 <div class="col-12">
-                  <q-input
+                  <AppInput
                     v-model="form.title"
-                    dense
-                    outlined
                     label="Kitob nomi *"
                     maxlength="255"
                     :rules="[
@@ -522,10 +479,8 @@
                   />
                 </div>
                 <div class="col-12 col-sm-7">
-                  <q-select
+                  <AppSelect
                     v-model="form.authorIds"
-                    dense
-                    outlined
                     multiple
                     use-chips
                     use-input
@@ -553,7 +508,7 @@
                         </q-item-section>
                       </q-item>
                     </template>
-                  </q-select>
+                  </AppSelect>
                   <div
                     v-if="selectedStatus"
                     class="author-status q-mt-xs"
@@ -564,10 +519,8 @@
                   </div>
                 </div>
                 <div class="col-12 col-sm-5">
-                  <q-select
+                  <AppSelect
                     v-model="form.categoryId"
-                    dense
-                    outlined
                     clearable
                     emit-value
                     map-options
@@ -576,10 +529,8 @@
                   />
                 </div>
                 <div class="col-6 col-sm-3">
-                  <q-select
+                  <AppSelect
                     v-model="form.language"
-                    dense
-                    outlined
                     emit-value
                     map-options
                     :options="languages"
@@ -587,10 +538,8 @@
                   />
                 </div>
                 <div class="col-6 col-sm-3">
-                  <q-select
+                  <AppSelect
                     v-model="form.ageGroup"
-                    dense
-                    outlined
                     emit-value
                     map-options
                     :options="ageGroups"
@@ -598,10 +547,8 @@
                   />
                 </div>
                 <div class="col-6 col-sm-3">
-                  <q-input
+                  <AppInput
                     v-model.number="form.pages"
-                    dense
-                    outlined
                     type="number"
                     min="1"
                     label="Bet soni"
@@ -609,10 +556,8 @@
                   />
                 </div>
                 <div class="col-6 col-sm-3">
-                  <q-input
+                  <AppInput
                     v-model.number="form.year"
-                    dense
-                    outlined
                     type="number"
                     min="1000"
                     max="2100"
@@ -620,10 +565,8 @@
                   />
                 </div>
                 <div class="col-12">
-                  <q-input
+                  <AppInput
                     v-model="form.description"
-                    dense
-                    outlined
                     autogrow
                     type="textarea"
                     maxlength="2000"
@@ -633,10 +576,8 @@
                   />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-select
+                  <AppSelect
                     v-model="form.legalBasis"
-                    dense
-                    outlined
                     emit-value
                     map-options
                     :options="legalBases"
@@ -654,13 +595,11 @@
                         </q-item-section>
                       </q-item>
                     </template>
-                  </q-select>
+                  </AppSelect>
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-input
+                  <AppInput
                     v-model="form.legalNote"
-                    dense
-                    outlined
                     maxlength="500"
                     label="Izoh (masalan, ruxsat xati raqami)"
                   />
@@ -675,18 +614,16 @@
                     dense
                     label="Asar muallif tirikligida chop etilgan"
                   />
-                  <q-input
+                  <AppInput
                     v-if="!form.publishedInLifetime"
                     v-model.number="form.firstPublishedYear"
-                    dense
-                    outlined
                     type="number"
                     min="1000"
                     max="2100"
                     label="Birinchi nashr yili *"
                     hint="Vafotdan keyin chop etilgan asar nashrdan keyin 70 yil himoyalanadi"
                     class="q-mt-sm"
-                    style="max-width: 280px"
+                    style="max-width: var(--field-w)"
                   />
                   <q-checkbox
                     v-model="form.noModernCommentary"
@@ -700,10 +637,8 @@
                   v-if="needsPermission(form.legalBasis)"
                   class="col-12 col-sm-8"
                 >
-                  <q-select
+                  <AppSelect
                     v-model="form.permissionId"
-                    dense
-                    outlined
                     clearable
                     emit-value
                     map-options
@@ -734,26 +669,17 @@
         </q-card-section>
 
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <q-btn
+          <AppButton
+            variant="ghost"
             v-if="form.id && form.active"
-            flat
-            no-caps
             color="negative"
             icon="visibility_off"
             label="Nofaol qilish"
             @click="deactivate(form, true)"
           />
           <q-space />
-          <q-btn flat no-caps label="Bekor qilish" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            color="primary"
-            icon="save"
-            label="Saqlash"
-            :loading="saving"
-            @click="save"
-          />
+          <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
+          <AppButton icon="save" label="Saqlash" :loading="saving" @click="save" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -770,10 +696,8 @@
           />
           <div class="text-h6">Ommaviy yuklash</div>
           <q-space />
-          <q-btn
-            flat
-            round
-            dense
+          <AppButton
+            variant="ghost"
             icon="close"
             aria-label="Yopish"
             :disable="bulkRunning"
@@ -789,10 +713,8 @@
           </q-banner>
           <div class="row q-col-gutter-sm">
             <div class="col-12 col-sm-6">
-              <q-select
+              <AppSelect
                 v-model="bulk.legalBasis"
-                dense
-                outlined
                 emit-value
                 map-options
                 :options="legalBases"
@@ -800,19 +722,11 @@
               />
             </div>
             <div class="col-12 col-sm-6">
-              <q-input
-                v-model="bulk.legalNote"
-                dense
-                outlined
-                maxlength="500"
-                label="Izoh"
-              />
+              <AppInput v-model="bulk.legalNote" maxlength="500" label="Izoh" />
             </div>
             <div class="col-12 col-sm-4">
-              <q-select
+              <AppSelect
                 v-model="bulk.categoryId"
-                dense
-                outlined
                 clearable
                 emit-value
                 map-options
@@ -821,10 +735,8 @@
               />
             </div>
             <div class="col-6 col-sm-4">
-              <q-select
+              <AppSelect
                 v-model="bulk.language"
-                dense
-                outlined
                 emit-value
                 map-options
                 :options="languages"
@@ -832,10 +744,8 @@
               />
             </div>
             <div class="col-6 col-sm-4">
-              <q-select
+              <AppSelect
                 v-model="bulk.ageGroup"
-                dense
-                outlined
                 emit-value
                 map-options
                 :options="ageGroups"
@@ -843,10 +753,8 @@
               />
             </div>
             <div class="col-12 col-sm-6">
-              <q-select
+              <AppSelect
                 v-model="bulk.authorId"
-                dense
-                outlined
                 clearable
                 use-input
                 emit-value
@@ -861,10 +769,8 @@
               v-if="needsPermission(bulk.legalBasis)"
               class="col-12 col-sm-6"
             >
-              <q-select
+              <AppSelect
                 v-model="bulk.permissionId"
-                dense
-                outlined
                 clearable
                 emit-value
                 map-options
@@ -957,10 +863,8 @@
                 side
                 style="min-width: 180px"
               >
-                <q-select
+                <AppSelect
                   v-model="f.authorId"
-                  dense
-                  outlined
                   clearable
                   use-input
                   emit-value
@@ -973,10 +877,8 @@
                 />
               </q-item-section>
               <q-item-section v-if="f.state === 'waiting' && !bulkRunning" side>
-                <q-btn
-                  flat
-                  round
-                  dense
+                <AppButton
+                  variant="ghost"
                   size="sm"
                   icon="close"
                   aria-label="Olib tashlash"
@@ -987,17 +889,8 @@
           </q-list>
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <q-btn
-            flat
-            no-caps
-            label="Yopish"
-            :disable="bulkRunning"
-            v-close-popup
-          />
-          <q-btn
-            unelevated
-            no-caps
-            color="primary"
+          <AppButton variant="ghost" label="Yopish" :disable="bulkRunning" v-close-popup />
+          <AppButton
             icon="cloud_upload"
             :label="`Yuklash (${bulkWaiting})`"
             :loading="bulkRunning"
@@ -1014,10 +907,8 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">📜 Wikisource dan qo'shish</div>
           <q-space />
-          <q-btn
-            flat
-            round
-            dense
+          <AppButton
+            variant="ghost"
             icon="close"
             aria-label="Yopish"
             :disable="!!wsBusy"
@@ -1033,10 +924,8 @@
           </q-banner>
           <div class="row q-col-gutter-sm items-start">
             <div class="col-12 col-sm-8">
-              <q-select
+              <AppSelect
                 v-model="ws.authorId"
-                dense
-                outlined
                 use-input
                 emit-value
                 map-options
@@ -1047,10 +936,7 @@
               />
             </div>
             <div class="col-12 col-sm-4">
-              <q-btn
-                unelevated
-                no-caps
-                color="primary"
+              <AppButton
                 icon="travel_explore"
                 label="Asarlarni topish"
                 class="full-width"
@@ -1081,10 +967,8 @@
               · {{ wsResult.works.length }} ta asar
               <span v-if="wsResult.message"> · {{ wsResult.message }}</span>
             </div>
-            <q-input
+            <AppInput
               v-model="wsFilter"
-              dense
-              outlined
               clearable
               placeholder="Asar nomi bo'yicha"
               class="q-mb-xs"
@@ -1112,11 +996,9 @@
                     color="positive"
                     label="Kutubxonada"
                   />
-                  <q-btn
+                  <AppButton
+                    variant="ghost"
                     v-else
-                    flat
-                    dense
-                    no-caps
                     color="primary"
                     icon="download"
                     label="Import"
@@ -1135,6 +1017,9 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
 import { ref, reactive, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -2001,7 +1886,7 @@ async function wsImport(w) {
 .author-status {
   font-size: 12px;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 3px 8px;
   display: inline-block;
 }
@@ -2028,7 +1913,7 @@ async function wsImport(w) {
 }
 .legal-box {
   border: 1px dashed rgba(148, 163, 184, 0.6);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
 }
 .ws-form {
@@ -2036,7 +1921,7 @@ async function wsImport(w) {
   max-width: 96vw;
 }
 .ws-list {
-  max-height: 360px;
+  max-height: var(--list-max-h);
   overflow-y: auto;
 }
 .status-filter {
@@ -2048,9 +1933,9 @@ async function wsImport(w) {
 }
 .drop-zone {
   border: 2px dashed rgba(148, 163, 184, 0.6);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 16px 10px;
-  min-height: 120px;
+  min-height: var(--dropzone-h);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2063,7 +1948,7 @@ async function wsImport(w) {
     background 0.15s ease;
 }
 .drop-zone--cover {
-  min-height: 150px;
+  min-height: var(--dropzone-h-lg);
 }
 .drop-zone--over {
   border-color: var(--q-primary);
@@ -2074,12 +1959,12 @@ async function wsImport(w) {
   border-color: var(--q-positive);
 }
 .cover-preview {
-  max-height: 128px;
+  max-height: var(--thumb-lg);
   max-width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 .bulk-list {
-  max-height: 260px;
+  max-height: var(--list-max-h-sm);
   overflow-y: auto;
 }
 .muted-text {

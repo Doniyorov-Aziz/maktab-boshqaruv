@@ -49,36 +49,27 @@
           </q-item>
         </q-list>
       </q-btn-dropdown>
-      <q-btn
-        flat
-        round
-        dense
+      <AppButton
+        variant="ghost"
         icon="print"
         color="grey-7"
         class="no-print gt-xs"
         @click="printPage"
-        ><q-tooltip>Chop etish (Ctrl+P)</q-tooltip></q-btn
-      >
-      <q-btn
-        flat
-        round
-        dense
+      ><q-tooltip>Chop etish (Ctrl+P)</q-tooltip></AppButton>
+      <AppButton
+        variant="ghost"
         icon="add"
         color="primary"
         class="no-print"
         @click="router.push('/app/lesson-slots?create=1')"
-        ><q-tooltip>Dars qo'shish</q-tooltip></q-btn
-      >
-      <q-btn
-        flat
-        round
-        dense
+      ><q-tooltip>Dars qo'shish</q-tooltip></AppButton>
+      <AppButton
+        variant="ghost"
         icon="list"
         color="grey-7"
         class="no-print"
         @click="router.push('/app/lesson-slots')"
-        ><q-tooltip>Ro'yxat ko'rinishi</q-tooltip></q-btn
-      >
+      ><q-tooltip>Ro'yxat ko'rinishi</q-tooltip></AppButton>
     </template>
 
     <!-- class tabs (1-A, 1-B, 2-A…) in one row; teacher/room — a select -->
@@ -104,7 +95,7 @@
           :label="o.label"
         />
       </q-tabs>
-      <q-select
+      <AppSelect
         v-else
         v-model="filterValue"
         :options="filterOptions"
@@ -112,12 +103,10 @@
         option-label="label"
         emit-value
         map-options
-        outlined
-        dense
         use-input
         input-debounce="0"
         :label="filterType === 'teacher' ? 'O\'qituvchi' : 'Xona'"
-        style="max-width: 320px"
+        style="max-width: var(--field-w-lg)"
         @update:model-value="onPick"
         @filter="filterSelect"
       />
@@ -236,20 +225,18 @@
 
     <q-dialog v-model="detailOpen">
       <q-card
-        v-if="detailEntry"
-        style="width: 100%; max-width: 380px; border-radius: 18px"
+        v-if="detailEntry" class="app-dialog app-dialog--sm"
       >
         <q-card-section class="row items-center q-pb-none">
-          <q-avatar
-            :style="{ background: subjectColor(detailEntry.subjectName) }"
-            text-color="white"
-            size="40px"
+          <IconTile
             icon="menu_book"
+            size="40"
+            :color="subjectColor(detailEntry.subjectName)"
             class="q-mr-sm"
           />
           <div class="text-h6">{{ detailEntry.subjectName }}</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
           <div class="row items-center q-gutter-xs">
@@ -273,9 +260,8 @@
           </div>
         </q-card-section>
         <q-card-actions align="right" class="q-pa-md">
-          <q-btn
-            flat
-            no-caps
+          <AppButton
+            variant="ghost"
             color="primary"
             label="Tahrirlash"
             @click="router.push('/app/lesson-slots')"
@@ -287,6 +273,9 @@
 </template>
 
 <script setup>
+import IconTile from '@/components/app/IconTile.vue'
+import AppButton from '@/components/app/AppButton.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -591,7 +580,7 @@ watch(
 }
 
 .tt-tabs :deep(.q-tab) {
-  min-height: 34px;
+  min-height: var(--control-h-sm);
   padding: 0 14px;
   font-weight: 600;
 }
@@ -682,7 +671,7 @@ watch(
   flex-direction: column;
   justify-content: center;
   padding: 2px 8px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border-left: 4px solid var(--c);
   background: color-mix(in srgb, var(--c) 13%, transparent);
   cursor: pointer;
@@ -724,7 +713,7 @@ watch(
   align-items: center;
   padding: 10px 8px;
   border-left: 4px solid var(--c);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   margin-bottom: 6px;
   background: color-mix(in srgb, var(--c) 10%, transparent);
 }

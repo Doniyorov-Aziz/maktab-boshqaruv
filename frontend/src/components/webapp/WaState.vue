@@ -58,7 +58,7 @@ const emit = defineEmits(['retry'])
 
 .art {
   width: 150px;
-  height: 112px;
+  height: var(--wa-art);
   margin-bottom: 6px;
 }
 
@@ -106,7 +106,7 @@ const emit = defineEmits(['retry'])
 }
 
 .text {
-  max-width: 280px;
+  max-width: var(--wa-text-max);
   font-size: 14px;
 }
 </style>

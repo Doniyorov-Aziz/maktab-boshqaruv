@@ -80,7 +80,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .book-cover {
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   flex-shrink: 0;
   background: var(--brand-surface-2, rgba(148, 163, 184, 0.12));

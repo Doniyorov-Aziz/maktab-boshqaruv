@@ -7,10 +7,8 @@
     </div>
 
     <template v-else-if="profile">
-      <q-btn
-        flat
-        dense
-        no-caps
+      <AppButton
+        variant="ghost"
         icon="arrow_back"
         label="Orqaga"
         class="q-mb-sm"
@@ -21,7 +19,7 @@
         <div class="row items-center q-col-gutter-md">
           <div class="col-auto">
             <q-avatar
-              size="72px"
+              size="var(--avatar-xl)"
               text-color="white"
               :style="{ background: avatarColor(profile.fullName) }"
               class="text-h5"
@@ -260,6 +258,7 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
@@ -400,9 +399,9 @@ load()
 }
 
 .heatmap-cell {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-sm);
 }
 
 .hm-NONE {

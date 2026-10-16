@@ -6,48 +6,34 @@
     :subtitle="`Ota-onalarning ma'muriyatga xatlari · ${schoolStore.activeSchoolName || ''}`"
   >
     <template #actions>
-      <q-btn
+      <AppButton
         v-if="authStore.isEditor"
-        unelevated
-        no-caps
-        color="primary"
         icon="add"
         label="Murojaat qo'shish"
         @click="openManual"
       />
-      <q-btn
-        flat
-        round
-        dense
-        icon="refresh"
-        aria-label="Yangilash"
-        @click="reload"
-      >
+      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="reload">
         <q-tooltip>Yangilash</q-tooltip>
-      </q-btn>
+      </AppButton>
     </template>
 
     <div class="appeals" :class="{ 'appeals--chat': selectedId }">
       <!-- ---------------------------------------------------------------- list -->
       <div class="brand-card list-pane column no-wrap">
         <div class="q-pa-sm column q-gutter-sm filters">
-          <q-input
+          <AppInput
             v-model="q"
-            dense
-            outlined
             clearable
             debounce="350"
             placeholder="Ism yoki #raqam"
             @update:model-value="reload"
           >
             <template #prepend><q-icon name="search" /></template>
-          </q-input>
+          </AppInput>
           <div class="row q-col-gutter-xs">
             <div class="col-6">
-              <q-select
+              <AppSelect
                 v-model="status"
-                dense
-                outlined
                 emit-value
                 map-options
                 clearable
@@ -57,10 +43,8 @@
               />
             </div>
             <div class="col-6">
-              <q-select
+              <AppSelect
                 v-model="target"
-                dense
-                outlined
                 emit-value
                 map-options
                 clearable
@@ -70,10 +54,8 @@
               />
             </div>
             <div class="col-6">
-              <q-select
+              <AppSelect
                 v-model="classId"
-                dense
-                outlined
                 emit-value
                 map-options
                 clearable
@@ -83,11 +65,7 @@
               />
             </div>
             <div class="col-6">
-              <date-field
-                v-model="from"
-                label="Sanadan"
-                @update:model-value="reload"
-              />
+              <AppDateInput v-model="from" label="Sanadan" @update:model-value="reload" />
             </div>
           </div>
         </div>
@@ -116,7 +94,7 @@
             @click="select(a.id)"
           >
             <q-item-section avatar>
-              <q-avatar size="40px" class="tg-avatar" text-color="white">{{
+              <q-avatar size="var(--avatar-md)" class="tg-avatar" text-color="white">{{
                 initial(a.parentName)
               }}</q-avatar>
             </q-item-section>
@@ -181,17 +159,15 @@
         </div>
         <template v-else>
           <div class="chat-head row items-center no-wrap q-pa-sm q-gutter-x-sm">
-            <q-btn
-              flat
-              round
-              dense
+            <AppButton
+              variant="ghost"
               icon="arrow_back"
               class="back-btn"
               aria-label="Orqaga"
               @click="selectedId = null"
             />
             <template v-if="chat">
-              <q-avatar size="40px" class="tg-avatar" text-color="white">{{
+              <q-avatar size="var(--avatar-md)" class="tg-avatar" text-color="white">{{
                 initial(chat.appeal.parentName)
               }}</q-avatar>
               <div class="col" style="min-width: 0">
@@ -225,11 +201,9 @@
                 :label="statuses[chat.appeal.status]?.label"
                 class="status-badge"
               />
-              <q-btn
+              <AppButton
+                variant="ghost"
                 v-if="chat.canReply && chat.appeal.status !== 'CLOSED'"
-                flat
-                dense
-                no-caps
                 icon="task_alt"
                 label="Yopish"
                 :loading="closing"
@@ -407,10 +381,8 @@
               />
             </div>
             <div class="row items-end no-wrap q-gutter-x-sm">
-              <q-btn
-                flat
-                round
-                dense
+              <AppButton
+                variant="ghost"
                 icon="attach_file"
                 aria-label="Fayl biriktirish"
                 @click="fileInput.click()"
@@ -418,7 +390,7 @@
                 <q-tooltip
                   >Rasm, video, audio yoki hujjat (20 MB gacha)</q-tooltip
                 >
-              </q-btn>
+              </AppButton>
               <input
                 ref="fileInput"
                 type="file"
@@ -427,22 +399,17 @@
                 accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,audio/mpeg,audio/ogg,audio/mp4,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                 @change="addFiles"
               />
-              <q-input
+              <AppInput
                 v-model="replyText"
                 class="col"
                 type="textarea"
-                outlined
-                dense
                 autogrow
                 maxlength="3500"
                 placeholder="Javob yozing… (Ctrl+Enter — yuborish)"
-                input-style="max-height: 140px"
+                input-style="max-height: var(--textarea-max-h)"
                 @keydown.ctrl.enter="sendReply"
               />
-              <q-btn
-                unelevated
-                round
-                color="primary"
+              <AppButton
                 icon="send"
                 aria-label="Yuborish"
                 :loading="sending"
@@ -465,9 +432,8 @@
     <q-dialog :model-value="!!lightbox" @update:model-value="lightbox = null">
       <div class="lightbox column items-center">
         <img :src="lightbox" alt="Rasm" />
-        <q-btn
-          flat
-          round
+        <AppButton
+          variant="ghost"
           icon="close"
           color="white"
           class="lightbox-close"
@@ -483,13 +449,12 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Murojaat qo'shish</div>
           <q-space />
-          <q-btn flat round dense icon="close" v-close-popup />
+          <AppButton variant="ghost" icon="close" v-close-popup />
         </q-card-section>
         <q-form @submit.prevent="saveManual">
           <q-card-section class="column q-gutter-md">
-            <q-select
+            <AppSelect
               v-model="manual.student"
-              outlined
               use-input
               input-debounce="300"
               label="O'quvchi *"
@@ -505,13 +470,8 @@
                   ></q-item
                 >
               </template>
-            </q-select>
-            <q-input
-              v-model="manual.parentName"
-              outlined
-              maxlength="120"
-              label="Murojaatchi (ota-ona)"
-            />
+            </AppSelect>
+            <AppInput v-model="manual.parentName" maxlength="120" label="Murojaatchi (ota-ona)" />
             <q-btn-toggle
               v-model="manual.target"
               no-caps
@@ -522,7 +482,7 @@
             />
             <div class="row q-col-gutter-sm">
               <div class="col-7">
-                <date-field
+                <AppDateInput
                   v-model="manual.date"
                   label="Sana *"
                   no-future
@@ -530,9 +490,8 @@
                 />
               </div>
               <div class="col-5">
-                <q-input
+                <AppInput
                   v-model="manual.time"
-                  outlined
                   label="Vaqt *"
                   mask="##:##"
                   :rules="[
@@ -544,23 +503,22 @@
                       <q-popup-proxy cover>
                         <q-time v-model="manual.time" format24h>
                           <div class="row justify-end">
-                            <q-btn
+                            <AppButton
                               v-close-popup
-                              flat
-                              label="OK"
+                              variant="ghost"
                               color="primary"
+                              label="OK"
                             />
                           </div>
                         </q-time>
                       </q-popup-proxy>
                     </q-icon>
                   </template>
-                </q-input>
+                </AppInput>
               </div>
             </div>
-            <q-input
+            <AppInput
               v-model="manual.text"
-              outlined
               type="textarea"
               autogrow
               counter
@@ -570,22 +528,8 @@
             />
           </q-card-section>
           <q-card-actions align="right" class="q-px-md q-pb-md">
-            <q-btn
-              flat
-              no-caps
-              label="Bekor qilish"
-              color="grey-7"
-              v-close-popup
-            />
-            <q-btn
-              unelevated
-              no-caps
-              type="submit"
-              color="primary"
-              icon="save"
-              label="Saqlash"
-              :loading="savingManual"
-            />
+            <AppButton variant="ghost" label="Bekor qilish" color="grey-7" v-close-popup />
+            <AppButton type="submit" icon="save" label="Saqlash" :loading="savingManual" />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -594,12 +538,15 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
-import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
 import { useAuthStore } from '@/stores/auth'
 import { formatDateTime } from '@/utils/telegram'
@@ -1001,7 +948,7 @@ onBeforeUnmount(() => clearInterval(timer))
   grid-template-columns: 360px 1fr;
   gap: 16px;
   height: calc(100vh - 190px);
-  min-height: 480px;
+  min-height: var(--panel-min-h);
 }
 
 .list-pane,
@@ -1038,7 +985,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
 .status-badge {
   padding: 3px 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
 }
 
@@ -1069,7 +1016,7 @@ onBeforeUnmount(() => clearInterval(timer))
 .bubble {
   max-width: min(520px, 80%);
   padding: 8px 12px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   line-height: 1.45;
   font-size: var(--text-base);
 }
@@ -1078,13 +1025,13 @@ onBeforeUnmount(() => clearInterval(timer))
   background: var(--card-bg);
   color: var(--text-primary);
   border: 1px solid var(--brand-border);
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: var(--radius-sm);
 }
 
 .bubble--out {
   background: rgba(79, 70, 229, 0.12);
   border: 1px solid rgba(79, 70, 229, 0.28);
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: var(--radius-sm);
 }
 
 .bubble-text {
@@ -1107,30 +1054,30 @@ onBeforeUnmount(() => clearInterval(timer))
 .photo {
   display: block;
   max-width: 100%;
-  max-height: 320px;
-  border-radius: 10px;
+  max-height: var(--media-max-h);
+  border-radius: var(--radius-md);
   cursor: zoom-in;
 }
 
 .video {
   display: block;
   max-width: 100%;
-  max-height: 320px;
-  border-radius: 10px;
+  max-height: var(--media-max-h);
+  border-radius: var(--radius-md);
   background: #000;
 }
 
 .video--round {
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
+  width: var(--media-round);
+  height: var(--media-round);
+  border-radius: var(--radius-pill);
   object-fit: cover;
 }
 
 .audio {
   width: 280px;
   max-width: 100%;
-  height: 40px;
+  height: var(--control-h);
 }
 
 .media-meta {
@@ -1151,7 +1098,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
 .file-card {
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--brand-border);
   color: inherit;
   text-decoration: none;
@@ -1167,7 +1114,7 @@ onBeforeUnmount(() => clearInterval(timer))
   gap: 3px;
   width: 360px;
   max-width: 100%;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -1218,7 +1165,7 @@ onBeforeUnmount(() => clearInterval(timer))
 .lightbox img {
   max-width: 92vw;
   max-height: 92vh;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .lightbox-close {
@@ -1230,7 +1177,7 @@ onBeforeUnmount(() => clearInterval(timer))
 
 .manual-card {
   width: 100%;
-  max-width: 560px;
+  max-width: var(--dialog-w-md);
   border-radius: var(--radius-lg);
 }
 </style>

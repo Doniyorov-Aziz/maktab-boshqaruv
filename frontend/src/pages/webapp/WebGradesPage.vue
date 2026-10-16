@@ -308,7 +308,7 @@ async function toggle(subjectId) {
 }
 
 .chart-box {
-  height: 190px;
+  height: var(--wa-chart-h);
 }
 
 .legend {
@@ -325,15 +325,15 @@ async function toggle(subjectId) {
 
 .sw-child {
   width: 14px;
-  height: 8px;
-  border-radius: 4px;
+  height: var(--dot);
+  border-radius: var(--radius-sm);
   background: var(--wa-accent);
 }
 
 .sw-class {
   width: 3px;
-  height: 12px;
-  border-radius: 2px;
+  height: var(--space-3);
+  border-radius: var(--radius-sm);
   background: var(--wa-text);
 }
 
@@ -368,15 +368,15 @@ async function toggle(subjectId) {
 
 .cmp-track {
   position: relative;
-  height: 10px;
-  border-radius: 99px;
+  height: var(--space-2);
+  border-radius: var(--radius-pill);
   background: var(--wa-border);
   margin-top: 6px;
 }
 
 .cmp-child {
   height: 100%;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   transition: width 0.6s ease;
 }
 
@@ -384,9 +384,9 @@ async function toggle(subjectId) {
   position: absolute;
   top: -3px;
   width: 3px;
-  height: 16px;
+  height: var(--space-4);
   margin-left: -1.5px;
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
   background: var(--wa-text);
 }
 
@@ -436,9 +436,9 @@ async function toggle(subjectId) {
 }
 
 .chip {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
+  width: var(--space-5);
+  height: var(--space-5);
+  border-radius: var(--radius-sm);
   color: #fff;
   font-weight: 800;
   font-size: 13px;

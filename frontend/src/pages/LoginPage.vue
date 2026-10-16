@@ -161,9 +161,8 @@
               {{ l === 'uz' ? "O'Z" : 'RU' }}
             </button>
           </div>
-          <q-btn
-            flat
-            round
+          <AppButton
+            variant="ghost"
             class="login__theme"
             :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'"
             :aria-label="$q.dark.isActive ? t.lightMode : t.darkMode"
@@ -172,7 +171,7 @@
             <q-tooltip>{{
               $q.dark.isActive ? t.lightMode : t.darkMode
             }}</q-tooltip>
-          </q-btn>
+          </AppButton>
         </div>
 
         <!-- Form panel -->
@@ -194,10 +193,8 @@
               >
                 <q-icon name="cloud_off" size="20px" aria-hidden="true" />
                 <span class="login__server-text">{{ t.serverDown }}</span>
-                <q-btn
-                  flat
-                  dense
-                  no-caps
+                <AppButton
+                  variant="ghost"
                   :label="t.retry"
                   class="login__server-retry"
                   :loading="checking"
@@ -221,14 +218,11 @@
                 @submit.prevent="onSubmit"
                 @validation-error="onValidationError"
               >
-                <label for="login-username" class="login__label">{{
-                  t.login
-                }}</label>
-                <q-input
+                <AppInput
                   v-model="username"
                   for="login-username"
+                  :label="t.login"
                   :placeholder="t.loginPlaceholder"
-                  outlined
                   autofocus
                   autocomplete="username"
                   class="login__field"
@@ -240,17 +234,14 @@
                   <template v-slot:prepend>
                     <q-icon name="person_outline" aria-hidden="true" />
                   </template>
-                </q-input>
+                </AppInput>
 
-                <label for="login-password" class="login__label">{{
-                  t.password
-                }}</label>
-                <q-input
+                <AppInput
                   v-model="password"
                   for="login-password"
+                  :label="t.password"
                   :placeholder="t.passwordPlaceholder"
                   :type="showPassword ? 'text' : 'password'"
-                  outlined
                   autocomplete="current-password"
                   class="login__field"
                   :error="passInvalid ? true : undefined"
@@ -265,10 +256,9 @@
                     <q-icon name="lock_outline" aria-hidden="true" />
                   </template>
                   <template v-slot:append>
-                    <q-btn
-                      flat
-                      round
-                      dense
+                    <AppButton
+                      variant="ghost"
+                      size="sm"
                       :icon="showPassword ? 'visibility_off' : 'visibility'"
                       :aria-label="
                         showPassword ? t.hidePassword : t.showPassword
@@ -277,7 +267,7 @@
                       @click="showPassword = !showPassword"
                     />
                   </template>
-                </q-input>
+                </AppInput>
 
                 <div v-if="capsLock" class="login__caps" role="status">
                   {{ t.capsLock }}
@@ -332,12 +322,10 @@
                     }"
                     :style="floatStyle"
                   >
-                    <q-btn
+                    <AppButton
                       type="submit"
                       class="login__submit"
                       :class="{ 'login__submit--pop': popping }"
-                      unelevated
-                      no-caps
                       :loading="loading || leaving"
                       :disable="loading || leaving || locked"
                       :aria-label="t.submit"
@@ -353,7 +341,7 @@
                         <q-spinner size="20px" class="q-mr-sm" />
                         {{ t.submitting }}
                       </template>
-                    </q-btn>
+                    </AppButton>
                   </div>
                 </div>
 
@@ -392,13 +380,7 @@
               </div>
             </q-card-section>
             <q-card-actions align="right">
-              <q-btn
-                v-close-popup
-                flat
-                no-caps
-                color="primary"
-                :label="t.forgotOk"
-              />
+              <AppButton variant="ghost" v-close-popup color="primary" :label="t.forgotOk" />
             </q-card-actions>
           </q-card>
         </q-dialog>
@@ -408,6 +390,8 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
 import {
   ref,
   reactive,
@@ -1047,8 +1031,8 @@ async function onSubmit() {
 .login__logo-mark {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: var(--tile-lg);
+  height: var(--tile-lg);
   border-radius: var(--radius-md);
   background: var(--login-brand-text);
   color: var(--login-brand-to);
@@ -1074,7 +1058,7 @@ async function onSubmit() {
 }
 
 .login__text {
-  max-width: 520px;
+  max-width: var(--login-text-max);
 }
 
 .login__title {
@@ -1087,7 +1071,7 @@ async function onSubmit() {
 
 .login__lead {
   margin: 18px 0 0;
-  max-width: 420px;
+  max-width: var(--login-lead-max);
   font-size: var(--text-lead);
   line-height: 1.55;
   color: var(--login-brand-muted);
@@ -1106,7 +1090,7 @@ async function onSubmit() {
 .scene {
   position: relative;
   width: 500px;
-  height: 416px;
+  height: var(--login-scene-h);
   zoom: var(--scene-zoom);
 }
 
@@ -1115,9 +1099,9 @@ async function onSubmit() {
   left: 50%;
   top: 50%;
   width: 380px;
-  height: 320px;
+  height: var(--login-glow);
   transform: translate(-50%, -50%);
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: radial-gradient(
     circle,
     var(--login-scene-glow) 0%,
@@ -1240,8 +1224,8 @@ async function onSubmit() {
 }
 
 .ring {
-  width: 60px;
-  height: 60px;
+  width: var(--login-ring);
+  height: var(--login-ring);
   transform: rotate(-90deg);
   flex: none;
 }
@@ -1286,7 +1270,7 @@ async function onSubmit() {
   gap: 8px;
   align-self: flex-start;
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   /* white on indigo-900: contrast ≈ 12:1 */
   background: #312e81;
   color: #ffffff;
@@ -1296,9 +1280,9 @@ async function onSubmit() {
 }
 
 .glass__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: var(--radius-pill);
   background: #fbbf24;
 }
 
@@ -1311,8 +1295,8 @@ async function onSubmit() {
 }
 
 .glass__progress {
-  height: 6px;
-  border-radius: 999px;
+  height: var(--bar-h);
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.16);
   overflow: hidden;
 }
@@ -1328,9 +1312,9 @@ async function onSubmit() {
 .glass__grade {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  width: var(--tile-lg);
+  height: var(--tile-lg);
+  border-radius: var(--radius-pill);
   background: #059669;
   color: #ffffff;
   font-size: 22px;
@@ -1340,9 +1324,9 @@ async function onSubmit() {
 .glass__tg {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: var(--tile-md);
+  height: var(--tile-md);
+  border-radius: var(--radius-pill);
   background: #229ed9;
   color: #ffffff;
 }
@@ -1373,8 +1357,8 @@ async function onSubmit() {
 
 .week__cell {
   width: 30px;
-  height: 14px;
-  border-radius: 4px;
+  height: var(--space-3);
+  border-radius: var(--radius-sm);
   opacity: 0.9;
 }
 
@@ -1399,7 +1383,7 @@ async function onSubmit() {
   align-items: center;
   gap: 8px;
   padding: 7px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--login-chip-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 14px;
@@ -1432,17 +1416,17 @@ async function onSubmit() {
 .login__lang {
   display: inline-flex;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--login-card-bg);
   border: 1px solid var(--login-card-border);
 }
 
 .login__lang-btn {
   min-width: 38px;
-  height: 30px;
+  height: var(--control-h-sm);
   padding: 0 10px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--brand-text-muted);
   font: inherit;
@@ -1460,9 +1444,9 @@ async function onSubmit() {
 }
 
 .login__theme {
-  width: 40px;
-  height: 40px;
-  min-height: 40px;
+  width: var(--control-h);
+  height: var(--control-h);
+  min-height: var(--control-h);
   background: var(--login-card-bg);
   border: 1px solid var(--login-card-border);
   color: var(--brand-text-muted);
@@ -1501,7 +1485,7 @@ async function onSubmit() {
 .login__form-wrap {
   position: relative;
   width: 100%;
-  max-width: 440px;
+  max-width: var(--login-form-max);
   animation: loginRise 400ms var(--ease-out) 60ms both;
 }
 
@@ -1551,9 +1535,9 @@ async function onSubmit() {
 .login__card-logo {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: var(--tile-lg);
+  height: var(--tile-lg);
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, #4f46e5, #7c3aed);
   color: #ffffff;
   box-shadow: 0 8px 18px rgba(79, 70, 229, 0.3);
@@ -1561,7 +1545,7 @@ async function onSubmit() {
 
 .login__badge {
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--login-badge-bg);
   color: var(--login-badge-text);
   font-size: var(--text-sm);
@@ -1589,25 +1573,12 @@ async function onSubmit() {
   position: static;
 }
 
-.login__label {
-  margin: 0 0 8px 2px;
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 .login__field {
-  margin-bottom: 6px;
+  margin-bottom: var(--space-3);
 }
 
 .login__field :deep(.q-field__control) {
-  height: 52px;
-  border-radius: var(--radius-md);
   transition: box-shadow var(--dur) var(--ease-out);
-}
-
-.login__field :deep(.q-field__marginal) {
-  height: 52px;
 }
 
 .login__field :deep(.q-field__native::placeholder) {
@@ -1683,14 +1654,14 @@ async function onSubmit() {
 }
 
 .login__submit {
-  height: 52px;
+  height: var(--control-h);
   border-radius: var(--radius-md);
   background: var(--login-button-gradient);
   background-size: 200% 100%;
   background-position: 0% 0;
   color: #ffffff;
   font-size: var(--text-md);
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 8px 20px rgba(79, 70, 229, 0.28);
   transition:
     transform var(--dur) var(--ease-out),
@@ -1713,12 +1684,12 @@ async function onSubmit() {
 /* runaway button: the row is a fixed placeholder; the wrapper floats over the
    card (absolute, top-left origin + translate) only while the game is on */
 .login__submit-row {
-  height: 52px;
+  height: var(--control-h);
 }
 
 .login__submit-wrap {
   width: 100%;
-  height: 52px;
+  height: var(--control-h);
 }
 
 .login__submit-wrap .login__submit {
@@ -1748,7 +1719,7 @@ async function onSubmit() {
 
 .login__submit-wrap--small .login__submit {
   padding: 0 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   white-space: nowrap;
 }
@@ -1785,8 +1756,8 @@ async function onSubmit() {
 /* visible to screen readers only */
 .login__sr {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: var(--hairline);
+  height: var(--hairline);
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
@@ -1830,7 +1801,7 @@ async function onSubmit() {
 }
 
 .login__dialog {
-  max-width: 400px;
+  max-width: var(--dialog-w-sm);
   border-radius: var(--radius-lg);
 }
 
@@ -1917,7 +1888,7 @@ async function onSubmit() {
 
   .scene {
     width: 480px;
-    height: 530px;
+    height: var(--login-scene-h-lg);
   }
 
   .scene__slot--timetable {
@@ -1976,7 +1947,7 @@ async function onSubmit() {
   }
 
   .login__lead {
-    max-width: 440px;
+    max-width: var(--login-lead-max-lg);
     font-size: 20px;
   }
 

@@ -1,14 +1,7 @@
 <template>
   <div class="print-root">
     <div class="print-toolbar no-print">
-      <q-btn
-        flat
-        dense
-        no-caps
-        icon="arrow_back"
-        label="Orqaga"
-        @click="goBack"
-      />
+      <AppButton variant="ghost" icon="arrow_back" label="Orqaga" @click="goBack" />
       <div class="col q-ml-sm ellipsis">
         <div class="text-subtitle1 text-weight-semibold ellipsis">
           Ota-onalar uchun QR kodlar
@@ -18,10 +11,7 @@
           A4 varaqqa chop eting, kesib ota-onalar yig'ilishida tarqating.
         </div>
       </div>
-      <q-btn
-        unelevated
-        no-caps
-        color="primary"
+      <AppButton
         icon="print"
         label="Chop etish"
         :disable="!data || !data.botUsername"
@@ -64,6 +54,7 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'

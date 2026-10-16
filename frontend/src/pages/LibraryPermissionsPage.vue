@@ -6,22 +6,13 @@
     :subtitle="`Muallif / huquq egasi ruxsati bilan tarqatiladigan kitoblar · ${schoolStore.activeSchoolName || ''}`"
   >
     <template #actions>
-      <q-btn
-        outline
-        color="primary"
-        no-caps
+      <AppButton
+        variant="secondary"
         icon="description"
         label="📄 Ruxsat xati shablonini yuklab olish"
         @click="templateOpen = true"
       />
-      <q-btn
-        unelevated
-        color="primary"
-        no-caps
-        icon="add"
-        label="Ruxsatnoma qo'shish"
-        @click="openForm()"
-      />
+      <AppButton icon="add" label="Ruxsatnoma qo'shish" @click="openForm()" />
     </template>
 
     <q-banner dense rounded class="info-banner q-mb-md">
@@ -95,30 +86,27 @@
         </template>
         <template #body-cell-actions="p">
           <q-td :props="p" auto-width>
-            <q-btn
-              flat
-              round
-              dense
+            <AppButton
+              variant="ghost"
+              size="sm"
               icon="attach_file"
               aria-label="Imzolangan skanni ko'rish"
               @click="viewDocument(p.row)"
             >
               <q-tooltip>Imzolangan skan</q-tooltip>
-            </q-btn>
-            <q-btn
+            </AppButton>
+            <AppButton
+              variant="ghost"
+              size="sm"
               v-if="p.row.status !== 'REVOKED'"
-              flat
-              round
-              dense
               icon="edit"
               aria-label="Tahrirlash"
               @click="openForm(p.row)"
             />
-            <q-btn
+            <AppButton
+              variant="ghost"
+              size="sm"
               v-if="p.row.status !== 'REVOKED'"
-              flat
-              dense
-              no-caps
               color="negative"
               label="Bekor qilish"
               @click="revoke(p.row)"
@@ -130,20 +118,13 @@
 
     <!-- create / edit -->
     <q-dialog v-model="formOpen">
-      <q-card style="width: 640px; max-width: 96vw">
+      <q-card class="app-dialog app-dialog--md">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">
             {{ form.id ? 'Ruxsatnomani tahrirlash' : 'Yangi ruxsatnoma' }}
           </div>
           <q-space />
-          <q-btn
-            flat
-            round
-            dense
-            icon="close"
-            aria-label="Yopish"
-            v-close-popup
-          />
+          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
           <q-btn-toggle
@@ -161,40 +142,24 @@
           />
           <div class="row q-col-gutter-sm">
             <div class="col-12 col-sm-7">
-              <q-input
+              <AppInput
                 v-model="form.grantorFullName"
-                dense
-                outlined
                 maxlength="200"
                 label="Ruxsat beruvchining F.I.Sh. *"
               />
             </div>
             <div class="col-12 col-sm-5">
-              <q-input
-                v-model="form.phone"
-                dense
-                outlined
-                maxlength="40"
-                label="Telefon"
-              />
+              <AppInput v-model="form.phone" maxlength="40" label="Telefon" />
             </div>
             <div class="col-6">
-              <date-field
-                v-model="form.validFrom"
-                label="Boshlanish sanasi *"
-              />
+              <AppDateInput v-model="form.validFrom" label="Boshlanish sanasi *" />
             </div>
             <div class="col-6">
-              <date-field
-                v-model="form.validUntil"
-                label="Tugash sanasi (bo'sh — muddatsiz)"
-              />
+              <AppDateInput v-model="form.validUntil" label="Tugash sanasi (bo'sh — muddatsiz)" />
             </div>
           </div>
-          <q-select
+          <AppSelect
             v-model="form.bookIds"
-            dense
-            outlined
             multiple
             use-chips
             use-input
@@ -220,57 +185,34 @@
           >
             <template #prepend><q-icon name="upload_file" /></template>
           </q-file>
-          <q-input
-            v-model="form.note"
-            dense
-            outlined
-            maxlength="1000"
-            label="Izoh"
-          />
+          <AppInput v-model="form.note" maxlength="1000" label="Izoh" />
           <div class="text-caption muted-text">
             Doirasi: faqat shu maktab o'quvchilari va ularning ota-onalariga
             bepul elektron (PDF) tarqatish.
           </div>
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <q-btn flat no-caps label="Bekor qilish" v-close-popup />
-          <q-btn
-            unelevated
-            no-caps
-            color="primary"
-            icon="save"
-            label="Saqlash"
-            :loading="saving"
-            @click="save"
-          />
+          <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
+          <AppButton icon="save" label="Saqlash" :loading="saving" @click="save" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- letter template -->
     <q-dialog v-model="templateOpen">
-      <q-card style="width: 520px; max-width: 96vw">
+      <q-card class="app-dialog app-dialog--md">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">📄 Ruxsat xati shabloni</div>
           <q-space />
-          <q-btn
-            flat
-            round
-            dense
-            icon="close"
-            aria-label="Yopish"
-            v-close-popup
-          />
+          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
           <div class="text-caption muted-text">
             Maktab nomi va kitob nomlari oldindan yoziladi. Chop eting, huquq
             egasi to'ldirib imzolaydi, skanini shu yerga yuklaysiz.
           </div>
-          <q-select
+          <AppSelect
             v-model="tpl.bookIds"
-            dense
-            outlined
             multiple
             use-chips
             use-input
@@ -281,24 +223,11 @@
             label="Kutubxonadagi kitob(lar)"
             @filter="filterBooks"
           />
-          <q-input
-            v-model="tpl.title"
-            dense
-            outlined
-            label="Yoki asar nomi (hali kutubxonada bo'lmasa)"
-          />
-          <q-input
-            v-model="tpl.grantor"
-            dense
-            outlined
-            label="Huquq egasining F.I.Sh. (ixtiyoriy)"
-          />
+          <AppInput v-model="tpl.title" label="Yoki asar nomi (hali kutubxonada bo'lmasa)" />
+          <AppInput v-model="tpl.grantor" label="Huquq egasining F.I.Sh. (ixtiyoriy)" />
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <q-btn
-            unelevated
-            no-caps
-            color="primary"
+          <AppButton
             icon="download"
             label="PDF yuklab olish"
             :loading="downloading"
@@ -311,11 +240,14 @@
 </template>
 
 <script setup>
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
+import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, reactive, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
-import DateField from '@/components/DateField.vue'
 import { useSchoolStore } from '@/stores/school'
 import { todayStr } from '@/utils/date'
 
