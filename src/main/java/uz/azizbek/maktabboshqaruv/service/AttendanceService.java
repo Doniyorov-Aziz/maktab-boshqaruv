@@ -14,6 +14,7 @@ import uz.azizbek.maktabboshqaruv.entity.Student;
 import uz.azizbek.maktabboshqaruv.repository.AttendanceRepository;
 import uz.azizbek.maktabboshqaruv.repository.LessonSlotRepository;
 import uz.azizbek.maktabboshqaruv.repository.StudentRepository;
+import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -54,7 +55,19 @@ public class AttendanceService {
     private ActivityLogService activityLogService;
 
     @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private AttendanceWriter writer;
+
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
+    private static String currentUsername() {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return auth == null ? null : auth.getName();
+    }
+
+    private static long schoolOf(LessonSlot ls) {
+        return ls.getSchoolClass().getAcademicYear().getSchool().getId();
+    }
 
     public Page<AttendanceResponseDto> getAllAttendance(Long schoolId, Pageable pageable) {
         return attendanceRepository.findBySchoolId(schoolId, pageable).map(this::toResponseDto);
@@ -112,42 +125,33 @@ public class AttendanceService {
                 dto.setAttendanceId(a.getId());
                 dto.setStatus(a.getStatus());
                 dto.setComment(a.getComment());
+                dto.setSource(a.getSource().name());
+                dto.setCreatedBy(a.getCreatedBy());
+                dto.setAutoAt(a.getAutoAt());
+                dto.setAutoNote(a.getAutoNote());
+                dto.setLateMinutes(a.getLateMinutes());
             }
             roster.add(dto);
         }
         return roster;
     }
 
+    /** A staff save of the whole lesson: every mark becomes MANUAL (see AttendanceWriter). */
     @Transactional
     public List<AttendanceRosterEntryDto> bulkMark(AttendanceBulkRequestDto request) {
         LessonSlot lessonSlot = lessonSlotRepository.findById(request.getLessonSlotId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars mavjud emas"));
 
-        Map<Long, Attendance> existing = new HashMap<>();
-        for (Attendance a : attendanceRepository.findByLessonSlotIdAndRecordDate(request.getLessonSlotId(), request.getRecordDate())) {
-            existing.put(a.getStudent().getId(), a);
-        }
-
+        List<AttendanceWriter.ManualMark> marks = new ArrayList<>();
         for (AttendanceBulkRequestDto.Entry entry : request.getEntries()) {
             Student student = studentRepository.findById(entry.getStudentId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quvchi mavjud emas: " + entry.getStudentId()));
             if (!student.getSchoolClass().getId().equals(lessonSlot.getSchoolClass().getId())) {
                 throw new IllegalStateException("O'quvchi ushbu darsning sinfiga tegishli emas: " + entry.getStudentId());
             }
-
-            Attendance attendance = existing.get(entry.getStudentId());
-            if (attendance == null) {
-                attendance = new Attendance();
-                attendance.setLessonSlot(lessonSlot);
-                attendance.setStudent(student);
-                attendance.setRecordDate(request.getRecordDate());
-            }
-            AttendanceStatus previousStatus = attendance.getStatus();
-            attendance.setStatus(entry.getStatus());
-            attendance.setComment(entry.getComment());
-            Attendance saved = attendanceRepository.save(attendance);
-            publishIfNotifiable(saved, previousStatus);
+            marks.add(new AttendanceWriter.ManualMark(student.getId(), entry.getStatus(), entry.getComment()));
         }
+        writer.saveManual(schoolOf(lessonSlot), lessonSlot.getId(), request.getRecordDate(), marks, currentUsername());
 
         String className = lessonSlot.getSchoolClass().getGradeNumber() + "-" + lessonSlot.getSchoolClass().getSectionLetter();
         activityLogService.record(
@@ -173,16 +177,10 @@ public class AttendanceService {
             throw new IllegalStateException("Bu o'quvchi uchun ushbu dars va sanada davomat allaqachon mavjud");
         }
 
-        Attendance attendance = new Attendance();
-        attendance.setLessonSlot(lessonSlot);
-        attendance.setStudent(student);
-        attendance.setRecordDate(request.getRecordDate());
-        attendance.setStatus(request.getStatus());
-        attendance.setComment(request.getComment());
-
-        Attendance saved = attendanceRepository.save(attendance);
-        publishIfNotifiable(saved, null);
-        return toResponseDto(saved);
+        Long id = writer.saveManual(schoolOf(lessonSlot), lessonSlot.getId(), request.getRecordDate(),
+                List.of(new AttendanceWriter.ManualMark(student.getId(), request.getStatus(), request.getComment())),
+                currentUsername()).get(0);
+        return toResponseDto(attendanceRepository.findById(id).orElseThrow());
     }
 
     @Transactional
@@ -190,21 +188,15 @@ public class AttendanceService {
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday davomat yozuvi topilmadi: " + id));
 
-        AttendanceStatus previousStatus = attendance.getStatus();
-        attendance.setStatus(request.getStatus());
-        attendance.setComment(request.getComment());
-
-        Attendance updated = attendanceRepository.save(attendance);
-        publishIfNotifiable(updated, previousStatus);
-        return toResponseDto(updated);
-    }
-
-    // Re-saving a roster with unchanged statuses must not re-notify parents;
-    // only a change into ABSENT/LATE (e.g. PRESENT -> ABSENT) does.
-    void publishIfNotifiable(Attendance attendance, AttendanceStatus previousStatus) {
-        if (AttendanceMarkedEvent.isNotifiable(previousStatus, attendance.getStatus())) {
-            eventPublisher.publishEvent(new AttendanceMarkedEvent(attendance.getId(), previousStatus, attendance.getStatus()));
-        }
+        LessonSlot lesson = attendance.getLessonSlot();
+        Long studentId = attendance.getStudent().getId();
+        LocalDate date = attendance.getRecordDate();
+        // the row is rewritten in SQL: forget the loaded copy so it is read back fresh
+        entityManager.detach(attendance);
+        writer.saveManual(schoolOf(lesson), lesson.getId(), date,
+                List.of(new AttendanceWriter.ManualMark(studentId, request.getStatus(), request.getComment())),
+                currentUsername());
+        return toResponseDto(attendanceRepository.findById(id).orElseThrow());
     }
 
     @Transactional
@@ -227,6 +219,7 @@ public class AttendanceService {
         dto.setRecordDate(attendance.getRecordDate());
         dto.setStatus(attendance.getStatus());
         dto.setComment(attendance.getComment());
+        dto.setSource(attendance.getSource().name());
         return dto;
     }
 }

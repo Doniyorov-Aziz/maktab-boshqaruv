@@ -42,6 +42,9 @@ public class AbsenceRequestService {
     private AttendanceRepository attendanceRepository;
 
     @Autowired
+    private uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter writer;
+
+    @Autowired
     private LessonSlotRepository lessonSlotRepository;
 
     @Autowired
@@ -91,9 +94,9 @@ public class AbsenceRequestService {
     public AbsenceRequestDto approve(Long id, String username) {
         AbsenceRequest r = get(id);
         requirePending(r);
+        r.setDecidedBy(username); // the EXCUSED marks are this staff member's
         int excused = excuse(r);
         r.setStatus(AbsenceStatus.APPROVED);
-        r.setDecidedBy(username);
         r.setDecidedAt(LocalDateTime.now(clock));
         r.setExcusedLessons(excused);
         repository.save(r);
@@ -133,18 +136,10 @@ public class AbsenceRequestService {
             String weekday = ParentStats.WEEKDAY_UZ.get(d.getDayOfWeek());
             for (LessonSlot slot : slots) {
                 if (!slot.getWeekday().equals(weekday)) continue;
-                LocalDate day = d;
-                Attendance a = attendanceRepository.findByLessonSlotIdAndStudentIdAndRecordDate(slot.getId(), student.getId(), d)
-                        .orElseGet(() -> {
-                            Attendance fresh = new Attendance();
-                            fresh.setLessonSlot(slot);
-                            fresh.setStudent(student);
-                            fresh.setRecordDate(day);
-                            return fresh;
-                        });
-                a.setStatus(AttendanceStatus.EXCUSED);
-                if (a.getComment() == null) a.setComment("Sababli ariza #" + r.getId());
-                attendanceRepository.save(a);
+                // approved by a staff member: a MANUAL mark (an automatic one is replaced)
+                writer.saveManual(r.getSchool().getId(), slot.getId(), d,
+                        List.of(new uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.ManualMark(student.getId(), AttendanceStatus.EXCUSED,
+                                "Sababli ariza #" + r.getId())), r.getDecidedBy());
                 count++;
             }
         }

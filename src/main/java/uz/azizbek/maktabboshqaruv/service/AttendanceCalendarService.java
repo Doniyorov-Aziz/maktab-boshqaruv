@@ -52,19 +52,20 @@ public class AttendanceCalendarService {
     private final AttendanceRepository attendanceRepository;
     private final LessonSlotRepository lessonSlotRepository;
     private final CalendarEventRepository calendarEventRepository;
-    private final AttendanceService attendanceService;
+    private final uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter writer;
     private final Clock clock;
 
     public AttendanceCalendarService(SchoolClassRepository classRepository, StudentRepository studentRepository,
                                      AttendanceRepository attendanceRepository, LessonSlotRepository lessonSlotRepository,
-                                     CalendarEventRepository calendarEventRepository, AttendanceService attendanceService,
+                                     CalendarEventRepository calendarEventRepository,
+                                     uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter writer,
                                      Clock clock) {
         this.classRepository = classRepository;
         this.studentRepository = studentRepository;
         this.attendanceRepository = attendanceRepository;
         this.lessonSlotRepository = lessonSlotRepository;
         this.calendarEventRepository = calendarEventRepository;
-        this.attendanceService = attendanceService;
+        this.writer = writer;
         this.clock = clock;
     }
 
@@ -146,19 +147,12 @@ public class AttendanceCalendarService {
             return new Cell(null, null);
         }
         String note = blankToNull(comment);
+        long schoolId = c.getAcademicYear().getSchool().getId();
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth == null ? null : auth.getName();
         for (LessonSlot lesson : lessons) {
-            Attendance a = existing.get(lesson.getId());
-            if (a == null) {
-                a = new Attendance();
-                a.setLessonSlot(lesson);
-                a.setStudent(student);
-                a.setRecordDate(date);
-            }
-            AttendanceStatus previous = a.getStatus();
-            a.setStatus(status);
-            a.setComment(note);
-            Attendance saved = attendanceRepository.save(a);
-            attendanceService.publishIfNotifiable(saved, previous);
+            writer.saveManual(schoolId, lesson.getId(), date,
+                    List.of(new uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.ManualMark(studentId, status, note)), username);
         }
         return new Cell(status.name(), note);
     }

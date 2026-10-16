@@ -15,6 +15,7 @@ public class AttendanceResponseDto {
     private LocalDate recordDate;
     private AttendanceStatus status;
     private String comment;
+    private String source;
 
     public Long getId() {
         return id;
@@ -87,4 +88,7 @@ public class AttendanceResponseDto {
     public void setComment(String comment) {
         this.comment = comment;
     }
+
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
 }

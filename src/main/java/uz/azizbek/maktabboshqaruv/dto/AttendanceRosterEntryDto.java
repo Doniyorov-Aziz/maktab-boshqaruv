@@ -9,6 +9,13 @@ public class AttendanceRosterEntryDto {
     private Long attendanceId;
     private AttendanceStatus status;
     private String comment;
+    /** MANUAL / AUTO_CARRY / DEMO_SIM / DEVICE; null when not marked. */
+    private String source;
+    /** Who marked it (MANUAL); for automatic marks autoAt says when. */
+    private String createdBy;
+    private java.time.LocalDateTime autoAt;
+    private String autoNote;
+    private Integer lateMinutes;
 
     public Long getStudentId() {
         return studentId;
@@ -49,4 +56,15 @@ public class AttendanceRosterEntryDto {
     public void setComment(String comment) {
         this.comment = comment;
     }
+
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+    public java.time.LocalDateTime getAutoAt() { return autoAt; }
+    public void setAutoAt(java.time.LocalDateTime autoAt) { this.autoAt = autoAt; }
+    public String getAutoNote() { return autoNote; }
+    public void setAutoNote(String autoNote) { this.autoNote = autoNote; }
+    public Integer getLateMinutes() { return lateMinutes; }
+    public void setLateMinutes(Integer lateMinutes) { this.lateMinutes = lateMinutes; }
 }

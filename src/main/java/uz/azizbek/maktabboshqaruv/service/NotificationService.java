@@ -79,6 +79,9 @@ public class NotificationService {
     public record Recipient(Student student, Long chatId) {
     }
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.attendance.AttendanceSettingsService attendanceSettings;
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int enqueueAttendance(AttendanceMarkedEvent event) {
         if (!AttendanceMarkedEvent.isNotifiable(event.previousStatus(), event.newStatus())) {
@@ -87,6 +90,14 @@ public class NotificationService {
         Attendance attendance = attendanceRepository.findById(event.attendanceId()).orElse(null);
         // Re-marked again (or deleted) before we got here — the newer save decides.
         if (attendance == null || attendance.getStatus() != event.newStatus()) {
+            return 0;
+        }
+        // a simulated mark is never sent; a carried one only if the school asked for it
+        if (attendance.getSource() == uz.azizbek.maktabboshqaruv.entity.AttendanceSource.DEMO_SIM) {
+            return 0;
+        }
+        if (attendance.getSource() == uz.azizbek.maktabboshqaruv.entity.AttendanceSource.AUTO_CARRY
+                && !attendanceSettings.forSchool(attendance.getLessonSlot().getSchoolClass().getAcademicYear().getSchool().getId()).notifyOnAuto()) {
             return 0;
         }
 

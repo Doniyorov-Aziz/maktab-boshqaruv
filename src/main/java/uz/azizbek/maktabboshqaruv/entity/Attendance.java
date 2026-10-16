@@ -33,6 +33,27 @@ public class Attendance {
 
     private String comment;
 
+    /** Existing rows get MANUAL when the column is added (NOT NULL DEFAULT). */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16, columnDefinition = "varchar(16) not null default 'MANUAL'")
+    private AttendanceSource source = AttendanceSource.MANUAL;
+
+    /** Username of the staff member for MANUAL marks; null for automatic ones. */
+    @Column(name = "created_by", length = 100)
+    private String createdBy;
+
+    /** When an automatic process (or a device) set the mark; null for MANUAL. */
+    @Column(name = "auto_at")
+    private LocalDateTime autoAt;
+
+    /** Minutes late, when known (devices, the demo simulator). */
+    @Column(name = "late_minutes")
+    private Integer lateMinutes;
+
+    /** Why an automatic process set the mark ("2-darsdan ko'chirildi", "Turniket 08:47"). */
+    @Column(name = "auto_note", length = 120)
+    private String autoNote;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdDate;
@@ -87,5 +108,45 @@ public class Attendance {
 
     public LocalDateTime getCreatedDate() {
         return createdDate;
+    }
+
+    public AttendanceSource getSource() {
+        return source;
+    }
+
+    public void setSource(AttendanceSource source) {
+        this.source = source;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public LocalDateTime getAutoAt() {
+        return autoAt;
+    }
+
+    public void setAutoAt(LocalDateTime autoAt) {
+        this.autoAt = autoAt;
+    }
+
+    public Integer getLateMinutes() {
+        return lateMinutes;
+    }
+
+    public void setLateMinutes(Integer lateMinutes) {
+        this.lateMinutes = lateMinutes;
+    }
+
+    public String getAutoNote() {
+        return autoNote;
+    }
+
+    public void setAutoNote(String autoNote) {
+        this.autoNote = autoNote;
     }
 }
