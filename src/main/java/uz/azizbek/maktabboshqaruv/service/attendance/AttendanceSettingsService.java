@@ -76,7 +76,7 @@ public class AttendanceSettingsService {
     @Transactional
     public Settings save(long schoolId, Settings s, String username) {
         if (!(s.heatGood() >= s.heatOk() && s.heatOk() >= s.heatWarn())) {
-            throw new IllegalArgumentException("Xarita chegaralari kamayib borishi kerak: to'q yashil ≥ yashil ≥ sariq");
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Xarita chegaralari kamayib borishi kerak: to'q yashil ≥ yashil ≥ sariq");
         }
         SchoolSettings row = repository.findBySchoolId(schoolId).orElseGet(() -> {
             SchoolSettings n = new SchoolSettings();

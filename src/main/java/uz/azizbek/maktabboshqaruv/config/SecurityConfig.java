@@ -69,6 +69,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/parent/**").permitAll()
                         // appeal files: a signed 30-minute link for <img>/<video>, checked in the controller
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/appeals/*/attachments/*").permitAll()
+                        // turnstile / QR / face readers: a school API key in X-Api-Key, checked in the controller
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/attendance/checkin").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

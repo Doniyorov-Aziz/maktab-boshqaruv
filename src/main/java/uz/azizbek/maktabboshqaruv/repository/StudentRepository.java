@@ -41,4 +41,6 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             "select * from students where guardian_phone is not null " +
             "and right(regexp_replace(guardian_phone, '[^0-9]', '', 'g'), 9) = :last9")
     List<Student> findByGuardianPhoneLast9(@org.springframework.data.repository.query.Param("last9") String last9);
+
+    java.util.Optional<Student> findByCardId(String cardId);
 }

@@ -156,6 +156,10 @@ public class Student {
     @Column(name = "telegram_link_code", unique = true, length = 32)
     private String telegramLinkCode;
 
+    /** A pass card / bracelet number a turnstile reports (optional, unique). */
+    @Column(name = "card_id", unique = true, length = 64)
+    private String cardId;
+
     @PrePersist
     void assignTelegramLinkCode() {
         if (telegramLinkCode == null) {
@@ -225,5 +229,13 @@ public class Student {
 
     public void setGuardianPhone(String guardianPhone) {
         this.guardianPhone = guardianPhone;
+    }
+
+    public String getCardId() {
+        return cardId;
+    }
+
+    public void setCardId(String cardId) {
+        this.cardId = cardId;
     }
 }

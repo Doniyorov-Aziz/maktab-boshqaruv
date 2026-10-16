@@ -217,17 +217,27 @@ public class OperationalDataSeeder implements CommandLineRunner {
         log.info("Migratsiya: {} ta xona uchun qavat/tur ma'lumoti to'ldirildi", missing.size());
     }
 
+    /**
+     * One class per teacher: a teacher leads at most one class (the "Ona tili" teacher first, else
+     * another teacher of the class who leads none yet). Classes that already have one are left as they are.
+     */
     private void assignClassTeachers(List<SchoolClass> classes) {
+        java.util.Set<Long> leading = new java.util.HashSet<>();
+        for (SchoolClass cls : classes) {
+            if (cls.getClassTeacher() != null) leading.add(cls.getClassTeacher().getId());
+        }
         for (SchoolClass cls : classes) {
             if (cls.getClassTeacher() != null) {
                 continue;
             }
             List<LessonSlot> lessons = lessonSlotRepository.findBySchoolClassId(cls.getId());
             Employee teacher = lessons.stream()
-                    .filter(l -> l.getSubject().getName().equals("Ona tili"))
+                    .sorted(java.util.Comparator.comparing((LessonSlot l) -> !l.getSubject().getName().equals("Ona tili")))
                     .map(LessonSlot::getEmployee)
+                    .filter(e -> !leading.contains(e.getId()))
                     .findFirst()
-                    .orElseGet(() -> lessons.isEmpty() ? null : lessons.get(0).getEmployee());
+                    .orElse(null);
+            if (teacher != null) leading.add(teacher.getId());
             if (teacher != null) {
                 cls.setClassTeacher(teacher);
                 schoolClassRepository.save(cls);
