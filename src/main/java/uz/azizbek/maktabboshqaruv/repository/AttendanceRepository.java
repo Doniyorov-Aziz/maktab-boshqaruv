@@ -21,8 +21,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     List<Attendance> findByLessonSlotIdAndRecordDate(Long lessonSlotId, LocalDate recordDate);
 
-    /** [studentId, recordDate, status, comment] — a whole class month for the calendar, one query. */
-    @Query("select a.student.id, a.recordDate, a.status, a.comment from Attendance a " +
+    /** [studentId, recordDate, status, comment, source] — a whole class month for the calendar, one query. */
+    @Query("select a.student.id, a.recordDate, a.status, a.comment, a.source from Attendance a " +
             "where a.lessonSlot.schoolClass.id = :classId and a.recordDate between :from and :to")
     List<Object[]> monthOfClass(@Param("classId") Long classId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
@@ -91,4 +91,10 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             "where a.lessonSlot.schoolClass.academicYear.school.id = :schoolId and a.recordDate = :date and a.createdDate <= :cutoff")
     List<Object[]> attendanceRateAsOf(@Param("schoolId") Long schoolId, @Param("date") LocalDate date, @Param("cutoff") LocalDateTime cutoff);
 
+
+    /** A class month, whole rows, in date / lesson / student order (the Excel export). */
+    @Query("select a from Attendance a join fetch a.student join fetch a.lessonSlot ls join fetch ls.subject " +
+            "where ls.schoolClass.id = :classId and a.recordDate between :from and :to " +
+            "order by a.recordDate, ls.startTime, a.student.lastName, a.student.firstName")
+    List<Attendance> monthOfClassFull(@Param("classId") Long classId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

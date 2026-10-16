@@ -43,6 +43,22 @@ public class AttendanceController {
 
     /** One student's whole day from the calendar (status null = clear the day). */
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    /**
+     * The class month as Excel: one row per lesson mark, with where it came from (Qo'lda / Avtomatik /
+     * DEMO / Qurilma), who marked it and when.
+     */
+    @GetMapping("/calendar/export")
+    public ResponseEntity<byte[]> exportMonth(@RequestParam Long schoolClassId, @RequestParam String month) {
+        java.time.YearMonth ym = java.time.YearMonth.parse(month);
+        byte[] file = calendarService.exportMonth(schoolClassId, ym);
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        org.springframework.http.ContentDisposition.attachment().filename("davomat-" + ym + ".xlsx").build().toString())
+                .body(file);
+    }
+
     @PutMapping("/day")
     public uz.azizbek.maktabboshqaruv.service.AttendanceCalendarService.Cell markDay(@Valid @RequestBody DayMark mark) {
         return calendarService.setDay(mark.studentId(), mark.date(), mark.status(), mark.comment());

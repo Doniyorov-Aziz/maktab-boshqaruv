@@ -36,7 +36,8 @@ public class AttendanceCalendarService {
     public record Day(LocalDate date, String weekday, boolean sunday, String holiday, int lessons) {
     }
 
-    public record Cell(String status, String comment) {
+    /** auto: the day's mark came (at least partly) from AUTO_CARRY / DEMO_SIM — shown with 🤖. */
+    public record Cell(String status, String comment, String auto) {
     }
 
     public record Row(Long studentId, String fullName, String guardianName, String guardianPhone, String guardianRelation,
@@ -98,15 +99,21 @@ public class AttendanceCalendarService {
             LocalDate date = (LocalDate) r[1];
             AttendanceStatus status = (AttendanceStatus) r[2];
             String comment = (String) r[3];
+            uz.azizbek.maktabboshqaruv.entity.AttendanceSource source = (uz.azizbek.maktabboshqaruv.entity.AttendanceSource) r[4];
+            String auto = source.isAutomatic() ? source.name() : null;
             switch (status) {
                 case PRESENT -> present++;
                 case LATE -> late++;
                 case ABSENT -> absent++;
                 case EXCUSED -> excused++;
             }
-            cells.computeIfAbsent(sid, k -> new TreeMap<>()).merge(date, new Cell(status.name(), blankToNull(comment)),
-                    (a, b) -> SEVERITY.get(AttendanceStatus.valueOf(b.status())) > SEVERITY.get(AttendanceStatus.valueOf(a.status()))
-                            ? b : (a.comment() == null && b.status().equals(a.status()) ? b : a));
+            cells.computeIfAbsent(sid, k -> new TreeMap<>()).merge(date, new Cell(status.name(), blankToNull(comment), auto),
+                    (a, b) -> {
+                        Cell worse = SEVERITY.get(AttendanceStatus.valueOf(b.status())) > SEVERITY.get(AttendanceStatus.valueOf(a.status()))
+                                ? b : (a.comment() == null && b.status().equals(a.status()) ? b : a);
+                        String anyAuto = a.auto() != null ? a.auto() : b.auto();
+                        return new Cell(worse.status(), worse.comment(), anyAuto);
+                    });
         }
         int marked = present + late + absent + excused;
         Double rate = marked == 0 ? null : Math.round((present + late) * 1000.0 / marked) / 10.0;
@@ -144,7 +151,7 @@ public class AttendanceCalendarService {
         }
         if (status == null) {
             attendanceRepository.deleteAll(existing.values());
-            return new Cell(null, null);
+            return new Cell(null, null, null);
         }
         String note = blankToNull(comment);
         long schoolId = c.getAcademicYear().getSchool().getId();
@@ -154,7 +161,34 @@ public class AttendanceCalendarService {
             writer.saveManual(schoolId, lesson.getId(), date,
                     List.of(new uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.ManualMark(studentId, status, note)), username);
         }
-        return new Cell(status.name(), note);
+        return new Cell(status.name(), note, null);
+    }
+
+    private static final Map<String, String> STATUS_UZ = Map.of(
+            "PRESENT", "Keldi", "LATE", "Kechikdi", "ABSENT", "Kelmadi", "EXCUSED", "Sababli");
+    private static final Map<String, String> SOURCE_UZ = Map.of(
+            "MANUAL", "Qo'lda", "AUTO_CARRY", "Avtomatik (ko'chirilgan)", "DEMO_SIM", "DEMO simulyatsiya", "DEVICE", "Qurilma");
+
+    /** Every lesson mark of the class in the month, with its source, as an .xlsx file. */
+    @Transactional(readOnly = true)
+    public byte[] exportMonth(Long classId, java.time.YearMonth ym) {
+        SchoolClass c = classRepository.findById(classId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday sinf topilmadi"));
+        List<List<Object>> rows = new java.util.ArrayList<>();
+        for (Attendance a : attendanceRepository.monthOfClassFull(classId, ym.atDay(1), ym.atEndOfMonth())) {
+            rows.add(List.of(
+                    a.getRecordDate().toString(),
+                    a.getStudent().getLastName() + " " + a.getStudent().getFirstName(),
+                    a.getLessonSlot().getStartTime().toString() + " " + a.getLessonSlot().getSubject().getName(),
+                    STATUS_UZ.getOrDefault(a.getStatus().name(), a.getStatus().name()),
+                    a.getLateMinutes() == null ? "" : a.getLateMinutes(),
+                    SOURCE_UZ.getOrDefault(a.getSource().name(), a.getSource().name()),
+                    a.getCreatedBy() != null ? a.getCreatedBy() : (a.getAutoNote() == null ? "" : a.getAutoNote()),
+                    a.getComment() == null ? "" : a.getComment()));
+        }
+        return uz.azizbek.maktabboshqaruv.util.XlsxWriter.write(c.getGradeNumber() + "-" + c.getSectionLetter() + " " + ym,
+                List.of("Sana", "O'quvchi", "Dars", "Holat", "Kechikish (daq)", "Manba", "Kim / izoh", "Izoh"),
+                List.of(12, 28, 26, 12, 14, 24, 26, 30), rows);
     }
 
     private Map<LocalDate, String> holidays(Long schoolId, LocalDate from, LocalDate to) {
