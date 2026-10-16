@@ -55,7 +55,6 @@
         />
       </div>
       <div v-if="home.ledClassId" class="dash__myappeals"><MyAppeals /></div>
-      <div v-if="home.ledClassId" class="dash__mylive"><LiveLessons /></div>
     </div>
   </page-layout>
 </template>
@@ -189,9 +188,7 @@ const quarterLabel = (() => {
   }
 
   .dash--teacher .dash__mymissing,
-  .dash--teacher .dash__mystudents,
-  .dash--teacher .dash__myappeals,
-  .dash--teacher .dash__mylive {
+  .dash--teacher .dash__mystudents {
     grid-column: span 6;
   }
 

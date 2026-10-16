@@ -52,19 +52,22 @@ export function applyChartTheme() {
   d.animation = reducedMotion()
     ? false
     : { duration: 400, easing: 'easeOutQuad' }
-  d.plugins.legend.display = false
+  // plugin defaults exist only once the plugin is registered (Legend is not used at all)
+  if (d.plugins.legend) d.plugins.legend.display = false
   const tip = d.plugins.tooltip
-  tip.backgroundColor = p.card
-  tip.titleColor = p.textPrimary
-  tip.bodyColor = p.textPrimary
-  tip.borderColor = p.border
-  tip.borderWidth = 1
-  tip.padding = 10
-  tip.cornerRadius = 8 // = --radius-sm
-  tip.displayColors = true
-  tip.boxPadding = 4
-  tip.titleFont = { weight: '600', size: 12 }
-  tip.bodyFont = { size: 12 }
+  if (tip) {
+    tip.backgroundColor = p.card
+    tip.titleColor = p.textPrimary
+    tip.bodyColor = p.textPrimary
+    tip.borderColor = p.border
+    tip.borderWidth = 1
+    tip.padding = 10
+    tip.cornerRadius = 8 // = --radius-sm
+    tip.displayColors = true
+    tip.boxPadding = 4
+    tip.titleFont = { weight: '600', size: 12 }
+    tip.bodyFont = { size: 12 }
+  }
   // scales: faint horizontal grid only, no axis lines
   for (const type of ['linear', 'category', 'time']) {
     const s = d.scales?.[type]
