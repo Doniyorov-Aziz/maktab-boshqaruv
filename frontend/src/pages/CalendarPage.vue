@@ -22,7 +22,12 @@
         rangeLabel
       }}</div>
       <AppButton variant="ghost" icon="chevron_right" @click="shift(1)" />
-      <AppButton v-if="canCreate" icon="add" label="Tadbir" @click="openCreateDialog" />
+      <AppButton
+        v-if="canCreate"
+        icon="add"
+        label="Tadbir"
+        @click="openCreateDialog"
+      />
     </template>
 
     <div class="row items-center q-gutter-sm q-mb-md legend-row">
@@ -129,8 +134,17 @@
         </q-card-section>
         <q-form @submit.prevent="saveEvent">
           <q-card-section class="q-gutter-md q-pt-md">
-            <AppInput v-model="form.title" label="Nomi" :rules="[v => !!v || 'Majburiy']" />
-            <AppInput v-model="form.description" label="Tavsif" type="textarea" autogrow />
+            <AppInput
+              v-model="form.title"
+              label="Nomi"
+              :rules="[v => !!v || 'Majburiy']"
+            />
+            <AppInput
+              v-model="form.description"
+              label="Tavsif"
+              type="textarea"
+              autogrow
+            />
             <AppSelect
               v-model="form.type"
               :options="[
@@ -151,7 +165,11 @@
               label="Boshlanish"
               :rules="[v => !!v || 'Majburiy']"
             />
-            <AppDateInput v-model="form.endDate" label="Tugash" :rules="[v => !!v || 'Majburiy']" />
+            <AppDateInput
+              v-model="form.endDate"
+              label="Tugash"
+              :rules="[v => !!v || 'Majburiy']"
+            />
             <q-banner
               v-if="formError"
               class="bg-red-1 text-negative rounded-borders"
@@ -169,7 +187,12 @@
               @click="deleteEvent"
             />
             <q-space />
-            <AppButton variant="ghost" label="Bekor qilish" color="grey-7" v-close-popup />
+            <AppButton
+              variant="ghost"
+              label="Bekor qilish"
+              color="grey-7"
+              v-close-popup
+            />
             <AppButton type="submit" label="Saqlash" :loading="saving" />
           </q-card-actions>
         </q-form>
@@ -453,7 +476,7 @@ onBeforeUnmount(() => {
   gap: 6px;
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--brand-border);
   cursor: pointer;
   user-select: none;

@@ -6,7 +6,12 @@
     :subtitle="`Ota-onalar boti qanchalik ishlatilyapti · ${schoolStore.activeSchoolName || ''}`"
   >
     <template #actions>
-      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="load">
+      <AppButton
+        variant="ghost"
+        icon="refresh"
+        aria-label="Yangilash"
+        @click="load"
+      >
         <q-tooltip>Yangilash</q-tooltip>
       </AppButton>
     </template>
@@ -15,12 +20,13 @@
       <div v-for="k in kpis" :key="k.label" class="col-6 col-md-3 col-xl">
         <div class="brand-card stat-card">
           <div class="row items-center no-wrap">
-            <div
-              class="stat-card__icon q-mr-md gt-xs"
-              :style="{ background: `${k.color}1f`, color: k.color }"
-            >
-              <q-icon :name="k.icon" size="24px" />
-            </div>
+            <IconTile
+              :icon="k.icon"
+              size="48"
+              :color="`${k.color}1f`"
+              :text-color="k.color"
+              class="q-mr-md gt-xs"
+            />
             <div class="col" style="min-width: 0">
               <div class="text-h5 text-weight-bold tabular-nums">
                 <q-skeleton v-if="!stats" type="text" width="48px" />
@@ -162,6 +168,7 @@
 </template>
 
 <script setup>
+import IconTile from '@/components/app/IconTile.vue'
 import AppButton from '@/components/app/AppButton.vue'
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'

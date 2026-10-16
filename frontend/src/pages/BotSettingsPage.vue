@@ -40,7 +40,7 @@
 
     <div v-else class="row q-col-gutter-md">
       <div class="col-12 col-lg-6">
-        <div class="brand-card q-pa-md section-card">
+        <div class="brand-card q-pa-md section-card settings-card">
           <div class="section-title"
             ><q-icon name="apartment" /> Maktab kontaktlari</div
           >
@@ -82,7 +82,7 @@
       </div>
 
       <div class="col-12 col-lg-6">
-        <div class="brand-card q-pa-md section-card">
+        <div class="brand-card q-pa-md section-card settings-card">
           <div class="section-title"
             ><q-icon name="schedule_send" /> Avtomatik xabarlar vaqti</div
           >
@@ -92,14 +92,16 @@
           </div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-sm-6">
-              <time-field
+              <AppTimeInput
+                hide-bottom-space
                 v-model="form.tomorrowScheduleTime"
                 label="Ertangi dars jadvali"
                 :disable="!canEdit"
               />
             </div>
             <div class="col-12 col-sm-6">
-              <time-field
+              <AppTimeInput
+                hide-bottom-space
                 v-model="form.eventReminderTime"
                 label="Tadbir eslatmasi (1 kun oldin)"
                 :disable="!canEdit"
@@ -116,7 +118,8 @@
               />
             </div>
             <div class="col-12 col-sm-6">
-              <time-field
+              <AppTimeInput
+                hide-bottom-space
                 v-model="form.weeklyReportTime"
                 label="Haftalik hisobot vaqti"
                 :disable="!canEdit"
@@ -203,62 +206,30 @@
         >
           Faqat administrator o'zgartira oladi.
         </div>
-        <AppButton v-if="canEdit" icon="save" label="Saqlash" :loading="saving" @click="save" />
+        <AppButton
+          v-if="canEdit"
+          icon="save"
+          label="Saqlash"
+          :loading="saving"
+          @click="save"
+        />
       </div>
     </div>
   </page-layout>
 </template>
 
 <script setup>
+import AppTimeInput from '@/components/app/AppTimeInput.vue'
 import AppButton from '@/components/app/AppButton.vue'
 import AppInput from '@/components/app/AppInput.vue'
 import AppSelect from '@/components/app/AppSelect.vue'
-import { ref, computed, watch, defineComponent, h } from 'vue'
-import { useQuasar, QInput, QIcon, QPopupProxy, QTime } from 'quasar'
+import { ref, computed, watch } from 'vue'
+import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
 import { useSchoolStore } from '@/stores/school'
 import { useAuthStore } from '@/stores/auth'
 import { botModes, weekdays } from '@/utils/telegram'
-
-// 24-hour time input with a QTime popup (the native picker follows the OS locale, often 12-hour).
-const TimeField = defineComponent({
-  props: {
-    modelValue: { type: String, default: '' },
-    label: { type: String, default: '' },
-    disable: Boolean
-  },
-  emits: ['update:modelValue'],
-  setup(props, { emit }) {
-    return () =>
-      h(
-        QInput,
-        {
-          modelValue: props.modelValue,
-          'onUpdate:modelValue': v => emit('update:modelValue', v),
-          outlined: true,
-          dense: true,
-          mask: 'time',
-          rules: ['time'],
-          hideBottomSpace: true,
-          label: props.label,
-          disable: props.disable
-        },
-        {
-          append: () =>
-            h(QIcon, { name: 'schedule', class: 'cursor-pointer' }, () =>
-              h(QPopupProxy, { cover: true }, () =>
-                h(QTime, {
-                  modelValue: props.modelValue,
-                  'onUpdate:modelValue': v => emit('update:modelValue', v),
-                  format24h: true
-                })
-              )
-            )
-        }
-      )
-  }
-})
 
 const $q = useQuasar()
 const schoolStore = useSchoolStore()
@@ -324,6 +295,11 @@ watch(() => schoolStore.activeSchoolId, load, { immediate: true })
 </script>
 
 <style scoped>
+/* the cards span the page; the form inside keeps a readable column */
+.settings-card > * {
+  max-width: var(--form-max);
+}
+
 .muted-text {
   color: var(--brand-text-muted);
 }

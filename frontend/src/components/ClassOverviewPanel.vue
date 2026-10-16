@@ -340,7 +340,7 @@ async function copy(phone) {
   border: 1px solid var(--brand-border);
   background: var(--card-bg);
   color: var(--text-primary);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   padding: 3px 10px 3px 4px;
   cursor: pointer;
   display: inline-flex;

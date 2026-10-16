@@ -8,7 +8,11 @@
   >
     <template v-slot:actions>
       <div class="ac-month row items-center no-wrap">
-        <AppButton variant="ghost" icon="chevron_left" @click="shiftMonth(-1)" />
+        <AppButton
+          variant="ghost"
+          icon="chevron_left"
+          @click="shiftMonth(-1)"
+        />
         <div class="ac-month__title">{{ monthTitle }}</div>
         <AppButton
           variant="ghost"

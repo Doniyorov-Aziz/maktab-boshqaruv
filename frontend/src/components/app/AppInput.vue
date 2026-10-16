@@ -22,7 +22,9 @@ import { computed, ref, useAttrs } from 'vue'
 defineOptions({ inheritAttrs: false })
 
 const attrs = useAttrs()
-const multiline = computed(() => attrs.type === 'textarea' || attrs.autogrow === '' || !!attrs.autogrow)
+const multiline = computed(
+  () => attrs.type === 'textarea' || attrs.autogrow === '' || !!attrs.autogrow
+)
 
 const inner = ref(null)
 // the parts of q-input callers use through a ref (focus, validation)

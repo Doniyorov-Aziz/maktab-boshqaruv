@@ -18,7 +18,12 @@
           · @{{ status.botUsername }}</template
         >
       </q-chip>
-      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="loadAll">
+      <AppButton
+        variant="ghost"
+        icon="refresh"
+        aria-label="Yangilash"
+        @click="loadAll"
+      >
         <q-tooltip>Yangilash</q-tooltip>
       </AppButton>
     </template>
@@ -101,12 +106,13 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
       <div v-for="k in kpis" :key="k.label" class="col-6 col-md-3">
         <div class="brand-card stat-card">
           <div class="row items-center no-wrap">
-            <div
-              class="stat-card__icon q-mr-md gt-xs"
-              :style="{ background: `${k.color}1f`, color: k.color }"
-            >
-              <q-icon :name="k.icon" size="24px" />
-            </div>
+            <IconTile
+              :icon="k.icon"
+              size="48"
+              :color="`${k.color}1f`"
+              :text-color="k.color"
+              class="q-mr-md gt-xs"
+            />
             <div class="col" style="min-width: 0">
               <div class="text-h5 text-weight-bold tabular-nums">
                 <q-skeleton v-if="!stats" type="text" width="48px" />
@@ -178,29 +184,15 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
           </div>
           <div class="col-12 col-sm-auto">
             <div class="row items-center no-wrap q-gutter-sm">
-              <AppInput
+              <AppTimeInput
                 v-for="f in quietFields"
                 :key="f.key"
                 v-model="settings[f.key]"
-                mask="time"
-                :rules="['time']"
                 hide-bottom-space
                 :label="f.label"
                 class="time-input"
                 :disable="!authStore.isAdmin || !settings.quietHoursEnabled"
-              >
-                <template v-slot:append>
-                  <q-icon name="schedule" class="cursor-pointer">
-                    <q-popup-proxy
-                      cover
-                      transition-show="scale"
-                      transition-hide="scale"
-                    >
-                      <q-time v-model="settings[f.key]" format24h />
-                    </q-popup-proxy>
-                  </q-icon>
-                </template>
-              </AppInput>
+              />
             </div>
           </div>
           <div v-if="authStore.isAdmin" class="col-12 col-sm-auto">
@@ -244,10 +236,18 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
             />
           </div>
           <div class="col-6 col-md-2">
-            <AppDateInput v-model="filters.from" label="Dan" @update:model-value="reload" />
+            <AppDateInput
+              v-model="filters.from"
+              label="Dan"
+              @update:model-value="reload"
+            />
           </div>
           <div class="col-6 col-md-2">
-            <AppDateInput v-model="filters.to" label="Gacha" @update:model-value="reload" />
+            <AppDateInput
+              v-model="filters.to"
+              label="Gacha"
+              @update:model-value="reload"
+            />
           </div>
           <div class="col-12 col-md-2">
             <AppButton
@@ -416,6 +416,8 @@ telegram.bot-username=&lt;bot_username&gt;</pre>
 </template>
 
 <script setup>
+import AppTimeInput from '@/components/app/AppTimeInput.vue'
+import IconTile from '@/components/app/IconTile.vue'
 import AppButton from '@/components/app/AppButton.vue'
 import AppInput from '@/components/app/AppInput.vue'
 import AppSelect from '@/components/app/AppSelect.vue'
@@ -720,7 +722,7 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   font-size: var(--text-xs);
   font-weight: 600;
   white-space: nowrap;
@@ -769,7 +771,8 @@ watch(() => schoolStore.activeSchoolId, loadAll, { immediate: true })
 .tg-bubble {
   background: var(--surface-2);
   border: 1px solid var(--brand-border);
-  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg)
+    var(--radius-sm);
   padding: 10px 14px;
   white-space: pre-wrap;
   line-height: 1.45;

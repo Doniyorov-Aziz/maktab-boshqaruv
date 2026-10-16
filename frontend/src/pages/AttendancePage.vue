@@ -92,7 +92,11 @@
           />
         </div>
         <div class="col-12 col-sm-3">
-          <AppDateInput v-model="selectedDate" label="Sana" @update:model-value="loadRoster" />
+          <AppDateInput
+            v-model="selectedDate"
+            label="Sana"
+            @update:model-value="loadRoster"
+          />
         </div>
         <div class="col-12 col-sm-2">
           <AppButton
@@ -182,7 +186,12 @@
       </q-list>
 
       <div class="row justify-end items-center q-pa-md">
-        <AppButton icon="save" label="Saqlash" :loading="saving" @click="saveAttendance" />
+        <AppButton
+          icon="save"
+          label="Saqlash"
+          :loading="saving"
+          @click="saveAttendance"
+        />
       </div>
     </div>
   </page-layout>

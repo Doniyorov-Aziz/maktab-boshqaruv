@@ -1,50 +1,46 @@
 <template>
-  <page-layout v-if="module" :icon="module.icon" :color="module.color">
-    <template v-slot:header>
-      <div class="col-auto">
-        <IconTile :icon="module.icon" size="48" :color="module.color || ''" />
+  <page-layout
+    v-if="module"
+    :icon="module.icon"
+    :color="module.color"
+    :title="module.title"
+  >
+    <template v-slot:subtitle>
+      <div
+        v-if="module.schoolScoped && schoolStore.activeSchoolName"
+        class="ellipsis"
+      >
+        {{ schoolStore.activeSchoolName }}
       </div>
-      <div class="col page-title-col">
-        <div class="text-h5 text-weight-bold ellipsis">{{ module.title }}</div>
-        <div
-          v-if="module.schoolScoped && schoolStore.activeSchoolName"
-          class="text-caption muted-text ellipsis"
-        >
-          {{ schoolStore.activeSchoolName }}
-        </div>
-        <div class="text-caption muted-text">
-          <q-skeleton v-if="loading" type="text" width="90px" />
-          <template v-else>Jami {{ pagination.rowsNumber }} ta yozuv</template>
-        </div>
-      </div>
-      <div class="col-auto row items-center q-gutter-sm no-wrap">
-        <AppInput
-          v-model="searchQuery"
-          clearable
-          debounce="250"
-          placeholder="Qidirish..."
-          class="search-input"
-          @update:model-value="onSearchChange"
-        >
-          <template v-slot:prepend>
-            <q-icon name="search" />
-          </template>
-        </AppInput>
-        <AppButton
-          variant="ghost"
-          icon="file_download"
-          label="Excel"
-          color="grey-7"
-          @click="exportCsv"
-        />
-        <AppButton
-          v-if="canCreate"
-          icon="add"
-          label="Yangi qo'shish"
-          class="q-px-md"
-          @click="openCreateDialog"
-        />
-      </div>
+      <q-skeleton v-if="loading" type="text" width="90px" />
+      <div v-else>Jami {{ pagination.rowsNumber }} ta yozuv</div>
+    </template>
+    <template v-slot:actions>
+      <AppInput
+        v-model="searchQuery"
+        clearable
+        debounce="250"
+        placeholder="Qidirish..."
+        class="search-input"
+        @update:model-value="onSearchChange"
+      >
+        <template v-slot:prepend>
+          <q-icon name="search" />
+        </template>
+      </AppInput>
+      <AppButton
+        variant="ghost"
+        icon="file_download"
+        label="Excel"
+        color="grey-7"
+        @click="exportCsv"
+      />
+      <AppButton
+        v-if="canCreate"
+        icon="add"
+        label="Yangi qo'shish"
+        @click="openCreateDialog"
+      />
     </template>
 
     <q-banner
@@ -90,22 +86,15 @@
         />
       </div>
 
-      <div
-        v-if="module.viewType === 'cards' && loading"
-        class="row q-col-gutter-md"
-      >
-        <div v-for="i in 6" :key="i" class="col-12 col-sm-6 col-md-4">
+      <div v-if="module.viewType === 'cards' && loading" class="app-grid">
+        <div v-for="i in 6" :key="i">
           <q-skeleton type="rect" height="160px" class="rounded-borders" />
         </div>
       </div>
 
       <template v-else-if="module.viewType === 'cards' && displayRows.length">
-        <div class="row q-col-gutter-md">
-          <div
-            v-for="row in displayRows"
-            :key="row.id"
-            class="col-12 col-sm-6 col-md-4"
-          >
+        <div class="app-grid">
+          <div v-for="row in displayRows" :key="row.id">
             <div
               class="brand-card q-pa-md full-height entity-card"
               :class="{ 'entity-card--link': cardIsLink }"
@@ -122,8 +111,15 @@
                     >{{ row.gradeNumber }}-{{ row.sectionLetter }}</div
                   >
                 </div>
-                <div v-else class="row items-center q-gutter-sm no-wrap">
-                  <IconTile :icon="module.icon" size="40" :color="module.color || ''" />
+                <div
+                  v-else
+                  class="row items-center q-gutter-sm no-wrap entity-card__title"
+                >
+                  <IconTile
+                    :icon="module.icon"
+                    size="40"
+                    :color="module.color || ''"
+                  />
                   <div class="text-weight-bold text-subtitle1 ellipsis">{{
                     row.name
                   }}</div>
@@ -136,7 +132,7 @@
                   color="positive"
                   >Faol</q-badge
                 >
-                <div class="row no-wrap">
+                <div class="row no-wrap entity-card__actions">
                   <AppButton
                     variant="ghost"
                     size="sm"
@@ -580,8 +576,18 @@
           </q-card-section>
 
           <q-card-actions align="right" class="q-pa-md">
-            <AppButton variant="ghost" label="Bekor qilish" color="grey-7" v-close-popup />
-            <AppButton type="submit" label="Saqlash" class="q-px-md" :loading="saving" />
+            <AppButton
+              variant="ghost"
+              label="Bekor qilish"
+              color="grey-7"
+              v-close-popup
+            />
+            <AppButton
+              type="submit"
+              label="Saqlash"
+              class="q-px-md"
+              :loading="saving"
+            />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -1145,16 +1151,22 @@ function extractError(error) {
 </script>
 
 <style scoped>
+/* a long name is cut, never pushes the edit / delete buttons out of the card */
+.entity-card__title {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.entity-card__actions {
+  flex-shrink: 0;
+}
+
 .muted-text {
   color: var(--brand-text-muted);
 }
 
-.page-title-col {
-  min-width: 0;
-}
-
 .search-input {
-  width: 200px;
+  width: var(--field-w-sm);
 }
 
 .link-cell {
@@ -1250,7 +1262,7 @@ function extractError(error) {
 
 @media (max-width: 599px) {
   .search-input {
-    width: 140px;
+    width: 100%;
   }
 }
 </style>

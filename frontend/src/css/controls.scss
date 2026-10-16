@@ -100,6 +100,27 @@
   }
 }
 
+// Segmented switches (Oylik / Haftalik, Kimga?) are one control: same height and radius.
+.q-btn-toggle {
+  height: var(--control-h);
+  border-radius: var(--radius-md);
+
+  .q-btn {
+    height: 100%;
+    min-height: 0;
+    font-weight: 600;
+    text-transform: none;
+  }
+}
+
+// inside a table row or a card's corner: the compact size
+.q-btn-toggle.app-toggle--sm,
+.q-table .q-btn-toggle,
+.q-item .q-btn-toggle {
+  height: var(--control-h-sm);
+  border-radius: var(--radius-sm);
+}
+
 // Buttons Quasar draws itself (dialogs, date pickers, table pagination) keep the same radius.
 .q-btn:not(.q-btn--round):not(.app-btn) {
   border-radius: var(--radius-md);
@@ -155,7 +176,10 @@
 // Cards that fill the width: more columns on wide screens, fewer on narrow.
 .app-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(var(--grid-min), 100%), 1fr));
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(var(--grid-min), 100%), 1fr)
+  );
   gap: var(--space-4);
 }
 

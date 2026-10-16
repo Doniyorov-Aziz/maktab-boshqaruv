@@ -23,7 +23,12 @@
         ]"
         @update:model-value="reload"
       />
-      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="reload">
+      <AppButton
+        variant="ghost"
+        icon="refresh"
+        aria-label="Yangilash"
+        @click="reload"
+      >
         <q-tooltip>Yangilash</q-tooltip>
       </AppButton>
     </template>
@@ -218,7 +223,12 @@
           />
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <AppButton variant="ghost" label="Bekor qilish" color="grey-7" v-close-popup />
+          <AppButton
+            variant="ghost"
+            label="Bekor qilish"
+            color="grey-7"
+            v-close-popup
+          />
           <AppButton
             variant="danger"
             label="Rad etish"
@@ -426,7 +436,7 @@ watch(() => schoolStore.activeSchoolId, reload, { immediate: true })
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   font-size: var(--text-xs);
   font-weight: 600;
   white-space: nowrap;

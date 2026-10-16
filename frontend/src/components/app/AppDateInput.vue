@@ -64,7 +64,8 @@ const slashed = s => (s ? s.replace(/-/g, '/') : '')
 
 // q-date passes "YYYY/MM/DD"
 const options = computed(() => {
-  if (!props.noSundays && !props.noFuture && !props.min && !props.max) return undefined
+  if (!props.noSundays && !props.noFuture && !props.min && !props.max)
+    return undefined
   const t = new Date()
   const today = `${t.getFullYear()}/${pad(t.getMonth() + 1)}/${pad(t.getDate())}`
   const min = slashed(props.min)
@@ -83,7 +84,9 @@ const options = computed(() => {
 
 const inner = ref(null)
 const popupRef = ref(null)
-const displayValue = computed(() => (props.modelValue ? formatDate(props.modelValue) : ''))
+const displayValue = computed(() =>
+  props.modelValue ? formatDate(props.modelValue) : ''
+)
 
 function onPick(val) {
   emit('update:modelValue', val || '')

@@ -47,7 +47,11 @@
           </q-item-section>
           <!-- phone: one menu instead of four buttons -->
           <q-item-section side class="lt-sm">
-            <AppButton variant="ghost" icon="more_vert" :aria-label="`${c.nameUz} — amallar`">
+            <AppButton
+              variant="ghost"
+              icon="more_vert"
+              :aria-label="`${c.nameUz} — amallar`"
+            >
               <q-menu auto-close>
                 <q-list dense style="min-width: 170px">
                   <q-item
@@ -139,7 +143,12 @@
             form.id ? "Bo'limni tahrirlash" : "Yangi bo'lim"
           }}</div>
           <q-space />
-          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+          <AppButton
+            variant="ghost"
+            icon="close"
+            aria-label="Yopish"
+            v-close-popup
+          />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
           <div class="text-caption text-weight-semibold">Emoji</div>
@@ -162,13 +171,26 @@
             label="Yoki o'zingiz yozing"
             style="max-width: var(--field-w-sm)"
           />
-          <AppInput v-model="form.nameUz" maxlength="80" label="Nomi (o'zbekcha) *" />
-          <AppInput v-model="form.nameRu" maxlength="80" label="Nomi (ruscha)" />
+          <AppInput
+            v-model="form.nameUz"
+            maxlength="80"
+            label="Nomi (o'zbekcha) *"
+          />
+          <AppInput
+            v-model="form.nameRu"
+            maxlength="80"
+            label="Nomi (ruscha)"
+          />
           <q-toggle v-model="form.active" label="Botda ko'rinadi" />
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
           <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
-          <AppButton icon="save" label="Saqlash" :loading="saving" @click="save" />
+          <AppButton
+            icon="save"
+            label="Saqlash"
+            :loading="saving"
+            @click="save"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>

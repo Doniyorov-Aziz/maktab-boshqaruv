@@ -115,10 +115,19 @@
             {{ form.id ? 'Muallifni tahrirlash' : 'Yangi muallif' }}
           </div>
           <q-space />
-          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+          <AppButton
+            variant="ghost"
+            icon="close"
+            aria-label="Yopish"
+            v-close-popup
+          />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <AppInput v-model="form.fullName" maxlength="200" label="To'liq ismi *" />
+          <AppInput
+            v-model="form.fullName"
+            maxlength="200"
+            label="To'liq ismi *"
+          />
           <AppInput
             v-model="form.aliases"
             autogrow
@@ -128,7 +137,11 @@
           />
           <div class="row q-col-gutter-sm">
             <div class="col-6">
-              <AppInput v-model.number="form.birthYear" type="number" label="Tug'ilgan yili" />
+              <AppInput
+                v-model.number="form.birthYear"
+                type="number"
+                label="Tug'ilgan yili"
+              />
             </div>
             <div class="col-6">
               <AppInput
@@ -150,7 +163,12 @@
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
           <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
-          <AppButton icon="save" label="Saqlash" :loading="saving" @click="save" />
+          <AppButton
+            icon="save"
+            label="Saqlash"
+            :loading="saving"
+            @click="save"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>

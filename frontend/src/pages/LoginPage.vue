@@ -222,7 +222,6 @@
                   v-model="username"
                   for="login-username"
                   :label="t.login"
-                  :placeholder="t.loginPlaceholder"
                   autofocus
                   autocomplete="username"
                   class="login__field"
@@ -240,7 +239,6 @@
                   v-model="password"
                   for="login-password"
                   :label="t.password"
-                  :placeholder="t.passwordPlaceholder"
                   :type="showPassword ? 'text' : 'password'"
                   autocomplete="current-password"
                   class="login__field"
@@ -380,7 +378,12 @@
               </div>
             </q-card-section>
             <q-card-actions align="right">
-              <AppButton variant="ghost" v-close-popup color="primary" :label="t.forgotOk" />
+              <AppButton
+                variant="ghost"
+                v-close-popup
+                color="primary"
+                :label="t.forgotOk"
+              />
             </q-card-actions>
           </q-card>
         </q-dialog>
@@ -1270,7 +1273,7 @@ async function onSubmit() {
   gap: 8px;
   align-self: flex-start;
   padding: 5px 12px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   /* white on indigo-900: contrast ≈ 12:1 */
   background: #312e81;
   color: #ffffff;
@@ -1383,7 +1386,7 @@ async function onSubmit() {
   align-items: center;
   gap: 8px;
   padding: 7px 14px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--login-chip-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 14px;
@@ -1416,7 +1419,7 @@ async function onSubmit() {
 .login__lang {
   display: inline-flex;
   padding: 3px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--login-card-bg);
   border: 1px solid var(--login-card-border);
 }
@@ -1426,7 +1429,7 @@ async function onSubmit() {
   height: var(--control-h-sm);
   padding: 0 10px;
   border: 0;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--brand-text-muted);
   font: inherit;
@@ -1545,7 +1548,7 @@ async function onSubmit() {
 
 .login__badge {
   padding: 5px 12px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: var(--login-badge-bg);
   color: var(--login-badge-text);
   font-size: var(--text-sm);

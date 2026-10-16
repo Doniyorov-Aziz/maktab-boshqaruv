@@ -1088,7 +1088,8 @@ watch(
 .tg-bubble {
   background: var(--card-bg);
   border: 1px solid var(--brand-border);
-  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg)
+    var(--radius-sm);
   padding: 10px 14px;
   white-space: pre-wrap;
   line-height: 1.45;

@@ -10,14 +10,45 @@ export default [
   {
     files: ['src/**/*.vue'],
     ignores: ['src/components/app/**'],
-    languageOptions: { parser: vueParser, sourceType: 'module', ecmaVersion: 'latest' },
+    languageOptions: {
+      parser: vueParser,
+      sourceType: 'module',
+      ecmaVersion: 'latest'
+    },
     plugins: { vue },
     rules: {
       'vue/no-restricted-html-elements': [
         'error',
-        { element: ['q-input', 'QInput'], message: message + ' (AppInput / AppDateInput)' },
+        {
+          element: ['q-input', 'QInput'],
+          message: message + ' (AppInput / AppDateInput)'
+        },
         { element: ['q-select', 'QSelect'], message: message + ' (AppSelect)' },
         { element: ['q-btn', 'QBtn'], message: message + ' (AppButton)' }
+      ]
+    }
+  },
+  {
+    // the same controls built in a render function: h(QInput, ...)
+    files: ['src/**/*.vue', 'src/**/*.js'],
+    ignores: ['src/components/app/**'],
+    languageOptions: {
+      parser: vueParser,
+      sourceType: 'module',
+      ecmaVersion: 'latest'
+    },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'quasar',
+              importNames: ['QInput', 'QSelect', 'QBtn'],
+              message: message
+            }
+          ]
+        }
       ]
     }
   }

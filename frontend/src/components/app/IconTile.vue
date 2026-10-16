@@ -17,7 +17,11 @@ import { computed } from 'vue'
 
 const props = defineProps({
   icon: { type: String, required: true },
-  size: { type: [String, Number], default: '40', validator: v => ['32', '40', '48'].includes(String(v)) },
+  size: {
+    type: [String, Number],
+    default: '40',
+    validator: v => ['32', '40', '48'].includes(String(v))
+  },
   // background: any CSS colour or gradient; default is the brand gradient
   color: { type: String, default: '' },
   textColor: { type: String, default: '' }

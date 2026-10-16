@@ -15,11 +15,13 @@
   "author": "Azizbek Doniyorov <azizdoniyorov272@gmail.com>",
   "type": "module",
   "scripts": {
-    "lint": "oxfmt && oxlint --fix",
-    "lint:check": "oxfmt --check && oxlint",
+    "lint": "oxfmt && oxlint --fix && eslint src",
+    "lint:check": "oxfmt --check && oxlint && eslint src",
     "dev": "quasar dev",
     "build": "quasar build",
-    "postinstall": "quasar prepare --silent"
+    "postinstall": "quasar prepare --silent",
+    "test": "playwright test",
+    "ui:audit": "node tests/ui/audit.mjs after && node tests/ui/audit-md.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

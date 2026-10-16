@@ -4,7 +4,12 @@
       <q-card-section class="row items-center q-pb-sm">
         <div class="text-subtitle1 text-weight-semibold">{{ title }}</div>
         <q-space />
-        <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+        <AppButton
+          variant="ghost"
+          icon="close"
+          aria-label="Yopish"
+          v-close-popup
+        />
       </q-card-section>
       <q-card-section class="q-pt-none text-center">
         <q-spinner v-if="loading" size="36px" color="primary" class="q-my-xl" />

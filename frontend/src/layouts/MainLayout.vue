@@ -2,7 +2,12 @@
   <q-layout view="lHh Lpr lFf">
     <q-header class="app-surface app-header">
       <q-toolbar class="app-header__bar">
-        <AppButton variant="ghost" :icon="menuIcon" aria-label="Menu" @click="toggleMenu">
+        <AppButton
+          variant="ghost"
+          :icon="menuIcon"
+          aria-label="Menu"
+          @click="toggleMenu"
+        >
           <q-tooltip>{{
             $q.screen.gt.sm ? "Menyuni yig'ish" : 'Menyu'
           }}</q-tooltip>
@@ -25,7 +30,12 @@
 
         <q-space />
 
-        <AppButton variant="ghost" icon="search" class="q-mr-xs" @click="openSearch">
+        <AppButton
+          variant="ghost"
+          icon="search"
+          class="q-mr-xs"
+          @click="openSearch"
+        >
           <q-tooltip>Qidirish (Ctrl+K)</q-tooltip>
         </AppButton>
 

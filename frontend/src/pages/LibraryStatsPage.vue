@@ -6,7 +6,12 @@
     :subtitle="`Ota-onalar botda qaysi kitoblarni o'qiyapti · ${schoolStore.activeSchoolName || ''}`"
   >
     <template #actions>
-      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="reloadAll">
+      <AppButton
+        variant="ghost"
+        icon="refresh"
+        aria-label="Yangilash"
+        @click="reloadAll"
+      >
         <q-tooltip>Yangilash</q-tooltip>
       </AppButton>
     </template>
@@ -22,12 +27,13 @@
       <div v-for="k in kpis" :key="k.label" class="col-6 col-md-3">
         <div class="brand-card stat-card">
           <div class="row items-center no-wrap">
-            <div
-              class="stat-card__icon q-mr-md gt-xs"
-              :style="{ background: `${k.color}1f`, color: k.color }"
-            >
-              <q-icon :name="k.icon" size="24px" />
-            </div>
+            <IconTile
+              :icon="k.icon"
+              size="48"
+              :color="`${k.color}1f`"
+              :text-color="k.color"
+              class="q-mr-md gt-xs"
+            />
             <div class="col" style="min-width: 0">
               <div class="text-h5 text-weight-bold tabular-nums ellipsis">
                 <q-skeleton v-if="!overview" type="text" width="48px" />
@@ -234,7 +240,12 @@
           />
         </div>
         <div class="col-12 col-md-3">
-          <AppInput v-model="filters.q" clearable debounce="400" label="Ota-ona (ism yoki telefon)">
+          <AppInput
+            v-model="filters.q"
+            clearable
+            debounce="400"
+            label="Ota-ona (ism yoki telefon)"
+          >
             <template #prepend><q-icon name="person_search" /></template>
           </AppInput>
         </div>
@@ -309,7 +320,12 @@
     <q-dialog v-model="parentOpen" position="right" full-height>
       <q-card class="parent-panel column no-wrap">
         <q-card-section class="row items-center q-pb-sm">
-          <IconTile icon="person" size="40" color="var(--q-primary)" class="q-mr-sm" />
+          <IconTile
+            icon="person"
+            size="40"
+            color="var(--q-primary)"
+            class="q-mr-sm"
+          />
           <div class="col" style="min-width: 0">
             <div class="text-subtitle1 text-weight-bold ellipsis">
               {{ parent?.name || 'Ota-ona' }}
@@ -319,7 +335,12 @@
               }}{{ parent?.telegramName ? ' · ' + parent.telegramName : '' }}
             </div>
           </div>
-          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+          <AppButton
+            variant="ghost"
+            icon="close"
+            aria-label="Yopish"
+            v-close-popup
+          />
         </q-card-section>
         <q-separator />
         <q-card-section v-if="parentLoading" class="col flex flex-center">

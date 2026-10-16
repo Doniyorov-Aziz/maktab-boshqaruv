@@ -130,7 +130,7 @@ watch(
   font-weight: 600;
   font-size: var(--text-sm, 13px);
   padding: 4px 14px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-brand);
   background: transparent;
   color: var(--color-brand);

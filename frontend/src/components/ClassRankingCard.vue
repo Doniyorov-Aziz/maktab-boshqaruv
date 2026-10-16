@@ -22,7 +22,7 @@
         toggle-color="primary"
         color="white"
         text-color="grey-7"
-        class="ranking-toggle"
+        class="ranking-toggle app-toggle--sm"
         :options="[
           { label: 'Davomat', value: 'attendance' },
           { label: 'O\'rtacha baho', value: 'grade' },
@@ -85,6 +85,7 @@
             <q-btn-toggle
               v-model="activeTab"
               dense
+              class="app-toggle--sm"
               no-caps
               unelevated
               toggle-color="primary"

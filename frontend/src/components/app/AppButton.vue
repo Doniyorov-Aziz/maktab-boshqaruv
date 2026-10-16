@@ -41,7 +41,11 @@ const props = defineProps({
     default: 'primary',
     validator: v => ['primary', 'secondary', 'ghost', 'danger'].includes(v)
   },
-  size: { type: String, default: 'md', validator: v => ['md', 'sm'].includes(v) },
+  size: {
+    type: String,
+    default: 'md',
+    validator: v => ['md', 'sm'].includes(v)
+  },
   label: { type: [String, Number], default: '' },
   icon: { type: String, default: '' },
   iconRight: { type: String, default: '' },
@@ -53,10 +57,17 @@ const props = defineProps({
   square: { type: Boolean, default: false }
 })
 
-const COLORS = { primary: 'primary', secondary: 'primary', ghost: undefined, danger: 'negative' }
+const COLORS = {
+  primary: 'primary',
+  secondary: 'primary',
+  ghost: undefined,
+  danger: 'negative'
+}
 
 // an icon without a label is a square button
 const iconOnly = computed(
-  () => props.square || (!props.label && props.label !== 0 && !!props.icon && !props.iconRight)
+  () =>
+    props.square ||
+    (!props.label && props.label !== 0 && !!props.icon && !props.iconRight)
 )
 </script>

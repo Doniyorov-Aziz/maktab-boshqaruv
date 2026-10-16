@@ -14,13 +14,18 @@ export async function login() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: USER, password: PASS })
   })
-  if (!r.ok) throw new Error('Login failed: ' + r.status + ' (set UI_USER / UI_PASS)')
+  if (!r.ok)
+    throw new Error('Login failed: ' + r.status + ' (set UI_USER / UI_PASS)')
   token = (await r.text()).trim()
   return token
 }
 
 /** A fresh context: signed in (unless the page is public), school 1, the given theme. */
-export async function openContext(browser, viewport, { dark = false, signedIn = true } = {}) {
+export async function openContext(
+  browser,
+  viewport,
+  { dark = false, signedIn = true } = {}
+) {
   const t = signedIn ? await login() : null
   const context = await browser.newContext({ viewport, deviceScaleFactor: 1 })
   await context.addInitScript(
@@ -28,11 +33,14 @@ export async function openContext(browser, viewport, { dark = false, signedIn = 
       try {
         localStorage.setItem('darkMode', String(dark))
         if (t) {
-          const claims = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+          const claims = JSON.parse(
+            atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+          )
           localStorage.setItem('token', t)
           localStorage.setItem('username', claims.sub)
           localStorage.setItem('role', claims.role)
-          if (claims.employeeId) localStorage.setItem('employeeId', String(claims.employeeId))
+          if (claims.employeeId)
+            localStorage.setItem('employeeId', String(claims.employeeId))
           localStorage.setItem('activeSchoolId', '1')
         }
       } catch {

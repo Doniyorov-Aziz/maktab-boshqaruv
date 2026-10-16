@@ -76,7 +76,12 @@
           </div>
 
           <div class="text-caption muted-text q-mb-xs">Havola (deep link)</div>
-          <AppInput v-if="info.deepLink" :model-value="info.deepLink" readonly class="q-mb-md">
+          <AppInput
+            v-if="info.deepLink"
+            :model-value="info.deepLink"
+            readonly
+            class="q-mb-md"
+          >
             <template v-slot:append>
               <AppButton
                 variant="ghost"
@@ -119,9 +124,12 @@
       <q-list v-else separator class="parent-list">
         <q-item v-for="l in info.links" :key="l.id" class="q-px-none">
           <q-item-section avatar>
-            <q-avatar size="var(--avatar-sm)" class="tg-avatar" text-color="white">{{
-              (l.firstName || '?').charAt(0).toUpperCase()
-            }}</q-avatar>
+            <q-avatar
+              size="var(--avatar-sm)"
+              class="tg-avatar"
+              text-color="white"
+              >{{ (l.firstName || '?').charAt(0).toUpperCase() }}</q-avatar
+            >
           </q-item-section>
           <q-item-section>
             <q-item-label>{{ l.firstName || "Noma'lum" }}</q-item-label>

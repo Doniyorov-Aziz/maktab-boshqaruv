@@ -124,7 +124,12 @@
             {{ form.id ? 'Ruxsatnomani tahrirlash' : 'Yangi ruxsatnoma' }}
           </div>
           <q-space />
-          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+          <AppButton
+            variant="ghost"
+            icon="close"
+            aria-label="Yopish"
+            v-close-popup
+          />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
           <q-btn-toggle
@@ -152,10 +157,16 @@
               <AppInput v-model="form.phone" maxlength="40" label="Telefon" />
             </div>
             <div class="col-6">
-              <AppDateInput v-model="form.validFrom" label="Boshlanish sanasi *" />
+              <AppDateInput
+                v-model="form.validFrom"
+                label="Boshlanish sanasi *"
+              />
             </div>
             <div class="col-6">
-              <AppDateInput v-model="form.validUntil" label="Tugash sanasi (bo'sh — muddatsiz)" />
+              <AppDateInput
+                v-model="form.validUntil"
+                label="Tugash sanasi (bo'sh — muddatsiz)"
+              />
             </div>
           </div>
           <AppSelect
@@ -193,7 +204,12 @@
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
           <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
-          <AppButton icon="save" label="Saqlash" :loading="saving" @click="save" />
+          <AppButton
+            icon="save"
+            label="Saqlash"
+            :loading="saving"
+            @click="save"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -204,7 +220,12 @@
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">📄 Ruxsat xati shabloni</div>
           <q-space />
-          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+          <AppButton
+            variant="ghost"
+            icon="close"
+            aria-label="Yopish"
+            v-close-popup
+          />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
           <div class="text-caption muted-text">
@@ -223,8 +244,14 @@
             label="Kutubxonadagi kitob(lar)"
             @filter="filterBooks"
           />
-          <AppInput v-model="tpl.title" label="Yoki asar nomi (hali kutubxonada bo'lmasa)" />
-          <AppInput v-model="tpl.grantor" label="Huquq egasining F.I.Sh. (ixtiyoriy)" />
+          <AppInput
+            v-model="tpl.title"
+            label="Yoki asar nomi (hali kutubxonada bo'lmasa)"
+          />
+          <AppInput
+            v-model="tpl.grantor"
+            label="Huquq egasining F.I.Sh. (ixtiyoriy)"
+          />
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
           <AppButton

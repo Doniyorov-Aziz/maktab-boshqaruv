@@ -55,21 +55,24 @@
         color="grey-7"
         class="no-print gt-xs"
         @click="printPage"
-      ><q-tooltip>Chop etish (Ctrl+P)</q-tooltip></AppButton>
+        ><q-tooltip>Chop etish (Ctrl+P)</q-tooltip></AppButton
+      >
       <AppButton
         variant="ghost"
         icon="add"
         color="primary"
         class="no-print"
         @click="router.push('/app/lesson-slots?create=1')"
-      ><q-tooltip>Dars qo'shish</q-tooltip></AppButton>
+        ><q-tooltip>Dars qo'shish</q-tooltip></AppButton
+      >
       <AppButton
         variant="ghost"
         icon="list"
         color="grey-7"
         class="no-print"
         @click="router.push('/app/lesson-slots')"
-      ><q-tooltip>Ro'yxat ko'rinishi</q-tooltip></AppButton>
+        ><q-tooltip>Ro'yxat ko'rinishi</q-tooltip></AppButton
+      >
     </template>
 
     <!-- class tabs (1-A, 1-B, 2-A…) in one row; teacher/room — a select -->
@@ -224,9 +227,7 @@
     </template>
 
     <q-dialog v-model="detailOpen">
-      <q-card
-        v-if="detailEntry" class="app-dialog app-dialog--sm"
-      >
+      <q-card v-if="detailEntry" class="app-dialog app-dialog--sm">
         <q-card-section class="row items-center q-pb-none">
           <IconTile
             icon="menu_book"

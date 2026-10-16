@@ -113,8 +113,8 @@
 
     <!-- grid -->
     <template v-if="view === 'grid'">
-      <div v-if="loading && !books.length" class="row q-col-gutter-md">
-        <div v-for="n in 8" :key="n" class="col-6 col-sm-4 col-md-3 col-xl-2">
+      <div v-if="loading && !books.length" class="book-grid">
+        <div v-for="n in 8" :key="n">
           <q-skeleton height="300px" class="rounded-borders" />
         </div>
       </div>
@@ -126,12 +126,8 @@
         </div>
         <AppButton icon="add" label="Kitob qo'shish" @click="openCreate" />
       </div>
-      <div v-else class="row q-col-gutter-md">
-        <div
-          v-for="b in books"
-          :key="b.id"
-          class="col-6 col-sm-4 col-md-3 col-xl-2"
-        >
+      <div v-else class="book-grid">
+        <div v-for="b in books" :key="b.id">
           <div
             class="brand-card book-card cursor-pointer"
             :class="{ 'book-card--off': !b.active || b.draft }"
@@ -324,7 +320,12 @@
             label="Qoralama — saqlansa faol bo'ladi"
           />
           <q-space />
-          <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+          <AppButton
+            variant="ghost"
+            icon="close"
+            aria-label="Yopish"
+            v-close-popup
+          />
         </q-card-section>
 
         <q-card-section>
@@ -679,7 +680,12 @@
           />
           <q-space />
           <AppButton variant="ghost" label="Bekor qilish" v-close-popup />
-          <AppButton icon="save" label="Saqlash" :loading="saving" @click="save" />
+          <AppButton
+            icon="save"
+            label="Saqlash"
+            :loading="saving"
+            @click="save"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -889,7 +895,12 @@
           </q-list>
         </q-card-section>
         <q-card-actions align="right" class="q-px-md q-pb-md">
-          <AppButton variant="ghost" label="Yopish" :disable="bulkRunning" v-close-popup />
+          <AppButton
+            variant="ghost"
+            label="Yopish"
+            :disable="bulkRunning"
+            v-close-popup
+          />
           <AppButton
             icon="cloud_upload"
             :label="`Yuklash (${bulkWaiting})`"
@@ -1833,6 +1844,16 @@ async function wsImport(w) {
 </script>
 
 <style scoped>
+/* book covers: as many in a row as fit, none narrower than --grid-min-sm */
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(var(--grid-min-sm), 100%), 1fr)
+  );
+  gap: var(--space-4);
+}
+
 .book-card {
   position: relative;
   overflow: hidden;

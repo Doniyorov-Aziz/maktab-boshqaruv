@@ -1,7 +1,12 @@
 <template>
   <div class="print-root">
     <div class="print-toolbar no-print">
-      <AppButton variant="ghost" icon="arrow_back" label="Orqaga" @click="goBack" />
+      <AppButton
+        variant="ghost"
+        icon="arrow_back"
+        label="Orqaga"
+        @click="goBack"
+      />
       <div class="col q-ml-sm ellipsis">
         <div class="text-subtitle1 text-weight-semibold ellipsis">
           Ota-onalar uchun QR kodlar

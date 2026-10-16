@@ -5,8 +5,11 @@
         <IconTile v-if="icon" :icon="icon" size="48" :color="color" />
         <div class="page-layout__title">
           <div class="text-h5 text-weight-bold ellipsis">{{ title }}</div>
-          <div v-if="subtitle" class="text-caption muted-text ellipsis">
-            {{ subtitle }}
+          <div
+            v-if="subtitle || $slots.subtitle"
+            class="text-caption muted-text"
+          >
+            <slot name="subtitle">{{ subtitle }}</slot>
           </div>
         </div>
         <div class="page-layout__actions">

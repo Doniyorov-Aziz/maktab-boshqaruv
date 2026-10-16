@@ -58,7 +58,12 @@
             :disable="month >= now.month"
             @click="shiftMonth(1)"
           />
-          <AppButton variant="secondary" label="Bugun" class="q-ml-sm q-px-sm" @click="goToday" />
+          <AppButton
+            variant="secondary"
+            label="Bugun"
+            class="q-ml-sm q-px-sm"
+            @click="goToday"
+          />
         </div>
       </div>
     </div>
@@ -338,7 +343,12 @@
         </q-card-section>
         <q-card-section class="row q-col-gutter-sm q-pt-none">
           <div class="col-12 col-sm-6">
-            <AppDateInput v-model="bulk.date" label="Sana" no-sundays no-future />
+            <AppDateInput
+              v-model="bulk.date"
+              label="Sana"
+              no-sundays
+              no-future
+            />
           </div>
           <div class="col-12 col-sm-6">
             <q-btn-toggle
@@ -1176,7 +1186,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background: rgba(16, 185, 129, 0.12);
   color: var(--text-primary);
   font-size: var(--text-sm, 13px);

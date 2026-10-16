@@ -17,12 +17,24 @@ mkdirSync(dir, { recursive: true })
 const browser = await chromium.launch()
 for (const name of names) {
   const p = pages.find(x => x.name === name) || { name, path: name }
-  const context = await openContext(browser, { width, height: width < 600 ? 844 : 900 }, { dark, signedIn: !p.public })
+  const context = await openContext(
+    browser,
+    { width, height: width < 600 ? 844 : 900 },
+    { dark, signedIn: !p.public }
+  )
   const page = await context.newPage()
   page.on('pageerror', e => console.log(name, 'JS error:', e.message))
   await visit(page, p.path)
-  const file = join(dir, `${p.name.replace(/\W+/g, '_')}-${width}${dark ? '-dark' : ''}.jpg`)
-  await page.screenshot({ path: file, fullPage: true, type: 'jpeg', quality: 70 })
+  const file = join(
+    dir,
+    `${p.name.replace(/\W+/g, '_')}-${width}${dark ? '-dark' : ''}.jpg`
+  )
+  await page.screenshot({
+    path: file,
+    fullPage: true,
+    type: 'jpeg',
+    quality: 70
+  })
   console.log(file)
   await context.close()
 }

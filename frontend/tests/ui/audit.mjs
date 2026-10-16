@@ -22,26 +22,45 @@ const result = { phase, takenAt: new Date().toISOString(), pages: {} }
 for (const p of pages) {
   if (only && !only.includes(p.name)) continue
   const entry = { path: p.path, layout: {}, errors: [] }
-  const runs = [...viewports.map(v => ({ v, dark: false })), { v: viewports[1], dark: true }]
+  const runs = [
+    ...viewports.map(v => ({ v, dark: false })),
+    { v: viewports[1], dark: true }
+  ]
   for (const { v, dark } of runs) {
     const context = await openContext(browser, v, { dark, signedIn: !p.public })
     const page = await context.newPage()
-    page.on('pageerror', e => entry.errors.push(String(e.message).slice(0, 200)))
+    page.on('pageerror', e =>
+      entry.errors.push(String(e.message).slice(0, 200))
+    )
     await visit(page, p.path)
     const tag = `${v.width}x${v.height}${dark ? '-dark' : ''}`
     await page.screenshot({
-      path: new URL(`${p.name}-${tag}.jpg`, shots).pathname.replace(/^\/([A-Z]:)/, '$1'),
+      path: new URL(`${p.name}-${tag}.jpg`, shots).pathname.replace(
+        /^\/([A-Z]:)/,
+        '$1'
+      ),
       fullPage: true,
       type: 'jpeg',
       quality: 70
     })
     const m = await page.evaluate(measurePage)
     entry.layout[tag] = m.layout
-    if (v.width === 1366 && !dark) Object.assign(entry, { fields: m.fields, buttons: m.buttons, cards: m.cards, chips: m.chips, tiles: m.tiles })
+    if (v.width === 1366 && !dark)
+      Object.assign(entry, {
+        fields: m.fields,
+        buttons: m.buttons,
+        cards: m.cards,
+        chips: m.chips,
+        tiles: m.tiles
+      })
     await context.close()
   }
   result.pages[p.name] = entry
-  console.log(p.name, 'ok', entry.errors.length ? entry.errors.length + ' errors' : '')
+  console.log(
+    p.name,
+    'ok',
+    entry.errors.length ? entry.errors.length + ' errors' : ''
+  )
 }
 await browser.close()
 

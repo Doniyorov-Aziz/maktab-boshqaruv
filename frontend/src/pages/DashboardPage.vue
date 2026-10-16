@@ -1,34 +1,30 @@
 <template>
-  <page-layout>
-    <template v-slot:header>
-      <div class="col-auto">
-        <IconTile icon="waving_hand" size="48" />
-      </div>
-      <div class="col page-layout__title-col">
-        <div class="text-h5 text-weight-bold ellipsis"
-          >Xush kelibsiz, {{ authStore.username }}</div
-        >
-        <div class="text-caption muted-text ellipsis">
-          {{ todayLabel }} · {{ quarterLabel }}
-          <template v-if="schoolStore.activeSchoolName">
-            · {{ schoolStore.activeSchoolName }}</template
-          >
-        </div>
-      </div>
-      <div class="col-auto row items-center q-gutter-sm no-wrap">
-        <q-badge :color="roleColor" outline class="q-px-sm q-py-xs">{{
-          authStore.role
-        }}</q-badge>
-      </div>
+  <page-layout
+    icon="waving_hand"
+    :title="`Xush kelibsiz, ${authStore.username}`"
+  >
+    <template v-slot:subtitle>
+      {{ todayLabel }} · {{ quarterLabel }}
+      <template v-if="schoolStore.activeSchoolName">
+        · {{ schoolStore.activeSchoolName }}</template
+      >
+    </template>
+    <template v-slot:actions>
+      <q-badge :color="roleColor" outline class="q-px-sm q-py-xs">{{
+        authStore.role
+      }}</q-badge>
     </template>
 
-    <div class="row q-col-gutter-md q-mb-md">
-      <div class="col-6 col-md-3 kpi-enter" style="animation-delay: 0ms">
+    <div class="dash-kpis q-mb-md">
+      <div class="kpi-enter" style="animation-delay: 0ms">
         <div class="brand-card q-pa-md full-height kpi-card">
           <div class="row items-center justify-between">
-            <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.12)">
-              <q-icon name="fact_check" color="positive" size="22px" />
-            </div>
+            <IconTile
+              icon="fact_check"
+              size="40"
+              color="rgba(16, 185, 129, 0.12)"
+              text-color="var(--color-success)"
+            />
             <trend-badge :value="summary?.attendanceRateDelta" suffix="%" />
           </div>
           <div class="text-h4 text-weight-bold q-mt-sm">
@@ -64,15 +60,18 @@
         </div>
       </div>
 
-      <div class="col-6 col-md-3 kpi-enter" style="animation-delay: 60ms">
+      <div class="kpi-enter" style="animation-delay: 60ms">
         <div
           class="brand-card q-pa-md full-height kpi-card cursor-pointer"
           @click="openAbsentees"
         >
           <div class="row items-center justify-between">
-            <div class="kpi-icon" style="background: rgba(239, 68, 68, 0.12)">
-              <q-icon name="person_off" color="negative" size="22px" />
-            </div>
+            <IconTile
+              icon="person_off"
+              size="40"
+              color="rgba(239, 68, 68, 0.12)"
+              text-color="var(--color-danger)"
+            />
             <trend-badge :value="summary?.absentCountDelta" invert />
           </div>
           <div class="text-h4 text-weight-bold q-mt-sm">
@@ -88,12 +87,15 @@
         </div>
       </div>
 
-      <div class="col-6 col-md-3 kpi-enter" style="animation-delay: 120ms">
+      <div class="kpi-enter" style="animation-delay: 120ms">
         <div class="brand-card q-pa-md full-height kpi-card">
           <div class="row items-center justify-between">
-            <div class="kpi-icon" style="background: rgba(234, 179, 8, 0.14)">
-              <q-icon name="grade" color="warning" size="22px" />
-            </div>
+            <IconTile
+              icon="grade"
+              size="40"
+              color="rgba(234, 179, 8, 0.14)"
+              text-color="var(--color-warning)"
+            />
             <trend-badge :value="summary?.averageGradeDelta" />
           </div>
           <div class="text-h4 text-weight-bold q-mt-sm">
@@ -113,12 +115,15 @@
         </div>
       </div>
 
-      <div class="col-6 col-md-3 kpi-enter" style="animation-delay: 180ms">
+      <div class="kpi-enter" style="animation-delay: 180ms">
         <div class="brand-card q-pa-md full-height kpi-card">
           <div class="row items-center justify-between">
-            <div class="kpi-icon" style="background: rgba(79, 70, 229, 0.12)">
-              <q-icon name="groups" color="primary" size="22px" />
-            </div>
+            <IconTile
+              icon="groups"
+              size="40"
+              color="rgba(79, 70, 229, 0.12)"
+              text-color="var(--q-primary)"
+            />
           </div>
           <div class="text-h4 text-weight-bold q-mt-sm">
             <q-skeleton v-if="loading" type="text" width="80px" />
@@ -209,8 +214,9 @@
       </div>
     </div>
 
-    <div class="row q-col-gutter-md q-mb-md items-stretch">
-      <div class="col-12 col-md-7">
+    <!-- two independent columns: each card keeps its height, no holes between them -->
+    <div class="dash-grid q-mb-md">
+      <div class="dash-span-7 dash-stack">
         <div class="brand-card q-pa-md full-height column">
           <div class="text-subtitle1 text-weight-semibold q-mb-md"
             >Oxirgi 30 kunlik davomat</div
@@ -224,14 +230,63 @@
             />
           </div>
         </div>
+        <div class="brand-card q-pa-md full-height">
+          <div class="text-subtitle1 text-weight-semibold q-mb-md"
+            >Fanlar bo'yicha o'rtacha baho</div
+          >
+          <div
+            v-if="!subjectAveragesSorted.length"
+            class="muted-text text-body2"
+            >Ma'lumot yo'q</div
+          >
+          <div v-else :style="{ height: subjectChartHeight + 'px' }">
+            <q-skeleton v-if="loading" type="rect" class="full-height" />
+            <Bar
+              v-else
+              :data="subjectChartData"
+              :options="subjectChartOptions"
+            />
+          </div>
+        </div>
+        <div class="brand-card q-pa-md full-height">
+          <div class="text-subtitle1 text-weight-semibold q-mb-md"
+            >Yaqinlashayotgan tadbirlar</div
+          >
+          <div v-if="!upcomingEvents.length" class="muted-text text-body2"
+            >Tadbirlar yo'q</div
+          >
+          <q-list v-else separator>
+            <q-item v-for="e in upcomingEvents" :key="e.id">
+              <q-item-section avatar>
+                <div
+                  class="event-date-block"
+                  :style="{ borderColor: eventTypeColor(e.type) }"
+                >
+                  <div class="event-date-day">{{ eventDay(e.startDate) }}</div>
+                  <div class="event-date-month">{{
+                    eventMonthShort(e.startDate)
+                  }}</div>
+                </div>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>{{ e.title }}</q-item-label>
+                <q-item-label caption>{{
+                  relativeDay(e.startDate)
+                }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-badge
+                  :style="{ background: eventTypeColor(e.type) }"
+                  text-color="white"
+                  >{{ eventTypeLabel(e.type) }}</q-badge
+                >
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </div>
       </div>
-      <div class="col-12 col-md-5">
+      <div class="dash-span-5 dash-stack">
         <class-ranking-card :rankings="rankings" :loading="loading" />
-      </div>
-    </div>
-
-    <div class="row q-col-gutter-md q-mb-md items-stretch">
-      <div class="col-12 col-md-6">
         <div class="brand-card q-pa-md full-height">
           <div class="text-subtitle1 text-weight-semibold q-mb-md"
             >E'tibor talab qiladi</div
@@ -274,69 +329,6 @@
             </template>
           </q-list>
         </div>
-      </div>
-      <div class="col-12 col-md-6">
-        <div class="brand-card q-pa-md full-height">
-          <div class="text-subtitle1 text-weight-semibold q-mb-md"
-            >Fanlar bo'yicha o'rtacha baho</div
-          >
-          <div
-            v-if="!subjectAveragesSorted.length"
-            class="muted-text text-body2"
-            >Ma'lumot yo'q</div
-          >
-          <div v-else :style="{ height: subjectChartHeight + 'px' }">
-            <q-skeleton v-if="loading" type="rect" class="full-height" />
-            <Bar
-              v-else
-              :data="subjectChartData"
-              :options="subjectChartOptions"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row q-col-gutter-md q-mb-md items-stretch">
-      <div class="col-12 col-md-6">
-        <div class="brand-card q-pa-md full-height">
-          <div class="text-subtitle1 text-weight-semibold q-mb-md"
-            >Yaqinlashayotgan tadbirlar</div
-          >
-          <div v-if="!upcomingEvents.length" class="muted-text text-body2"
-            >Tadbirlar yo'q</div
-          >
-          <q-list v-else separator>
-            <q-item v-for="e in upcomingEvents" :key="e.id">
-              <q-item-section avatar>
-                <div
-                  class="event-date-block"
-                  :style="{ borderColor: eventTypeColor(e.type) }"
-                >
-                  <div class="event-date-day">{{ eventDay(e.startDate) }}</div>
-                  <div class="event-date-month">{{
-                    eventMonthShort(e.startDate)
-                  }}</div>
-                </div>
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>{{ e.title }}</q-item-label>
-                <q-item-label caption>{{
-                  relativeDay(e.startDate)
-                }}</q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <q-badge
-                  :style="{ background: eventTypeColor(e.type) }"
-                  text-color="white"
-                  >{{ eventTypeLabel(e.type) }}</q-badge
-                >
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </div>
-      </div>
-      <div class="col-12 col-md-6">
         <div class="brand-card q-pa-md full-height">
           <div class="text-subtitle1 text-weight-semibold q-mb-md"
             >So'nggi e'lonlar</div
@@ -896,7 +888,8 @@ const Sparkline = defineComponent({
     return () => {
       const raw = props.data || []
       const values = raw.filter(v => v != null)
-      if (values.length < 2) return h('div', { style: 'height: var(--sparkline-h)' })
+      if (values.length < 2)
+        return h('div', { style: 'height: var(--sparkline-h)' })
       const max = Math.max(...values, 1)
       const min = Math.min(...values, 0)
       const range = max - min || 1
@@ -994,15 +987,6 @@ watch(() => schoolStore.activeSchoolId, loadAll)
   position: relative;
 }
 
-.kpi-icon {
-  width: var(--tile-md);
-  height: var(--tile-md);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .kpi-enter {
   animation: kpiEnter 0.35s ease both;
 }
@@ -1039,7 +1023,53 @@ watch(() => schoolStore.activeSchoolId, loadAll)
 }
 
 .chart-fill {
-  min-height: var(--chart-h);
+  height: var(--chart-h);
+  flex: none;
+}
+
+/* KPI tiles: as many in a row as fit, stretched to the full width (a fixed set of four) */
+.dash-kpis {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--grid-min-sm), 100%), 1fr)
+  );
+  gap: var(--space-4);
+}
+
+/* the rest: a 12-column grid, one column on a phone; cards keep their own height */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.dash-span-7,
+.dash-span-5,
+.dash-span-6 {
+  grid-column: span 12;
+  min-width: 0;
+}
+
+.dash-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 1024px) {
+  .dash-span-7 {
+    grid-column: span 7;
+  }
+
+  .dash-span-5 {
+    grid-column: span 5;
+  }
+
+  .dash-span-6 {
+    grid-column: span 6;
+  }
 }
 
 .live-lessons-table {

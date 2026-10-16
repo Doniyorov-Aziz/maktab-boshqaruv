@@ -12,7 +12,12 @@
         label="Murojaat qo'shish"
         @click="openManual"
       />
-      <AppButton variant="ghost" icon="refresh" aria-label="Yangilash" @click="reload">
+      <AppButton
+        variant="ghost"
+        icon="refresh"
+        aria-label="Yangilash"
+        @click="reload"
+      >
         <q-tooltip>Yangilash</q-tooltip>
       </AppButton>
     </template>
@@ -65,7 +70,11 @@
               />
             </div>
             <div class="col-6">
-              <AppDateInput v-model="from" label="Sanadan" @update:model-value="reload" />
+              <AppDateInput
+                v-model="from"
+                label="Sanadan"
+                @update:model-value="reload"
+              />
             </div>
           </div>
         </div>
@@ -94,9 +103,12 @@
             @click="select(a.id)"
           >
             <q-item-section avatar>
-              <q-avatar size="var(--avatar-md)" class="tg-avatar" text-color="white">{{
-                initial(a.parentName)
-              }}</q-avatar>
+              <q-avatar
+                size="var(--avatar-md)"
+                class="tg-avatar"
+                text-color="white"
+                >{{ initial(a.parentName) }}</q-avatar
+              >
             </q-item-section>
             <q-item-section>
               <q-item-label class="row items-center no-wrap">
@@ -167,9 +179,12 @@
               @click="selectedId = null"
             />
             <template v-if="chat">
-              <q-avatar size="var(--avatar-md)" class="tg-avatar" text-color="white">{{
-                initial(chat.appeal.parentName)
-              }}</q-avatar>
+              <q-avatar
+                size="var(--avatar-md)"
+                class="tg-avatar"
+                text-color="white"
+                >{{ initial(chat.appeal.parentName) }}</q-avatar
+              >
               <div class="col" style="min-width: 0">
                 <div class="text-weight-semibold ellipsis">
                   {{ chat.appeal.parentName || 'Ota-ona' }}
@@ -471,7 +486,11 @@
                 >
               </template>
             </AppSelect>
-            <AppInput v-model="manual.parentName" maxlength="120" label="Murojaatchi (ota-ona)" />
+            <AppInput
+              v-model="manual.parentName"
+              maxlength="120"
+              label="Murojaatchi (ota-ona)"
+            />
             <q-btn-toggle
               v-model="manual.target"
               no-caps
@@ -490,31 +509,13 @@
                 />
               </div>
               <div class="col-5">
-                <AppInput
+                <AppTimeInput
                   v-model="manual.time"
                   label="Vaqt *"
-                  mask="##:##"
                   :rules="[
                     v => /^([01]\d|2[0-3]):[0-5]\d$/.test(v || '') || 'SS:DD'
                   ]"
-                >
-                  <template #append>
-                    <q-icon name="schedule" class="cursor-pointer">
-                      <q-popup-proxy cover>
-                        <q-time v-model="manual.time" format24h>
-                          <div class="row justify-end">
-                            <AppButton
-                              v-close-popup
-                              variant="ghost"
-                              color="primary"
-                              label="OK"
-                            />
-                          </div>
-                        </q-time>
-                      </q-popup-proxy>
-                    </q-icon>
-                  </template>
-                </AppInput>
+                />
               </div>
             </div>
             <AppInput
@@ -528,8 +529,18 @@
             />
           </q-card-section>
           <q-card-actions align="right" class="q-px-md q-pb-md">
-            <AppButton variant="ghost" label="Bekor qilish" color="grey-7" v-close-popup />
-            <AppButton type="submit" icon="save" label="Saqlash" :loading="savingManual" />
+            <AppButton
+              variant="ghost"
+              label="Bekor qilish"
+              color="grey-7"
+              v-close-popup
+            />
+            <AppButton
+              type="submit"
+              icon="save"
+              label="Saqlash"
+              :loading="savingManual"
+            />
           </q-card-actions>
         </q-form>
       </q-card>
@@ -538,6 +549,7 @@
 </template>
 
 <script setup>
+import AppTimeInput from '@/components/app/AppTimeInput.vue'
 import AppButton from '@/components/app/AppButton.vue'
 import AppInput from '@/components/app/AppInput.vue'
 import AppSelect from '@/components/app/AppSelect.vue'
