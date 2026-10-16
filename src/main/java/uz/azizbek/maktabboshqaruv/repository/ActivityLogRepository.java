@@ -10,4 +10,6 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
     List<ActivityLog> findBySchoolIdOrderByOccurredAtDesc(Long schoolId, Pageable pageable);
 
     long countBySchoolId(Long schoolId);
+
+    org.springframework.data.domain.Page<ActivityLog> findBySchoolId(Long schoolId, Pageable pageable);
 }
