@@ -24,13 +24,11 @@ function gridRows() {
     const r = el.getBoundingClientRect()
     const key = Math.round(r.top)
     if (!rows.has(key)) rows.set(key, [])
-    rows
-      .get(key)
-      .push({
-        w: r.width,
-        h: r.height,
-        name: el.className.split(' ')[0] || el.tagName
-      })
+    rows.get(key).push({
+      w: r.width,
+      h: r.height,
+      name: el.className.split(' ')[0] || el.tagName
+    })
   }
   return [...rows.values()].map(row => ({
     names: row.map(x => x.name),
