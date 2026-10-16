@@ -22,6 +22,14 @@
         />
       </div>
       <AppButton
+        variant="ghost"
+        icon="file_download"
+        label="Excel"
+        :disable="!classId"
+        :loading="exporting"
+        @click="exportExcel"
+      />
+      <AppButton
         variant="secondary"
         icon="fact_check"
         label="Dars bo'yicha belgilash"
@@ -94,6 +102,16 @@
                       "
                       :title="cellTitle(s, d)"
                     />
+                    <span
+                      v-if="cellOf(s, d.date)?.auto"
+                      class="ac-auto"
+                      :title="
+                        cellOf(s, d.date).auto === 'DEMO_SIM'
+                          ? 'DEMO simulyatsiya'
+                          : 'Avtomatik: oldingi darsdan ko\'chirilgan'
+                      "
+                      >🤖</span
+                    >
                   </td>
                 </tr>
               </tbody>
@@ -339,6 +357,32 @@ async function loadClasses() {
   if (current) grade.value = current.gradeNumber
   syncUrl()
   loadMonth()
+}
+
+const exporting = ref(false)
+
+/** The month as .xlsx — every lesson mark with its source (Qo'lda / Avtomatik / DEMO / Qurilma). */
+async function exportExcel() {
+  exporting.value = true
+  try {
+    const res = await api.get('/api/attendance/calendar/export', {
+      params: { schoolClassId: classId.value, month: month.value },
+      responseType: 'blob'
+    })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `davomat-${data.value?.className || ''}-${month.value}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error.friendlyMessage || 'Yuklab bo\u2019lmadi'
+    })
+  } finally {
+    exporting.value = false
+  }
 }
 
 async function loadMonth() {
@@ -614,6 +658,19 @@ thead .ac-name-col {
 
 thead .ac-selected {
   box-shadow: inset 0 -3px 0 var(--q-primary);
+}
+
+.ac-cell {
+  position: relative;
+}
+
+.ac-auto {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: var(--text-xs);
+  line-height: 1;
+  opacity: 0.75;
 }
 
 .ac-dot {

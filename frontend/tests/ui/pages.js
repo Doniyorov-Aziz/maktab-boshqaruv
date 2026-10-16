@@ -43,6 +43,8 @@ export const pages = [
   { name: 'library-authors', path: '/library/authors' },
   { name: 'library-permissions', path: '/library/permissions' },
   { name: 'library-stats', path: '/library/stats' },
+  { name: 'school-settings', path: '/school-settings' },
+  { name: 'activity', path: '/activity' },
   { name: 'student-profile', path: '/profiles/student/' + student },
   { name: 'teacher-profile', path: '/profiles/teacher/' + teacher },
   { name: 'class-profile', path: '/profiles/class/' + klass },

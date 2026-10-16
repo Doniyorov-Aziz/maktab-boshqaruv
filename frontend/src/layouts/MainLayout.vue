@@ -52,16 +52,32 @@
                 >
               </q-item>
               <q-item
-                v-for="(n, i) in notifications"
-                :key="i"
+                v-for="n in notifications"
+                :key="n.key"
                 clickable
                 v-close-popup
+                :class="{ 'bell-item--unread': n.unread }"
                 @click="goNotification(n)"
               >
                 <q-item-section avatar>
-                  <q-icon :name="attentionIcon(n.type)" color="warning" />
+                  <q-icon :name="n.icon" :style="{ color: n.color }" />
                 </q-item-section>
-                <q-item-section>{{ n.description }}</q-item-section>
+                <q-item-section>
+                  <q-item-label>{{ n.text }}</q-item-label>
+                  <q-item-label v-if="n.caption" caption>{{
+                    n.caption
+                  }}</q-item-label>
+                </q-item-section>
+              </q-item>
+              <q-item
+                v-if="staffUnread"
+                clickable
+                v-close-popup
+                @click="markAllRead"
+              >
+                <q-item-section class="text-primary text-weight-medium"
+                  >Hammasini o'qilgan deb belgilash</q-item-section
+                >
               </q-item>
             </q-list>
           </q-menu>
@@ -317,6 +333,15 @@
     </q-drawer>
 
     <q-page-container>
+      <div
+        v-if="demoMode"
+        class="demo-banner"
+        role="status"
+        data-testid="demo-banner"
+      >
+        🧪 DEMO rejim: qo'lda olinmagan davomat avtomatik simulyatsiya
+        qilinmoqda
+      </div>
       <router-view v-slot="{ Component }">
         <transition name="content-fade" mode="out-in">
           <component :is="Component" :key="route.path" />
@@ -574,7 +599,25 @@ const groupedModules = computed(() => {
         title: 'Bot sozlamalari',
         icon: 'smart_toy',
         color: '#64748b'
-      }
+      },
+      {
+        key: 'activity',
+        path: '/activity',
+        title: 'Faollik jurnali',
+        icon: 'history',
+        color: '#0f766e'
+      },
+      ...(authStore.isAdmin
+        ? [
+            {
+              key: 'school-settings',
+              path: '/school-settings',
+              title: 'Maktab sozlamalari',
+              icon: 'tune',
+              color: '#475569'
+            }
+          ]
+        : [])
     )
   }
   // the school library ("📚 Kitob mutolaasi" in the parents' bot)
@@ -711,28 +754,65 @@ function onLogout() {
 
 // --- notifications ---
 const notifications = ref([])
-const notificationCount = computed(() => notifications.value.length)
-
-function attentionIcon(type) {
-  return (
-    {
-      CONSECUTIVE_ABSENCE: 'event_busy',
-      LOW_GRADE: 'trending_down',
-      MISSING_ATTENDANCE: 'fact_check'
-    }[type] || 'info'
-  )
+// the demo simulator is switched on in application.properties only; the page just shows it
+const demoMode = ref(false)
+api
+  .get('/api/system/info', { background: true })
+  .then(res => (demoMode.value = !!res.data.demoSimulator))
+  .catch(() => (demoMode.value = false))
+const staffUnread = computed(
+  () => notifications.value.filter(n => n.unread).length
+)
+const notificationCount = computed(() =>
+  notifications.value.reduce((sum, n) => sum + (n.unread ? 1 : n.count || 0), 0)
+)
+const LEVEL_COLOR = {
+  red: 'var(--st-absent)',
+  orange: 'var(--st-late)',
+  yellow: 'var(--gr-3)'
 }
 
 async function loadNotifications() {
   if (!schoolStore.activeSchoolId) return
-  try {
-    const res = await api.get('/api/dashboard/attention', {
-      params: { schoolId: schoolStore.activeSchoolId }
+  const [mine, attention] = await Promise.allSettled([
+    api.get('/api/staff-notifications', {
+      params: { unreadOnly: true },
+      background: true
+    }),
+    api.get('/api/dashboard/attention', {
+      params: { schoolId: schoolStore.activeSchoolId },
+      background: true
     })
-    notifications.value = res.data
-  } catch {
-    notifications.value = []
+  ])
+  const items = []
+  if (mine.status === 'fulfilled') {
+    for (const n of mine.value.data) {
+      items.push({
+        key: `s${n.id}`,
+        id: n.id,
+        unread: true,
+        text: n.text,
+        icon: 'alarm',
+        color: 'var(--st-late)',
+        link: n.link,
+        caption: String(n.createdAt).replace('T', ' ').slice(0, 16)
+      })
+    }
   }
+  if (attention.status === 'fulfilled') {
+    for (const g of attention.value.data.data || []) {
+      if (!g.total) continue
+      items.push({
+        key: `a${g.kind}`,
+        text: `${g.title}: ${g.total}`,
+        count: g.total,
+        icon: 'priority_high',
+        color: LEVEL_COLOR[g.level],
+        link: '/'
+      })
+    }
+  }
+  notifications.value = items
 }
 
 watch(
@@ -747,11 +827,27 @@ watch(
 // Refresh the badges whenever the admin moves between pages (e.g. after answering).
 watch(() => route.path, loadBotCounts)
 
-function goNotification(n) {
-  if (n.linkModule === 'students') router.push(`/profiles/student/${n.linkId}`)
-  else if (n.linkModule === 'attendance-take') router.push('/attendance')
-  else if (n.linkModule === 'library-permissions' && authStore.isAdmin)
-    router.push('/library/permissions')
+async function goNotification(n) {
+  if (n.unread) {
+    try {
+      await api.post('/api/staff-notifications/read', null, {
+        params: { id: n.id },
+        background: true
+      })
+    } catch {
+      // still open the page
+    }
+  }
+  if (n.link) router.push(n.link)
+  loadNotifications()
+}
+
+async function markAllRead() {
+  try {
+    await api.post('/api/staff-notifications/read', null, { background: true })
+  } finally {
+    loadNotifications()
+  }
 }
 
 // --- global search ---
@@ -906,6 +1002,20 @@ function selectResult(r) {
 </script>
 
 <style scoped>
+.demo-banner {
+  background: var(--login-warning-bg);
+  color: var(--login-warning-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  padding: var(--space-2) var(--page-pad);
+  border-bottom: var(--border);
+}
+
+.bell-item--unread {
+  background: color-mix(in srgb, var(--st-late) 8%, transparent);
+}
+
 .app-header {
   border-bottom: 1px solid var(--brand-border);
   background: var(--card-bg) !important;

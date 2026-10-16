@@ -20,7 +20,11 @@ const shots = [
 const browser = await chromium.launch()
 for (const s of shots) {
   if (phase === 'before' && s.width === 2560) continue
-  const context = await openContext(browser, { width: s.width, height: s.height }, { dark: s.dark })
+  const context = await openContext(
+    browser,
+    { width: s.width, height: s.height },
+    { dark: s.dark }
+  )
   const page = await context.newPage()
   const errors = []
   page.on('pageerror', e => errors.push(e.message))
@@ -28,11 +32,15 @@ for (const s of shots) {
   await visit(page, '/')
   await page.waitForTimeout(1200)
   const tag = s.width === 390 ? 'mobile' : String(s.width)
-  const name = phase === 'before'
-    ? `before-${s.width}-${s.dark ? 'dark' : 'light'}.png`
-    : `after-admin-${tag}-${s.dark ? 'dark' : 'light'}.png`
+  const name =
+    phase === 'before'
+      ? `before-${s.width}-${s.dark ? 'dark' : 'light'}.png`
+      : `after-admin-${tag}-${s.dark ? 'dark' : 'light'}.png`
   await page.screenshot({ path: file(name), fullPage: true })
-  console.log(name, errors.length ? 'errors: ' + errors.join(' | ').slice(0, 300) : 'ok')
+  console.log(
+    name,
+    errors.length ? 'errors: ' + errors.join(' | ').slice(0, 300) : 'ok'
+  )
   await context.close()
 }
 await browser.close()

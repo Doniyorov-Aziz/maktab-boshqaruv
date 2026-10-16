@@ -114,6 +114,16 @@
   --login-glow: 320px;
   --login-ring: 60px;
 
+  // Home page: sparklines, map tiles, rings, widget bodies that scroll inside.
+  --spark-h: 36px;
+  --heat-w: 64px;
+  --heat-h: 56px;
+  --ring-size: 140px;
+  --ring-size-sm: 96px;
+  --widget-body-max-h: 420px;
+  --kpi-value: 34px;
+  --bar-thin: 8px;
+
   // Telegram Mini App (its own phone-first look).
   --wa-main-max: 640px;
   --wa-text-max: 280px;
@@ -159,4 +169,68 @@ body {
   :root {
     --page-pad: 40px;
   }
+}
+
+// ---------------------------------------------------------------- data palette
+// The only colours charts, maps and status badges use (charts read them through
+// src/charts/chartTheme.js — no hex values in chart code). Dark mode redefines
+// them under body.body--dark for contrast on dark cards.
+body {
+  // attendance states
+  --st-present: #16a34a;
+  --st-late: #ea580c;
+  --st-absent: #dc2626;
+  --st-excused: #2563eb;
+  --st-unmarked: #94a3b8;
+  // grades
+  --gr-5: #16a34a;
+  --gr-4: #2563eb;
+  --gr-3: #ca8a04;
+  --gr-2: #dc2626;
+  // the main series (brand violet) and its light fill
+  --chart-primary: #6d28d9;
+  --chart-primary-fill: rgba(109, 40, 217, 0.12);
+  --chart-secondary: #0ea5e9;
+  --chart-text: #64748b;
+  --chart-grid: rgba(100, 116, 139, 0.14);
+  --chart-target: #94a3b8;
+  // attendance map: 4 steps, best to worst, and its text colours
+  --heat-1: #15803d;
+  --heat-2: #4ade80;
+  --heat-3: #facc15;
+  --heat-4: #ef4444;
+  --heat-none: #e2e8f0;
+  --heat-1-text: #ffffff;
+  --heat-2-text: #052e16;
+  --heat-3-text: #422006;
+  --heat-4-text: #ffffff;
+  --heat-none-text: #475569;
+}
+
+body.body--dark {
+  --st-present: #4ade80;
+  --st-late: #fb923c;
+  --st-absent: #f87171;
+  --st-excused: #60a5fa;
+  --st-unmarked: #64748b;
+  --gr-5: #4ade80;
+  --gr-4: #60a5fa;
+  --gr-3: #facc15;
+  --gr-2: #f87171;
+  --chart-primary: #a78bfa;
+  --chart-primary-fill: rgba(167, 139, 250, 0.16);
+  --chart-secondary: #38bdf8;
+  --chart-text: #9497ad;
+  --chart-grid: rgba(148, 151, 173, 0.14);
+  --chart-target: #64748b;
+  --heat-1: #16a34a;
+  --heat-2: #166534;
+  --heat-3: #a16207;
+  --heat-4: #b91c1c;
+  --heat-none: #2d2e3d;
+  --heat-1-text: #ffffff;
+  --heat-2-text: #dcfce7;
+  --heat-3-text: #fef9c3;
+  --heat-4-text: #ffffff;
+  --heat-none-text: #9497ad;
 }

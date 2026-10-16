@@ -673,7 +673,7 @@ public class HomeDashboardService {
             drops.add(new AttentionItem("GRADE_DROP", "orange", r.get("first_name") + " " + r.get("last_name"),
                     r.get("class_name") + " · " + r.get("subject"),
                     String.format(java.util.Locale.ROOT, "%.1f → %.1f", before, now),
-                    Map.of("studentId", l(r.get("student_id")), "subjectId", l(r.get("subject_id")))));
+                    Map.of("studentId", l(r.get("student_id")), "subjectId", l(r.get("subject_id")), "classId", l(r.get("class_id")))));
         }
         groups.add(group("GRADE_DROP", "orange", "Bahosi keskin tushganlar", drops));
 

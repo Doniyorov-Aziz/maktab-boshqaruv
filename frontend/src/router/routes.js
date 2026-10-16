@@ -133,6 +133,17 @@ const routes = [
         meta: { adminOnly: true }
       },
       {
+        // attendance automation, home-page thresholds, device keys, demo tools
+        path: 'school-settings',
+        component: () => import('@/pages/SchoolSettingsPage.vue'),
+        meta: { adminOnly: true }
+      },
+      {
+        path: 'activity',
+        component: () => import('@/pages/ActivityLogPage.vue'),
+        meta: { editorOnly: true }
+      },
+      {
         path: 'profiles/student/:id',
         component: () => import('@/pages/StudentProfilePage.vue')
       },

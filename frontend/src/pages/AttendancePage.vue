@@ -145,6 +145,22 @@
           >1=Keldi · 2=Kelmadi · 3=Kechikdi · 4=Sababli · ↑↓ o'tish</div
         >
       </div>
+      <div v-if="autoCount" class="auto-bar" data-testid="auto-bar">
+        <span>
+          🤖 <b>{{ autoCount }}</b> ta belgi avtomatik qo'yilgan
+          <template v-if="demoCount">
+            ({{ demoCount }} tasi DEMO simulyatsiya)</template
+          >
+          — tekshirib, tasdiqlang
+        </span>
+        <AppButton
+          size="sm"
+          icon="done_all"
+          label="Hammasini tasdiqlash"
+          :loading="confirming"
+          @click="confirmAutomatic"
+        />
+      </div>
       <q-separator />
       <q-list separator>
         <transition-group name="roster-row">
@@ -167,7 +183,15 @@
             </q-item-section>
             <q-item-section>
               <q-item-label class="text-weight-medium"
-                >{{ idx + 1 }}. {{ entry.studentName }}</q-item-label
+                >{{ idx + 1 }}. {{ entry.studentName }}
+                <span
+                  v-if="isAuto(entry) || entry.source === 'DEVICE'"
+                  class="source-mark"
+                  :data-source="entry.source"
+                  :aria-label="sourceNote(entry)"
+                  >{{ entry.source === 'DEVICE' ? '📟' : '🤖' }}
+                  <q-tooltip>{{ sourceNote(entry) }}</q-tooltip></span
+                ></q-item-label
               >
             </q-item-section>
             <q-item-section side>
@@ -202,6 +226,7 @@ import AppButton from '@/components/app/AppButton.vue'
 import AppSelect from '@/components/app/AppSelect.vue'
 import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
@@ -210,6 +235,8 @@ import { useAuthStore } from '@/stores/auth'
 import { todayStr } from '@/utils/date'
 
 const $q = useQuasar()
+const route = useRoute()
+const confirming = ref(false)
 const schoolStore = useSchoolStore()
 const authStore = useAuthStore()
 const myEmployeeId = computed(() => authStore.employeeId)
@@ -396,6 +423,45 @@ async function loadRoster() {
   }
 }
 
+const isAuto = e => e.source === 'AUTO_CARRY' || e.source === 'DEMO_SIM'
+const autoCount = computed(() => roster.value.filter(isAuto).length)
+const demoCount = computed(
+  () => roster.value.filter(e => e.source === 'DEMO_SIM').length
+)
+
+/** "Avtomatik: 1-darsdan ko'chirildi, 09:40" / "DEMO simulyatsiya, 09:40" / "Qurilma T1: 08:47". */
+function sourceNote(e) {
+  const at = e.autoAt ? `, ${String(e.autoAt).split('T')[1].slice(0, 5)}` : ''
+  if (e.source === 'DEMO_SIM') return `DEMO simulyatsiya${at}`
+  if (e.source === 'DEVICE')
+    return `${e.autoNote || 'Qurilma'}${e.lateMinutes ? ` · ${e.lateMinutes} daq kechikdi` : ''}`
+  return `Avtomatik: ${e.autoNote || "oldingi darsdan ko'chirildi"}${at}`
+}
+
+/** "✓ Hammasini tasdiqlash": the automatic marks of this lesson become the user's own. */
+async function confirmAutomatic() {
+  confirming.value = true
+  try {
+    const res = await api.post('/api/attendance/confirm', null, {
+      params: { lessonSlotId: selectedLessonId.value, date: selectedDate.value }
+    })
+    $q.notify({
+      type: 'positive',
+      message: `${res.data.confirmed} ta belgi tasdiqlandi`,
+      icon: 'check_circle'
+    })
+    await loadRoster()
+    loadTodayLessons()
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: error.friendlyMessage || 'Xatolik yuz berdi'
+    })
+  } finally {
+    confirming.value = false
+  }
+}
+
 function markAllPresent() {
   roster.value = roster.value.map(r => ({ ...r, status: 'PRESENT' }))
 }
@@ -439,11 +505,44 @@ watch(
   }
 )
 
+/** A link from the home page or a reminder: /attendance?lessonSlotId=12&date=2026-10-16 */
+async function openFromLink() {
+  const id = Number(route.query.lessonSlotId)
+  if (!id) return
+  if (/^\d{4}-\d{2}-\d{2}$/.test(route.query.date || ''))
+    selectedDate.value = route.query.date
+  try {
+    const res = await api.get(`/api/lesson-slots/${id}`)
+    selectedClassId.value = res.data.schoolClassId
+    selectedLessonId.value = id
+    onClassChange(true)
+  } catch {
+    // the lesson is gone or belongs to another school: the page opens as usual
+  }
+}
+
 loadClasses()
 loadTodayLessons()
+openFromLink()
 </script>
 
 <style scoped>
+.auto-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  background: color-mix(in srgb, var(--st-excused) 10%, transparent);
+  font-size: var(--text-sm);
+}
+
+.source-mark {
+  margin-left: var(--space-1);
+  cursor: help;
+}
+
 .muted-text {
   color: var(--brand-text-muted);
 }
