@@ -148,6 +148,8 @@ public class GradeService {
         grade.setScore(request.getScore());
         grade.setType(request.getType());
         grade.setComment(request.getComment());
+        // a staff member corrected it: from now on it is theirs and no automation touches it
+        grade.setSource(uz.azizbek.maktabboshqaruv.entity.AttendanceSource.MANUAL);
 
         Grade updated = gradeRepository.save(grade);
         if (meaningfulChange) {
@@ -202,6 +204,7 @@ public class GradeService {
         dto.setComment(grade.getComment());
         dto.setCreatedBy(grade.getCreatedBy());
         dto.setCreatedAt(grade.getCreatedDate());
+        dto.setSource(grade.getSource() == null ? "MANUAL" : grade.getSource().name());
         return dto;
     }
 }

@@ -53,13 +53,19 @@ public class TeacherDashboardService {
                             int unread) {
     }
 
+    /** The teacher's own index: attendance in their lessons and their journal completeness, half each. */
+    public record MyIndex(Integer index, String label, Integer delta, Double attendance, Double journal, int days) {
+    }
+
     private final NamedParameterJdbcTemplate jdbc;
     private final SchoolAccessService access;
     private final SchoolDays schoolDays;
     private final Clock clock;
+    private final HomeDashboardService home;
 
     public TeacherDashboardService(NamedParameterJdbcTemplate jdbc, SchoolAccessService access, SchoolDays schoolDays,
-                                   Clock clock) {
+                                   Clock clock, HomeDashboardService home) {
+        this.home = home;
         this.jdbc = jdbc;
         this.access = access;
         this.schoolDays = schoolDays;
@@ -169,6 +175,36 @@ public class TeacherDashboardService {
         return out;
     }
 
+    /** "Shaxsiy indeks": the last 7 school days, and the change against the 7 before. */
+    public MyIndex myIndex(long schoolId, long employeeId) {
+        List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, LocalDate.now(clock), 14);
+        List<LocalDate> last = days.subList(Math.max(0, days.size() - 7), days.size());
+        List<LocalDate> prev = days.subList(0, Math.max(0, days.size() - 7));
+        DashboardMetrics.Weights half = new DashboardMetrics.Weights(50, 0, 50, 0);
+        Double attNow = lessonAttendance(employeeId, last);
+        Double jNow = home.journal(schoolId, employeeId, last).school();
+        DashboardMetrics.Health now = DashboardMetrics.health(attNow, null, jNow, null, half);
+        Integer delta = null;
+        if (!prev.isEmpty()) {
+            DashboardMetrics.Health before = DashboardMetrics.health(lessonAttendance(employeeId, prev), null,
+                    home.journal(schoolId, employeeId, prev).school(), null, half);
+            if (now.index() != null && before.index() != null) delta = now.index() - before.index();
+        }
+        return new MyIndex(now.index(), now.label(), delta, attNow, jNow, last.size());
+    }
+
+    /** Attendance % (excused left out) of every mark in the teacher's lessons on those days. */
+    private Double lessonAttendance(long employeeId, List<LocalDate> days) {
+        if (days.isEmpty()) return null;
+        Map<String, Object> r = jdbc.queryForMap("""
+                select count(*) filter (where a.status = 'PRESENT') as present, count(*) filter (where a.status = 'LATE') as late,
+                       count(*) filter (where a.status = 'ABSENT') as absent
+                  from attendance a join lesson_slot ls on ls.id = a.lesson_slot_id
+                 where ls.employee_id = :e and a.record_date between :from and :to""",
+                new MapSqlParameterSource("e", employeeId).addValue("from", days.get(0)).addValue("to", days.get(days.size() - 1)));
+        return DashboardMetrics.attendance(l(r.get("present")), l(r.get("late")), l(r.get("absent")));
+    }
+
     /** Appeals to the teacher's own class (class-teacher appeals), waiting for an answer. */
     public List<AppealRow> myAppeals(long schoolId, Long ledClassId) {
         if (ledClassId == null) return List.of();
@@ -197,9 +233,11 @@ public class TeacherDashboardService {
                   from school_class c left join students st on st.class_id = c.id where c.id = :c group by c.grade_number, c.section_letter""", p);
         Map<LocalDate, long[]> byDay = new LinkedHashMap<>();
         for (Map<String, Object> r : jdbc.queryForList("with " + DashboardQueries.DAY_CTE + """
-                select d, count(*) as marked, count(*) filter (where status in ('PRESENT', 'LATE')) as present
+                select d, count(*) as marked, count(*) filter (where status <> 'EXCUSED') as counted,
+                       count(*) filter (where status in ('PRESENT', 'LATE')) as present
                   from day where class_id = :c group by d""", p)) {
-            byDay.put(((Date) r.get("d")).toLocalDate(), new long[]{l(r.get("present")), l(r.get("marked"))});
+            // [present, base without the excused, marked]
+            byDay.put(((Date) r.get("d")).toLocalDate(), new long[]{l(r.get("present")), l(r.get("counted")), l(r.get("marked"))});
         }
         LocalDate[] q = ParentStats.quarterRange(today, ParentStats.quarterOf(today));
         Map<String, Object> g = jdbc.queryForMap("""
@@ -209,7 +247,7 @@ public class TeacherDashboardService {
         long[] t = byDay.get(today);
         long total = l(g.get("total"));
         return new MyClass(classId, (String) cls.get("name"), i(cls.get("students")), t == null ? null : pct(t[0], t[1]),
-                t == null ? null : (int) t[1], pct(l(g.get("passed")), total), pct(l(g.get("good")), total),
+                t == null ? null : (int) t[2], pct(l(g.get("passed")), total), pct(l(g.get("good")), total),
                 pct(i(cls.get("linked")), i(cls.get("students"))),
                 days.stream().map(d -> { long[] v = byDay.get(d); return v == null ? null : pct(v[0], v[1]); }).toList());
     }

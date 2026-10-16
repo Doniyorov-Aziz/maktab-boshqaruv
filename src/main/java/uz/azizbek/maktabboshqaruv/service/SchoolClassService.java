@@ -50,10 +50,18 @@ public class SchoolClassService {
         return toResponseDto(schoolClass);
     }
 
+    /** "a " and "A" are the same class letter: one spelling, so the duplicate check (409) catches both. */
+    private static void normalizeLetter(SchoolClassRequestDto request) {
+        if (request.getSectionLetter() != null) {
+            request.setSectionLetter(request.getSectionLetter().trim().toUpperCase(java.util.Locale.ROOT));
+        }
+    }
+
     @Transactional
     public SchoolClassResponseDto createSchoolClass(SchoolClassRequestDto request) {
         AcademicYear academicYear = academicYearRepository.findById(request.getAcademicYearId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quv yili mavjud emas"));
+        normalizeLetter(request);
 
         if (schoolClassRepository.existsByAcademicYearAndGradeNumberAndSectionLetter(
                 academicYear, request.getGradeNumber(), request.getSectionLetter())) {
@@ -78,6 +86,7 @@ public class SchoolClassService {
 
         AcademicYear academicYear = academicYearRepository.findById(request.getAcademicYearId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday o'quv yili mavjud emas"));
+        normalizeLetter(request);
 
         boolean changed = !academicYear.getId().equals(schoolClass.getAcademicYear().getId())
                 || !request.getGradeNumber().equals(schoolClass.getGradeNumber())

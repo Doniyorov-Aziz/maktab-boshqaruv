@@ -1,7 +1,7 @@
 package uz.azizbek.maktabboshqaruv.entity;
 
 /**
- * Where an attendance mark came from. MANUAL wins over everything: no automatic
+ * Where an attendance mark (or a grade: MANUAL / DEMO_SIM) came from. MANUAL wins over everything: no automatic
  * process changes or deletes it (see AttendanceWriter).
  * <ul>
  *   <li>MANUAL — a staff member marked it (or confirmed an automatic mark);</li>

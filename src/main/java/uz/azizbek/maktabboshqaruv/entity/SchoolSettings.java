@@ -71,6 +71,19 @@ public class SchoolSettings {
     @Column(nullable = false)
     private int heatWarn;
 
+    // the home page health index: weights of its four parts (they add up to 100)
+    @Column(name = "health_weight_attendance", nullable = false, columnDefinition = "integer not null default 40")
+    private int healthWeightAttendance = 40;
+
+    @Column(name = "health_weight_quality", nullable = false, columnDefinition = "integer not null default 30")
+    private int healthWeightQuality = 30;
+
+    @Column(name = "health_weight_journal", nullable = false, columnDefinition = "integer not null default 20")
+    private int healthWeightJournal = 20;
+
+    @Column(name = "health_weight_telegram", nullable = false, columnDefinition = "integer not null default 10")
+    private int healthWeightTelegram = 10;
+
     private LocalDateTime updatedAt;
 
     private String updatedBy;
@@ -108,4 +121,36 @@ public class SchoolSettings {
     public void setUpdatedAt(LocalDateTime v) { this.updatedAt = v; }
     public String getUpdatedBy() { return updatedBy; }
     public void setUpdatedBy(String v) { this.updatedBy = v; }
+    public int getHealthWeightAttendance() {
+        return healthWeightAttendance;
+    }
+
+    public void setHealthWeightAttendance(int healthWeightAttendance) {
+        this.healthWeightAttendance = healthWeightAttendance;
+    }
+
+    public int getHealthWeightQuality() {
+        return healthWeightQuality;
+    }
+
+    public void setHealthWeightQuality(int healthWeightQuality) {
+        this.healthWeightQuality = healthWeightQuality;
+    }
+
+    public int getHealthWeightJournal() {
+        return healthWeightJournal;
+    }
+
+    public void setHealthWeightJournal(int healthWeightJournal) {
+        this.healthWeightJournal = healthWeightJournal;
+    }
+
+    public int getHealthWeightTelegram() {
+        return healthWeightTelegram;
+    }
+
+    public void setHealthWeightTelegram(int healthWeightTelegram) {
+        this.healthWeightTelegram = healthWeightTelegram;
+    }
+
 }

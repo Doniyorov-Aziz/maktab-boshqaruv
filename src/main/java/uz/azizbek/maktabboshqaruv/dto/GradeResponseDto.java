@@ -27,6 +27,16 @@ public class GradeResponseDto {
     private String comment;
     private String createdBy;
     private java.time.LocalDateTime createdAt;
+    /** MANUAL or DEMO_SIM (🤖 in the gradebook). */
+    private String source;
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
 
     public String getCreatedBy() {
         return createdBy;

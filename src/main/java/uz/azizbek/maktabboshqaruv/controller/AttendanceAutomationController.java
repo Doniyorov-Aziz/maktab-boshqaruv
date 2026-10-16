@@ -14,7 +14,7 @@ import uz.azizbek.maktabboshqaruv.service.SchoolAccessService;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceAutomation;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceSettingsService;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter;
-import uz.azizbek.maktabboshqaruv.service.attendance.DemoSimulatorSwitch;
+import uz.azizbek.maktabboshqaruv.service.attendance.DemoMode;
 import uz.azizbek.maktabboshqaruv.service.attendance.DeviceCheckinService;
 
 import java.sql.Timestamp;
@@ -35,7 +35,7 @@ public class AttendanceAutomationController {
     private final AttendanceWriter writer;
     private final AttendanceSettingsService settings;
     private final AttendanceAutomation automation;
-    private final DemoSimulatorSwitch demo;
+    private final DemoMode demo;
     private final LessonSlotRepository lessons;
     private final SchoolAccessService access;
     private final JdbcTemplate jdbc;
@@ -43,7 +43,7 @@ public class AttendanceAutomationController {
 
     public AttendanceAutomationController(DeviceCheckinService checkins, AttendanceWriter writer,
                                           AttendanceSettingsService settings, AttendanceAutomation automation,
-                                          DemoSimulatorSwitch demo, LessonSlotRepository lessons,
+                                          DemoMode demo, LessonSlotRepository lessons,
                                           SchoolAccessService access, JdbcTemplate jdbc, Clock clock) {
         this.checkins = checkins;
         this.writer = writer;
@@ -121,26 +121,44 @@ public class AttendanceAutomationController {
 
     // ------------------------------------------------------------------ demo
 
-    /** For the yellow banner and the demo buttons: is the simulator on (application.properties only). */
+    /** For the yellow banner and the demo buttons: is demo mode on (application.properties only). */
     @GetMapping("/api/system/info")
     public Map<String, Object> info() {
         return Map.of("demoSimulator", demo.enabled(), "demoDelayMinutes", demo.delayMinutes());
     }
 
-    @PostMapping("/api/demo/attendance/backfill")
-    @PreAuthorize("hasRole('ADMIN')")
-    public Map<String, Integer> backfill(@RequestParam Long schoolId, @RequestParam(defaultValue = "30") int days) {
+    private void requireDemo() {
         if (!demo.enabled()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Demo simulyator yoqilmagan — faqat application.properties orqali yoqiladi");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Demo rejim yoqilmagan — faqat application.properties orqali yoqiladi");
         }
-        return Map.of("inserted", automation.backfillDemo(schoolId, days));
     }
 
-    /** Removes the school's DEMO_SIM marks only (allowed even after the simulator is switched off). */
-    @DeleteMapping("/api/demo/attendance")
+    /** "Hozir to'ldirish": one automation pass for this school now (today's lessons up to this minute). */
+    @PostMapping("/api/demo/run")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Map<String, Integer> runNow(@RequestParam Long schoolId) {
+        requireDemo();
+        AttendanceAutomation.Result r = automation.runFor(schoolId);
+        return Map.of("attendance", r.simulated() + r.carried(), "grades", r.grades());
+    }
+
+    /** "Oxirgi 30 kunni to'ldirish": attendance and grades of the last school days (insert-if-absent). */
+    @PostMapping({"/api/demo/backfill", "/api/demo/attendance/backfill"})
+    @PreAuthorize("hasRole('ADMIN')")
+    public Map<String, Integer> backfill(@RequestParam Long schoolId, @RequestParam(defaultValue = "30") int days) {
+        requireDemo();
+        int[] n = automation.backfillDemo(schoolId, days, false);
+        if (n == null) throw new ResponseStatusException(HttpStatus.CONFLICT, "Avtomatika hozir ishlayapti — bir daqiqadan keyin qayta urinib ko'ring");
+        return Map.of("inserted", n[0] + n[1], "attendance", n[0], "grades", n[1]);
+    }
+
+    /** Removes the school's DEMO_SIM attendance and grades only (allowed even after demo mode is off). */
+    @DeleteMapping({"/api/demo", "/api/demo/attendance"})
     @PreAuthorize("hasRole('ADMIN')")
     public Map<String, Integer> clearDemo(@RequestParam Long schoolId) {
-        return Map.of("deleted", writer.deleteDemo(schoolId));
+        int attendance = writer.deleteDemo(schoolId);
+        int grades = automation.deleteDemoGrades(schoolId);
+        return Map.of("deleted", attendance + grades, "attendance", attendance, "grades", grades);
     }
 
     // ------------------------------------------------------------------ staff bell

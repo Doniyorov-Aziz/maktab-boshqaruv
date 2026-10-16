@@ -26,7 +26,7 @@ import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceAutomation;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.AutoMark;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.ManualMark;
-import uz.azizbek.maktabboshqaruv.service.attendance.DemoSimulatorSwitch;
+import uz.azizbek.maktabboshqaruv.service.attendance.DemoMode;
 import uz.azizbek.maktabboshqaruv.service.attendance.DeviceCheckinService;
 import uz.azizbek.maktabboshqaruv.support.MutableClock;
 import uz.azizbek.maktabboshqaruv.support.TestSchool;
@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "telegram.mock=true",
         "telegram.send-initial-delay-ms=3600000",
         "telegram.jobs-initial-delay-ms=3600000",
-        "app.demo.attendance-simulator.enabled=false"
+        "app.demo.enabled=false"
 })
 @ActiveProfiles("local")
 @Import(AttendanceAutomationTestBase.FakeClock.class)

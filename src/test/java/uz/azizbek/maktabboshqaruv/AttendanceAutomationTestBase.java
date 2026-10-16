@@ -26,7 +26,7 @@ import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceAutomation;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.AutoMark;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.ManualMark;
-import uz.azizbek.maktabboshqaruv.service.attendance.DemoSimulatorSwitch;
+import uz.azizbek.maktabboshqaruv.service.attendance.DemoMode;
 import uz.azizbek.maktabboshqaruv.service.attendance.DeviceCheckinService;
 import uz.azizbek.maktabboshqaruv.support.MutableClock;
 import uz.azizbek.maktabboshqaruv.support.TestSchool;

@@ -128,6 +128,8 @@ public class NotificationService {
     public int enqueueGrade(GradeSavedEvent event) {
         Grade grade = gradeRepository.findById(event.gradeId()).orElse(null);
         if (grade == null) return 0;
+        // the demo simulator's grades never reach a parent
+        if (grade.getSource() == uz.azizbek.maktabboshqaruv.entity.AttendanceSource.DEMO_SIM) return 0;
 
         NotificationType type = event.created() ? NotificationType.GRADE_NEW : NotificationType.GRADE_UPDATED;
         // A new grade is keyed by its own date. Edits are keyed by the day of the

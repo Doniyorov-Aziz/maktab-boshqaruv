@@ -26,7 +26,7 @@ import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceAutomation;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.AutoMark;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceWriter.ManualMark;
-import uz.azizbek.maktabboshqaruv.service.attendance.DemoSimulatorSwitch;
+import uz.azizbek.maktabboshqaruv.service.attendance.DemoMode;
 import uz.azizbek.maktabboshqaruv.service.attendance.DeviceCheckinService;
 import uz.azizbek.maktabboshqaruv.support.MutableClock;
 import uz.azizbek.maktabboshqaruv.support.TestSchool;
@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "telegram.mock=true",
         "telegram.send-initial-delay-ms=3600000",
         "telegram.jobs-initial-delay-ms=3600000",
-        "app.demo.attendance-simulator.enabled=true"
+        "app.demo.enabled=true"
 })
 @ActiveProfiles("local")
 @Import(AttendanceAutomationTestBase.FakeClock.class)
@@ -112,11 +112,11 @@ class DemoSimulatorIntegrationTest extends AttendanceAutomationTestBase {
     void simulator_staysOff_underTheProdProfile() {
         MockEnvironment prod = new MockEnvironment();
         prod.setActiveProfiles("prod");
-        assertFalse(new DemoSimulatorSwitch(prod, true, 10).enabled());
+        assertFalse(new DemoMode(prod, true, 10).enabled());
         MockEnvironment dev = new MockEnvironment();
         dev.setActiveProfiles("local");
-        assertTrue(new DemoSimulatorSwitch(dev, true, 10).enabled());
-        assertFalse(new DemoSimulatorSwitch(dev, false, 10).enabled());
+        assertTrue(new DemoMode(dev, true, 10).enabled());
+        assertFalse(new DemoMode(dev, false, 10).enabled());
     }
 
     @Test

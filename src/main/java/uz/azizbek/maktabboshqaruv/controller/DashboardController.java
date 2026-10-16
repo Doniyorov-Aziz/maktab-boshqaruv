@@ -22,6 +22,7 @@ import uz.azizbek.maktabboshqaruv.service.dashboard.TeacherDashboardService;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The home page, one endpoint per widget (each loads, fails and retries on its own). Answers are
@@ -33,6 +34,8 @@ import java.util.List;
 @RequestMapping("/api/dashboard")
 @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
 public class DashboardController {
+
+    private static final Set<String> PERIODS = Set.of("quarter", "month", "week");
 
     private final HomeDashboardService home;
     private final TeacherDashboardService teacher;
@@ -49,15 +52,26 @@ public class DashboardController {
         this.activity = activity;
     }
 
+    private static String period(String p) {
+        return PERIODS.contains(p) ? p : "quarter";
+    }
+
     /** Which home page the caller gets (ADMIN / TEACHER / VIEWER) — decided here. */
     @GetMapping("/home")
     public TeacherDashboardService.Home homeKind(@RequestParam Long schoolId) {
         return teacher.home(schoolId);
     }
 
+    @GetMapping("/health")
+    public Widget<HomeDashboardService.HealthCard> health(@RequestParam Long schoolId) {
+        return cache.get(schoolId, "health", () -> home.health(schoolId));
+    }
+
     @GetMapping("/kpis")
-    public Widget<List<HomeDashboardService.Kpi>> kpis(@RequestParam Long schoolId) {
-        return cache.get(schoolId, "kpis", () -> home.kpis(schoolId));
+    public Widget<List<HomeDashboardService.Kpi>> kpis(@RequestParam Long schoolId,
+                                                       @RequestParam(defaultValue = "quarter") String period) {
+        String p = period(period);
+        return cache.get(schoolId, "kpis:" + p, () -> home.kpis(schoolId, p));
     }
 
     @GetMapping("/today-map")
@@ -65,6 +79,30 @@ public class DashboardController {
         return cache.get(schoolId, "map", () -> home.todayMap(schoolId));
     }
 
+    @GetMapping("/class-map")
+    public Widget<HomeDashboardService.ClassMap> classMap(@RequestParam Long schoolId) {
+        return cache.get(schoolId, "class-map", () -> home.classMap(schoolId));
+    }
+
+    @GetMapping("/risk")
+    public Widget<HomeDashboardService.RiskList> risk(@RequestParam Long schoolId, @RequestParam(defaultValue = "6") int limit) {
+        int n = Math.max(1, Math.min(limit, 100));
+        return cache.get(schoolId, "risk:" + n, () -> home.riskStudents(schoolId, null, n));
+    }
+
+    @GetMapping("/dynamics")
+    public Widget<HomeDashboardService.Dynamics> dynamics(@RequestParam Long schoolId, @RequestParam(defaultValue = "30") int days) {
+        return cache.get(schoolId, "dynamics:" + days, () -> home.dynamics(schoolId, days));
+    }
+
+    /** The compact "E'tibor talab qiladi" card; VIEWERs get it without phone numbers. */
+    @GetMapping("/signals")
+    public Widget<List<HomeDashboardService.Signal>> signals(@RequestParam Long schoolId) {
+        boolean phones = access.caller().role() != Role.VIEWER;
+        return cache.get(schoolId, "signals:" + phones, () -> home.signals(schoolId, null, phones));
+    }
+
+    /** The bell's groups (top 7 of each). */
     @GetMapping("/attention")
     public Widget<List<HomeDashboardService.AttentionGroup>> attention(@RequestParam Long schoolId) {
         boolean phones = access.caller().role() != Role.VIEWER;
@@ -76,19 +114,11 @@ public class DashboardController {
         return cache.get(schoolId, "live", () -> home.liveLessons(schoolId));
     }
 
-    @GetMapping("/attendance-trend")
-    public Widget<HomeDashboardService.Trend> trend(@RequestParam Long schoolId, @RequestParam(defaultValue = "30") int days) {
-        return cache.get(schoolId, "trend:" + days, () -> home.trend(schoolId, days));
-    }
-
-    @GetMapping("/class-ranking")
-    public Widget<List<HomeDashboardService.RankingRow>> ranking(@RequestParam Long schoolId) {
-        return cache.get(schoolId, "ranking", () -> home.classRanking(schoolId));
-    }
-
     @GetMapping("/subject-quality")
-    public Widget<List<HomeDashboardService.SubjectRow>> subjects(@RequestParam Long schoolId) {
-        return cache.get(schoolId, "subjects", () -> home.subjectQuality(schoolId));
+    public Widget<List<HomeDashboardService.SubjectRow>> subjects(@RequestParam Long schoolId,
+                                                                   @RequestParam(defaultValue = "quarter") String period) {
+        String p = period(period);
+        return cache.get(schoolId, "subjects:" + p, () -> home.subjectQuality(schoolId, p));
     }
 
     @GetMapping("/grade-distribution")
@@ -96,9 +126,9 @@ public class DashboardController {
         return cache.get(schoolId, "grades", () -> home.gradeDistribution(schoolId));
     }
 
-    @GetMapping("/teacher-discipline")
-    public Widget<List<HomeDashboardService.TeacherRow>> discipline(@RequestParam Long schoolId) {
-        return cache.get(schoolId, "discipline", () -> home.teacherDiscipline(schoolId, null));
+    @GetMapping("/journal")
+    public Widget<HomeDashboardService.Journal> journal(@RequestParam Long schoolId) {
+        return cache.get(schoolId, "journal", () -> home.journal(schoolId));
     }
 
     @GetMapping("/parents-telegram")
@@ -107,8 +137,8 @@ public class DashboardController {
     }
 
     @GetMapping("/events")
-    public Widget<List<HomeDashboardService.EventRow>> events(@RequestParam Long schoolId) {
-        return cache.get(schoolId, "events", () -> home.events(schoolId));
+    public Widget<List<HomeDashboardService.EventRow>> events(@RequestParam Long schoolId, @RequestParam(defaultValue = "4") int limit) {
+        return cache.get(schoolId, "events:" + limit, () -> home.events(schoolId, limit));
     }
 
     // ------------------------------------------------------------------ teacher's own widgets
@@ -117,6 +147,12 @@ public class DashboardController {
         TeacherDashboardService.Home h = teacher.home(schoolId);
         if (!"TEACHER".equals(h.kind())) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu bo'lim o'qituvchilar uchun");
         return h;
+    }
+
+    @GetMapping("/my-index")
+    public Widget<TeacherDashboardService.MyIndex> myIndex(@RequestParam Long schoolId) {
+        TeacherDashboardService.Home h = teacherHome(schoolId);
+        return cache.get(schoolId, "my-index:" + h.employeeId(), () -> teacher.myIndex(schoolId, h.employeeId()));
     }
 
     @GetMapping("/my-lessons")
@@ -129,6 +165,15 @@ public class DashboardController {
     public Widget<List<TeacherDashboardService.Missing>> myMissing(@RequestParam Long schoolId) {
         TeacherDashboardService.Home h = teacherHome(schoolId);
         return cache.get(schoolId, "my-missing:" + h.employeeId(), () -> teacher.myMissing(schoolId, h.employeeId()));
+    }
+
+    /** "Sinflarimdagi xavf ostidagi o'quvchilar". */
+    @GetMapping("/my-risk")
+    public Widget<HomeDashboardService.RiskList> myRisk(@RequestParam Long schoolId, @RequestParam(defaultValue = "6") int limit) {
+        TeacherDashboardService.Home h = teacherHome(schoolId);
+        int n = Math.max(1, Math.min(limit, 100));
+        return cache.get(schoolId, "my-risk:" + h.employeeId() + ":" + n,
+                () -> home.riskStudents(schoolId, new HashSet<>(h.classIds()), n));
     }
 
     @GetMapping("/my-attention")

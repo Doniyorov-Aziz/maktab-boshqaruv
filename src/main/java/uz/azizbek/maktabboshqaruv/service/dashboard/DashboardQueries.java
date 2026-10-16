@@ -6,7 +6,8 @@ package uz.azizbek.maktabboshqaruv.service.dashboard;
  * <p>A student's status for a day is the mark of their <b>latest</b> lesson that day ("where the
  * student is now"): absent in the 1st lesson but present in the 3rd counts as present. Every
  * percentage on the home page — KPI, map, ring, trend, ranking — uses this one definition, so the
- * numbers agree with each other. Present = PRESENT or LATE; the base is students with a mark.
+ * numbers agree with each other. Present = PRESENT or LATE; the base is present + absent —
+ * excused students are left out of both sides (DashboardMetrics.attendance).
  */
 final class DashboardQueries {
 
@@ -39,6 +40,7 @@ final class DashboardQueries {
                group by a.record_date)
             select day.d,
                    count(*) as marked,
+                   count(*) filter (where day.status <> 'EXCUSED') as counted,
                    count(*) filter (where day.status in ('PRESENT', 'LATE')) as present,
                    count(*) filter (where day.status = 'ABSENT') as absent,
                    count(*) filter (where day.status = 'EXCUSED') as excused,
@@ -55,7 +57,10 @@ final class DashboardQueries {
             select class_id, status, source, count(*) as n
               from day group by class_id, status, source""";
 
-    /** Classes of the school with their class teacher and number of students. */
+    /**
+     * Classes of the school that have students, with their class teacher and number of students.
+     * A class without students (an old year's leftover, a class not filled yet) is on no widget.
+     */
     static final String CLASSES = """
             select c.id, c.grade_number, c.section_letter,
                    e.id as teacher_id, trim(coalesce(e.first_name, '') || ' ' || coalesce(e.last_name, '')) as teacher,
@@ -63,7 +68,7 @@ final class DashboardQueries {
               from school_class c
               join academic_year y on y.id = c.academic_year_id
               left join employee e on e.id = c.class_teacher_id
-             where y.school_id = :s
+             where y.school_id = :s and exists (select 1 from students st where st.class_id = c.id)
              order by c.grade_number, c.section_letter""";
 
     /** Lessons of a weekday with class, subject, teacher, room. */

@@ -41,7 +41,7 @@ public class JournalService {
     }
 
     public record GradeCell(Long id, Long studentId, LocalDate date, int value, String type, String comment,
-                            String createdBy, LocalDateTime createdAt) {
+                            String createdBy, LocalDateTime createdAt, String source) {
     }
 
     public record Journal(Long classId, Long subjectId, String month, LocalDate today, List<Day> days,
@@ -126,7 +126,8 @@ public class JournalService {
             }
             if (r[3] != null) {
                 cells.add(new GradeCell((Long) r[3], studentId, (LocalDate) r[4], (Integer) r[5],
-                        ((GradeType) r[6]).name(), (String) r[7], (String) r[8], (LocalDateTime) r[9]));
+                        ((GradeType) r[6]).name(), (String) r[7], (String) r[8], (LocalDateTime) r[9],
+                        r[10] == null ? "MANUAL" : r[10].toString()));
             }
         }
         return new Journal(classId, subjectId, month.toString(), today, days, students, cells, teacher);

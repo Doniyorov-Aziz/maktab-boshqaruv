@@ -77,11 +77,11 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
     /**
      * The journal in one query, columns only: every student of the class (alphabetical by surname)
      * with that month's grades in the subject — [studentId, lastName, firstName, gradeId, date,
-     * score, type, comment, createdBy, createdDate]; the grade columns are null for a student
+     * score, type, comment, createdBy, createdDate, source]; the grade columns are null for a student
      * without grades.
      */
     @Query("""
-            select s.id, s.lastName, s.firstName, g.id, g.gradeDate, g.score, g.type, g.comment, g.createdBy, g.createdDate
+            select s.id, s.lastName, s.firstName, g.id, g.gradeDate, g.score, g.type, g.comment, g.createdBy, g.createdDate, g.source
             from Student s
             left join Grade g on g.student = s and g.subject.id = :subjectId and g.gradeDate between :from and :to
             where s.schoolClass.id = :classId

@@ -9,6 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import uz.azizbek.maktabboshqaruv.entity.AttendanceStatus;
 import uz.azizbek.maktabboshqaruv.service.dashboard.DashboardCache;
+import uz.azizbek.maktabboshqaruv.service.dashboard.DashboardMetrics;
 import uz.azizbek.maktabboshqaruv.service.dashboard.HomeDashboardService;
 import uz.azizbek.maktabboshqaruv.service.dashboard.TeacherDashboardService;
 import uz.azizbek.maktabboshqaruv.support.TestSchool;
@@ -30,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "telegram.mock=true",
         "telegram.send-initial-delay-ms=3600000",
         "telegram.jobs-initial-delay-ms=3600000",
-        "app.demo.attendance-simulator.enabled=false"
+        "app.demo.enabled=false"
 })
 @ActiveProfiles("local")
 @Import(AttendanceAutomationTestBase.FakeClock.class)
@@ -61,7 +62,7 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
     }
 
     HomeDashboardService.Kpi kpi(String key) {
-        return home.kpis(school.id()).stream().filter(k -> k.key().equals(key)).findFirst().orElseThrow();
+        return home.kpis(school.id(), "quarter").stream().filter(k -> k.key().equals(key)).findFirst().orElseThrow();
     }
 
     @Test
@@ -108,7 +109,7 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
         }
         assertEquals(80.0, kpi("mastery").value());
         assertEquals(60.0, kpi("quality").value());
-        HomeDashboardService.SubjectRow s = home.subjectQuality(school.id()).get(0);
+        HomeDashboardService.SubjectRow s = home.subjectQuality(school.id(), "quarter").get(0);
         assertEquals(80.0, s.mastery());
         assertEquals(60.0, s.quality());
     }
@@ -120,19 +121,85 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
         put(1, 0, 0, LocalDate.of(2031, 3, 3), AttendanceStatus.PRESENT, "DEMO_SIM");
         put(0, 1, 0, LocalDate.of(2031, 3, 3), AttendanceStatus.PRESENT, "MANUAL");
         put(1, 1, 0, LocalDate.of(2031, 3, 3), AttendanceStatus.PRESENT, "DEVICE");
-        HomeDashboardService.TeacherRow t = home.teacherDiscipline(school.id(), null).get(0);
+        HomeDashboardService.TeacherRow t = home.journal(school.id()).teachers().get(0);
         // the fixture has Monday lessons only: last Monday's 6 lessons + today's 4 finished ones
         assertEquals(10, t.lessons());
         assertEquals(2, t.attended(), "the AUTO_CARRY and DEMO_SIM lessons are not 'taken'");
     }
 
     @Test
-    void ranking_showsEachClassWithItsOwnClassTeacher() {
+    void classMap_showsEachClassWithItsOwnClassTeacher_andHidesClassesWithoutStudents() {
         at(10, 40);
-        List<HomeDashboardService.RankingRow> rows = home.classRanking(school.id());
+        // an empty class of the same school (an old year's leftover): on no widget
+        jdbc.update("insert into school_class (grade_number, section_letter, max_students, academic_year_id) values (11, 'A', 30, ?)",
+                school.classes.get(0).getAcademicYear().getId());
+        List<HomeDashboardService.Bubble> rows = home.classMap(school.id()).classes();
         assertEquals(2, rows.size());
         assertEquals("Test O'qituvchi", rows.get(0).teacher(), "class 0 is led by the fixture's teacher");
         assertNull(rows.get(1).teacher(), "class 1 has no class teacher — nobody else's name appears");
+        assertEquals(2, home.todayMap(school.id()).classes().size());
+    }
+
+    @Test
+    void excusedAbsence_isLeftOutOfTheRate_andAHalfMarkedClassIsPartial() {
+        at(10, 40);
+        manual(0, 0, AttendanceStatus.PRESENT, 0, 1, 2, 3);
+        manual(0, 0, AttendanceStatus.ABSENT, 4);
+        manual(0, 0, AttendanceStatus.EXCUSED, 5);
+        manual(1, 0, AttendanceStatus.PRESENT, 0, 1);
+        HomeDashboardService.TodayMap map = home.todayMap(school.id());
+        assertEquals(80.0, map.classes().get(0).rate(), "4 / (4 + 1): the excused student is in neither side");
+        assertEquals("FULL", map.classes().get(0).state());
+        assertEquals("PARTIAL", map.classes().get(1).state(), "2 of 6 marked: under half");
+        assertEquals(85.7, kpi("attendance").value(), "6 present of 7 counted (one excused left out)");
+    }
+
+    @Test
+    void riskList_ranksAbsenceAndFallingGrades() {
+        at(10, 40);
+        // student 0: absent 6 school days in the last 30 → 35 points of absence
+        LocalDate d = LocalDate.of(2031, 3, 1);
+        for (int k = 0, n = 0; n < 6; k++) {
+            LocalDate day = d.minusDays(k);
+            if (day.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) continue;
+            put(0, 0, 0, day, AttendanceStatus.ABSENT, "MANUAL");
+            n++;
+        }
+        // student 1: 5, 5 four weeks ago, 3, 2 in the last two weeks
+        grade(0, 1, LocalDate.of(2031, 2, 3), 5);
+        grade(0, 1, LocalDate.of(2031, 2, 5), 5);
+        grade(0, 1, LocalDate.of(2031, 2, 24), 3);
+        grade(0, 1, LocalDate.of(2031, 2, 26), 2);
+        HomeDashboardService.RiskList list = home.riskStudents(school.id(), null, 6);
+        assertEquals(2, list.total());
+        HomeDashboardService.RiskRow first = list.rows().get(0);
+        assertEquals(student(0, 1).getId(), first.studentId(), "falling grades and a 2 weigh more here");
+        assertEquals(2.5, first.avgNow());
+        assertEquals(5.0, first.avgBefore());
+        assertEquals(DashboardMetrics.risk(0, 2.5, 5.0, 1).score(), first.score());
+        assertEquals(35, list.rows().get(1).score());
+        assertEquals(6, list.rows().get(1).absentDays());
+    }
+
+    @Test
+    void healthIndex_isTheWeightedSumOfItsParts() {
+        at(10, 40);
+        manual(0, 0, AttendanceStatus.PRESENT, 0, 1, 2, 3, 4);
+        manual(0, 0, AttendanceStatus.ABSENT, 5);
+        grade(0, 0, LocalDate.of(2031, 3, 3), 5);
+        grade(0, 1, LocalDate.of(2031, 3, 3), 3);
+        HomeDashboardService.HealthCard h = home.health(school.id());
+        assertEquals(83.3, h.parts().get("attendance"));
+        assertEquals(50.0, h.parts().get("quality"));
+        assertEquals(0.0, h.parts().get("telegram"), "no parent joined the bot");
+        DashboardMetrics.Health expected = DashboardMetrics.health(83.3, 50.0, h.parts().get("journal"), 0.0,
+                DashboardMetrics.Weights.DEFAULT);
+        assertEquals(expected.index(), h.index());
+    }
+
+    void grade(int cls, int studentIdx, LocalDate date, int score) {
+        jdbc.update("insert into grade (student_id, subject_id, grade_date, score, type, created_date) values (?, ?, ?, ?, 'CURRENT', now())",
+                student(cls, studentIdx).getId(), school.subject.getId(), Date.valueOf(date), score);
     }
 
     @Test

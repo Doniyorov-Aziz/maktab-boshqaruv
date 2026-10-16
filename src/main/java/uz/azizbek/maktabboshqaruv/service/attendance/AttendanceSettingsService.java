@@ -35,6 +35,10 @@ public class AttendanceSettingsService {
             @Min(50) @Max(100) int heatGood,
             @Min(50) @Max(100) int heatOk,
             @Min(50) @Max(100) int heatWarn,
+            @Min(0) @Max(100) int healthWeightAttendance,
+            @Min(0) @Max(100) int healthWeightQuality,
+            @Min(0) @Max(100) int healthWeightJournal,
+            @Min(0) @Max(100) int healthWeightTelegram,
             boolean saved,
             LocalDateTime updatedAt,
             String updatedBy) {
@@ -55,17 +59,22 @@ public class AttendanceSettingsService {
                                      @Value("${attendance.notify-on-auto:false}") boolean notifyOnAuto,
                                      @Value("${dashboard.attendance-target:95}") int target,
                                      @Value("${dashboard.absent-streak-days:3}") int streak,
-                                     @Value("${dashboard.discipline-threshold:30}") int discipline,
+                                     @Value("${dashboard.discipline-threshold:10}") int discipline,
                                      @Value("${dashboard.appeal-overdue-hours:24}") int appealHours,
                                      @Value("${dashboard.telegram-low-percent:50}") int telegramLow,
                                      @Value("${dashboard.heat.good:95}") int heatGood,
                                      @Value("${dashboard.heat.ok:90}") int heatOk,
-                                     @Value("${dashboard.heat.warn:85}") int heatWarn) {
+                                     @Value("${dashboard.heat.warn:85}") int heatWarn,
+                                     @Value("${dashboard.health.weight-attendance:40}") int wAttendance,
+                                     @Value("${dashboard.health.weight-quality:30}") int wQuality,
+                                     @Value("${dashboard.health.weight-journal:20}") int wJournal,
+                                     @Value("${dashboard.health.weight-telegram:10}") int wTelegram) {
         this.repository = repository;
         this.schools = schools;
         this.clock = clock;
         this.defaults = new Settings(autoCarry, autoCarryDelay, reminder, escalation, notifyOnAuto, target, streak,
-                discipline, appealHours, telegramLow, heatGood, heatOk, heatWarn, false, null, null);
+                discipline, appealHours, telegramLow, heatGood, heatOk, heatWarn, wAttendance, wQuality, wJournal, wTelegram,
+                false, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -77,6 +86,9 @@ public class AttendanceSettingsService {
     public Settings save(long schoolId, Settings s, String username) {
         if (!(s.heatGood() >= s.heatOk() && s.heatOk() >= s.heatWarn())) {
             throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Xarita chegaralari kamayib borishi kerak: to'q yashil ≥ yashil ≥ sariq");
+        }
+        if (s.healthWeightAttendance() + s.healthWeightQuality() + s.healthWeightJournal() + s.healthWeightTelegram() != 100) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Salomatlik indeksi og'irliklari yig'indisi 100 bo'lishi kerak");
         }
         SchoolSettings row = repository.findBySchoolId(schoolId).orElseGet(() -> {
             SchoolSettings n = new SchoolSettings();
@@ -97,6 +109,10 @@ public class AttendanceSettingsService {
         row.setHeatGood(s.heatGood());
         row.setHeatOk(s.heatOk());
         row.setHeatWarn(s.heatWarn());
+        row.setHealthWeightAttendance(s.healthWeightAttendance());
+        row.setHealthWeightQuality(s.healthWeightQuality());
+        row.setHealthWeightJournal(s.healthWeightJournal());
+        row.setHealthWeightTelegram(s.healthWeightTelegram());
         row.setUpdatedAt(LocalDateTime.now(clock));
         row.setUpdatedBy(username);
         Settings saved = toSettings(repository.save(row));
@@ -117,6 +133,7 @@ public class AttendanceSettingsService {
         return new Settings(r.isAutoCarryEnabled(), r.getAutoCarryDelayMinutes(), r.getReminderMinutes(),
                 r.getEscalationMinutes(), r.isNotifyOnAuto(), r.getAttendanceTarget(), r.getAbsentStreakDays(),
                 r.getDisciplineThreshold(), r.getAppealOverdueHours(), r.getTelegramLowPercent(), r.getHeatGood(),
-                r.getHeatOk(), r.getHeatWarn(), true, r.getUpdatedAt(), r.getUpdatedBy());
+                r.getHeatOk(), r.getHeatWarn(), r.getHealthWeightAttendance(), r.getHealthWeightQuality(),
+                r.getHealthWeightJournal(), r.getHealthWeightTelegram(), true, r.getUpdatedAt(), r.getUpdatedBy());
     }
 }

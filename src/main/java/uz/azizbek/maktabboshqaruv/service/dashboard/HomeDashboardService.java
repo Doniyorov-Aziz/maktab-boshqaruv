@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceSettingsService;
+import uz.azizbek.maktabboshqaruv.service.attendance.DemoMode;
 import uz.azizbek.maktabboshqaruv.service.attendance.SchoolDays;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentStats;
 
@@ -17,18 +18,22 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static uz.azizbek.maktabboshqaruv.service.dashboard.DashboardQueries.*;
 
 /**
  * The home page of a school ("qaror qabul qilish markazi"): every widget answers one question
- * with the school's real data. Percentages have one decimal; null means "no data yet" (never 0).
+ * with the school's real data; the formulas live in {@link DashboardMetrics}. Percentages have one
+ * decimal; null means "no data yet" (never 0).
  */
 @Service
 @Transactional(readOnly = true)
@@ -41,16 +46,13 @@ public class HomeDashboardService {
                       Map<String, Object> extra) {
     }
 
-    public record DailyPoint(LocalDate date, Double rate, Integer absent, Integer marked) {
+    /** One class on today's attendance strip. state: FULL, PARTIAL (under half marked), NONE (not taken), NO_LESSONS. */
+    public record MapTile(long classId, String name, int grade, String letter, String teacher, int students, int present,
+                          int late, int absent, int excused, int marked, Double rate, String state, String source) {
     }
 
-    public record MapTile(long classId, String name, int grade, String teacher, int students, int present, int late,
-                          int absent, int excused, int marked, Double rate, String source, String takenBy,
-                          LocalDateTime takenAt, boolean hasLessons) {
-    }
-
-    public record TodayMap(List<MapTile> classes, Map<String, Integer> ring, Double rate,
-                           Map<String, Integer> sources, Map<String, Integer> thresholds) {
+    public record TodayMap(List<MapTile> classes, Map<String, Integer> ring, Double rate, Map<String, Integer> sources,
+                           Map<String, Integer> thresholds, boolean schoolDay) {
     }
 
     public record AttentionItem(String kind, String level, String title, String subtitle, String detail,
@@ -68,21 +70,45 @@ public class HomeDashboardService {
                        Integer nextPeriod, LocalTime nextStart, List<LiveLesson> lessons, Map<String, Object> summary) {
     }
 
-    public record Trend(List<DailyPoint> points, int target) {
+    public record HealthCard(Integer index, String label, Integer delta, Map<String, Double> parts,
+                             Map<String, Double> previous, DashboardMetrics.Weights weights, int days) {
     }
 
-    public record RankingRow(long classId, String name, String teacher, Double attendance, Double attendanceDelta,
-                             Double mastery, Double masteryDelta, Double quality, Double qualityDelta) {
+    public record Bubble(long classId, String name, String teacher, int students, Double attendance, Double quality,
+                         Double mastery, int grades) {
+    }
+
+    public record ClassMap(List<Bubble> classes, Double avgAttendance, Double avgQuality, int days) {
+    }
+
+    public record RiskRow(long studentId, String name, long classId, String className, int score, int absentDays,
+                          Double avgBefore, Double avgNow, int twos, DashboardMetrics.Risk parts) {
+    }
+
+    public record RiskList(int total, List<RiskRow> rows) {
+    }
+
+    public record DynPoint(LocalDate date, Double attendance, Double quality, Integer absent, Integer grades) {
+    }
+
+    public record Dynamics(List<DynPoint> points, int target) {
+    }
+
+    public record Signal(String kind, String level, String title, int count, List<AttentionItem> items) {
     }
 
     public record SubjectRow(long subjectId, String subject, int total, Double mastery, Double quality) {
     }
 
-    public record GradeWeek(String label, LocalDate from, LocalDate to, Map<Integer, Integer> counts, int total) {
+    public record GradeWeek(String label, LocalDate from, LocalDate to, Map<Integer, Integer> counts, int total,
+                            Double average, Double share5, Double share2) {
     }
 
     public record TeacherRow(long employeeId, String name, int lessons, int attended, int graded,
-                             Double attendedPct, Double gradedPct) {
+                             Double attendedPct, Double gradedPct, Double completeness) {
+    }
+
+    public record Journal(List<TeacherRow> teachers, Double school, int days) {
     }
 
     public record ParentsTelegram(int students, int linked, Double linkedPct, int sentWeek, int deliveredWeek,
@@ -98,16 +124,18 @@ public class HomeDashboardService {
     private final SchoolDays schoolDays;
     private final AttendanceSettingsService settings;
     private final Clock clock;
+    private final DemoMode demo;
     private final uz.azizbek.maktabboshqaruv.service.library.LibraryPermissions libraryPermissions;
 
     public HomeDashboardService(NamedParameterJdbcTemplate jdbc, SchoolDays schoolDays,
-                                AttendanceSettingsService settings, Clock clock,
+                                AttendanceSettingsService settings, Clock clock, DemoMode demo,
                                 uz.azizbek.maktabboshqaruv.service.library.LibraryPermissions libraryPermissions) {
         this.libraryPermissions = libraryPermissions;
         this.jdbc = jdbc;
         this.schoolDays = schoolDays;
         this.settings = settings;
         this.clock = clock;
+        this.demo = demo;
     }
 
     private LocalDate today() {
@@ -119,7 +147,7 @@ public class HomeDashboardService {
     }
 
     static Double pct(long part, long whole) {
-        return whole == 0 ? null : Math.round(part * 1000.0 / whole) / 10.0;
+        return DashboardMetrics.pct(part, whole);
     }
 
     static Double minus(Double a, Double b) {
@@ -134,12 +162,21 @@ public class HomeDashboardService {
         return o == null ? null : ((Number) o).longValue();
     }
 
+    private static Double d(Object o) {
+        return o == null ? null : Math.round(((Number) o).doubleValue() * 100) / 100.0;
+    }
+
     private static LocalDate date(Object o) {
-        return o instanceof Date d ? d.toLocalDate() : (LocalDate) o;
+        return o instanceof Date dt ? dt.toLocalDate() : (LocalDate) o;
     }
 
     private static LocalTime time(Object o) {
         return o instanceof java.sql.Time t ? t.toLocalTime() : (LocalTime) o;
+    }
+
+    /** Attendance % of one DAILY row (excused out of the base). */
+    private static Double rate(Map<String, Object> r) {
+        return r == null ? null : pct(i(r.get("present")), i(r.get("counted")));
     }
 
     private Map<LocalDate, Map<String, Object>> dailyAttendance(long schoolId, LocalDate from, LocalDate to) {
@@ -150,97 +187,100 @@ public class HomeDashboardService {
         return byDate;
     }
 
+    /** Grades per date: total, passed (3–5), good (4–5). */
+    private Map<LocalDate, long[]> dailyGrades(long schoolId, LocalDate from, LocalDate to) {
+        Map<LocalDate, long[]> grades = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList(GRADES_DAILY, p(schoolId).addValue("from", from).addValue("to", to))) {
+            grades.put(date(r.get("d")), new long[]{l(r.get("total")), l(r.get("passed")), l(r.get("good"))});
+        }
+        return grades;
+    }
+
+    private static long[] sum(Map<LocalDate, long[]> grades, Predicate<LocalDate> in) {
+        long[] s = new long[3];
+        grades.forEach((dt, v) -> {
+            if (in.test(dt)) for (int k = 0; k < 3; k++) s[k] += v[k];
+        });
+        return s;
+    }
+
+    /** The start of a period that ends today: quarter (default), month or week (from Monday). */
+    LocalDate periodStart(String period) {
+        LocalDate today = today();
+        return switch (period == null ? "quarter" : period) {
+            case "month" -> today.withDayOfMonth(1);
+            case "week" -> today.with(DayOfWeek.MONDAY);
+            default -> ParentStats.quarterRange(today, ParentStats.quarterOf(today))[0];
+        };
+    }
+
+    /** Classes with lessons today (none on a Sunday or a holiday). */
+    private Set<Long> classesWithLessonsToday(long schoolId) {
+        LocalDate today = today();
+        String weekday = SchoolDays.WEEKDAY_UZ.get(today.getDayOfWeek());
+        if (weekday == null || !schoolDays.isSchoolDay(schoolId, today)) return Set.of();
+        return new HashSet<>(jdbc.queryForList("select distinct ls.class_id from lesson_slot ls join school_class c on c.id = ls.class_id "
+                + "join academic_year y on y.id = c.academic_year_id where y.school_id = :s and ls.weekday = :w "
+                + "and exists (select 1 from students st where st.class_id = c.id)",
+                p(schoolId).addValue("w", weekday), Long.class));
+    }
+
     // ------------------------------------------------------------------ 6.1 KPI
 
-    public List<Kpi> kpis(long schoolId) {
+    /** The four hero cards: attendance today, absent today, mastery and quality over the period. */
+    public List<Kpi> kpis(long schoolId, String period) {
         LocalDate today = today();
         List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, today, 15);
         LocalDate from = days.get(0);
         Map<LocalDate, Map<String, Object>> att = dailyAttendance(schoolId, from, today);
         List<LocalDate> spark = days.subList(Math.max(0, days.size() - 14), days.size());
-        LocalDate prevDay = days.size() >= 2 ? days.get(days.size() - 2) : null;
-        boolean todayIsSchoolDay = !days.isEmpty() && days.get(days.size() - 1).equals(today);
+        boolean todayIsSchoolDay = days.get(days.size() - 1).equals(today);
+        LocalDate prevDay = todayIsSchoolDay ? (days.size() >= 2 ? days.get(days.size() - 2) : null) : days.get(days.size() - 1);
 
         Map<String, Object> t = todayIsSchoolDay ? att.getOrDefault(today, Map.of()) : Map.of();
         Map<String, Object> y = prevDay == null ? Map.of() : att.getOrDefault(prevDay, Map.of());
-        long classesTotal = jdbc.queryForObject("select count(*) from school_class c join academic_year y on y.id = c.academic_year_id where y.school_id = :s", p(schoolId), Long.class);
+        Set<Long> withLessons = classesWithLessonsToday(schoolId);
 
         List<Kpi> out = new ArrayList<>();
-        Double rateToday = pct(i(t.get("present")), i(t.get("marked")));
-        Double rateYesterday = pct(i(y.get("present")), i(y.get("marked")));
+        Double rateToday = t.isEmpty() ? null : rate(t);
+        Double ratePrev = y.isEmpty() ? null : rate(y);
         Map<String, Object> e1 = new LinkedHashMap<>();
         e1.put("classesTaken", i(t.get("classes")));
-        e1.put("classesTotal", classesTotal);
+        e1.put("classesTotal", withLessons.size());
         e1.put("autoClasses", i(t.get("auto_classes")));
         e1.put("schoolDay", todayIsSchoolDay);
-        out.add(new Kpi("attendance", rateToday, minus(rateToday, rateYesterday), true,
-                spark.stream().map(d -> { var r = att.get(d); return r == null ? null : pct(i(r.get("present")), i(r.get("marked"))); }).toList(), e1));
+        out.add(new Kpi("attendance", rateToday, minus(rateToday, ratePrev), true,
+                spark.stream().map(dt -> rate(att.get(dt))).toList(), e1));
 
         Integer absentToday = t.isEmpty() ? null : i(t.get("absent"));
         Map<String, Object> e2 = new LinkedHashMap<>();
         e2.put("excused", t.isEmpty() ? null : i(t.get("excused")));
+        e2.put("late", t.isEmpty() ? null : i(t.get("late")));
         out.add(new Kpi("absent", absentToday == null ? null : absentToday.doubleValue(),
                 absentToday == null || y.isEmpty() ? null : (double) (absentToday - i(y.get("absent"))), false,
-                spark.stream().map(d -> { var r = att.get(d); return r == null ? null : (double) i(r.get("absent")); }).toList(), e2));
+                spark.stream().map(dt -> { var r = att.get(dt); return r == null ? null : (double) i(r.get("absent")); }).toList(), e2));
 
-        Integer lateToday = t.isEmpty() ? null : i(t.get("late"));
-        Map<String, Object> e3 = new LinkedHashMap<>();
-        Object avgLate = t.get("avg_late");
-        e3.put("avgMinutes", avgLate == null ? null : Math.round(((Number) avgLate).doubleValue()));
-        out.add(new Kpi("late", lateToday == null ? null : lateToday.doubleValue(),
-                lateToday == null || y.isEmpty() ? null : (double) (lateToday - i(y.get("late"))), false,
-                spark.stream().map(d -> { var r = att.get(d); return r == null ? null : (double) i(r.get("late")); }).toList(), e3));
-
-        // grades: this quarter for the value, last 7 vs previous 7 school days for the change
-        LocalDate[] quarter = ParentStats.quarterRange(today, ParentStats.quarterOf(today));
-        LocalDate gFrom = quarter[0].isBefore(days.get(0)) ? quarter[0] : days.get(0);
-        Map<LocalDate, long[]> grades = new HashMap<>();
-        for (Map<String, Object> r : jdbc.queryForList(GRADES_DAILY, p(schoolId).addValue("from", gFrom).addValue("to", today))) {
-            grades.put(date(r.get("d")), new long[]{l(r.get("total")), l(r.get("passed")), l(r.get("good"))});
-        }
-        long[] q = sum(grades, d -> !d.isBefore(quarter[0]) && !d.isAfter(today));
+        // grades: the period for the value, last 7 vs previous 7 school days for the change
+        LocalDate start = periodStart(period);
+        Map<LocalDate, long[]> grades = dailyGrades(schoolId, start.isBefore(days.get(0)) ? start : days.get(0), today);
+        long[] q = sum(grades, dt -> !dt.isBefore(start) && !dt.isAfter(today));
         List<LocalDate> last7 = days.subList(Math.max(0, days.size() - 7), days.size());
         List<LocalDate> prev7 = days.subList(Math.max(0, days.size() - 14), Math.max(0, days.size() - 7));
         long[] g7 = sum(grades, last7::contains);
         long[] gp7 = sum(grades, prev7::contains);
-        Map<String, Object> eq = Map.of("quarter", ParentStats.quarterOf(today), "grades", q[0]);
+        Map<String, Object> eq = new LinkedHashMap<>();
+        eq.put("period", period == null ? "quarter" : period);
+        eq.put("quarter", ParentStats.quarterOf(today));
+        eq.put("from", start.toString());
+        eq.put("grades", q[0]);
         out.add(new Kpi("mastery", pct(q[1], q[0]), minus(pct(g7[1], g7[0]), pct(gp7[1], gp7[0])), true,
-                spark.stream().map(d -> { long[] v = grades.get(d); return v == null ? null : pct(v[1], v[0]); }).toList(), eq));
+                spark.stream().map(dt -> { long[] v = grades.get(dt); return v == null ? null : pct(v[1], v[0]); }).toList(), eq));
         out.add(new Kpi("quality", pct(q[2], q[0]), minus(pct(g7[2], g7[0]), pct(gp7[2], gp7[0])), true,
-                spark.stream().map(d -> { long[] v = grades.get(d); return v == null ? null : pct(v[2], v[0]); }).toList(), eq));
-
-        // appeals waiting for an answer
-        int overdueHours = settings.forSchool(schoolId).appealOverdueHours();
-        Map<String, Object> a = jdbc.queryForMap("""
-                select count(*) filter (where status in ('NEW', 'SEEN')) as pending,
-                       count(*) filter (where status in ('NEW', 'SEEN') and last_message_at < :overdue) as overdue
-                  from appeal where school_id = :s""",
-                p(schoolId).addValue("overdue", Timestamp.valueOf(LocalDateTime.now(clock).minusHours(overdueHours))));
-        Map<LocalDate, Integer> newPerDay = new HashMap<>();
-        for (Map<String, Object> r : jdbc.queryForList("""
-                select cast(created_at as date) as d, count(*) as n from appeal
-                 where school_id = :s and status <> 'DRAFT' and created_at >= :from group by 1""",
-                p(schoolId).addValue("from", Timestamp.valueOf(spark.get(0).atStartOfDay())))) {
-            newPerDay.put(date(r.get("d")), i(r.get("n")));
-        }
-        Map<String, Object> ea = new LinkedHashMap<>();
-        ea.put("overdue", i(a.get("overdue")));
-        ea.put("overdueHours", overdueHours);
-        ea.put("sparkMeaning", "new");
-        out.add(new Kpi("appeals", (double) i(a.get("pending")), null, false,
-                spark.stream().map(d -> (double) newPerDay.getOrDefault(d, 0)).toList(), ea));
+                spark.stream().map(dt -> { long[] v = grades.get(dt); return v == null ? null : pct(v[2], v[0]); }).toList(), eq));
         return out;
     }
 
-    private static long[] sum(Map<LocalDate, long[]> grades, Predicate<LocalDate> in) {
-        long[] s = new long[3];
-        grades.forEach((d, v) -> {
-            if (in.test(d)) for (int k = 0; k < 3; k++) s[k] += v[k];
-        });
-        return s;
-    }
-
-    // ------------------------------------------------------------------ 6.2 today map
+    // ------------------------------------------------------------------ 6.2 today, compact
 
     public TodayMap todayMap(long schoolId) {
         LocalDate today = today();
@@ -248,8 +288,10 @@ public class HomeDashboardService {
         Map<Long, Map<String, Object>> classes = new LinkedHashMap<>();
         for (Map<String, Object> r : jdbc.queryForList(CLASSES, p(schoolId))) classes.put(l(r.get("id")), r);
 
-        Map<Long, int[]> counts = new HashMap<>(); // present, late, absent, excused, auto, demo, manual
-        Map<String, Integer> sources = new LinkedHashMap<>(Map.of("MANUAL", 0, "DEVICE", 0, "AUTO_CARRY", 0, "DEMO_SIM", 0));
+        Map<Long, int[]> counts = new HashMap<>(); // present, late, absent, excused, auto, demo, real
+        Map<String, Integer> sources = new LinkedHashMap<>();
+        sources.put("manual", 0);
+        sources.put("auto", 0);
         for (Map<String, Object> r : jdbc.queryForList(TODAY_BY_CLASS, p(schoolId).addValue("from", today).addValue("to", today))) {
             int[] c = counts.computeIfAbsent(l(r.get("class_id")), k -> new int[7]);
             int n = i(r.get("n"));
@@ -260,27 +302,12 @@ public class HomeDashboardService {
                 default -> c[3] += n;
             }
             String src = (String) r.get("source");
-            sources.merge(src, n, Integer::sum);
             if (src.equals("AUTO_CARRY")) c[4] += n;
             else if (src.equals("DEMO_SIM")) c[5] += n;
             else c[6] += n;
+            sources.merge(src.equals("MANUAL") || src.equals("DEVICE") ? "manual" : "auto", n, Integer::sum);
         }
-        // who took it and when: the latest MANUAL mark of the class today
-        Map<Long, Object[]> taken = new HashMap<>();
-        for (Map<String, Object> r : jdbc.queryForList("""
-                select distinct on (ls.class_id) ls.class_id, a.created_by, a.created_date
-                  from attendance a join lesson_slot ls on ls.id = a.lesson_slot_id
-                  join school_class c on c.id = ls.class_id join academic_year y on y.id = c.academic_year_id
-                 where y.school_id = :s and a.record_date = :d and a.source = 'MANUAL'
-                 order by ls.class_id, a.created_date desc""", p(schoolId).addValue("d", today))) {
-            taken.put(l(r.get("class_id")), new Object[]{r.get("created_by"), r.get("created_date")});
-        }
-        // classes that have lessons today (the rest are not "olinmagan", they simply have no lessons)
-        String weekday = SchoolDays.WEEKDAY_UZ.get(today.getDayOfWeek());
-        java.util.Set<Long> withLessons = new java.util.HashSet<>(weekday == null || !schoolDays.isSchoolDay(schoolId, today) ? List.of()
-                : jdbc.queryForList("select distinct ls.class_id from lesson_slot ls join school_class c on c.id = ls.class_id "
-                + "join academic_year y on y.id = c.academic_year_id where y.school_id = :s and ls.weekday = :w",
-                p(schoolId).addValue("w", weekday), Long.class));
+        Set<Long> withLessons = classesWithLessonsToday(schoolId);
 
         List<MapTile> tiles = new ArrayList<>();
         int[] ring = new int[5];
@@ -289,12 +316,13 @@ public class HomeDashboardService {
             int[] c = counts.getOrDefault(e.getKey(), new int[7]);
             int marked = c[0] + c[1] + c[2] + c[3];
             int students = i(r.get("students"));
-            String source = marked == 0 ? null : c[6] > 0 ? (c[4] + c[5] > 0 ? "MIXED" : "MANUAL") : (c[5] > 0 ? "DEMO_SIM" : "AUTO_CARRY");
-            Object[] tk = taken.get(e.getKey());
             boolean lessons = withLessons.contains(e.getKey());
+            String state = !lessons && marked == 0 ? "NO_LESSONS" : marked == 0 ? "NONE"
+                    : DashboardMetrics.partial(marked, students) ? "PARTIAL" : "FULL";
+            String source = marked == 0 ? null : c[6] > 0 ? (c[4] + c[5] > 0 ? "MIXED" : "MANUAL") : (c[5] > 0 ? "DEMO_SIM" : "AUTO_CARRY");
             tiles.add(new MapTile(e.getKey(), i(r.get("grade_number")) + "-" + r.get("section_letter"), i(r.get("grade_number")),
-                    blankToNull((String) r.get("teacher")), students, c[0], c[1], c[2], c[3], marked, pct(c[0] + c[1], marked),
-                    source, tk == null ? null : (String) tk[0], tk == null ? null : ((Timestamp) tk[1]).toLocalDateTime(), lessons));
+                    (String) r.get("section_letter"), blankToNull((String) r.get("teacher")), students, c[0], c[1], c[2], c[3], marked,
+                    DashboardMetrics.attendance(c[0], c[1], c[2]), state, source));
             ring[0] += c[0];
             ring[1] += c[1];
             ring[2] += c[2];
@@ -307,12 +335,11 @@ public class HomeDashboardService {
         ringMap.put("absent", ring[2]);
         ringMap.put("excused", ring[3]);
         ringMap.put("unmarked", ring[4]);
-        int marked = ring[0] + ring[1] + ring[2] + ring[3];
-        return new TodayMap(tiles, ringMap, pct(ring[0] + ring[1], marked), sources,
-                Map.of("good", s.heatGood(), "ok", s.heatOk(), "warn", s.heatWarn()));
+        return new TodayMap(tiles, ringMap, DashboardMetrics.attendance(ring[0], ring[1], ring[2]), sources,
+                Map.of("good", s.heatGood(), "ok", s.heatOk(), "warn", s.heatWarn()), !withLessons.isEmpty());
     }
 
-    // ------------------------------------------------------------------ 6.4 live lessons
+    // ------------------------------------------------------------------ 6.9 live lessons
 
     public Live liveLessons(long schoolId) {
         LocalDateTime nowDt = LocalDateTime.now(clock);
@@ -345,7 +372,8 @@ public class HomeDashboardService {
             }
         }
         if (now.isBefore(periods.get(0)[0])) {
-            return new Live("BEFORE", null, null, null, null, 1, periods.get(0)[0], List.of(), Map.of());
+            return new Live("BEFORE", null, null, null, Duration.between(now, periods.get(0)[0]).toMinutes(), 1,
+                    periods.get(0)[0], List.of(), Map.of());
         }
         for (int k = 0; k + 1 < periods.size(); k++) {
             if (!now.isBefore(periods.get(k)[1]) && now.isBefore(periods.get(k + 1)[0])) {
@@ -371,7 +399,7 @@ public class HomeDashboardService {
     }
 
     private static Predicate<LocalTime[]> distinctBy() {
-        java.util.Set<String> seen = new java.util.HashSet<>();
+        Set<String> seen = new HashSet<>();
         return t -> seen.add(t[0] + "-" + t[1]);
     }
 
@@ -386,80 +414,194 @@ public class HomeDashboardService {
     private LiveLesson live(Map<String, Object> r, Map<String, Object> m) {
         int marked = m == null ? 0 : i(m.get("marked"));
         String state = m == null || marked == 0 ? "NONE" : i(m.get("real_marks")) > 0 ? "MANUAL" : "AUTO";
+        String teacher = (String) r.get("teacher");
         return new LiveLesson(l(r.get("id")), l(r.get("class_id")), (String) r.get("class_name"), (String) r.get("subject"),
-                (String) r.get("teacher"), (String) r.get("room_number"), state, marked, i(r.get("students")));
+                teacher, (String) r.get("room_number"), state, marked, i(r.get("students")));
     }
 
-    // ------------------------------------------------------------------ 6.5 trend
+    // ------------------------------------------------------------------ 6.1 health index
 
-    public Trend trend(long schoolId, int count) {
+    /**
+     * The school's health index over the last 7 school days, and the same for the 7 before (delta).
+     * Telegram has no history, so it is the same in both.
+     */
+    public HealthCard health(long schoolId) {
         LocalDate today = today();
-        List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, today, Math.max(5, Math.min(count, 90)));
+        List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, today, 14);
+        List<LocalDate> last = days.subList(Math.max(0, days.size() - 7), days.size());
+        List<LocalDate> prev = days.subList(0, Math.max(0, days.size() - 7));
         Map<LocalDate, Map<String, Object>> att = dailyAttendance(schoolId, days.get(0), today);
-        List<DailyPoint> points = new ArrayList<>();
-        for (LocalDate d : days) {
-            Map<String, Object> r = att.get(d);
-            points.add(r == null ? new DailyPoint(d, null, null, null)
-                    : new DailyPoint(d, pct(i(r.get("present")), i(r.get("marked"))), i(r.get("absent")), i(r.get("marked"))));
+        Map<LocalDate, long[]> grades = dailyGrades(schoolId, days.get(0), today);
+        Double telegram = parentsTelegram(schoolId).linkedPct();
+        DashboardMetrics.Weights w = weights(schoolId);
+
+        Map<String, Double> partsNow = parts(att, grades, last, journal(schoolId, null, last).school(), telegram);
+        Map<String, Double> partsPrev = prev.isEmpty() ? null : parts(att, grades, prev, journal(schoolId, null, prev).school(), telegram);
+        DashboardMetrics.Health now = DashboardMetrics.health(partsNow.get("attendance"), partsNow.get("quality"),
+                partsNow.get("journal"), partsNow.get("telegram"), w);
+        Integer delta = null;
+        if (partsPrev != null) {
+            DashboardMetrics.Health before = DashboardMetrics.health(partsPrev.get("attendance"), partsPrev.get("quality"),
+                    partsPrev.get("journal"), partsPrev.get("telegram"), w);
+            if (now.index() != null && before.index() != null) delta = now.index() - before.index();
         }
-        return new Trend(points, settings.forSchool(schoolId).attendanceTarget());
+        return new HealthCard(now.index(), now.label(), delta, partsNow, partsPrev, w, last.size());
     }
 
-    // ------------------------------------------------------------------ 6.6 class ranking (this month)
+    DashboardMetrics.Weights weights(long schoolId) {
+        AttendanceSettingsService.Settings s = settings.forSchool(schoolId);
+        return new DashboardMetrics.Weights(s.healthWeightAttendance(), s.healthWeightQuality(), s.healthWeightJournal(),
+                s.healthWeightTelegram());
+    }
 
-    public List<RankingRow> classRanking(long schoolId) {
-        LocalDate today = today();
-        LocalDate monthStart = today.withDayOfMonth(1);
-        LocalDate prevStart = monthStart.minusMonths(1);
-        Map<Long, Map<String, Object>> classes = new LinkedHashMap<>();
-        for (Map<String, Object> r : jdbc.queryForList(CLASSES, p(schoolId))) classes.put(l(r.get("id")), r);
-
-        Map<Long, long[]> att = new HashMap<>(); // present, marked, prevPresent, prevMarked
-        for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
-                select class_id, (d >= :month) as cur,
-                       count(*) filter (where status in ('PRESENT', 'LATE')) as present, count(*) as marked
-                  from day group by 1, 2""",
-                p(schoolId).addValue("from", prevStart).addValue("to", today).addValue("month", monthStart))) {
-            long[] v = att.computeIfAbsent(l(r.get("class_id")), k -> new long[4]);
-            int off = Boolean.TRUE.equals(r.get("cur")) ? 0 : 2;
-            v[off] = l(r.get("present"));
-            v[off + 1] = l(r.get("marked"));
+    private static Map<String, Double> parts(Map<LocalDate, Map<String, Object>> att, Map<LocalDate, long[]> grades,
+                                             List<LocalDate> days, Double journal, Double telegram) {
+        long present = 0, counted = 0;
+        for (LocalDate dt : days) {
+            Map<String, Object> r = att.get(dt);
+            if (r == null) continue;
+            present += i(r.get("present"));
+            counted += i(r.get("counted"));
         }
-        Map<Long, long[]> gr = new HashMap<>(); // total, passed, good, prevTotal, prevPassed, prevGood
+        long[] g = sum(grades, days::contains);
+        Map<String, Double> m = new LinkedHashMap<>();
+        m.put("attendance", pct(present, counted));
+        m.put("quality", pct(g[2], g[0]));
+        m.put("journal", journal);
+        m.put("telegram", telegram);
+        return m;
+    }
+
+    // ------------------------------------------------------------------ 6.3 classes: attendance × quality
+
+    /** Each class: 30-day attendance (x), this quarter's quality (y), students (size). */
+    public ClassMap classMap(long schoolId) {
+        LocalDate today = today();
+        LocalDate from = today.minusDays(29);
+        LocalDate qFrom = periodStart("quarter");
+        Map<Long, long[]> att = new HashMap<>(); // present, late, absent
+        for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
+                select class_id,
+                       count(*) filter (where status = 'PRESENT') as present,
+                       count(*) filter (where status = 'LATE') as late,
+                       count(*) filter (where status = 'ABSENT') as absent
+                  from day group by class_id""", p(schoolId).addValue("from", from).addValue("to", today))) {
+            att.put(l(r.get("class_id")), new long[]{l(r.get("present")), l(r.get("late")), l(r.get("absent"))});
+        }
+        Map<Long, long[]> gr = new HashMap<>(); // total, passed, good
         for (Map<String, Object> r : jdbc.queryForList("""
-                select st.class_id, (g.grade_date >= :month) as cur, count(*) as total,
+                select st.class_id, count(*) as total,
                        count(*) filter (where g.score >= 3) as passed, count(*) filter (where g.score >= 4) as good
                   from grade g join students st on st.id = g.student_id
                   join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
                  where y.school_id = :s and g.grade_date between :from and :to
-                 group by 1, 2""",
-                p(schoolId).addValue("from", prevStart).addValue("to", today).addValue("month", monthStart))) {
-            long[] v = gr.computeIfAbsent(l(r.get("class_id")), k -> new long[6]);
-            int off = Boolean.TRUE.equals(r.get("cur")) ? 0 : 3;
-            v[off] = l(r.get("total"));
-            v[off + 1] = l(r.get("passed"));
-            v[off + 2] = l(r.get("good"));
+                 group by st.class_id""", p(schoolId).addValue("from", qFrom).addValue("to", today))) {
+            gr.put(l(r.get("class_id")), new long[]{l(r.get("total")), l(r.get("passed")), l(r.get("good"))});
         }
-        List<RankingRow> rows = new ArrayList<>();
-        for (Map.Entry<Long, Map<String, Object>> e : classes.entrySet()) {
-            long[] a = att.getOrDefault(e.getKey(), new long[4]);
-            long[] g = gr.getOrDefault(e.getKey(), new long[6]);
-            Double attNow = pct(a[0], a[1]);
-            Double mNow = pct(g[1], g[0]);
-            Double qNow = pct(g[2], g[0]);
-            Map<String, Object> r = e.getValue();
-            rows.add(new RankingRow(e.getKey(), i(r.get("grade_number")) + "-" + r.get("section_letter"),
-                    blankToNull((String) r.get("teacher")), attNow, minus(attNow, pct(a[2], a[3])),
-                    mNow, minus(mNow, pct(g[4], g[3])), qNow, minus(qNow, pct(g[5], g[3]))));
+        List<Bubble> out = new ArrayList<>();
+        long[] attSum = new long[3];
+        long[] grSum = new long[3];
+        for (Map<String, Object> r : jdbc.queryForList(CLASSES, p(schoolId))) {
+            long id = l(r.get("id"));
+            long[] a = att.getOrDefault(id, new long[3]);
+            long[] g = gr.getOrDefault(id, new long[3]);
+            for (int k = 0; k < 3; k++) {
+                attSum[k] += a[k];
+                grSum[k] += g[k];
+            }
+            out.add(new Bubble(id, i(r.get("grade_number")) + "-" + r.get("section_letter"), blankToNull((String) r.get("teacher")),
+                    i(r.get("students")), DashboardMetrics.attendance(a[0], a[1], a[2]), pct(g[2], g[0]), pct(g[1], g[0]), (int) g[0]));
         }
-        return rows;
+        return new ClassMap(out, DashboardMetrics.attendance(attSum[0], attSum[1], attSum[2]), pct(grSum[2], grSum[0]), 30);
     }
 
-    // ------------------------------------------------------------------ 6.7 subjects (this quarter)
+    // ------------------------------------------------------------------ 6.4 students at risk
 
-    public List<SubjectRow> subjectQuality(long schoolId) {
+    /** Students with a risk score of {@link DashboardMetrics#RISK_LIST_FROM}+, highest first. classIds limits it (null = school). */
+    public RiskList riskStudents(long schoolId, Collection<Long> classIds, int limit) {
         LocalDate today = today();
-        LocalDate[] q = ParentStats.quarterRange(today, ParentStats.quarterOf(today));
+        Map<Long, Integer> absent = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
+                select student_id, count(*) filter (where status = 'ABSENT') as absent from day group by student_id""",
+                p(schoolId).addValue("from", today.minusDays(29)).addValue("to", today))) {
+            absent.put(l(r.get("student_id")), i(r.get("absent")));
+        }
+        Map<Long, Map<String, Object>> grades = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("""
+                select g.student_id,
+                       avg(g.score) filter (where g.grade_date > :mid) as now_avg,
+                       count(*) filter (where g.grade_date > :mid) as now_n,
+                       avg(g.score) filter (where g.grade_date <= :mid) as before_avg,
+                       count(*) filter (where g.grade_date <= :mid) as before_n,
+                       count(*) filter (where g.score = 2 and g.grade_date > :d30) as twos
+                  from grade g join students st on st.id = g.student_id
+                  join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
+                 where y.school_id = :s and g.grade_date between :from and :to
+                 group by g.student_id""",
+                p(schoolId).addValue("mid", today.minusDays(14)).addValue("d30", today.minusDays(30))
+                        .addValue("from", today.minusDays(42)).addValue("to", today))) {
+            grades.put(l(r.get("student_id")), r);
+        }
+        List<RiskRow> rows = new ArrayList<>();
+        for (Map<String, Object> r : jdbc.queryForList("""
+                select st.id, st.first_name || ' ' || st.last_name as name, st.class_id,
+                       c.grade_number || '-' || c.section_letter as class_name
+                  from students st join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
+                 where y.school_id = :s""", p(schoolId))) {
+            long id = l(r.get("id"));
+            long classId = l(r.get("class_id"));
+            if (classIds != null && !classIds.contains(classId)) continue;
+            Map<String, Object> g = grades.get(id);
+            // an average needs at least two grades to mean anything
+            Double now = g == null || i(g.get("now_n")) < 2 ? null : d(g.get("now_avg"));
+            Double before = g == null || i(g.get("before_n")) < 2 ? null : d(g.get("before_avg"));
+            int twos = g == null ? 0 : i(g.get("twos"));
+            int abs = absent.getOrDefault(id, 0);
+            DashboardMetrics.Risk risk = DashboardMetrics.risk(abs, now, before, twos);
+            if (risk.score() < DashboardMetrics.RISK_LIST_FROM) continue;
+            rows.add(new RiskRow(id, (String) r.get("name"), classId, (String) r.get("class_name"), risk.score(), abs,
+                    before, now, twos, risk));
+        }
+        rows.sort(Comparator.comparing((RiskRow x) -> -x.score()).thenComparing(RiskRow::name));
+        return new RiskList(rows.size(), rows.subList(0, Math.min(rows.size(), Math.max(1, limit))));
+    }
+
+    // ------------------------------------------------------------------ 6.5 dynamics (30 school days)
+
+    public Dynamics dynamics(long schoolId, int count) {
+        LocalDate today = today();
+        List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, today, Math.max(5, Math.min(count, 90)));
+        Map<LocalDate, Map<String, Object>> att = dailyAttendance(schoolId, days.get(0), today);
+        Map<LocalDate, long[]> grades = dailyGrades(schoolId, days.get(0), today);
+        List<DynPoint> points = new ArrayList<>();
+        for (LocalDate dt : days) {
+            Map<String, Object> r = att.get(dt);
+            long[] g = grades.get(dt);
+            points.add(new DynPoint(dt, rate(r), g == null ? null : pct(g[2], g[0]),
+                    r == null ? null : i(r.get("absent")), g == null ? null : (int) g[0]));
+        }
+        return new Dynamics(points, settings.forSchool(schoolId).attendanceTarget());
+    }
+
+    // ------------------------------------------------------------------ 6.6 signals
+
+    /** The five signals of the compact "E'tibor talab qiladi" card, each with its full list (for the drawer). */
+    public List<Signal> signals(long schoolId, Set<Long> classIds, boolean withPhones) {
+        Map<String, AttentionGroup> groups = new LinkedHashMap<>();
+        for (AttentionGroup g : attention(schoolId, classIds, withPhones, 50)) groups.put(g.kind(), g);
+        List<Signal> out = new ArrayList<>();
+        for (String kind : List.of("UNMARKED_LESSON", "ABSENT_STREAK", "APPEAL_OVERDUE", "GRADE_DROP", "TEACHER_DISCIPLINE")) {
+            AttentionGroup g = groups.get(kind);
+            if (g == null) continue;
+            out.add(new Signal(kind, g.level(), g.title(), g.total(), g.items()));
+        }
+        return out;
+    }
+
+    // ------------------------------------------------------------------ 6.7 subjects
+
+    public List<SubjectRow> subjectQuality(long schoolId, String period) {
+        LocalDate today = today();
         List<SubjectRow> rows = new ArrayList<>();
         for (Map<String, Object> r : jdbc.queryForList("""
                 select s.id, s.name, count(*) as total,
@@ -468,7 +610,7 @@ public class HomeDashboardService {
                   join students st on st.id = g.student_id
                   join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
                  where y.school_id = :s and g.grade_date between :from and :to
-                 group by s.id, s.name""", p(schoolId).addValue("from", q[0]).addValue("to", today))) {
+                 group by s.id, s.name""", p(schoolId).addValue("from", periodStart(period)).addValue("to", today))) {
             long total = l(r.get("total"));
             rows.add(new SubjectRow(l(r.get("id")), (String) r.get("name"), (int) total,
                     pct(l(r.get("passed")), total), pct(l(r.get("good")), total)));
@@ -496,29 +638,40 @@ public class HomeDashboardService {
                 week("O'tgan hafta", prevMonday, monday.minusDays(1), counts.getOrDefault(false, Map.of())));
     }
 
-    private static GradeWeek week(String label, LocalDate from, LocalDate to, Map<Integer, Integer> c) {
+    static GradeWeek week(String label, LocalDate from, LocalDate to, Map<Integer, Integer> c) {
         Map<Integer, Integer> ordered = new LinkedHashMap<>();
         int total = 0;
+        long points = 0;
         for (int s = 5; s >= 2; s--) {
-            ordered.put(s, c.getOrDefault(s, 0));
-            total += c.getOrDefault(s, 0);
+            int n = c.getOrDefault(s, 0);
+            ordered.put(s, n);
+            total += n;
+            points += (long) s * n;
         }
-        return new GradeWeek(label, from, to, ordered, total);
+        Double avg = total == 0 ? null : Math.round(points * 100.0 / total) / 100.0;
+        return new GradeWeek(label, from, to, ordered, total, avg, pct(ordered.get(5), total), pct(ordered.get(2), total));
     }
 
-    // ------------------------------------------------------------------ 6.9 teacher discipline (7 school days)
+    // ------------------------------------------------------------------ 6.10 journal completeness
+
+    /** Per teacher over the last 7 school days; the lowest first. */
+    public Journal journal(long schoolId) {
+        return journal(schoolId, null, schoolDays.lastSchoolDays(schoolId, today(), 7));
+    }
 
     /**
-     * Per teacher over the last 7 school days (today only for lessons already over): lessons held,
-     * lessons with attendance a person or device took (AUTO_CARRY / DEMO_SIM do not count), lessons
-     * with at least one grade of that class and subject on that day.
+     * Per teacher over the given school days (today only for lessons already over): lessons held,
+     * lessons with attendance entered, lessons with at least one grade of that class and subject that
+     * day. Entered = by a person or a device; in demo mode the simulator's marks count too (it plays
+     * the teachers). AUTO_CARRY never counts. Completeness = (attended + graded) / (2 × lessons).
      */
-    public List<TeacherRow> teacherDiscipline(long schoolId, Long employeeId) {
+    public Journal journal(long schoolId, Long employeeId, List<LocalDate> days) {
+        if (days.isEmpty()) return new Journal(List.of(), null, 0);
         LocalDateTime now = LocalDateTime.now(clock);
-        List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, now.toLocalDate(), 7);
-        if (days.isEmpty()) return List.of();
         String dayArray = "{" + String.join(",", days.stream().map(LocalDate::toString).toList()) + "}";
+        String sources = demo.enabled() ? "('MANUAL', 'DEVICE', 'DEMO_SIM')" : "('MANUAL', 'DEVICE')";
         List<TeacherRow> rows = new ArrayList<>();
+        long lessonsAll = 0, filledAll = 0;
         for (Map<String, Object> r : jdbc.queryForList("""
                 with days(d) as (select unnest(cast(:days as date[]))),
                 occ as (
@@ -526,12 +679,14 @@ public class HomeDashboardService {
                     from lesson_slot ls
                     join school_class c on c.id = ls.class_id join academic_year y on y.id = c.academic_year_id
                     join days on ls.weekday = """ + DashboardQueries.weekdayOf("days.d") + """
-                   where y.school_id = :s and (:emp is null or ls.employee_id = :emp)
+                   where y.school_id = :s and (cast(:emp as bigint) is null or ls.employee_id = :emp)
+                     and exists (select 1 from students st where st.class_id = ls.class_id)
                      and (days.d < :today or ls.end_time <= :nowTime))
                 select o.employee_id, trim(coalesce(e.first_name, '') || ' ' || coalesce(e.last_name, '')) as name,
                        count(*) as lessons,
                        count(*) filter (where exists (select 1 from attendance a where a.lesson_slot_id = o.id
-                                 and a.record_date = o.d and a.source in ('MANUAL', 'DEVICE'))) as attended,
+                                 and a.record_date = o.d and a.source in """ + sources + """
+                                 )) as attended,
                        count(*) filter (where exists (select 1 from grade g join students st on st.id = g.student_id
                                  where st.class_id = o.class_id and g.subject_id = o.subject_id and g.grade_date = o.d)) as graded
                   from occ o join employee e on e.id = o.employee_id
@@ -541,12 +696,14 @@ public class HomeDashboardService {
             int lessons = i(r.get("lessons"));
             int attended = i(r.get("attended"));
             int graded = i(r.get("graded"));
+            lessonsAll += lessons;
+            filledAll += attended + graded;
             rows.add(new TeacherRow(l(r.get("employee_id")), (String) r.get("name"), lessons, attended, graded,
-                    pct(attended, lessons), pct(graded, lessons)));
+                    pct(attended, lessons), pct(graded, lessons), pct(attended + graded, 2L * lessons)));
         }
-        rows.sort(Comparator.comparing((TeacherRow t) -> t.attendedPct() == null ? 101 : t.attendedPct())
-                .thenComparing(t -> t.gradedPct() == null ? 101 : t.gradedPct()));
-        return rows;
+        rows.sort(Comparator.comparing((TeacherRow t) -> t.completeness() == null ? 101 : t.completeness())
+                .thenComparing(TeacherRow::name));
+        return new Journal(rows, pct(filledAll, 2 * lessonsAll), days.size());
     }
 
     // ------------------------------------------------------------------ 6.10 parents and Telegram
@@ -572,15 +729,15 @@ public class HomeDashboardService {
         return new ParentsTelegram(students, linked, pct(linked, students), sent, delivered, pct(delivered, sent), downloads);
     }
 
-    // ------------------------------------------------------------------ 6.11 events
+    // ------------------------------------------------------------------ 6.10 events
 
-    public List<EventRow> events(long schoolId) {
+    public List<EventRow> events(long schoolId, int limit) {
         LocalDate today = today();
         List<EventRow> rows = new ArrayList<>();
         for (Map<String, Object> r : jdbc.queryForList("""
                 select id, title, type, start_date, end_date from calendar_event
-                 where school_id = :s and end_date >= :today order by start_date limit 5""",
-                p(schoolId).addValue("today", today))) {
+                 where school_id = :s and end_date >= :today order by start_date limit :n""",
+                p(schoolId).addValue("today", today).addValue("n", Math.max(1, Math.min(limit, 20))))) {
             LocalDate start = date(r.get("start_date"));
             rows.add(new EventRow(l(r.get("id")), (String) r.get("title"), (String) r.get("type"), start, date(r.get("end_date")),
                     Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(today, start))));
@@ -588,19 +745,24 @@ public class HomeDashboardService {
         return rows;
     }
 
-    // ------------------------------------------------------------------ 6.3 attention
+    // ------------------------------------------------------------------ attention (signals and the bell)
+
+    /** The bell's groups: top 7 of each. */
+    public List<AttentionGroup> attention(long schoolId, Set<Long> classIds, boolean withPhones) {
+        return attention(schoolId, classIds, withPhones, 7);
+    }
 
     /**
-     * The things that need someone today, most urgent first; each group has its top rows and the
-     * total. classIds limits it to a teacher's classes (null = the whole school).
+     * The things that need someone today, most urgent first; each group has its top {@code limit}
+     * rows and the total. classIds limits it to a teacher's classes (null = the whole school).
      */
-    public List<AttentionGroup> attention(long schoolId, java.util.Set<Long> classIds, boolean withPhones) {
+    public List<AttentionGroup> attention(long schoolId, Set<Long> classIds, boolean withPhones, int limit) {
         AttendanceSettingsService.Settings s = settings.forSchool(schoolId);
         LocalDateTime nowDt = LocalDateTime.now(clock);
         LocalDate today = nowDt.toLocalDate();
         List<AttentionGroup> groups = new ArrayList<>();
 
-        // 🔴 lessons without attendance, escalationMinutes after they started
+        // lessons without attendance, escalationMinutes after they started
         List<AttentionItem> unmarked = new ArrayList<>();
         String weekday = SchoolDays.WEEKDAY_UZ.get(today.getDayOfWeek());
         if (weekday != null && schoolDays.isSchoolDay(schoolId, today)) {
@@ -630,13 +792,13 @@ public class HomeDashboardService {
                         (String) r.get("teacher"), marked == 0 ? "olinmagan" : (students - marked) + " o'quvchi belgilanmagan", ref));
             }
         }
-        groups.add(group("UNMARKED_LESSON", "red", "Davomat olinmagan darslar", unmarked));
+        groups.add(group("UNMARKED_LESSON", "red", "Davomat olinmagan darslar", unmarked, limit));
 
-        // 🔴 absent N+ school days in a row
-        groups.add(group("ABSENT_STREAK", "red", s.absentStreakDays() + "+ kun ketma-ket kelmaganlar",
-                absentStreaks(schoolId, classIds, s.absentStreakDays(), withPhones)));
+        // absent N+ school days in a row
+        groups.add(group("ABSENT_STREAK", "red", s.absentStreakDays() + "+ kun kelmaganlar",
+                absentStreaks(schoolId, classIds, s.absentStreakDays(), withPhones), limit));
 
-        // 🟠 appeals unanswered for overdueHours
+        // appeals unanswered for overdueHours
         List<AttentionItem> appeals = new ArrayList<>();
         for (Map<String, Object> r : jdbc.queryForList("""
                 select a.id, a.parent_name, a.last_message_at, st.first_name, st.last_name, st.class_id,
@@ -651,9 +813,9 @@ public class HomeDashboardService {
                     r.get("first_name") + " " + r.get("last_name") + " · " + r.get("class_name"), hours + " soat javobsiz",
                     Map.of("appealId", l(r.get("id")))));
         }
-        groups.add(group("APPEAL_OVERDUE", "orange", "Javob berilmagan murojaatlar", appeals));
+        groups.add(group("APPEAL_OVERDUE", "orange", "Javobsiz murojaatlar (" + s.appealOverdueHours() + " soat+)", appeals, limit));
 
-        // 🟠 grades dropped: last 2 weeks average ≥ 1.0 below the 4 weeks before
+        // grades dropped: last 2 weeks average ≥ 1.0 below the 4 weeks before
         List<AttentionItem> drops = new ArrayList<>();
         for (Map<String, Object> r : jdbc.queryForList("""
                 select g.student_id, st.first_name, st.last_name, st.class_id, c.grade_number || '-' || c.section_letter as class_name,
@@ -675,23 +837,22 @@ public class HomeDashboardService {
                     String.format(java.util.Locale.ROOT, "%.1f → %.1f", before, now),
                     Map.of("studentId", l(r.get("student_id")), "subjectId", l(r.get("subject_id")), "classId", l(r.get("class_id")))));
         }
-        groups.add(group("GRADE_DROP", "orange", "Bahosi keskin tushganlar", drops));
+        groups.add(group("GRADE_DROP", "orange", "Bahosi tushganlar", drops, limit));
 
         if (classIds == null) {
-            // 🟡 teachers who leave lessons unmarked
+            // teachers who leave lessons unfilled
             List<AttentionItem> lazy = new ArrayList<>();
-            for (TeacherRow t : teacherDiscipline(schoolId, null)) {
-                if (t.lessons() == 0) continue;
-                int missing = t.lessons() - Math.min(t.attended(), t.graded());
-                double missingPct = missing * 100.0 / t.lessons();
-                if (missingPct < s.disciplineThreshold()) continue;
+            for (TeacherRow t : journal(schoolId).teachers()) {
+                if (t.lessons() == 0 || t.completeness() == null) continue;
+                double missing = 100 - t.completeness();
+                if (missing < s.disciplineThreshold()) continue;
                 lazy.add(new AttentionItem("TEACHER_DISCIPLINE", "yellow", t.name(),
                         "davomat " + fmt(t.attendedPct()) + " · baho " + fmt(t.gradedPct()),
-                        Math.round(missingPct) + "% darslar to'ldirilmagan", Map.of("employeeId", t.employeeId())));
+                        fmt(t.completeness()) + " to'liq", Map.of("employeeId", t.employeeId())));
             }
-            groups.add(group("TEACHER_DISCIPLINE", "yellow", "Jurnalni to'ldirmayotgan o'qituvchilar", lazy));
+            groups.add(group("TEACHER_DISCIPLINE", "yellow", "Jurnali to'liq bo'lmagan o'qituvchilar", lazy, limit));
 
-            // 🟡 classes where few parents joined the bot
+            // classes where few parents joined the bot
             List<AttentionItem> tg = new ArrayList<>();
             for (Map<String, Object> r : jdbc.queryForList("""
                     select c.id, c.grade_number || '-' || c.section_letter as class_name, count(st.id) as students,
@@ -707,21 +868,21 @@ public class HomeDashboardService {
                         r.get("linked") + "/" + r.get("students") + " ota-ona ulangan", fmt(pc), Map.of("classId", l(r.get("id")))));
             }
             tg.sort(Comparator.comparing(a -> Double.parseDouble(a.detail().replace("%", "").replace(",", "."))));
-            groups.add(group("TELEGRAM_LOW", "yellow", "Telegramga kam ulangan sinflar", tg));
+            groups.add(group("TELEGRAM_LOW", "yellow", "Telegramga kam ulangan sinflar", tg, limit));
 
-            // 🟡 library permissions that ended or end within 30 days
+            // library permissions that ended or end within 30 days
             List<AttentionItem> lib = new ArrayList<>();
             for (uz.azizbek.maktabboshqaruv.dto.AttentionItemDto a : libraryPermissions.attention(schoolId)) {
                 lib.add(new AttentionItem(a.getType(), "yellow", a.getDescription(), null, null,
                         Map.of("permissionId", a.getLinkId())));
             }
-            groups.add(group("LIBRARY_PERMISSION", "yellow", "Kutubxona ruxsatnomalari", lib));
+            groups.add(group("LIBRARY_PERMISSION", "yellow", "Kutubxona ruxsatnomalari", lib, limit));
         }
         return groups;
     }
 
     /** Students absent on each of the last N+ school days (Sunday and holidays do not break a run). */
-    List<AttentionItem> absentStreaks(long schoolId, java.util.Set<Long> classIds, int minDays, boolean withPhones) {
+    List<AttentionItem> absentStreaks(long schoolId, Set<Long> classIds, int minDays, boolean withPhones) {
         LocalDate today = today();
         List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, today, 15);
         if (days.isEmpty()) return List.of();
@@ -765,8 +926,8 @@ public class HomeDashboardService {
         return out;
     }
 
-    private static AttentionGroup group(String kind, String level, String title, List<AttentionItem> items) {
-        return new AttentionGroup(kind, level, title, items.size(), items.subList(0, Math.min(items.size(), 7)));
+    private static AttentionGroup group(String kind, String level, String title, List<AttentionItem> items, int limit) {
+        return new AttentionGroup(kind, level, title, items.size(), items.subList(0, Math.min(items.size(), limit)));
     }
 
     static String fmt(Double v) {

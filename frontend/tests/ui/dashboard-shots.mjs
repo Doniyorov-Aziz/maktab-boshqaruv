@@ -1,51 +1,52 @@
 // Dashboard screenshots for docs/images/dashboard/:
-//   node tests/ui/dashboard-shots.mjs before            → before-<width>-<theme>.png
-//   node tests/ui/dashboard-shots.mjs after             → after-admin-<width>-<theme>.png (+ teacher with UI_TEACHER_USER)
+//   node tests/ui/dashboard-shots.mjs v3-before   → v3-before-<width>-<theme>.png (the page before v3)
+//   node tests/ui/dashboard-shots.mjs v3          → v3-admin-*.png, v3-teacher-1920-dark.png and the
+//                                                   10 s loading video v3-intro.webm
+// The teacher shot signs in as UI_TEACHER_USER (default ui_teacher) with UI_PASS.
 import { chromium } from 'playwright'
-import { openContext, visit, BASE, API } from './session.js'
+import { copyFileSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { openContext, visit, BASE } from './session.js'
+import { API } from './session.js'
 
-const phase = process.argv[2] || 'before'
+const phase = process.argv[2] || 'v3'
 const dir = new URL('../../../docs/images/dashboard/', import.meta.url)
 const file = name => new URL(name, dir).pathname.replace(/^\/([A-Z]:)/, '$1')
-const shots = [
-  { width: 1366, height: 768, dark: false },
+const TEACHER = process.env.UI_TEACHER_USER || 'ui_teacher'
+
+const BEFORE = [
   { width: 1366, height: 768, dark: true },
   { width: 1920, height: 1080, dark: false },
   { width: 1920, height: 1080, dark: true },
-  { width: 2560, height: 1440, dark: true },
-  { width: 390, height: 844, dark: false },
-  { width: 390, height: 844, dark: true }
+  { width: 390, height: 844, dark: false }
 ]
 
-const AFTER = [
-  { name: 'after-admin-1920-dark.png', width: 1920, height: 1080, dark: true },
+const V3 = [
+  { name: 'v3-admin-1920-dark.png', width: 1920, height: 1080, dark: true },
+  { name: 'v3-admin-1920-light.png', width: 1920, height: 1080, dark: false },
+  { name: 'v3-admin-1366-dark.png', width: 1366, height: 768, dark: true },
+  { name: 'v3-admin-2560-dark.png', width: 2560, height: 1440, dark: true },
+  { name: 'v3-admin-mobile.png', width: 390, height: 844, dark: true },
   {
-    name: 'after-admin-1920-light.png',
-    width: 1920,
-    height: 1080,
-    dark: false
-  },
-  { name: 'after-admin-1366-dark.png', width: 1366, height: 768, dark: true },
-  { name: 'after-admin-2560-dark.png', width: 2560, height: 1440, dark: true },
-  { name: 'after-admin-mobile.png', width: 390, height: 844, dark: false },
-  {
-    name: 'after-teacher-1920-dark.png',
+    name: 'v3-teacher-1920-dark.png',
     width: 1920,
     height: 1080,
     dark: true,
-    user: 'ui_teacher'
+    teacher: true
   }
 ]
 
-async function teacherContext(browser, s) {
+async function teacherContext(browser, s, extra = {}) {
   const r = await fetch(API + '/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: s.user, password: process.env.UI_PASS })
+    body: JSON.stringify({ username: TEACHER, password: process.env.UI_PASS })
   })
   const t = (await r.text()).trim()
   const context = await browser.newContext({
-    viewport: { width: s.width, height: s.height }
+    viewport: { width: s.width, height: s.height },
+    ...extra
   })
   await context.addInitScript(
     ({ tok, dark }) => {
@@ -64,57 +65,55 @@ async function teacherContext(browser, s) {
   return context
 }
 
-const browser = await chromium.launch()
-if (phase === 'after') {
-  for (const s of AFTER) {
-    const context = s.user
-      ? await teacherContext(browser, s)
-      : await openContext(
-          browser,
-          { width: s.width, height: s.height },
-          { dark: s.dark }
-        )
-    const page = await context.newPage()
-    const errors = []
-    page.on('pageerror', e => errors.push(e.message))
-    page.on('console', m => m.type() === 'error' && errors.push(m.text()))
-    await visit(page, '/')
-    await page.waitForTimeout(2500)
-    await page.screenshot({ path: file(s.name), fullPage: true })
-    console.log(
-      s.name,
-      errors.length ? 'errors: ' + errors.join(' | ').slice(0, 300) : 'ok'
-    )
-    await context.close()
-  }
-  await browser.close()
-  process.exit(0)
-}
-
-for (const s of shots) {
-  if (phase === 'before' && s.width === 2560) continue
-  const context = await openContext(
-    browser,
-    { width: s.width, height: s.height },
-    { dark: s.dark }
-  )
+async function shoot(browser, s, name) {
+  const context = s.teacher
+    ? await teacherContext(browser, s)
+    : await openContext(
+        browser,
+        { width: s.width, height: s.height },
+        { dark: s.dark }
+      )
   const page = await context.newPage()
   const errors = []
   page.on('pageerror', e => errors.push(e.message))
   page.on('console', m => m.type() === 'error' && errors.push(m.text()))
   await visit(page, '/')
-  await page.waitForTimeout(1200)
-  const tag = s.width === 390 ? 'mobile' : String(s.width)
-  const name =
-    phase === 'before'
-      ? `before-${s.width}-${s.dark ? 'dark' : 'light'}.png`
-      : `after-admin-${tag}-${s.dark ? 'dark' : 'light'}.png`
+  await page.waitForTimeout(3000)
   await page.screenshot({ path: file(name), fullPage: true })
   console.log(
     name,
     errors.length ? 'errors: ' + errors.join(' | ').slice(0, 300) : 'ok'
   )
   await context.close()
+}
+
+const browser = await chromium.launch()
+if (phase === 'v3-before') {
+  for (const s of BEFORE) {
+    await shoot(
+      browser,
+      s,
+      `v3-before-${s.width}-${s.dark ? 'dark' : 'light'}.png`
+    )
+  }
+} else {
+  for (const s of V3) await shoot(browser, s, s.name)
+
+  // the loading animation, 10 s at 1920 dark
+  const videoDir = mkdtempSync(join(tmpdir(), 'dash-video-'))
+  const context = await openContext(
+    browser,
+    { width: 1920, height: 1080 },
+    { dark: true, recordVideo: { dir: videoDir, size: { width: 1920, height: 1080 } } }
+  )
+  const page = await context.newPage()
+  await visit(page, '/')
+  await page.waitForTimeout(10_000)
+  await context.close()
+  const webm = readdirSync(videoDir).find(f => f.endsWith('.webm'))
+  copyFileSync(join(videoDir, webm), file('v3-intro.webm'))
+  rmSync(videoDir, { recursive: true, force: true })
+  console.log('v3-intro.webm ok')
 }
 await browser.close()
 void BASE

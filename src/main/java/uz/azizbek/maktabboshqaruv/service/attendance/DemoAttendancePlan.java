@@ -90,6 +90,32 @@ public final class DemoAttendancePlan {
         return picked;
     }
 
+    /**
+     * The 2–3 teachers of a school who (in the demo) leave 15–30 % of their lessons unfilled — no
+     * attendance, no grades — so the journal-completeness widget has someone real to show. Fixed
+     * for the school year.
+     */
+    public static Set<Long> slackers(long schoolId, java.util.Collection<Long> teacherIds, int schoolYearStart) {
+        if (teacherIds.isEmpty()) return Set.of();
+        List<Long> sorted = new ArrayList<>(new java.util.TreeSet<>(teacherIds));
+        long h = mix(schoolId, schoolYearStart, 83);
+        int count = Math.min(sorted.size(), 2 + (int) Math.floorMod(h, 2L));
+        java.util.LinkedHashSet<Long> picked = new java.util.LinkedHashSet<>();
+        for (int i = 0; picked.size() < count && i < 20; i++) {
+            picked.add(sorted.get((int) Math.floorMod(mix(h, i, 89), (long) sorted.size())));
+        }
+        return picked;
+    }
+
+    /**
+     * Whether the teacher "forgot" this lesson on this date: 15–30 % for a slacker, 0–3 % for the
+     * rest (they end up 97–100 % filled).
+     */
+    public static boolean skipped(long employeeId, long lessonSlotId, LocalDate date, boolean slacker) {
+        double rate = slacker ? 0.15 + 0.15 * unit(mix(employeeId, 97)) : 0.03 * unit(mix(employeeId, 101));
+        return unit(mix(lessonSlotId, date.toEpochDay(), 103)) < rate;
+    }
+
     private static LocalDate previousSchoolDay(LocalDate date, Predicate<LocalDate> schoolDay) {
         LocalDate d = date.minusDays(1);
         for (int i = 0; i < 14; i++, d = d.minusDays(1)) {

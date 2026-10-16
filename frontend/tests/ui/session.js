@@ -24,10 +24,15 @@ export async function login() {
 export async function openContext(
   browser,
   viewport,
-  { dark = false, signedIn = true } = {}
+  { dark = false, signedIn = true, reducedMotion, recordVideo } = {}
 ) {
   const t = signedIn ? await login() : null
-  const context = await browser.newContext({ viewport, deviceScaleFactor: 1 })
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor: 1,
+    ...(reducedMotion ? { reducedMotion } : {}),
+    ...(recordVideo ? { recordVideo } : {})
+  })
   await context.addInitScript(
     ({ t, dark }) => {
       try {

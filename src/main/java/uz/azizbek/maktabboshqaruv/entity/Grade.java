@@ -44,6 +44,34 @@ public class Grade {
     @Column(length = 120)
     private String createdBy;
 
+    /**
+     * Where the grade came from: MANUAL (a staff member — every grade made before this column
+     * existed too) or DEMO_SIM (the demo simulator). A staff edit of a demo grade makes it MANUAL.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16, columnDefinition = "varchar(16) not null default 'MANUAL'")
+    private AttendanceSource source = AttendanceSource.MANUAL;
+
+    /** The lesson a simulated grade belongs to (one per lesson, student and day); null for staff grades. */
+    @Column(name = "lesson_slot_id")
+    private Long lessonSlotId;
+
+    public AttendanceSource getSource() {
+        return source;
+    }
+
+    public void setSource(AttendanceSource source) {
+        this.source = source;
+    }
+
+    public Long getLessonSlotId() {
+        return lessonSlotId;
+    }
+
+    public void setLessonSlotId(Long lessonSlotId) {
+        this.lessonSlotId = lessonSlotId;
+    }
+
     public String getCreatedBy() {
         return createdBy;
     }
