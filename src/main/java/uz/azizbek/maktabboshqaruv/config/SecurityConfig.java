@@ -65,6 +65,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
+                        // the calendar subscription link (Google / Apple calendar): a secret token, revocable
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/public/calendar/*").permitAll()
                         // Mini App: authenticated by Telegram-signed initData inside the controller, not by JWT.
                         .requestMatchers("/api/parent/**").permitAll()
                         // appeal files: a signed 30-minute link for <img>/<video>, checked in the controller

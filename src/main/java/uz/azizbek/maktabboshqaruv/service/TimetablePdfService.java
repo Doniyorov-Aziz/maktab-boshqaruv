@@ -35,9 +35,6 @@ import java.util.*;
 public class TimetablePdfService {
 
     static final List<String> WEEKDAYS = List.of("Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba");
-    /** Same palette and hash as the timetable page (TimetablePage.vue#subjectColor). */
-    private static final String[] PALETTE = {"#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6",
-            "#14b8a6", "#ef4444", "#3b82f6", "#22c55e", "#eab308", "#f43f5e"};
 
     private final LessonSlotService lessonSlotService;
     private final SchoolClassRepository schoolClassRepository;
@@ -65,10 +62,9 @@ public class TimetablePdfService {
         }
     }
 
-    static Color subjectColor(String name) {
-        int hash = 0;
-        for (char ch : (name == null ? "" : name).toCharArray()) hash = (hash * 31 + ch) % PALETTE.length;
-        return Color.decode(PALETTE[Math.abs(hash) % PALETTE.length]);
+    /** The subject's own colour, else the automatic one from its id — the same as on the pages. */
+    static Color subjectColor(TimetableEntryDto e) {
+        return Color.decode(SubjectColors.of(e.getSubjectId(), e.getSubjectColor()));
     }
 
     /** One class, or every class of the school (classId = null), each on its own page. */
@@ -182,7 +178,7 @@ public class TimetablePdfService {
         cell.setBorderColor(new Color(0xe2e8f0));
         cell.setPaddingLeft(6);
         if (e == null) return cell;
-        Color color = subjectColor(e.getSubjectName());
+        Color color = subjectColor(e);
         // a light tint of the subject colour, with a solid stripe on the left
         cell.setBackgroundColor(tint(color, 0.13f));
         cell.setBorderWidthLeft(3.5f);

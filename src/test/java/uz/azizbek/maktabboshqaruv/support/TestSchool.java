@@ -127,10 +127,14 @@ public class TestSchool {
         jdbc.update("delete from appeal_message where appeal_id in (select id from appeal where school_id = ?)", s);
         jdbc.update("delete from appeal where school_id = ?", s);
         jdbc.update("delete from parent_telegram_link where student_id in (select id from students where class_id in (" + classes + "))");
+        jdbc.update("delete from lesson_substitution where lesson_slot_id in (" + slots + ")");
+        jdbc.update("delete from room_booking where school_id = ?", s);
+        jdbc.update("delete from calendar_feed_token where school_id = ?", s);
         jdbc.update("delete from lesson_slot where class_id in (" + classes + ")");
         jdbc.update("delete from students where class_id in (" + classes + ")");
         jdbc.update("delete from school_class where academic_year_id in (select id from academic_year where school_id = ?)", s);
         jdbc.update("delete from academic_year where school_id = ?", s);
+        jdbc.update("delete from calendar_event where school_id = ?", s); // events may name a room
         jdbc.update("delete from room where building_id in (select id from building where school_id = ?)", s);
         jdbc.update("delete from building where school_id = ?", s);
         jdbc.update("delete from subject where school_id = ?", s);

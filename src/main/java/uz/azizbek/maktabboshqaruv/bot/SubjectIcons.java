@@ -56,6 +56,7 @@ public final class SubjectIcons {
             case "EXAM" -> "📝";
             case "PARENT_MEETING" -> "👨‍👩‍👧";
             case "VACATION" -> "🏖";
+            case "SCHOOL_EVENT" -> "🏫";
             default -> "📌";
         };
     }

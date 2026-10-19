@@ -234,7 +234,13 @@ public class BotScheduledJobs {
             List<CalendarEvent> events = calendarEventRepository.findInRange(school.getId(), tomorrow, tomorrow).stream()
                     .filter(e -> e.getStartDate().equals(tomorrow)).toList();
             for (CalendarEvent ev : events) {
-                for (NotificationService.Recipient r : NotificationService.oncePerChat(links)) {
+                // "Ota-onalarga xabar berish" off: no reminder; on with classes: only their parents;
+                // events from before the switch (null) still remind every parent of the school
+                if (Boolean.FALSE.equals(ev.getNotifyParents())) continue;
+                List<Long> classIds = Boolean.TRUE.equals(ev.getNotifyParents()) ? ev.classIdList() : List.of();
+                List<ParentTelegramLink> audience = classIds.isEmpty() ? links : links.stream()
+                        .filter(l -> classIds.contains(l.getStudent().getSchoolClass().getId())).toList();
+                for (NotificationService.Recipient r : NotificationService.oncePerChat(audience)) {
                     ParentSession session = sessions.get(r.chatId());
                     if (session != null && !session.wants(NotificationType.EVENT_REMINDER)) continue;
                     queued += notificationService.enqueueDirect(school, r.student(), r.chatId(), NotificationType.EVENT_REMINDER,

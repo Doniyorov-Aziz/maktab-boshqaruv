@@ -61,6 +61,19 @@ public interface LessonSlotRepository extends JpaRepository<LessonSlot, Long> {
                                     @Param("endTime") LocalTime endTime,
                                     @Param("excludeId") Long excludeId);
 
+    /** Lessons on the weekday that overlap [startTime, endTime) of the room, the teacher or the class. */
+    @Query("select l from LessonSlot l join fetch l.schoolClass join fetch l.employee join fetch l.room " +
+            "where l.weekday = :weekday and l.startTime < :endTime and l.endTime > :startTime " +
+            "and (:excludeId is null or l.id <> :excludeId) " +
+            "and (l.room.id = :roomId or l.employee.id = :employeeId or l.schoolClass.id = :schoolClassId)")
+    List<LessonSlot> findOverlapping(@Param("weekday") String weekday,
+                                     @Param("startTime") LocalTime startTime,
+                                     @Param("endTime") LocalTime endTime,
+                                     @Param("excludeId") Long excludeId,
+                                     @Param("roomId") Long roomId,
+                                     @Param("employeeId") Long employeeId,
+                                     @Param("schoolClassId") Long schoolClassId);
+
     @Query("select l from LessonSlot l where l.schoolClass.academicYear.school.id = :schoolId " +
             "and l.weekday = :weekday order by l.schoolClass.gradeNumber, l.schoolClass.sectionLetter, l.startTime")
     List<LessonSlot> findBySchoolIdAndWeekday(@Param("schoolId") Long schoolId, @Param("weekday") String weekday);

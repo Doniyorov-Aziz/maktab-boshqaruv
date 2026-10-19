@@ -40,6 +40,10 @@ public class RoomService {
     @Autowired
     private LessonSlotRepository lessonSlotRepository;
 
+    /** The rooms and timetable pages cache their numbers per school. */
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.dashboard.DashboardCache pageCache;
+
     public Page<RoomResponseDto> getAllRooms(Long schoolId, Long buildingId, String type, Pageable pageable) {
         RoomType parsedType = type != null && !type.isBlank() ? RoomType.valueOf(type) : null;
         return roomRepository.findFiltered(schoolId, buildingId, parsedType, pageable)
@@ -65,8 +69,10 @@ public class RoomService {
         if (request.getType() != null) {
             room.setType(RoomType.valueOf(request.getType()));
         }
+        applyExtras(room, request);
 
         Room saved = roomRepository.save(room);
+        pageCache.evictSchool(building.getSchool().getId());
         return toResponseDto(saved);
     }
 
@@ -85,8 +91,10 @@ public class RoomService {
         if (request.getType() != null) {
             room.setType(RoomType.valueOf(request.getType()));
         }
+        applyExtras(room, request);
 
         Room updated = roomRepository.save(room);
+        pageCache.evictSchool(building.getSchool().getId());
         return toResponseDto(updated);
     }
 
@@ -108,6 +116,9 @@ public class RoomService {
         dto.setBuildingId(room.getBuilding().getId());
         dto.setBuildingName(room.getBuilding().getName());
         dto.setCurrentStatus(currentStatus(room));
+        dto.setStatus(room.getStatus().name());
+        dto.setEquipment(room.equipmentTags());
+        dto.setComputers(room.getComputers());
         return dto;
     }
 
@@ -141,5 +152,19 @@ public class RoomService {
         LessonSlot l = lesson.get();
         return "Band: " + l.getSchoolClass().getGradeNumber() + "-" + l.getSchoolClass().getSectionLetter()
                 + ", " + l.getSubject().getName();
+    }
+
+    /** Status, equipment and computers; an absent field (an older client) keeps what is saved. */
+    private static void applyExtras(Room room, RoomRequestDto request) {
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            room.setStatus(uz.azizbek.maktabboshqaruv.entity.RoomStatus.valueOf(request.getStatus()));
+        }
+        if (request.getEquipment() != null) {
+            List<String> tags = request.getEquipment().stream().map(String::trim).filter(t -> !t.isEmpty()).distinct().toList();
+            room.setEquipment(tags.isEmpty() ? null : String.join(",", tags));
+        }
+        if (request.getComputers() != null) {
+            room.setComputers(request.getComputers() <= 0 ? null : request.getComputers());
+        }
     }
 }

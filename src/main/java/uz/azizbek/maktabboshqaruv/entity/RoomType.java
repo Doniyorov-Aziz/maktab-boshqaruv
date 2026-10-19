@@ -5,5 +5,8 @@ public enum RoomType {
     LAB,
     COMPUTER_LAB,
     GYM,
-    LIBRARY
+    LIBRARY,
+    /** Faollar zali */
+    ASSEMBLY_HALL,
+    OTHER
 }

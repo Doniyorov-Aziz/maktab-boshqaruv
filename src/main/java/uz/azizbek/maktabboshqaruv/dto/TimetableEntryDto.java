@@ -13,6 +13,17 @@ public class TimetableEntryDto {
     private String teacherName;
     private String teacherLastName;
 
+    /** "#rrggbb" the subject was given, or null (automatic colour from subjectId). */
+    private String subjectColor;
+
+    public String getSubjectColor() {
+        return subjectColor;
+    }
+
+    public void setSubjectColor(String subjectColor) {
+        this.subjectColor = subjectColor;
+    }
+
     public String getTeacherLastName() {
         return teacherLastName;
     }

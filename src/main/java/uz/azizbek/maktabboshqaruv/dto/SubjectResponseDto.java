@@ -6,6 +6,15 @@ public class SubjectResponseDto {
     private String name;
     private Long schoolId;
     private String schoolName;
+    private String color;
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
 
     public Long getId() {
         return id;

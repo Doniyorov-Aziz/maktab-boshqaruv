@@ -20,6 +20,36 @@ public class RoomRequestDto {
 
     private String type;
 
+    /** ACTIVE / REPAIR (null = ACTIVE) */
+    private String status;
+    /** equipment tags (PROJECTOR, SMARTBOARD, AC) */
+    private java.util.List<String> equipment;
+    private Integer computers;
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public java.util.List<String> getEquipment() {
+        return equipment;
+    }
+
+    public void setEquipment(java.util.List<String> equipment) {
+        this.equipment = equipment;
+    }
+
+    public Integer getComputers() {
+        return computers;
+    }
+
+    public void setComputers(Integer computers) {
+        this.computers = computers;
+    }
+
     public Long getBuildingId() {
         return buildingId;
     }

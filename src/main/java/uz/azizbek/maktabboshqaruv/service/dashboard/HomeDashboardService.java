@@ -574,6 +574,49 @@ public class HomeDashboardService {
         return new RiskList(rows.size(), rows.subList(0, Math.min(rows.size(), Math.max(1, limit))));
     }
 
+    // ------------------------------------------------------------------ shared with the other pages
+
+    /** One date's attendance as the home page counts it (a student's latest lesson of the day). */
+    public record DayRate(LocalDate date, Double rate, int present, int absent, int marked) {
+    }
+
+    /** Attendance per date between the two dates (only dates with marks). */
+    public Map<LocalDate, DayRate> dailyRates(long schoolId, LocalDate from, LocalDate to) {
+        Map<LocalDate, DayRate> out = new HashMap<>();
+        dailyAttendance(schoolId, from, to).forEach((dt, r) -> out.put(dt,
+                new DayRate(dt, rate(r), i(r.get("present")), i(r.get("absent")), i(r.get("marked")))));
+        return out;
+    }
+
+    /** Per class and date: {present, late, absent} with the same definition. */
+    public Map<Long, Map<LocalDate, long[]>> classDaily(long schoolId, LocalDate from, LocalDate to) {
+        Map<Long, Map<LocalDate, long[]>> out = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
+                select class_id, d,
+                       count(*) filter (where status = 'PRESENT') as present,
+                       count(*) filter (where status = 'LATE') as late,
+                       count(*) filter (where status = 'ABSENT') as absent
+                  from day group by class_id, d""", p(schoolId).addValue("from", from).addValue("to", to))) {
+            out.computeIfAbsent(l(r.get("class_id")), k -> new HashMap<>())
+                    .put(date(r.get("d")), new long[]{l(r.get("present")), l(r.get("late")), l(r.get("absent"))});
+        }
+        return out;
+    }
+
+    /** Per student between the dates: {present + late, absent} days (latest lesson of each day). */
+    public Map<Long, long[]> studentDays(long schoolId, long classId, LocalDate from, LocalDate to) {
+        Map<Long, long[]> out = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
+                select student_id,
+                       count(*) filter (where status in ('PRESENT', 'LATE')) as present,
+                       count(*) filter (where status = 'ABSENT') as absent
+                  from day where class_id = :c group by student_id""",
+                p(schoolId).addValue("from", from).addValue("to", to).addValue("c", classId))) {
+            out.put(l(r.get("student_id")), new long[]{l(r.get("present")), l(r.get("absent"))});
+        }
+        return out;
+    }
+
     // ------------------------------------------------------------------ 6.5 dynamics (30 school days)
 
     public Dynamics dynamics(long schoolId, int count) {

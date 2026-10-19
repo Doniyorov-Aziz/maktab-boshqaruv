@@ -45,6 +45,17 @@ public class LessonSlotService {
     @Autowired
     private RoomRepository roomRepository;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.repository.LessonSubstitutionRepository substitutionRepository;
+
+    /** The timetable and rooms pages cache their numbers per school. */
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.dashboard.DashboardCache pageCache;
+
+    private void evictPages(SchoolClass schoolClass) {
+        pageCache.evictSchool(schoolClass.getAcademicYear().getSchool().getId());
+    }
+
     public Page<LessonSlotResponseDto> getAllLessonSlots(Long schoolId, Pageable pageable) {
         return lessonSlotRepository.findBySchoolClassAcademicYearSchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
@@ -71,6 +82,7 @@ public class LessonSlotService {
         dto.setClassName(lessonSlot.getSchoolClass().getGradeNumber() + "-" + lessonSlot.getSchoolClass().getSectionLetter());
         dto.setSubjectId(lessonSlot.getSubject().getId());
         dto.setSubjectName(lessonSlot.getSubject().getName());
+        dto.setSubjectColor(lessonSlot.getSubject().getColor());
         dto.setTeacherId(lessonSlot.getEmployee().getId());
         dto.setTeacherName(lessonSlot.getEmployee().getFirstName() + " " + lessonSlot.getEmployee().getLastName());
         dto.setTeacherLastName(lessonSlot.getEmployee().getLastName());
@@ -118,6 +130,7 @@ public class LessonSlotService {
 
         LessonSlot saved = lessonSlotRepository.save(lessonSlot);
         botCache.evictAllClasses();
+        evictPages(schoolClass);
         return toResponseDto(saved);
     }
 
@@ -153,14 +166,16 @@ public class LessonSlotService {
 
         LessonSlot updated = lessonSlotRepository.save(lessonSlot);
         botCache.evictAllClasses();
+        evictPages(schoolClass);
         return toResponseDto(updated);
     }
 
     @Transactional
     public void deleteLessonSlot(Long id) {
-        if (!lessonSlotRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars jadvali topilmadi: " + id);
-        }
+        LessonSlot existing = lessonSlotRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday dars jadvali topilmadi: " + id));
+        evictPages(existing.getSchoolClass());
+        substitutionRepository.deleteByLessonSlotId(id);
         lessonSlotRepository.deleteById(id);
         botCache.evictAllClasses();
     }
@@ -181,19 +196,46 @@ public class LessonSlotService {
         }
     }
 
+    /**
+     * 409 with what exactly is in the way: "Karimova D. bu vaqtda 7-B da", "204-xona bu vaqtda band
+     * (7-B, Fizika)", "5-A sinfida bu vaqtda dars bor (Ona tili)". The teacher first, then the room,
+     * then the class — the order the drag-and-drop tooltip shows them in.
+     */
     private void validateNoConflicts(LessonSlotRequestDto request, Long excludeId) {
-        if (lessonSlotRepository.existsRoomConflict(request.getRoomId(), request.getWeekday(),
-                request.getStartTime(), request.getEndTime(), excludeId)) {
-            throw new IllegalStateException("Bu xona ushbu vaqtda band");
+        List<LessonSlot> overlapping = lessonSlotRepository.findOverlapping(request.getWeekday(), request.getStartTime(),
+                request.getEndTime(), excludeId, request.getRoomId(), request.getEmployeeId(), request.getSchoolClassId());
+        for (LessonSlot l : overlapping) {
+            if (l.getEmployee().getId().equals(request.getEmployeeId())) {
+                throw new IllegalStateException(shortName(l.getEmployee()) + " bu vaqtda " + className(l) + " da");
+            }
         }
-        if (lessonSlotRepository.existsEmployeeConflict(request.getEmployeeId(), request.getWeekday(),
-                request.getStartTime(), request.getEndTime(), excludeId)) {
-            throw new IllegalStateException("Bu o'qituvchi ushbu vaqtda band");
+        for (LessonSlot l : overlapping) {
+            if (l.getRoom().getId().equals(request.getRoomId())) {
+                throw new IllegalStateException(roomLabel(l.getRoom().getRoomNumber()) + " bu vaqtda band ("
+                        + className(l) + ", " + l.getSubject().getName() + ")");
+            }
         }
-        if (lessonSlotRepository.existsSchoolClassConflict(request.getSchoolClassId(), request.getWeekday(),
-                request.getStartTime(), request.getEndTime(), excludeId)) {
-            throw new IllegalStateException("Bu sinf ushbu vaqtda band");
+        for (LessonSlot l : overlapping) {
+            if (l.getSchoolClass().getId().equals(request.getSchoolClassId())) {
+                throw new IllegalStateException(className(l) + " sinfida bu vaqtda dars bor (" + l.getSubject().getName() + ")");
+            }
         }
+    }
+
+    /** "Karimova D." */
+    static String shortName(Employee e) {
+        String first = e.getFirstName() == null || e.getFirstName().isBlank() ? "" : " " + e.getFirstName().charAt(0) + ".";
+        return e.getLastName() + first;
+    }
+
+    private static String className(LessonSlot l) {
+        return l.getSchoolClass().getGradeNumber() + "-" + l.getSchoolClass().getSectionLetter();
+    }
+
+    /** "204-xona", a named room as it is. */
+    static String roomLabel(String number) {
+        if (number == null || number.isEmpty()) return "Xona";
+        return Character.isDigit(number.charAt(0)) ? number + "-xona" : number;
     }
 
     private LessonSlotResponseDto toResponseDto(LessonSlot lessonSlot) {

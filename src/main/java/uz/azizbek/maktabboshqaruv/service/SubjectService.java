@@ -77,6 +77,7 @@ public class SubjectService {
         Subject subject = new Subject();
         subject.setSchool(school);
         subject.setName(request.getName());
+        subject.setColor(blankToNull(request.getColor()));
         subject.setActive(true);
         return toResponseDto(subjectRepository.save(subject));
     }
@@ -88,7 +89,12 @@ public class SubjectService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday maktab mavjud emas"));
 
         boolean renamed = !request.getName().equals(subject.getName());
-        if (!renamed) return toResponseDto(subject);
+        String color = blankToNull(request.getColor());
+        if (!renamed) {
+            if (java.util.Objects.equals(color, subject.getColor())) return toResponseDto(subject);
+            subject.setColor(color);
+            return toResponseDto(subjectRepository.save(subject));
+        }
         botCache.evictAllClasses(); // the bot's cached timetables show subject names
         if (subjectRepository.existsActiveBySchoolIdAndName(school.getId(), request.getName())) {
             throw new IllegalStateException("Bu fan ushbu maktabda allaqachon mavjud");
@@ -98,6 +104,7 @@ public class SubjectService {
         if (!gradeRepository.existsBySubjectId(id)) {
             subject.setSchool(school);
             subject.setName(request.getName());
+            subject.setColor(color);
             return toResponseDto(subjectRepository.save(subject));
         }
 
@@ -105,6 +112,7 @@ public class SubjectService {
         Subject renamedSubject = new Subject();
         renamedSubject.setSchool(school);
         renamedSubject.setName(request.getName());
+        renamedSubject.setColor(color);
         renamedSubject.setActive(true);
         renamedSubject = subjectRepository.save(renamedSubject);
         lessonSlotRepository.moveSubject(id, renamedSubject.getId());
@@ -142,10 +150,15 @@ public class SubjectService {
         dto.setId(subject.getId());
         dto.setName(subject.getName());
         dto.setActive(subject.isActive());
+        dto.setColor(subject.getColor());
         if (subject.getSchool() != null) {
             dto.setSchoolId(subject.getSchool().getId());
             dto.setSchoolName(subject.getSchool().getName());
         }
         return dto;
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim().toLowerCase();
     }
 }

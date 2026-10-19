@@ -48,6 +48,12 @@ public class DashboardCache {
         cache.invalidateAll();
     }
 
+    /** A school's answers, all of them (a timetable, room or event change). */
+    public void evictSchool(long schoolId) {
+        String prefix = schoolId + ":";
+        cache.asMap().keySet().removeIf(k -> k.startsWith(prefix));
+    }
+
     public void clear() {
         cache.invalidateAll();
     }

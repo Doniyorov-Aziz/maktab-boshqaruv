@@ -23,6 +23,21 @@ public class Subject {
      */
     private Boolean active;
 
+    /**
+     * "#rrggbb" picked on the subjects page; null = an automatic colour from the 12-colour palette
+     * (the frontend picks it from the id, so a subject has the same colour on every page).
+     */
+    @Column(length = 9)
+    private String color;
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
     public boolean isActive() {
         return active == null || active;
     }
