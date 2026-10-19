@@ -317,105 +317,82 @@
     </div>
 
     <!-- one parent -->
-    <q-dialog v-model="parentOpen" position="right" full-height>
-      <q-card class="parent-panel column no-wrap">
-        <q-card-section class="row items-center q-pb-sm">
-          <IconTile
-            icon="person"
-            size="40"
-            color="var(--q-primary)"
-            class="q-mr-sm"
+    <SideDrawer
+      v-model="parentOpen"
+      :title="parent?.name || 'Ota-ona'"
+      :subtitle="
+        (parent?.phone || '') +
+        (parent?.telegramName ? ' · ' + parent.telegramName : '')
+      "
+      icon="person"
+      color="var(--q-primary)"
+    >
+      <div v-if="parentLoading" class="flex flex-center q-pa-xl">
+        <q-spinner size="36px" color="primary" />
+      </div>
+      <div v-else-if="parent" class="q-pt-sm" data-parent-panel>
+        <div class="text-caption text-weight-semibold q-mb-xs">Farzandlari</div>
+        <div class="q-mb-md">
+          <q-chip
+            v-for="c in parent.children"
+            :key="c.name"
+            dense
+            icon="face"
+            :label="`${c.name} (${c.className})`"
           />
-          <div class="col" style="min-width: 0">
-            <div class="text-subtitle1 text-weight-bold ellipsis">
-              {{ parent?.name || 'Ota-ona' }}
-            </div>
-            <div class="text-caption muted-text ellipsis">
-              {{ parent?.phone || ''
-              }}{{ parent?.telegramName ? ' · ' + parent.telegramName : '' }}
-            </div>
-          </div>
-          <AppButton
-            variant="ghost"
-            icon="close"
-            aria-label="Yopish"
-            v-close-popup
+          <span v-if="!parent.children.length" class="muted-text text-caption"
+            >—</span
+          >
+        </div>
+        <div class="text-caption text-weight-semibold q-mb-xs"
+          >Sevimli bo'limlari</div
+        >
+        <div class="q-mb-md">
+          <q-chip
+            v-for="c in parent.favoriteCategories"
+            :key="c.label"
+            dense
+            color="indigo-1"
+            text-color="indigo-9"
+            :label="`${c.label} · ${c.count}`"
           />
-        </q-card-section>
-        <q-separator />
-        <q-card-section v-if="parentLoading" class="col flex flex-center">
-          <q-spinner size="36px" color="primary" />
-        </q-card-section>
-        <q-card-section v-else-if="parent" class="col scroll">
-          <div class="text-caption text-weight-semibold q-mb-xs"
-            >Farzandlari</div
+          <span
+            v-if="!parent.favoriteCategories.length"
+            class="muted-text text-caption"
+            >—</span
           >
-          <div class="q-mb-md">
-            <q-chip
-              v-for="c in parent.children"
-              :key="c.name"
-              dense
-              icon="face"
-              :label="`${c.name} (${c.className})`"
-            />
-            <span v-if="!parent.children.length" class="muted-text text-caption"
-              >—</span
-            >
+        </div>
+        <div class="row items-center q-mb-xs">
+          <div class="text-caption text-weight-semibold">
+            Yuklagan kitoblari ({{ parent.downloads.length }})
           </div>
-          <div class="text-caption text-weight-semibold q-mb-xs"
-            >Sevimli bo'limlari</div
+          <q-space />
+          <span class="text-caption muted-text"
+            >❤️ saqlagan: {{ parent.savedBooks }}</span
           >
-          <div class="q-mb-md">
-            <q-chip
-              v-for="c in parent.favoriteCategories"
-              :key="c.label"
-              dense
-              color="indigo-1"
-              text-color="indigo-9"
-              :label="`${c.label} · ${c.count}`"
-            />
-            <span
-              v-if="!parent.favoriteCategories.length"
-              class="muted-text text-caption"
-              >—</span
-            >
-          </div>
-          <div class="row items-center q-mb-xs">
-            <div class="text-caption text-weight-semibold">
-              Yuklagan kitoblari ({{ parent.downloads.length }})
-            </div>
-            <q-space />
-            <span class="text-caption muted-text"
-              >❤️ saqlagan: {{ parent.savedBooks }}</span
-            >
-          </div>
-          <q-list dense separator>
-            <q-item
-              v-for="(d, i) in parent.downloads"
-              :key="i"
-              class="q-px-none"
-            >
-              <q-item-section>
-                <q-item-label class="text-weight-semibold">{{
-                  d.title
-                }}</q-item-label>
-                <q-item-label caption>
-                  {{ d.author || '—' }} · {{ d.category || "Bo'limsiz" }}
-                </q-item-label>
-              </q-item-section>
-              <q-item-section side class="text-right">
-                <div class="text-caption tabular-nums">{{
-                  formatTime(d.downloadedAt)
-                }}</div>
-                <div class="text-caption muted-text">{{
-                  source(d.source).label
-                }}</div>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+        </div>
+        <q-list dense separator>
+          <q-item v-for="(d, i) in parent.downloads" :key="i" class="q-px-none">
+            <q-item-section>
+              <q-item-label class="text-weight-semibold">{{
+                d.title
+              }}</q-item-label>
+              <q-item-label caption>
+                {{ d.author || '—' }} · {{ d.category || "Bo'limsiz" }}
+              </q-item-label>
+            </q-item-section>
+            <q-item-section side class="text-right">
+              <div class="text-caption tabular-nums">{{
+                formatTime(d.downloadedAt)
+              }}</div>
+              <div class="text-caption muted-text">{{
+                source(d.source).label
+              }}</div>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </div>
+    </SideDrawer>
   </page-layout>
 </template>
 
@@ -442,6 +419,7 @@ import {
 } from 'chart.js'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
+import SideDrawer from '@/components/dashboard/SideDrawer.vue'
 import BookCover from '@/components/BookCover.vue'
 import ClassPicker from '@/components/ClassPicker.vue'
 import { useSchoolStore } from '@/stores/school'
@@ -920,10 +898,6 @@ watch(
   min-width: 24px;
   font-weight: 700;
   color: var(--brand-text-muted);
-}
-.parent-panel {
-  width: 440px;
-  max-width: 100vw;
 }
 .privacy-banner {
   background: rgba(99, 102, 241, 0.08);

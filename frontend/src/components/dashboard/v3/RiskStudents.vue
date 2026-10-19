@@ -56,39 +56,12 @@
         Hammasi ({{ data.total }})
         <q-icon name="chevron_right" />
       </button>
-      <SidePanel
+      <RiskDrawer
         v-model="allOpen"
         :title="title"
-        :subtitle="`${data.total} o'quvchi · xavf balli bo'yicha`"
-        icon="warning"
-        color="var(--st-absent)"
-      >
-        <div v-if="!all" class="risk__panel-skel">
-          <div v-for="i in 8" :key="i" class="skel risk__panel-line" />
-        </div>
-        <ul v-else class="risk">
-          <li v-for="r in all.rows" :key="r.studentId">
-            <component
-              :is="readonly ? 'div' : 'router-link'"
-              :to="readonly ? undefined : `/profiles/student/${r.studentId}`"
-              class="risk__row"
-            >
-              <RiskAvatar :name="r.name" :id="r.studentId" />
-              <span class="risk__who">
-                <b>{{ r.name }}</b>
-                <small
-                  >{{ r.className }}
-                  <template v-if="r.absentDays">
-                    · {{ r.absentDays }} kun kelmagan</template
-                  >
-                  <template v-if="avgChip(r)"> · {{ avgChip(r) }}</template>
-                </small>
-              </span>
-              <ScoreRing :value="r.score" :title="`Xavf balli ${r.score}`" />
-            </component>
-          </li>
-        </ul>
-      </SidePanel>
+        :source="source"
+        :readonly="readonly"
+      />
     </template>
   </ChartCard>
 </template>
@@ -99,11 +72,9 @@
 import ChartCard from '../ChartCard.vue'
 import RiskAvatar from '../RiskAvatar.vue'
 import ScoreRing from '../ScoreRing.vue'
-import SidePanel from '../SidePanel.vue'
+import RiskDrawer from './RiskDrawer.vue'
 import { ref } from 'vue'
 import { useWidget } from '@/composables/useWidget'
-import { api } from '@/boot/axios'
-import { useSchoolStore } from '@/stores/school'
 
 const props = defineProps({
   readonly: { type: Boolean, default: false },
@@ -115,21 +86,10 @@ const { data, asOf, loading, error, reload } = useWidget(props.source, {
   params: { limit: 6 }
 })
 
-// "Hammasi": the whole list (up to 100), asked for when the panel opens
-const school = useSchoolStore()
+// "Hammasi": the whole list with its filters in the side panel
 const allOpen = ref(false)
-const all = ref(null)
-async function openAll() {
+function openAll() {
   allOpen.value = true
-  all.value = null
-  try {
-    const res = await api.get(`/api/dashboard/${props.source}`, {
-      params: { schoolId: school.activeSchoolId, limit: 100 }
-    })
-    all.value = res.data.data
-  } catch {
-    all.value = { rows: [] }
-  }
 }
 
 const one = v => (v === null || v === undefined ? null : v.toFixed(1))
@@ -234,15 +194,5 @@ a.risk__row:hover {
   font-weight: 600;
   color: var(--q-primary);
   cursor: pointer;
-}
-
-.risk__panel-skel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.risk__panel-line {
-  height: var(--control-h);
 }
 </style>

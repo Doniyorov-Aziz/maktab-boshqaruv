@@ -81,8 +81,10 @@ public class HomeDashboardService {
     public record ClassMap(List<Bubble> classes, Double avgAttendance, Double avgQuality, int days) {
     }
 
+    /** phone: the guardian's, only for staff who may call (null for VIEWER); telegram: a parent joined the bot. */
     public record RiskRow(long studentId, String name, long classId, String className, int score, int absentDays,
-                          Double avgBefore, Double avgNow, int twos, DashboardMetrics.Risk parts) {
+                          Double avgBefore, Double avgNow, int twos, DashboardMetrics.Risk parts, String phone,
+                          boolean telegram) {
     }
 
     public record RiskList(int total, List<RiskRow> rows) {
@@ -519,6 +521,10 @@ public class HomeDashboardService {
 
     /** Students with a risk score of {@link DashboardMetrics#RISK_LIST_FROM}+, highest first. classIds limits it (null = school). */
     public RiskList riskStudents(long schoolId, Collection<Long> classIds, int limit) {
+        return riskStudents(schoolId, classIds, limit, false);
+    }
+
+    public RiskList riskStudents(long schoolId, Collection<Long> classIds, int limit, boolean withPhones) {
         LocalDate today = today();
         Map<Long, Integer> absent = new HashMap<>();
         for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
@@ -544,7 +550,8 @@ public class HomeDashboardService {
         }
         List<RiskRow> rows = new ArrayList<>();
         for (Map<String, Object> r : jdbc.queryForList("""
-                select st.id, st.first_name || ' ' || st.last_name as name, st.class_id,
+                select st.id, st.first_name || ' ' || st.last_name as name, st.class_id, st.guardian_phone,
+                       exists (select 1 from parent_telegram_link l where l.student_id = st.id and l.active) as telegram,
                        c.grade_number || '-' || c.section_letter as class_name
                   from students st join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
                  where y.school_id = :s""", p(schoolId))) {
@@ -560,7 +567,8 @@ public class HomeDashboardService {
             DashboardMetrics.Risk risk = DashboardMetrics.risk(abs, now, before, twos);
             if (risk.score() < DashboardMetrics.RISK_LIST_FROM) continue;
             rows.add(new RiskRow(id, (String) r.get("name"), classId, (String) r.get("class_name"), risk.score(), abs,
-                    before, now, twos, risk));
+                    before, now, twos, risk, withPhones ? blankToNull((String) r.get("guardian_phone")) : null,
+                    Boolean.TRUE.equals(r.get("telegram"))));
         }
         rows.sort(Comparator.comparing((RiskRow x) -> -x.score()).thenComparing(RiskRow::name));
         return new RiskList(rows.size(), rows.subList(0, Math.min(rows.size(), Math.max(1, limit))));

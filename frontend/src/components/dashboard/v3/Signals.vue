@@ -44,7 +44,7 @@
       Raqamli qator bosilsa — to'liq ro'yxat va amallar ochiladi
     </template>
 
-    <SidePanel
+    <SideDrawer
       v-model="panelOpen"
       :title="current?.title || ''"
       :subtitle="current ? `${formatNumber(current.count)} ta` : ''"
@@ -88,7 +88,7 @@
         Yana {{ current.count - current.items.length }} ta — eng muhim
         {{ current.items.length }} tasi ko'rsatildi
       </p>
-    </SidePanel>
+    </SideDrawer>
   </ChartCard>
 </template>
 
@@ -99,7 +99,7 @@
 // with the full list and small actions ("Davomat olish", "Ochish").
 import { computed, ref } from 'vue'
 import ChartCard from '../ChartCard.vue'
-import SidePanel from '../SidePanel.vue'
+import SideDrawer from '../SideDrawer.vue'
 import AppButton from '@/components/app/AppButton.vue'
 import { useWidget } from '@/composables/useWidget'
 import { formatNumber } from '@/utils/format'

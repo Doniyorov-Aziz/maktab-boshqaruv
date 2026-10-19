@@ -84,10 +84,42 @@ public class DashboardController {
         return cache.get(schoolId, "class-map", () -> home.classMap(schoolId));
     }
 
+    /** Students at risk, highest first; limit up to 2000 (the side panel asks for all of them). */
     @GetMapping("/risk")
     public Widget<HomeDashboardService.RiskList> risk(@RequestParam Long schoolId, @RequestParam(defaultValue = "6") int limit) {
-        int n = Math.max(1, Math.min(limit, 100));
-        return cache.get(schoolId, "risk:" + n, () -> home.riskStudents(schoolId, null, n));
+        int n = Math.max(1, Math.min(limit, 2000));
+        boolean phones = access.caller().role() != Role.VIEWER;
+        return cache.get(schoolId, "risk:" + n + ":" + phones, () -> home.riskStudents(schoolId, null, n, phones));
+    }
+
+    /**
+     * The side panel's list as Excel, with the panel's filter: q (name), classId, level (high ≥ 70 /
+     * mid 50–69 / low under 50), sort (score / absent / drop).
+     */
+    @GetMapping("/risk/export")
+    public org.springframework.http.ResponseEntity<byte[]> riskExport(@RequestParam Long schoolId,
+                                                                      @RequestParam(required = false) String q,
+                                                                      @RequestParam(required = false) Long classId,
+                                                                      @RequestParam(required = false) String level,
+                                                                      @RequestParam(defaultValue = "score") String sort) {
+        boolean phones = access.caller().role() != Role.VIEWER;
+        List<HomeDashboardService.RiskRow> rows = RiskFilter.apply(home.riskStudents(schoolId, null, 2000, phones).rows(),
+                q, classId, level, sort);
+        List<List<Object>> table = new java.util.ArrayList<>();
+        for (HomeDashboardService.RiskRow r : rows) {
+            table.add(java.util.Arrays.asList(r.name(), r.className(), r.score(), RiskFilter.levelLabel(r.score()), r.absentDays(),
+                    r.avgBefore(), r.avgNow(), r.twos(), r.telegram() ? "ha" : "yo'q", r.phone() == null ? "" : r.phone()));
+        }
+        byte[] file = uz.azizbek.maktabboshqaruv.util.XlsxWriter.write("Xavf ostida",
+                List.of("O'quvchi", "Sinf", "Xavf balli", "Daraja", "Kelmagan kunlar (30)", "O'rtacha (oldin)",
+                        "O'rtacha (2 hafta)", "«2» lar (30)", "Telegram", "Ota-ona telefoni"),
+                List.of(28, 8, 10, 10, 18, 16, 18, 12, 10, 18), table);
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        org.springframework.http.ContentDisposition.attachment().filename("xavf-ostidagi-oquvchilar.xlsx").build().toString())
+                .body(file);
     }
 
     @GetMapping("/dynamics")
@@ -171,9 +203,9 @@ public class DashboardController {
     @GetMapping("/my-risk")
     public Widget<HomeDashboardService.RiskList> myRisk(@RequestParam Long schoolId, @RequestParam(defaultValue = "6") int limit) {
         TeacherDashboardService.Home h = teacherHome(schoolId);
-        int n = Math.max(1, Math.min(limit, 100));
+        int n = Math.max(1, Math.min(limit, 2000));
         return cache.get(schoolId, "my-risk:" + h.employeeId() + ":" + n,
-                () -> home.riskStudents(schoolId, new HashSet<>(h.classIds()), n));
+                () -> home.riskStudents(schoolId, new HashSet<>(h.classIds()), n, true));
     }
 
     @GetMapping("/my-attention")

@@ -484,114 +484,98 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog
+    <SideDrawer
       v-model="dialogOpen"
       persistent
-      position="right"
-      full-height
-      maximized-mobile
+      :title="isEditing ? 'Tahrirlash' : `Yangi qo'shish`"
+      :subtitle="module.title"
+      :icon="isEditing ? 'edit' : 'add'"
+      :color="isEditing ? 'var(--q-primary)' : 'var(--q-positive)'"
     >
-      <q-card
-        style="width: 420px; max-width: 100vw"
-        class="form-drawer column full-height no-wrap"
+      <q-form
+        id="crud-form"
+        class="q-gutter-md q-pt-md"
+        data-crud-form
+        @submit.prevent="onSave"
       >
-        <q-card-section class="row items-center q-pb-none">
-          <IconTile
-            :icon="isEditing ? 'edit' : 'add'"
-            size="40"
-            :color="isEditing ? 'var(--q-primary)' : 'var(--q-positive)'"
-            class="q-mr-sm"
-          />
-          <div class="text-h6">
-            {{ isEditing ? 'Tahrirlash' : "Yangi qo'shish" }}
-          </div>
-          <q-space />
-          <AppButton variant="ghost" icon="close" v-close-popup />
-        </q-card-section>
-
-        <q-form
-          @submit.prevent="onSave"
-          class="column full-height no-wrap"
-          style="min-height: 0"
+        <q-banner
+          v-if="module.fields.some(f => f.autoSchool)"
+          class="bg-blue-1 text-primary rounded-borders"
+          dense
         >
-          <q-card-section class="q-gutter-md q-pt-md col scroll">
-            <q-banner
-              v-if="module.fields.some(f => f.autoSchool)"
-              class="bg-blue-1 text-primary rounded-borders"
-              dense
-            >
-              <template v-slot:avatar>
-                <q-icon name="school" color="primary" />
-              </template>
-              Maktab: {{ schoolStore.activeSchoolName || '—' }}
-            </q-banner>
-            <template v-for="field in formFields" :key="field.key">
-              <AppSelect
-                v-if="!field.autoSchool && field.type === 'select'"
-                v-model="formModel[field.key]"
-                :label="field.label"
-                :options="optionsFor(field)"
-                @update:model-value="clearOrphanChildren(field)"
-                option-value="value"
-                option-label="label"
-                emit-value
-                map-options
-                :hint="field.hint"
-                :rules="fieldRules(field)"
-              />
-              <AppInput
-                v-else-if="!field.autoSchool && field.type === 'textarea'"
-                v-model="formModel[field.key]"
-                :label="field.label"
-                type="textarea"
-                autogrow
-                :rules="fieldRules(field)"
-              />
-              <AppDateInput
-                v-else-if="!field.autoSchool && field.type === 'date'"
-                v-model="formModel[field.key]"
-                :label="field.label"
-                :rules="fieldRules(field)"
-              />
-              <AppInput
-                v-else-if="!field.autoSchool"
-                v-model="formModel[field.key]"
-                :label="field.label"
-                :type="inputType(field)"
-                :hint="field.hint"
-                :rules="fieldRules(field)"
-              />
-            </template>
+          <template v-slot:avatar>
+            <q-icon name="school" color="primary" />
+          </template>
+          Maktab: {{ schoolStore.activeSchoolName || '—' }}
+        </q-banner>
+        <template v-for="field in formFields" :key="field.key">
+          <AppSelect
+            v-if="!field.autoSchool && field.type === 'select'"
+            v-model="formModel[field.key]"
+            :label="field.label"
+            :options="optionsFor(field)"
+            @update:model-value="clearOrphanChildren(field)"
+            option-value="value"
+            option-label="label"
+            emit-value
+            map-options
+            :hint="field.hint"
+            :rules="fieldRules(field)"
+          />
+          <AppInput
+            v-else-if="!field.autoSchool && field.type === 'textarea'"
+            v-model="formModel[field.key]"
+            :label="field.label"
+            type="textarea"
+            autogrow
+            :rules="fieldRules(field)"
+          />
+          <AppDateInput
+            v-else-if="!field.autoSchool && field.type === 'date'"
+            v-model="formModel[field.key]"
+            :label="field.label"
+            :rules="fieldRules(field)"
+          />
+          <AppInput
+            v-else-if="!field.autoSchool"
+            v-model="formModel[field.key]"
+            :label="field.label"
+            :type="inputType(field)"
+            :hint="field.hint"
+            :rules="fieldRules(field)"
+          />
+        </template>
 
-            <q-banner
-              v-if="formError"
-              class="bg-red-1 text-negative rounded-borders"
-              dense
-            >
-              <template v-slot:avatar>
-                <q-icon name="error_outline" color="negative" />
-              </template>
-              {{ formError }}
-            </q-banner>
-          </q-card-section>
+        <q-banner
+          v-if="formError"
+          class="bg-red-1 text-negative rounded-borders"
+          dense
+        >
+          <template v-slot:avatar>
+            <q-icon name="error_outline" color="negative" />
+          </template>
+          {{ formError }}
+        </q-banner>
+      </q-form>
 
-          <q-card-actions align="right" class="q-pa-md">
-            <AppButton
-              variant="ghost"
-              label="Bekor qilish"
-              color="grey-7"
-              v-close-popup
-            />
-            <AppButton
-              type="submit"
-              label="Saqlash"
-              class="q-px-md"
-              :loading="saving"
-            />
-          </q-card-actions>
-        </q-form>
-      </q-card>
-    </q-dialog>
+      <template #footer>
+        <q-space />
+        <AppButton
+          variant="ghost"
+          label="Bekor qilish"
+          color="grey-7"
+          v-close-popup
+        />
+        <!-- outside the <form> (the footer stays put), tied to it by id -->
+        <AppButton
+          type="submit"
+          form="crud-form"
+          label="Saqlash"
+          class="q-px-md"
+          :loading="saving"
+        />
+      </template>
+    </SideDrawer>
   </page-layout>
 </template>
 
@@ -609,6 +593,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
 import { getModule } from '@/config/modules'
 import PageLayout from '@/components/PageLayout.vue'
+import SideDrawer from '@/components/dashboard/SideDrawer.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -1234,10 +1219,6 @@ function extractError(error) {
   font-size: 30px;
   font-weight: 800;
   line-height: 1;
-}
-
-.form-drawer {
-  border-radius: 0;
 }
 
 .badge-hint {

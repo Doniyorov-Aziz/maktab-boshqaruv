@@ -1,5 +1,10 @@
 <template>
-  <span class="score" :class="`score--${tone}`" :title="title">
+  <span
+    class="score"
+    :class="`score--${tone}`"
+    :title="title"
+    :data-level="tone"
+  >
     <svg viewBox="0 0 44 44" aria-hidden="true">
       <circle cx="22" cy="22" r="18" class="score__track" />
       <circle
@@ -19,7 +24,8 @@
 </template>
 
 <script setup>
-// A 0–100 score in a small ring: red from 60, amber below. Fills in when it appears.
+// A 0–100 risk score in a small ring: red from 70, orange 50–69, yellow below 50. Fills in
+// when it appears.
 import { computed, ref, onMounted } from 'vue'
 import { reducedMotion } from '@/composables/useCountUp'
 
@@ -29,7 +35,9 @@ const props = defineProps({
 })
 const C = 2 * Math.PI * 18
 const clamped = computed(() => Math.max(0, Math.min(100, props.value)))
-const tone = computed(() => (props.value >= 60 ? 'high' : 'mid'))
+const tone = computed(() =>
+  props.value >= 70 ? 'high' : props.value >= 50 ? 'mid' : 'low'
+)
 const grown = ref(reducedMotion())
 onMounted(() => {
   if (!grown.value)
@@ -75,7 +83,15 @@ onMounted(() => {
 }
 
 .score--mid .score__arc {
+  stroke: var(--st-late);
+}
+
+.score--low .score__arc {
   stroke: var(--gr-3);
+}
+
+.score--mid .score__num {
+  color: var(--st-late);
 }
 
 .score__num {
