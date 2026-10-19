@@ -10,7 +10,11 @@ export const EVENT_TYPES = {
     color: 'var(--subj-2)'
   },
   EXAM: { label: 'Imtihon / nazorat', icon: 'quiz', color: 'var(--st-absent)' },
-  VACATION: { label: "Ta'til", icon: 'beach_access', color: 'var(--year-vacation)' },
+  VACATION: {
+    label: "Ta'til",
+    icon: 'beach_access',
+    color: 'var(--year-vacation)'
+  },
   HOLIDAY: { label: 'Bayram', icon: 'celebration', color: 'var(--subj-4)' },
   SCHOOL_EVENT: {
     label: 'Maktab tadbiri',
@@ -95,7 +99,11 @@ export function weekBands(week, events) {
   const to = week[6]
   const list = events
     .filter(e => isMultiDay(e) && e.startDate <= to && e.endDate >= from)
-    .sort((a, b) => a.startDate.localeCompare(b.startDate) || b.endDate.localeCompare(a.endDate))
+    .sort(
+      (a, b) =>
+        a.startDate.localeCompare(b.startDate) ||
+        b.endDate.localeCompare(a.endDate)
+    )
   const lanes = []
   const out = []
   for (const e of list) {
@@ -104,8 +112,12 @@ export function weekBands(week, events) {
     const col = daysBetween(from, s)
     const span = daysBetween(s, t) + 1
     let lane = 0
-    while (lanes[lane] && lanes[lane].some(c => c >= col && c < col + span)) lane++
-    lanes[lane] = [...(lanes[lane] || []), ...Array.from({ length: span }, (_, k) => col + k)]
+    while (lanes[lane] && lanes[lane].some(c => c >= col && c < col + span))
+      lane++
+    lanes[lane] = [
+      ...(lanes[lane] || []),
+      ...Array.from({ length: span }, (_, k) => col + k)
+    ]
     out.push({
       event: e,
       col,
@@ -122,13 +134,20 @@ export function weekBands(week, events) {
 export function dayEvents(date, events) {
   return events
     .filter(e => !isMultiDay(e) && e.startDate === date)
-    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '') || a.title.localeCompare(b.title))
+    .sort(
+      (a, b) =>
+        (a.startTime || '').localeCompare(b.startTime || '') ||
+        a.title.localeCompare(b.title)
+    )
 }
 
 /** Holidays and vacations covering the date (they dim the day and name it). */
 export function daysOff(date, events) {
   return events.filter(
-    e => (e.type === 'HOLIDAY' || e.type === 'VACATION') && e.startDate <= date && e.endDate >= date
+    e =>
+      (e.type === 'HOLIDAY' || e.type === 'VACATION') &&
+      e.startDate <= date &&
+      e.endDate >= date
   )
 }
 

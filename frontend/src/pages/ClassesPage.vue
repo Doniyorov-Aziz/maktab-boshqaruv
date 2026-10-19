@@ -1,5 +1,11 @@
 <template>
-  <page-layout icon="groups" color="var(--subj-1)" title="Sinflar" :subtitle="subtitle" class="clp">
+  <page-layout
+    icon="groups"
+    color="var(--subj-1)"
+    title="Sinflar"
+    :subtitle="subtitle"
+    class="clp"
+  >
     <template #actions>
       <AppButton
         v-if="auth.isEditor"
@@ -13,6 +19,7 @@
     <section class="clp__hero" data-classes-hero>
       <KpiCard
         kpi-key="classes"
+        compact
         label="Sinflar"
         icon="groups"
         color="var(--subj-1)"
@@ -24,6 +31,7 @@
       />
       <KpiCard
         kpi-key="students"
+        compact
         label="Jami o'quvchilar"
         icon="school"
         color="var(--chart-secondary)"
@@ -36,6 +44,7 @@
       />
       <KpiCard
         kpi-key="size"
+        compact
         label="O'rtacha sinf hajmi"
         icon="person"
         color="var(--subj-7)"
@@ -48,6 +57,7 @@
       />
       <KpiCard
         kpi-key="today"
+        compact
         label="Bugungi davomat"
         icon="fact_check"
         color="var(--chart-primary)"
@@ -63,6 +73,7 @@
       />
       <KpiCard
         kpi-key="best"
+        compact
         label="Eng yaxshi sinf"
         icon="emoji_events"
         color="var(--subj-4)"
@@ -71,7 +82,9 @@
         :value="o?.best?.quality ?? undefined"
         :empty-value="!!o && !o.best"
         :format="v => `${v.toFixed(1)}%`"
-        :note="o?.best ? `${o.best.name} · sifat bo'yicha` : 'baholar yetarli emas'"
+        :note="
+          o?.best ? `${o.best.name} · sifat bo'yicha` : 'baholar yetarli emas'
+        "
         :spark="null"
         style="--i: 4"
         @click="o?.best && open({ id: o.best.id })"
@@ -101,8 +114,18 @@
         map-options
         data-classes-grade
       />
-      <SegTabs v-model="sort" :options="SORTS" label="Saralash" data-classes-sort />
-      <SegTabs v-model="layout" :options="LAYOUTS" label="Ko'rinish" class="q-ml-auto" />
+      <SegTabs
+        v-model="sort"
+        :options="SORTS"
+        label="Saralash"
+        data-classes-sort
+      />
+      <SegTabs
+        v-model="layout"
+        :options="LAYOUTS"
+        label="Ko'rinish"
+        class="q-ml-auto"
+      />
     </div>
 
     <div v-if="loading && !o" class="clp__grid">
@@ -120,13 +143,32 @@
     <EmptyState
       v-else-if="o && !filtered.length"
       icon="search_off"
-      :title="o.classes.length ? 'Bu filtr bo\'yicha sinf topilmadi' : 'Hali sinf yo\'q'"
-      :action="o.classes.length ? 'Filtrni tozalash' : auth.isEditor ? 'Sinf qo\'shish' : ''"
+      :title="
+        o.classes.length
+          ? 'Bu filtr bo\'yicha sinf topilmadi'
+          : 'Hali sinf yo\'q'
+      "
+      :action="
+        o.classes.length
+          ? 'Filtrni tozalash'
+          : auth.isEditor
+            ? 'Sinf qo\'shish'
+            : ''
+      "
       :action-icon="o.classes.length ? 'filter_alt_off' : 'add'"
-      @action="o.classes.length ? clear() : $router.push('/app/school-classes?create=1')"
+      @action="
+        o.classes.length
+          ? clear()
+          : $router.push('/app/school-classes?create=1')
+      "
     />
-    <template v-else-if="layout === 'cards'">
-      <section v-for="g in groups" :key="g.grade" class="clp__group" :data-grade-group="g.grade">
+    <div v-else-if="layout === 'cards'" class="clp__groups">
+      <section
+        v-for="g in groups"
+        :key="g.grade"
+        class="clp__group"
+        :data-grade-group="g.grade"
+      >
         <h3>
           {{ g.grade }}-sinflar
           <small>{{ g.items.length }} sinf · {{ g.students }} o'quvchi</small>
@@ -143,7 +185,7 @@
           />
         </div>
       </section>
-    </template>
+    </div>
     <div v-else class="clp__table dash-card" data-classes-table>
       <table>
         <thead>
@@ -161,19 +203,35 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="c in filtered" :key="c.id" :data-class-row="c.id" @click="open(c)">
+          <tr
+            v-for="c in filtered"
+            :key="c.id"
+            :data-class-row="c.id"
+            @click="open(c)"
+          >
             <td @click.stop>
-              <q-checkbox :model-value="picked.includes(c.id)" dense @update:model-value="pick(c)" />
+              <q-checkbox
+                :model-value="picked.includes(c.id)"
+                dense
+                @update:model-value="pick(c)"
+              />
             </td>
-            <td><b>{{ c.name }}</b></td>
+            <td
+              ><b>{{ c.name }}</b></td
+            >
             <td>{{ c.teacher || '—' }}</td>
             <td class="num">{{ c.students }}</td>
             <td class="num">{{ formatPercent(c.today) }}</td>
             <td class="num">{{ formatPercent(c.attendance) }}</td>
-            <td class="num">{{ formatPercent(c.quality) }} <DeltaPill :value="c.qualityDelta" /></td>
+            <td class="num"
+              >{{ formatPercent(c.quality) }}
+              <DeltaPill :value="c.qualityDelta"
+            /></td>
             <td class="num">{{ formatPercent(c.mastery) }}</td>
             <td class="num">{{ formatPercent(c.telegram) }}</td>
-            <td class="num" :class="{ 'clp__bad': c.risk }">{{ c.risk || '—' }}</td>
+            <td class="num" :class="{ clp__bad: c.risk }">{{
+              c.risk || '—'
+            }}</td>
           </tr>
         </tbody>
       </table>
@@ -183,7 +241,9 @@
       <div v-if="picked.length" class="clp__pickbar dash-card" data-compare-bar>
         <span
           ><b>{{ picked.length }}</b> ta sinf tanlandi
-          <small v-if="picked.length < 2">(yana bittasini belgilang)</small></span
+          <small v-if="picked.length < 2"
+            >(yana bittasini belgilang)</small
+          ></span
         >
         <AppButton
           icon="compare_arrows"
@@ -192,7 +252,12 @@
           data-compare-open
           @click="compareOpen = true"
         />
-        <AppButton variant="ghost" icon="close" aria-label="Tozalash" @click="picked = []" />
+        <AppButton
+          variant="ghost"
+          icon="close"
+          aria-label="Tozalash"
+          @click="picked = []"
+        />
       </div>
     </transition>
 
@@ -238,12 +303,16 @@ const LAYOUTS = [
   { value: 'table', label: 'Jadval' }
 ]
 
-const { data, loading, error, reload } = useWidget('/api/pages/classes/overview')
+const { data, loading, error, reload } = useWidget(
+  '/api/pages/classes/overview'
+)
 const o = computed(() => data.value)
 
 const query = ref(route.query.q || '')
 const grade = ref(Number(route.query.grade) || null)
-const sort = ref(SORTS.some(s => s.value === route.query.sort) ? route.query.sort : 'name')
+const sort = ref(
+  SORTS.some(s => s.value === route.query.sort) ? route.query.sort : 'name'
+)
 const layout = ref(route.query.layout === 'table' ? 'table' : 'cards')
 watch([query, grade, sort, layout], () =>
   router.replace({
@@ -260,7 +329,9 @@ function clear() {
   grade.value = null
 }
 
-const grades = computed(() => [...new Set((o.value?.classes || []).map(c => c.grade))].sort((a, b) => a - b))
+const grades = computed(() =>
+  [...new Set((o.value?.classes || []).map(c => c.grade))].sort((a, b) => a - b)
+)
 const sizeNote = computed(() => {
   const list = o.value?.classes || []
   if (!list.length) return ''
@@ -268,7 +339,9 @@ const sizeNote = computed(() => {
   return `eng kichik ${Math.min(...sizes)} · eng katta ${Math.max(...sizes)}`
 })
 const subtitle = computed(() =>
-  [school.activeSchoolName, o.value ? `${o.value.classes.length} sinf` : ''].filter(Boolean).join(' · ')
+  [school.activeSchoolName, o.value ? `${o.value.classes.length} sinf` : '']
+    .filter(Boolean)
+    .join(' · ')
 )
 
 const BY = {
@@ -285,7 +358,9 @@ const filtered = computed(() => {
       c =>
         !q ||
         c.name.toLowerCase().includes(q) ||
-        (c.teacher || '').toLowerCase().includes((query.value || '').trim().toLowerCase())
+        (c.teacher || '')
+          .toLowerCase()
+          .includes((query.value || '').trim().toLowerCase())
     )
     .sort((a, b) => BY[sort.value](a, b) || a.name.localeCompare(b.name, 'uz'))
 })
@@ -293,7 +368,8 @@ const filtered = computed(() => {
 const groups = computed(() => {
   const m = new Map()
   for (const c of filtered.value) {
-    if (!m.has(c.grade)) m.set(c.grade, { grade: c.grade, items: [], students: 0 })
+    if (!m.has(c.grade))
+      m.set(c.grade, { grade: c.grade, items: [], students: 0 })
     const g = m.get(c.grade)
     g.items.push(c)
     g.students += c.students
@@ -307,7 +383,8 @@ function open(c) {
 
 const picked = ref([])
 function pick(c) {
-  if (picked.value.includes(c.id)) picked.value = picked.value.filter(x => x !== c.id)
+  if (picked.value.includes(c.id))
+    picked.value = picked.value.filter(x => x !== c.id)
   else if (picked.value.length < 3) picked.value = [...picked.value, c.id]
 }
 const compareOpen = ref(false)
@@ -341,6 +418,15 @@ const compareOpen = ref(false)
   width: var(--field-w-sm);
 }
 
+.clp__groups {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(calc(var(--grid-min) * 2 + var(--space-3)), 1fr)
+  );
+  gap: var(--space-5) var(--space-5);
+}
+
 .clp__group h3 {
   margin: 0 0 var(--space-3);
   font-size: var(--text-md);
@@ -356,7 +442,10 @@ const compareOpen = ref(false)
 
 .clp__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--grid-min), 1fr));
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(var(--grid-min), 100%), 1fr)
+  );
   gap: var(--space-3);
 }
 
@@ -448,6 +537,12 @@ const compareOpen = ref(false)
 @media (max-width: 1439px) {
   .clp__hero {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .clp__groups {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

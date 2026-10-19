@@ -40,7 +40,8 @@ export function breaks(periods) {
   const out = []
   for (let k = 0; k + 1 < periods.length; k++) {
     const gap = minutes(periods[k + 1].start) - minutes(periods[k].end)
-    if (gap > 0) out.push({ after: periods[k].n, minutes: gap, long: gap >= 20 })
+    if (gap > 0)
+      out.push({ after: periods[k].n, minutes: gap, long: gap >= 20 })
   }
   return out
 }
@@ -49,8 +50,8 @@ const overlaps = (aStart, aEnd, bStart, bEnd) =>
   minutes(aStart) < minutes(bEnd) && minutes(aEnd) > minutes(bStart)
 
 /**
- * Why `lesson` may not move to `day` at `period` (null = it may): its teacher, its room or
- * its class already has a lesson then. The words are the backend's 409 messages.
+ * Why `lesson` may not move to `day` at `period` (null = it may): its class, its teacher or
+ * its room already has a lesson then. The words are the backend's 409 messages.
  */
 export function conflictReason(all, lesson, day, period) {
   const others = all.filter(
@@ -59,13 +60,13 @@ export function conflictReason(all, lesson, day, period) {
       l.weekday === day &&
       overlaps(l.start, l.end, period.start, period.end)
   )
+  const c = others.find(l => l.classId === lesson.classId)
+  if (c) return `${lesson.className} sinfida bu vaqtda dars bor (${c.subject})`
   const t = others.find(l => l.teacherId === lesson.teacherId)
   if (t) return `${lesson.teacherShort} bu vaqtda ${t.className} da`
   const r = others.find(l => l.roomId === lesson.roomId)
   if (r)
     return `${roomLabel(lesson.room)} bu vaqtda band (${r.className}, ${r.subject})`
-  const c = others.find(l => l.classId === lesson.classId)
-  if (c) return `${lesson.className} sinfida bu vaqtda dars bor (${c.subject})`
   return null
 }
 

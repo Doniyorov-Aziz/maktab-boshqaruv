@@ -3,33 +3,62 @@
     type="button"
     class="rt"
     :class="`rt--${r.state.toLowerCase()}`"
-    :style="{ '--s': STATES[r.state].color, '--c': r.now?.subjectId ? subjectColor(r.now.subjectId, r.now.subjectColor) : 'var(--s)' }"
+    :style="{
+      '--s': STATES[r.state].color,
+      '--c': r.now?.subjectId
+        ? subjectColor(r.now.subjectId, r.now.subjectColor)
+        : 'var(--s)'
+    }"
     :data-room="r.room.id"
     :data-state="r.state"
     :aria-label="aria"
+    :title="r.room.number"
     @click="emit('open', r)"
   >
     <span class="rt__head">
-      <q-icon :name="ROOM_TYPES[r.room.type]?.icon || 'meeting_room'" class="rt__type" />
+      <q-icon
+        :name="ROOM_TYPES[r.room.type]?.icon || 'meeting_room'"
+        class="rt__type"
+      />
       <b class="rt__num">{{ r.room.number }}</b>
-      <span class="rt__cap" title="Sig'imi"><q-icon name="person" />{{ r.room.capacity }}</span>
+      <span class="rt__cap" title="Sig'imi"
+        ><q-icon name="person" />{{ r.room.capacity }}</span
+      >
     </span>
 
     <template v-if="r.state === 'BUSY'">
-      <span class="rt__line"><b>{{ r.now.className }}</b> · {{ r.now.subject }}</span>
+      <span class="rt__line"
+        ><b>{{ r.now.className }}</b> · {{ r.now.subject }}</span
+      >
       <span class="rt__sub">{{ r.now.teacher }}</span>
       <span class="rt__until">{{ hm(r.until) }} gacha</span>
-      <span class="rt__progress"><span :style="{ width: `${r.progress || 0}%` }" /></span>
+      <span class="rt__progress"
+        ><span :style="{ width: `${r.progress || 0}%` }"
+      /></span>
     </template>
     <template v-else-if="r.state === 'BOOKED'">
-      <span class="rt__line"><b>{{ r.now.purpose }}</b></span>
+      <span class="rt__line"
+        ><b>{{ r.now.purpose }}</b></span
+      >
       <span class="rt__sub">{{ r.now.teacher || 'band qilingan' }}</span>
       <span class="rt__until">{{ hm(r.until) }} gacha</span>
-      <span class="rt__progress"><span :style="{ width: `${r.progress || 0}%` }" /></span>
+      <span class="rt__progress"
+        ><span :style="{ width: `${r.progress || 0}%` }"
+      /></span>
     </template>
     <template v-else-if="r.state === 'FREE'">
       <span class="rt__line rt__free">Bo'sh</span>
-      <span class="rt__until">{{ r.until ? `${hm(r.until)} gacha bo'sh` : 'kun oxirigacha bo\'sh' }}</span>
+      <span v-if="tags.length" class="rt__equip">
+        <q-icon
+          v-for="t in tags"
+          :key="t"
+          :name="EQUIPMENT[t]?.icon"
+          :title="EQUIPMENT[t]?.label"
+        />
+      </span>
+      <span class="rt__until">{{
+        r.until ? `${hm(r.until)} gacha bo'sh` : "kun oxirigacha bo'sh"
+      }}</span>
     </template>
     <template v-else>
       <span class="rt__line">Ta'mirda</span>
@@ -43,15 +72,21 @@
 // next lesson) or under repair (striped).
 import { computed } from 'vue'
 import { subjectColor } from '@/utils/subjectColor'
-import { ROOM_TYPES, STATES, hm } from './rooms'
+import { EQUIPMENT, ROOM_TYPES, STATES, hm } from './rooms'
 
 const props = defineProps({ r: { type: Object, required: true } })
 const emit = defineEmits(['open'])
 
+const tags = computed(() => [
+  ...props.r.room.equipment,
+  ...(props.r.room.computers ? ['COMPUTERS'] : [])
+])
 const aria = computed(() => {
   const n = props.r.room.number
-  if (props.r.state === 'BUSY') return `${n}: band, ${props.r.now.className} ${props.r.now.subject}, ${hm(props.r.until)} gacha`
-  if (props.r.state === 'FREE') return `${n}: bo'sh${props.r.until ? `, ${hm(props.r.until)} gacha` : ''}`
+  if (props.r.state === 'BUSY')
+    return `${n}: band, ${props.r.now.className} ${props.r.now.subject}, ${hm(props.r.until)} gacha`
+  if (props.r.state === 'FREE')
+    return `${n}: bo'sh${props.r.until ? `, ${hm(props.r.until)} gacha` : ''}`
   return `${n}: ${STATES[props.r.state].label}`
 })
 </script>
@@ -151,6 +186,13 @@ const aria = computed(() => {
   text-overflow: ellipsis;
 }
 
+.rt__equip {
+  display: inline-flex;
+  gap: var(--space-1);
+  color: var(--brand-text-muted);
+  font-size: var(--text-sm);
+}
+
 .rt__free {
   color: var(--room-free);
   font-weight: 700;
@@ -181,7 +223,7 @@ const aria = computed(() => {
 
 @media (max-width: 599px) {
   .rt {
-    width: 100%;
+    width: calc(50% - var(--space-1));
   }
 }
 

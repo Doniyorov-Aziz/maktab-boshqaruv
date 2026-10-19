@@ -198,12 +198,17 @@ public class LessonSlotService {
 
     /**
      * 409 with what exactly is in the way: "Karimova D. bu vaqtda 7-B da", "204-xona bu vaqtda band
-     * (7-B, Fizika)", "5-A sinfida bu vaqtda dars bor (Ona tili)". The teacher first, then the room,
-     * then the class — the order the drag-and-drop tooltip shows them in.
+     * (7-B, Fizika)", "5-A sinfida bu vaqtda dars bor (Ona tili)". The class first, then the teacher,
+     * then the room — the drag-and-drop check (timetable.js) uses the same order and words.
      */
     private void validateNoConflicts(LessonSlotRequestDto request, Long excludeId) {
         List<LessonSlot> overlapping = lessonSlotRepository.findOverlapping(request.getWeekday(), request.getStartTime(),
                 request.getEndTime(), excludeId, request.getRoomId(), request.getEmployeeId(), request.getSchoolClassId());
+        for (LessonSlot l : overlapping) {
+            if (l.getSchoolClass().getId().equals(request.getSchoolClassId())) {
+                throw new IllegalStateException(className(l) + " sinfida bu vaqtda dars bor (" + l.getSubject().getName() + ")");
+            }
+        }
         for (LessonSlot l : overlapping) {
             if (l.getEmployee().getId().equals(request.getEmployeeId())) {
                 throw new IllegalStateException(shortName(l.getEmployee()) + " bu vaqtda " + className(l) + " da");
@@ -213,11 +218,6 @@ public class LessonSlotService {
             if (l.getRoom().getId().equals(request.getRoomId())) {
                 throw new IllegalStateException(roomLabel(l.getRoom().getRoomNumber()) + " bu vaqtda band ("
                         + className(l) + ", " + l.getSubject().getName() + ")");
-            }
-        }
-        for (LessonSlot l : overlapping) {
-            if (l.getSchoolClass().getId().equals(request.getSchoolClassId())) {
-                throw new IllegalStateException(className(l) + " sinfida bu vaqtda dars bor (" + l.getSubject().getName() + ")");
             }
         }
     }

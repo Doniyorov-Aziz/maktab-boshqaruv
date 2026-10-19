@@ -1,13 +1,31 @@
 <template>
-  <page-layout icon="meeting_room" color="var(--room-busy)" title="Xonalar" :subtitle="subtitle" class="rmp">
+  <page-layout
+    icon="meeting_room"
+    color="var(--room-busy)"
+    title="Xonalar"
+    :subtitle="subtitle"
+    class="rmp"
+  >
     <template #actions>
-      <AppButton icon="travel_explore" label="Bo'sh xona topish" data-open-finder @click="finderOpen = true" />
-      <AppButton v-if="auth.isEditor" variant="secondary" icon="tune" label="Boshqarish" to="/app/rooms" />
+      <AppButton
+        icon="travel_explore"
+        label="Bo'sh xona topish"
+        data-open-finder
+        @click="finderOpen = true"
+      />
+      <AppButton
+        v-if="auth.isEditor"
+        variant="secondary"
+        icon="tune"
+        label="Boshqarish"
+        to="/app/rooms"
+      />
     </template>
 
     <section class="rmp__hero" data-rooms-hero>
       <KpiCard
         kpi-key="total"
+        compact
         label="Jami xonalar"
         icon="meeting_room"
         color="var(--chart-secondary)"
@@ -18,6 +36,7 @@
       />
       <KpiCard
         kpi-key="busy"
+        compact
         label="Hozir band"
         icon="groups"
         color="var(--room-busy)"
@@ -32,6 +51,7 @@
       />
       <KpiCard
         kpi-key="week"
+        compact
         label="Haftalik bandlik"
         icon="date_range"
         color="var(--chart-primary)"
@@ -44,13 +64,16 @@
       />
       <KpiCard
         kpi-key="repair"
+        compact
         label="Ta'mirda"
         icon="construction"
         :color="k?.repair ? 'var(--st-late)' : 'var(--st-present)'"
         clickable
         :loading="!live"
         :value="k?.repair"
-        :note="k ? (k.repair ? 'bosing — ko\'rsatish' : 'hammasi ishlayapti') : ''"
+        :note="
+          k ? (k.repair ? 'bosing — ko\'rsatish' : 'hammasi ishlayapti') : ''
+        "
         :spark="null"
         @click="stateFilter = stateFilter === 'REPAIR' ? null : 'REPAIR'"
       />
@@ -58,7 +81,13 @@
 
     <!-- when: now, or a day and a lesson -->
     <div class="rmp__bar">
-      <SegTabs :model-value="mode" :options="MODES" label="Vaqt" data-rooms-mode @update:model-value="setMode" />
+      <SegTabs
+        :model-value="mode"
+        :options="MODES"
+        label="Vaqt"
+        data-rooms-mode
+        @update:model-value="setMode"
+      />
       <template v-if="mode === 'pick'">
         <SegTabs v-model="pickDay" :options="DAY_OPTIONS" label="Kun" />
         <div v-if="live?.periods.length" class="rmp__slider">
@@ -117,12 +146,29 @@
         :action="auth.isEditor ? 'Xona qo\'shish' : ''"
         @action="$router.push('/app/rooms?create=1')"
       />
-      <div v-for="b in shownBuildings" :key="b.id" class="rmp__building dash-card" :data-building="b.id">
+      <div
+        v-for="b in shownBuildings"
+        :key="b.id"
+        class="rmp__building dash-card"
+        :data-building="b.id"
+      >
         <h3><q-icon name="apartment" /> {{ b.name }}</h3>
-        <div v-for="f in b.floors" :key="String(f.floor)" class="rmp__floor" :data-floor="f.floor">
-          <span class="rmp__flabel">{{ f.floor === null ? '—' : `${f.floor}-qavat` }}</span>
+        <div
+          v-for="f in b.floors"
+          :key="String(f.floor)"
+          class="rmp__floor"
+          :data-floor="f.floor"
+        >
+          <span class="rmp__flabel">{{
+            f.floor === null ? '—' : `${f.floor}-qavat`
+          }}</span>
           <div class="rmp__tiles">
-            <RoomTile v-for="r in f.rooms" :key="r.room.id" :r="r" @open="openRoom" />
+            <RoomTile
+              v-for="r in f.rooms"
+              :key="r.room.id"
+              :r="r"
+              @open="openRoom"
+            />
           </div>
         </div>
       </div>
@@ -130,36 +176,81 @@
 
     <!-- analytics -->
     <section class="rmp__analytics">
-      <ChartCard title="Eng band 5 xona" subtitle="haftalik bandlik" :loading="analytics.loading.value" :data="an" :empty="!!an && !an.busiest.length">
+      <ChartCard
+        title="Eng band 5 xona"
+        subtitle="haftalik bandlik"
+        :loading="analytics.loading.value"
+        :data="an"
+        :empty="!!an && !an.busiest.length"
+      >
         <ul class="rmp__bars">
           <li v-for="u in an?.busiest || []" :key="u.id">
             <span>{{ roomLabel(u.number) }}</span>
-            <span class="rmp__track"><span :style="{ width: `${u.use || 0}%`, background: 'var(--room-busy)' }" /></span>
+            <span class="rmp__track"
+              ><span
+                :style="{
+                  width: `${u.use || 0}%`,
+                  background: 'var(--room-busy)'
+                }"
+            /></span>
             <b>{{ formatPercent(u.use) }}</b>
           </li>
         </ul>
       </ChartCard>
-      <ChartCard title="Eng kam ishlatiladigan 5 xona" subtitle="bo'sh turgan joylar" :loading="analytics.loading.value" :data="an" :empty="!!an && !an.quietest.length">
+      <ChartCard
+        title="Eng kam ishlatiladigan 5 xona"
+        subtitle="bo'sh turgan joylar"
+        :loading="analytics.loading.value"
+        :data="an"
+        :empty="!!an && !an.quietest.length"
+      >
         <ul class="rmp__bars">
           <li v-for="u in an?.quietest || []" :key="u.id">
             <span>{{ roomLabel(u.number) }}</span>
-            <span class="rmp__track"><span :style="{ width: `${u.use || 0}%`, background: 'var(--room-free)' }" /></span>
+            <span class="rmp__track"
+              ><span
+                :style="{
+                  width: `${u.use || 0}%`,
+                  background: 'var(--room-free)'
+                }"
+            /></span>
             <b>{{ formatPercent(u.use) }}</b>
           </li>
         </ul>
       </ChartCard>
-      <ChartCard title="Tur bo'yicha bandlik" subtitle="o'rtacha" :loading="analytics.loading.value" :data="an" :empty="!!an && !an.byType.length">
+      <ChartCard
+        title="Tur bo'yicha bandlik"
+        subtitle="o'rtacha"
+        :loading="analytics.loading.value"
+        :data="an"
+        :empty="!!an && !an.byType.length"
+      >
         <ul class="rmp__bars">
           <li v-for="t in an?.byType || []" :key="t.type">
-            <span><q-icon :name="ROOM_TYPES[t.type]?.icon" /> {{ ROOM_TYPES[t.type]?.label || t.type }} <small>({{ t.rooms }})</small></span>
-            <span class="rmp__track"><span :style="{ width: `${t.use || 0}%`, background: 'var(--chart-secondary)' }" /></span>
+            <span
+              ><q-icon :name="ROOM_TYPES[t.type]?.icon" />
+              {{ ROOM_TYPES[t.type]?.label || t.type }}
+              <small>({{ t.rooms }})</small></span
+            >
+            <span class="rmp__track"
+              ><span
+                :style="{
+                  width: `${t.use || 0}%`,
+                  background: 'var(--chart-secondary)'
+                }"
+            /></span>
             <b>{{ formatPercent(t.use) }}</b>
           </li>
         </ul>
       </ChartCard>
     </section>
 
-    <RoomFinder v-model="finderOpen" :periods="live?.periods || []" :can-edit="auth.isEditor" @book="openBooking" />
+    <RoomFinder
+      v-model="finderOpen"
+      :periods="live?.periods || []"
+      :can-edit="auth.isEditor"
+      @book="openBooking"
+    />
     <RoomDrawer
       v-model="roomOpen"
       :room="room"
@@ -167,7 +258,12 @@
       @book="r => openBooking({ room: r })"
       @changed="load"
     />
-    <BookingDialog v-model="bookingOpen" :room="bookingRoom" :preset="bookingPreset" @saved="afterBooking" />
+    <BookingDialog
+      v-model="bookingOpen"
+      :room="bookingRoom"
+      :preset="bookingPreset"
+      @saved="afterBooking"
+    />
   </page-layout>
 </template>
 
@@ -190,7 +286,13 @@ import RoomFinder from '@/components/rooms/RoomFinder.vue'
 import RoomDrawer from '@/components/rooms/RoomDrawer.vue'
 import BookingDialog from '@/components/rooms/BookingDialog.vue'
 import { ROOM_TYPES, STATES, hm } from '@/components/rooms/rooms'
-import { WEEKDAYS, WEEKDAY_SHORT, nextDateOf, roomLabel, todayWeekday } from '@/components/timetable/timetable'
+import {
+  WEEKDAYS,
+  WEEKDAY_SHORT,
+  nextDateOf,
+  roomLabel,
+  todayWeekday
+} from '@/components/timetable/timetable'
 import { useWidget } from '@/composables/useWidget'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
@@ -206,7 +308,10 @@ const MODES = [
   { value: 'now', label: 'Hozir' },
   { value: 'pick', label: 'Tanlash' }
 ]
-const DAY_OPTIONS = WEEKDAYS.map((d, i) => ({ value: d, label: WEEKDAY_SHORT[i] }))
+const DAY_OPTIONS = WEEKDAYS.map((d, i) => ({
+  value: d,
+  label: WEEKDAY_SHORT[i]
+}))
 
 const mode = computed(() => (route.query.at === 'pick' ? 'pick' : 'now'))
 function setMode(m) {
@@ -221,7 +326,10 @@ const busySpark = ref([])
 
 const params = computed(() => {
   if (mode.value === 'now' || !live.value?.periods.length) return {}
-  const p = live.value.periods[Math.min(pickPeriod.value, live.value.periods.length) - 1]
+  const p =
+    live.value.periods[
+      Math.min(pickPeriod.value, live.value.periods.length) - 1
+    ]
   // the middle of the lesson
   const [h1, m1] = hm(p.start).split(':').map(Number)
   const [h2, m2] = hm(p.end).split(':').map(Number)
@@ -273,14 +381,17 @@ function hmP(n) {
   return p ? `${hm(p.start)}–${hm(p.end)}` : ''
 }
 const subtitle = computed(() =>
-  [school.activeSchoolName, live.value ? `${live.value.kpis.total} xona` : ''].filter(Boolean).join(' · ')
+  [school.activeSchoolName, live.value ? `${live.value.kpis.total} xona` : '']
+    .filter(Boolean)
+    .join(' · ')
 )
 
 const stateFilter = ref(null)
 const counts = computed(() => {
   const c = {}
   for (const b of live.value?.buildings || [])
-    for (const f of b.floors) for (const r of f.rooms) c[r.state] = (c[r.state] || 0) + 1
+    for (const f of b.floors)
+      for (const r of f.rooms) c[r.state] = (c[r.state] || 0) + 1
   return c
 })
 const shownBuildings = computed(() =>
@@ -288,7 +399,12 @@ const shownBuildings = computed(() =>
     .map(b => ({
       ...b,
       floors: b.floors
-        .map(f => ({ ...f, rooms: f.rooms.filter(r => !stateFilter.value || r.state === stateFilter.value) }))
+        .map(f => ({
+          ...f,
+          rooms: f.rooms.filter(
+            r => !stateFilter.value || r.state === stateFilter.value
+          )
+        }))
         .filter(f => f.rooms.length)
     }))
     .filter(b => b.floors.length)

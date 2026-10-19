@@ -2,7 +2,11 @@
   <SideDrawer
     :model-value="modelValue"
     :title="room ? roomLabel(room.number) : ''"
-    :subtitle="room ? `${ROOM_TYPES[room.type]?.label} · ${room.building}${room.floor ? ` · ${room.floor}-qavat` : ''}` : ''"
+    :subtitle="
+      room
+        ? `${ROOM_TYPES[room.type]?.label} · ${room.building}${room.floor ? ` · ${room.floor}-qavat` : ''}`
+        : ''
+    "
     :icon="room ? ROOM_TYPES[room.type]?.icon : 'meeting_room'"
     color="var(--room-busy)"
     @update:model-value="v => emit('update:modelValue', v)"
@@ -12,24 +16,41 @@
     </div>
     <div v-else class="rd" data-room-drawer>
       <div class="rd__facts">
-        <span class="rd__fact"><q-icon name="person" /> {{ d.room.capacity }} o'rin</span>
-        <span class="rd__fact" :class="{ 'rd__fact--repair': d.room.status === 'REPAIR' }">
-          <q-icon :name="d.room.status === 'REPAIR' ? 'construction' : 'check_circle'" />
+        <span class="rd__fact"
+          ><q-icon name="person" /> {{ d.room.capacity }} o'rin</span
+        >
+        <span
+          class="rd__fact"
+          :class="{ 'rd__fact--repair': d.room.status === 'REPAIR' }"
+        >
+          <q-icon
+            :name="d.room.status === 'REPAIR' ? 'construction' : 'check_circle'"
+          />
           {{ d.room.status === 'REPAIR' ? "Ta'mirda" : 'Faol' }}
         </span>
         <span v-for="t in d.room.equipment" :key="t" class="rd__fact">
           <q-icon :name="EQUIPMENT[t]?.icon" /> {{ EQUIPMENT[t]?.label || t }}
         </span>
-        <span v-if="d.room.computers" class="rd__fact"><q-icon name="computer" /> {{ d.room.computers }} kompyuter</span>
+        <span v-if="d.room.computers" class="rd__fact"
+          ><q-icon name="computer" /> {{ d.room.computers }} kompyuter</span
+        >
       </div>
 
       <section>
         <h4>
           Haftalik bandlik <b>{{ d.use === null ? '—' : `${d.use}%` }}</b>
         </h4>
-        <div class="rd__heat" :style="{ gridTemplateColumns: `var(--space-6) repeat(${d.periods.length}, minmax(0, 1fr))` }" data-room-heat>
+        <div
+          class="rd__heat"
+          :style="{
+            gridTemplateColumns: `var(--space-6) repeat(${d.periods.length}, minmax(0, 1fr))`
+          }"
+          data-room-heat
+        >
           <span />
-          <span v-for="p in d.periods" :key="p.n" class="rd__ph">{{ p.n }}</span>
+          <span v-for="p in d.periods" :key="p.n" class="rd__ph">{{
+            p.n
+          }}</span>
           <template v-for="(row, k) in d.week" :key="k">
             <span class="rd__dh">{{ WEEKDAY_SHORT[k] }}</span>
             <span
@@ -37,8 +58,16 @@
               :key="j"
               class="rd__cell"
               :class="{ 'rd__cell--on': cell }"
-              :style="cell ? { '--c': subjectColor(cell.subjectId, cell.subjectColor) } : undefined"
-              :title="cell ? `${WEEKDAYS[k]}, ${j + 1}-dars: ${cell.className} · ${cell.subject} · ${cell.teacher}` : `${WEEKDAYS[k]}, ${j + 1}-dars: bo'sh`"
+              :style="
+                cell
+                  ? { '--c': subjectColor(cell.subjectId, cell.subjectColor) }
+                  : undefined
+              "
+              :title="
+                cell
+                  ? `${WEEKDAYS[k]}, ${j + 1}-dars: ${cell.className} · ${cell.subject} · ${cell.teacher}`
+                  : `${WEEKDAYS[k]}, ${j + 1}-dars: bo'sh`
+              "
               >{{ cell ? cell.className : '' }}</span
             >
           </template>
@@ -48,7 +77,11 @@
       <section v-if="d.classes.length">
         <h4>Shu xonada dars o'tadigan sinflar</h4>
         <div class="rd__chips">
-          <router-link v-for="c in d.classes" :key="c.id" :to="`/classes/${c.id}`" class="rd__chip"
+          <router-link
+            v-for="c in d.classes"
+            :key="c.id"
+            :to="`/classes/${c.id}`"
+            class="rd__chip"
             >{{ c.name }} <b>{{ c.lessons }}</b></router-link
           >
         </div>
@@ -56,21 +89,35 @@
       <section v-if="d.teachers.length">
         <h4>O'qituvchilar</h4>
         <div class="rd__chips">
-          <span v-for="t in d.teachers" :key="t.id" class="rd__chip">{{ t.name }} <b>{{ t.lessons }}</b></span>
+          <span v-for="t in d.teachers" :key="t.id" class="rd__chip"
+            >{{ t.name }} <b>{{ t.lessons }}</b></span
+          >
         </div>
       </section>
 
       <section>
         <h4>Yaqin bandlar (30 kun)</h4>
-        <EmptyState v-if="!d.bookings.length" icon="event_available" title="Band qilinmagan" />
-        <div v-for="b in d.bookings" :key="b.id" class="rd__booking" data-booking>
+        <EmptyState
+          v-if="!d.bookings.length"
+          icon="event_available"
+          title="Band qilinmagan"
+        />
+        <div
+          v-for="b in d.bookings"
+          :key="b.id"
+          class="rd__booking"
+          data-booking
+        >
           <span class="rd__bdate">
             <b>{{ Number(b.date.slice(8)) }}.{{ b.date.slice(5, 7) }}</b>
             <small>{{ hm(b.startTime) }}–{{ hm(b.endTime) }}</small>
           </span>
           <span class="rd__bwhat"
             ><b>{{ b.purpose }}</b
-            ><small>{{ b.responsible || b.createdBy || '' }}{{ b.calendarEventId ? ' · taqvimdan' : '' }}</small></span
+            ><small
+              >{{ b.responsible || b.createdBy || ''
+              }}{{ b.calendarEventId ? ' · taqvimdan' : '' }}</small
+            ></span
           >
           <AppButton
             v-if="canEdit && !b.calendarEventId"
@@ -91,7 +138,12 @@
           data-room-book
           @click="emit('book', d.room)"
         />
-        <AppButton variant="secondary" icon="calendar_view_week" label="Jadvalda ochish" :to="{ path: '/timetable', query: { view: 'room', room: d.room.id } }" />
+        <AppButton
+          variant="secondary"
+          icon="calendar_view_week"
+          label="Jadvalda ochish"
+          :to="{ path: '/timetable', query: { view: 'room', room: d.room.id } }"
+        />
       </div>
     </div>
   </SideDrawer>
@@ -109,7 +161,11 @@ import EmptyState from '@/components/pages/EmptyState.vue'
 import { api } from '@/boot/axios'
 import { useSchoolStore } from '@/stores/school'
 import { subjectColor } from '@/utils/subjectColor'
-import { WEEKDAYS, WEEKDAY_SHORT, roomLabel } from '@/components/timetable/timetable'
+import {
+  WEEKDAYS,
+  WEEKDAY_SHORT,
+  roomLabel
+} from '@/components/timetable/timetable'
 import { EQUIPMENT, ROOM_TYPES, hm } from './rooms'
 
 const props = defineProps({
@@ -126,7 +182,9 @@ const d = ref(null)
 async function load() {
   d.value = null
   if (!props.modelValue || !props.room) return
-  const res = await api.get(`/api/pages/rooms/${props.room.id}/detail`, { params: { schoolId: school.activeSchoolId } })
+  const res = await api.get(`/api/pages/rooms/${props.room.id}/detail`, {
+    params: { schoolId: school.activeSchoolId }
+  })
   d.value = res.data
 }
 watch(() => [props.modelValue, props.room?.id], load, { immediate: true })
@@ -134,7 +192,9 @@ defineExpose({ load })
 
 async function cancel(b) {
   try {
-    await api.delete(`/api/pages/rooms/bookings/${b.id}`, { params: { schoolId: school.activeSchoolId } })
+    await api.delete(`/api/pages/rooms/bookings/${b.id}`, {
+      params: { schoolId: school.activeSchoolId }
+    })
     $q.notify({ type: 'info', message: 'Band qilish bekor qilindi' })
     await load()
     emit('changed')

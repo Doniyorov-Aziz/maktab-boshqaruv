@@ -25,7 +25,11 @@ export function confirmUndoToast(message, undo) {
           done = true
           try {
             await undo()
-            Notify.create({ message: 'Bekor qilindi', type: 'info', timeout: 1800 })
+            Notify.create({
+              message: 'Bekor qilindi',
+              type: 'info',
+              timeout: 1800
+            })
           } catch (e) {
             Notify.create({
               message: e.friendlyMessage || "Bekor qilib bo'lmadi",

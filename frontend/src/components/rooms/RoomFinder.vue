@@ -2,7 +2,11 @@
   <SideDrawer
     :model-value="modelValue"
     title="Bo'sh xona topish"
-    :subtitle="result ? `${result.rooms.length} ta mos xona · ${hm(result.start)}–${hm(result.end)}` : 'Kun, dars va talablar'"
+    :subtitle="
+      result
+        ? `${result.rooms.length} ta mos xona · ${hm(result.start)}–${hm(result.end)}`
+        : 'Kun, dars va talablar'
+    "
     icon="travel_explore"
     color="var(--room-free)"
     @update:model-value="v => emit('update:modelValue', v)"
@@ -26,7 +30,13 @@
           </button>
         </div>
         <div class="rf__row">
-          <AppInput v-model.number="minCapacity" type="number" dense label="Kamida o'rin" class="rf__cap" />
+          <AppInput
+            v-model.number="minCapacity"
+            type="number"
+            dense
+            label="Kamida o'rin"
+            class="rf__cap"
+          />
           <AppSelect
             v-model="type"
             dense
@@ -64,17 +74,31 @@
       text="Boshqa dars yoki kamroq talab tanlab ko'ring"
     />
     <ul v-else-if="result" class="rf__list" data-finder-results>
-      <li v-for="m in result.rooms" :key="m.room.id" :data-finder-room="m.room.id">
-        <span class="rf__score" :style="{ '--p': `${m.score}%` }" :title="`Moslik ${m.score}%`">{{ m.score }}</span>
+      <li
+        v-for="m in result.rooms"
+        :key="m.room.id"
+        :data-finder-room="m.room.id"
+      >
+        <span
+          class="rf__score"
+          :style="{ '--p': `${m.score}%` }"
+          :title="`Moslik ${m.score}%`"
+          >{{ m.score }}</span
+        >
         <span class="rf__info">
           <b>{{ roomLabel(m.room.number) }}</b>
           <small>
-            <q-icon :name="ROOM_TYPES[m.room.type]?.icon" /> {{ ROOM_TYPES[m.room.type]?.label }} ·
-            {{ m.room.capacity }} o'rin · {{ m.room.building }}
+            <q-icon :name="ROOM_TYPES[m.room.type]?.icon" />
+            {{ ROOM_TYPES[m.room.type]?.label }} · {{ m.room.capacity }} o'rin ·
+            {{ m.room.building }}
           </small>
           <span class="rf__tags">
-            <span v-for="t in m.matched" :key="t" class="rf__ok">✓ {{ EQUIPMENT[t]?.label }}</span>
-            <span v-for="t in m.missing" :key="t" class="rf__miss">✗ {{ EQUIPMENT[t]?.label }}</span>
+            <span v-for="t in m.matched" :key="t" class="rf__ok"
+              >✓ {{ EQUIPMENT[t]?.label }}</span
+            >
+            <span v-for="t in m.missing" :key="t" class="rf__miss"
+              >✗ {{ EQUIPMENT[t]?.label }}</span
+            >
           </span>
         </span>
         <AppButton
@@ -82,7 +106,16 @@
           size="sm"
           label="Band qilish"
           data-finder-book
-          @click="emit('book', { room: m.room, preset: { date: result.date, start: result.start, end: result.end } })"
+          @click="
+            emit('book', {
+              room: m.room,
+              preset: {
+                date: result.date,
+                start: result.start,
+                end: result.end
+              }
+            })
+          "
         />
       </li>
     </ul>
@@ -123,13 +156,20 @@ const equipment = ref([])
 const result = ref(null)
 const loading = ref(false)
 
-const typeOptions = Object.entries(ROOM_TYPES).map(([value, t]) => ({ value, label: t.label }))
+const typeOptions = Object.entries(ROOM_TYPES).map(([value, t]) => ({
+  value,
+  label: t.label
+}))
 
 function togglePeriod(n) {
-  chosen.value = chosen.value.includes(n) ? chosen.value.filter(x => x !== n) : [...chosen.value, n].sort((a, b) => a - b)
+  chosen.value = chosen.value.includes(n)
+    ? chosen.value.filter(x => x !== n)
+    : [...chosen.value, n].sort((a, b) => a - b)
 }
 function toggleEquip(k) {
-  equipment.value = equipment.value.includes(k) ? equipment.value.filter(x => x !== k) : [...equipment.value, k]
+  equipment.value = equipment.value.includes(k)
+    ? equipment.value.filter(x => x !== k)
+    : [...equipment.value, k]
 }
 
 let timer = null
@@ -158,14 +198,18 @@ async function search() {
     loading.value = false
   }
 }
-watch([date, chosen, minCapacity, type, equipment, () => props.modelValue], () => {
-  clearTimeout(timer)
-  timer = setTimeout(search, 250)
-})
+watch(
+  [date, chosen, minCapacity, type, equipment, () => props.modelValue],
+  () => {
+    clearTimeout(timer)
+    timer = setTimeout(search, 250)
+  }
+)
 watch(
   () => props.modelValue,
   open => {
-    if (open && !chosen.value.length && props.periods.length) chosen.value = [props.periods[0].n]
+    if (open && !chosen.value.length && props.periods.length)
+      chosen.value = [props.periods[0].n]
   }
 )
 defineExpose({ search })

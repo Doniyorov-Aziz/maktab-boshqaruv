@@ -154,12 +154,15 @@ public class CalendarPageService {
                 onVacation);
     }
 
-    /** The academic year that holds today (else the nearest one), else September 1 – May 31. */
+    /**
+     * The academic year that holds today; when none does (the new year is not entered yet, or it is
+     * summer), the school year around today: September 1 – May 31.
+     */
     LocalDate[] schoolYear(long schoolId, LocalDate today) {
         List<Map<String, Object>> years = jdbc.queryForList("""
-                select start_date, end_date from academic_year where school_id = :s
-                 order by case when :t between start_date and end_date then 0 else 1 end, abs(start_date - :t::date)
-                 limit 1""", p(schoolId).addValue("t", today));
+                select start_date, end_date from academic_year
+                 where school_id = :s and :t between start_date and end_date
+                 order by start_date desc limit 1""", p(schoolId).addValue("t", today));
         if (!years.isEmpty()) {
             return new LocalDate[]{date(years.get(0).get("start_date")), date(years.get(0).get("end_date"))};
         }

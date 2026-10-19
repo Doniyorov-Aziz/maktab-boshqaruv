@@ -115,7 +115,12 @@ const rows = computed(() => {
     out.push({ kind: 'period', key: `p${p.n}`, period: p })
     const g = gaps.get(p.n)
     if (g)
-      out.push({ kind: 'break', key: `b${p.n}`, minutes: g.minutes, long: g.long })
+      out.push({
+        kind: 'break',
+        key: `b${p.n}`,
+        minutes: g.minutes,
+        long: g.long
+      })
   }
   return out
 })

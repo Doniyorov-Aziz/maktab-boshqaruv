@@ -141,7 +141,8 @@
                   ><span :class="['ld__match', `ld__match--${c.match}`]">{{
                     MATCH[c.match]
                   }}</span>
-                  · {{ c.hours }} soat/hafta · bugun {{ c.lessonsThatDay }} dars</small
+                  · {{ c.hours }} soat/hafta · bugun
+                  {{ c.lessonsThatDay }} dars</small
                 >
               </span>
               <AppButton

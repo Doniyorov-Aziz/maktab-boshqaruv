@@ -19,7 +19,12 @@
       />
       <div class="cc__who">
         <span class="cc__teacher">
-          <AvatarInitials v-if="c.teacher" size="xs" :name="c.teacher" :id="c.teacherId || 0" />
+          <AvatarInitials
+            v-if="c.teacher"
+            size="xs"
+            :name="c.teacher"
+            :id="c.teacherId || 0"
+          />
           {{ c.teacher || 'Rahbar tayinlanmagan' }}
         </span>
         <span class="cc__meta">
@@ -27,7 +32,12 @@
           <template v-if="c.room"> · {{ roomLabel(c.room) }}</template>
         </span>
       </div>
-      <span v-if="c.risk" class="cc__risk" :title="`${c.risk} o'quvchi xavf ostida`" data-risk-badge>
+      <span
+        v-if="c.risk"
+        class="cc__risk"
+        :title="`${c.risk} o'quvchi xavf ostida`"
+        data-risk-badge
+      >
         <q-icon name="warning" /> {{ c.risk }}
       </span>
       <q-checkbox
@@ -42,7 +52,14 @@
     </header>
 
     <div class="cc__nums">
-      <div class="cc__today" :title="c.today === null ? 'Bugun davomat hali olinmagan' : `Bugun ${c.today}%`">
+      <div
+        class="cc__today"
+        :title="
+          c.today === null
+            ? 'Bugun davomat hali olinmagan'
+            : `Bugun ${c.today}%`
+        "
+      >
         <svg viewBox="0 0 44 44" aria-hidden="true">
           <circle cx="22" cy="22" r="18" class="cc__track" />
           <circle
@@ -52,7 +69,11 @@
             r="18"
             pathLength="100"
             class="cc__arc"
-            :style="{ strokeDasharray: arc.dasharray, strokeLinecap: arc.cap, stroke: todayColor }"
+            :style="{
+              strokeDasharray: arc.dasharray,
+              strokeLinecap: arc.cap,
+              stroke: todayColor
+            }"
             transform="rotate(-90 22 22)"
           />
         </svg>
@@ -62,24 +83,43 @@
       <div class="cc__stat">
         <small>Sifat</small>
         <b>{{ formatPercent(c.quality) }}</b>
-        <DeltaPill :value="c.qualityDelta" title="Oxirgi 30 kun, oldingi 30 kunga nisbatan" />
+        <DeltaPill
+          :value="c.qualityDelta"
+          title="Oxirgi 30 kun, oldingi 30 kunga nisbatan"
+        />
       </div>
       <div class="cc__stat">
         <small>O'zlashtirish</small>
         <b>{{ formatPercent(c.mastery) }}</b>
-        <DeltaPill :value="c.masteryDelta" title="Oxirgi 30 kun, oldingi 30 kunga nisbatan" />
+        <DeltaPill
+          :value="c.masteryDelta"
+          title="Oxirgi 30 kun, oldingi 30 kunga nisbatan"
+        />
       </div>
     </div>
 
-    <div class="cc__tg" :title="`Ota-onalar Telegramda: ${formatPercent(c.telegram)}`">
+    <div
+      class="cc__tg"
+      :title="`Ota-onalar Telegramda: ${formatPercent(c.telegram)}`"
+    >
       <span><q-icon name="send" /> Telegram</span>
-      <span class="cc__bar"><span :style="{ width: `${c.telegram || 0}%` }" /></span>
+      <span class="cc__bar"
+        ><span :style="{ width: `${c.telegram || 0}%` }"
+      /></span>
       <b>{{ formatPercent(c.telegram) }}</b>
     </div>
 
     <div class="cc__spark">
-      <Sparkline :values="c.spark" :min="60" :max="100" :label="`${c.name}: davomat, ${c.spark.length} ish kuni`" />
-      <small>davomat · {{ c.spark.length }} ish kuni · o'rtacha {{ formatPercent(c.attendance) }}</small>
+      <Sparkline
+        :values="c.spark"
+        :min="60"
+        :max="100"
+        :label="`${c.name}: davomat, ${c.spark.length} ish kuni`"
+      />
+      <small
+        >davomat · {{ c.spark.length }} ish kuni · o'rtacha
+        {{ formatPercent(c.attendance) }}</small
+      >
     </div>
   </article>
 </template>
@@ -107,7 +147,13 @@ const arc = computed(() => ringArc(props.c.today))
 const todayColor = computed(() => {
   const v = props.c.today
   if (v === null) return 'var(--st-unmarked)'
-  return v >= 95 ? 'var(--heat-1)' : v >= 90 ? 'var(--st-present)' : v >= 85 ? 'var(--gr-3)' : 'var(--st-absent)'
+  return v >= 95
+    ? 'var(--heat-1)'
+    : v >= 90
+      ? 'var(--st-present)'
+      : v >= 85
+        ? 'var(--gr-3)'
+        : 'var(--st-absent)'
 })
 </script>
 

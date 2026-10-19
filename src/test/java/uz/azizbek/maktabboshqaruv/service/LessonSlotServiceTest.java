@@ -53,6 +53,12 @@ class LessonSlotServiceTest {
     @Mock
     private RoomRepository roomRepository;
 
+    @Mock
+    private uz.azizbek.maktabboshqaruv.repository.LessonSubstitutionRepository substitutionRepository;
+
+    @Mock
+    private uz.azizbek.maktabboshqaruv.service.dashboard.DashboardCache pageCache;
+
     @InjectMocks
     private LessonSlotService lessonSlotService;
 
@@ -102,6 +108,36 @@ class LessonSlotServiceTest {
         when(roomRepository.findById(1L)).thenReturn(Optional.of(roomForSchool(school)));
     }
 
+    /** A lesson that is already in the timetable at that time (7-B, Fizika, Karimova D., room 204). */
+    private LessonSlot existingLesson(long classId, long employeeId, long roomId) {
+        School school = new School();
+        school.setId(1L);
+        SchoolClass c = schoolClassForSchool(school);
+        c.setId(classId);
+        c.setGradeNumber(classId == 1L ? 5 : 7);
+        c.setSectionLetter(classId == 1L ? "A" : "B");
+        Employee e = new Employee();
+        e.setId(employeeId);
+        e.setFirstName("Dilnoza");
+        e.setLastName("Karimova");
+        Room r = roomForSchool(school);
+        r.setId(roomId);
+        r.setRoomNumber("204");
+        Subject subject = new Subject();
+        subject.setName("Fizika");
+        LessonSlot l = new LessonSlot();
+        l.setSchoolClass(c);
+        l.setEmployee(e);
+        l.setRoom(r);
+        l.setSubject(subject);
+        return l;
+    }
+
+    private void overlapping(LessonSlot... lessons) {
+        when(lessonSlotRepository.findOverlapping(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(java.util.List.of(lessons));
+    }
+
     @Test
     void createLessonSlot_startAfterEnd_throws() {
         LessonSlotRequestDto request = validRequest();
@@ -142,10 +178,10 @@ class LessonSlotServiceTest {
     void createLessonSlot_roomConflict_throws() {
         LessonSlotRequestDto request = validRequest();
         stubReferencesFound();
-        when(lessonSlotRepository.existsRoomConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), null))
-                .thenReturn(true);
+        overlapping(existingLesson(2L, 2L, 1L));
 
-        assertThrows(IllegalStateException.class, () -> lessonSlotService.createLessonSlot(request));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> lessonSlotService.createLessonSlot(request));
+        assertEquals("204-xona bu vaqtda band (7-B, Fizika)", ex.getMessage());
         verify(lessonSlotRepository, never()).save(any());
     }
 
@@ -153,11 +189,10 @@ class LessonSlotServiceTest {
     void createLessonSlot_employeeConflict_throws() {
         LessonSlotRequestDto request = validRequest();
         stubReferencesFound();
-        when(lessonSlotRepository.existsRoomConflict(any(), any(), any(), any(), any())).thenReturn(false);
-        when(lessonSlotRepository.existsEmployeeConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), null))
-                .thenReturn(true);
+        overlapping(existingLesson(2L, 1L, 2L));
 
-        assertThrows(IllegalStateException.class, () -> lessonSlotService.createLessonSlot(request));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> lessonSlotService.createLessonSlot(request));
+        assertEquals("Karimova D. bu vaqtda 7-B da", ex.getMessage());
         verify(lessonSlotRepository, never()).save(any());
     }
 
@@ -165,12 +200,11 @@ class LessonSlotServiceTest {
     void createLessonSlot_schoolClassConflict_throws() {
         LessonSlotRequestDto request = validRequest();
         stubReferencesFound();
-        when(lessonSlotRepository.existsRoomConflict(any(), any(), any(), any(), any())).thenReturn(false);
-        when(lessonSlotRepository.existsEmployeeConflict(any(), any(), any(), any(), any())).thenReturn(false);
-        when(lessonSlotRepository.existsSchoolClassConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), null))
-                .thenReturn(true);
+        // the class itself is busy — said first, even if the teacher is busy there too
+        overlapping(existingLesson(2L, 1L, 2L), existingLesson(1L, 1L, 2L));
 
-        assertThrows(IllegalStateException.class, () -> lessonSlotService.createLessonSlot(request));
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> lessonSlotService.createLessonSlot(request));
+        assertEquals("5-A sinfida bu vaqtda dars bor (Fizika)", ex.getMessage());
         verify(lessonSlotRepository, never()).save(any());
     }
 
@@ -205,9 +239,7 @@ class LessonSlotServiceTest {
         when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject));
         when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
         when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
-        when(lessonSlotRepository.existsRoomConflict(any(), any(), any(), any(), any())).thenReturn(false);
-        when(lessonSlotRepository.existsEmployeeConflict(any(), any(), any(), any(), any())).thenReturn(false);
-        when(lessonSlotRepository.existsSchoolClassConflict(any(), any(), any(), any(), any())).thenReturn(false);
+        overlapping();
 
         LessonSlot saved = new LessonSlot();
         saved.setId(1L);
@@ -237,24 +269,17 @@ class LessonSlotServiceTest {
         when(lessonSlotRepository.findById(5L)).thenReturn(Optional.of(existing));
 
         stubReferencesFound();
-        when(lessonSlotRepository.existsRoomConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), 5L))
-                .thenReturn(false);
-        when(lessonSlotRepository.existsEmployeeConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), 5L))
-                .thenReturn(false);
-        when(lessonSlotRepository.existsSchoolClassConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), 5L))
-                .thenReturn(false);
+        overlapping();
         when(lessonSlotRepository.save(any(LessonSlot.class))).thenReturn(existing);
 
         lessonSlotService.updateLessonSlot(5L, request);
 
-        verify(lessonSlotRepository).existsRoomConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), 5L);
-        verify(lessonSlotRepository).existsEmployeeConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), 5L);
-        verify(lessonSlotRepository).existsSchoolClassConflict(1L, "Dushanba", request.getStartTime(), request.getEndTime(), 5L);
+        verify(lessonSlotRepository).findOverlapping("Dushanba", request.getStartTime(), request.getEndTime(), 5L, 1L, 1L, 1L);
     }
 
     @Test
     void deleteLessonSlot_notFound_throws() {
-        when(lessonSlotRepository.existsById(1L)).thenReturn(false);
+        when(lessonSlotRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThrows(ResponseStatusException.class, () -> lessonSlotService.deleteLessonSlot(1L));
     }

@@ -7,25 +7,46 @@
     <q-card class="app-dialog app-dialog--xl cmp" data-compare>
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6">Solishtirish</div>
-        <span v-for="(c, i) in data || []" :key="c.id" class="cmp__name" :style="{ '--c': colors[i] }">
+        <span
+          v-for="(c, i) in data || []"
+          :key="c.id"
+          class="cmp__name"
+          :style="{ '--c': colors[i] }"
+        >
           {{ c.name }}
         </span>
         <q-space />
-        <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+        <AppButton
+          variant="ghost"
+          icon="close"
+          aria-label="Yopish"
+          v-close-popup
+        />
       </q-card-section>
       <q-card-section v-if="!data" class="cmp__skel">
         <div v-for="i in 3" :key="i" class="skel cmp__skel-row" />
       </q-card-section>
       <q-card-section v-else class="cmp__body">
         <div class="cmp__metrics">
-          <div v-for="m in METRICS" :key="m.key" class="cmp__metric" :data-metric="m.key">
+          <div
+            v-for="m in METRICS"
+            :key="m.key"
+            class="cmp__metric"
+            :data-metric="m.key"
+          >
             <small>{{ m.label }}</small>
             <div v-for="(c, i) in data" :key="c.id" class="cmp__row">
               <span class="cmp__label">{{ c.name }}</span>
               <span class="cmp__bar"
-                ><span :style="{ width: `${c[m.key] || 0}%`, background: colors[i] }"
+                ><span
+                  :style="{
+                    width: `${c[m.key] || 0}%`,
+                    background: colors[i]
+                  }"
               /></span>
-              <b :class="{ 'cmp__best': best(m.key) === c.id }">{{ formatPercent(c[m.key]) }}</b>
+              <b :class="{ cmp__best: best(m.key) === c.id }">{{
+                formatPercent(c[m.key])
+              }}</b>
             </div>
           </div>
         </div>
@@ -33,13 +54,24 @@
           <figure class="cmp__chart">
             <figcaption>Fanlar bo'yicha sifat (shu chorak)</figcaption>
             <div class="cmp__canvas">
-              <Bar :key="'b' + themeKey" :data="subjectsData" :options="barOptions" />
+              <Bar
+                :key="'b' + themeKey"
+                :data="subjectsData"
+                :options="barOptions"
+              />
             </div>
           </figure>
           <figure class="cmp__chart">
-            <figcaption>Davomat dinamikasi — oxirgi {{ data[0].daily.length }} ish kuni</figcaption>
+            <figcaption
+              >Davomat dinamikasi — oxirgi {{ data[0].daily.length }} ish
+              kuni</figcaption
+            >
             <div class="cmp__canvas">
-              <Line :key="'l' + themeKey" :data="dailyData" :options="lineOptions" />
+              <Line
+                :key="'l' + themeKey"
+                :data="dailyData"
+                :options="lineOptions"
+              />
             </div>
           </figure>
         </div>
@@ -71,7 +103,15 @@ import { useSchoolStore } from '@/stores/school'
 import { token, useChartTheme } from '@/charts/chartTheme'
 import { formatPercent } from '@/utils/format'
 
-Chart.register(BarElement, CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend)
+Chart.register(
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+  Legend
+)
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -111,17 +151,22 @@ watch(
 
 function best(key) {
   let top = null
-  for (const c of data.value || []) if (c[key] !== null && (!top || c[key] > top[key])) top = c
+  for (const c of data.value || [])
+    if (c[key] !== null && (!top || c[key] > top[key])) top = c
   return top?.id
 }
 
 const subjectsData = computed(() => {
-  const names = [...new Set((data.value || []).flatMap(c => c.subjects.map(s => s.subject)))].sort()
+  const names = [
+    ...new Set((data.value || []).flatMap(c => c.subjects.map(s => s.subject)))
+  ].sort()
   return {
     labels: names,
     datasets: (data.value || []).map((c, i) => ({
       label: c.name,
-      data: names.map(n => c.subjects.find(s => s.subject === n)?.quality ?? null),
+      data: names.map(
+        n => c.subjects.find(s => s.subject === n)?.quality ?? null
+      ),
       backgroundColor: colors.value[i],
       borderRadius: 4,
       maxBarThickness: 18
@@ -146,15 +191,31 @@ const dailyData = computed(() => {
     }))
   }
 })
-const legend = { display: true, position: 'bottom', labels: { boxWidth: 10, boxHeight: 10 } }
+const legend = {
+  display: true,
+  position: 'bottom',
+  labels: { boxWidth: 10, boxHeight: 10 }
+}
 const barOptions = computed(() => ({
-  plugins: { legend, tooltip: { callbacks: { label: i => `${i.dataset.label}: ${formatPercent(i.raw)}` } } },
+  plugins: {
+    legend,
+    tooltip: {
+      callbacks: { label: i => `${i.dataset.label}: ${formatPercent(i.raw)}` }
+    }
+  },
   scales: { y: { min: 0, max: 100, ticks: { callback: v => `${v}%` } } }
 }))
 const lineOptions = computed(() => ({
   interaction: { mode: 'index', intersect: false },
-  plugins: { legend, tooltip: { callbacks: { label: i => `${i.dataset.label}: ${formatPercent(i.raw)}` } } },
-  scales: { y: { suggestedMin: 80, max: 100, ticks: { callback: v => `${v}%` } } }
+  plugins: {
+    legend,
+    tooltip: {
+      callbacks: { label: i => `${i.dataset.label}: ${formatPercent(i.raw)}` }
+    }
+  },
+  scales: {
+    y: { suggestedMin: 80, max: 100, ticks: { callback: v => `${v}%` } }
+  }
 }))
 </script>
 

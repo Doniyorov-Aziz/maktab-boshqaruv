@@ -7,12 +7,20 @@
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6">Kalendarga qo'shish</div>
         <q-space />
-        <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+        <AppButton
+          variant="ghost"
+          icon="close"
+          aria-label="Yopish"
+          v-close-popup
+        />
       </q-card-section>
       <q-card-section class="fd__body">
         <div class="fd__block">
           <b>.ics fayl</b>
-          <p>Bir martalik nusxa: Google, Apple yoki Outlook kalendariga import qiling.</p>
+          <p
+            >Bir martalik nusxa: Google, Apple yoki Outlook kalendariga import
+            qiling.</p
+          >
           <AppButton
             icon="download"
             label="taqvim.ics yuklab olish"
@@ -24,13 +32,19 @@
         <div class="fd__block">
           <b>Obuna havolasi</b>
           <p>
-            Kalendar o'zi yangilanib turadi. Havola maxfiy — kimda bo'lsa, tadbirlarni ko'radi. Kerak
-            bo'lmasa, bekor qiling.
+            Kalendar o'zi yangilanib turadi. Havola maxfiy — kimda bo'lsa,
+            tadbirlarni ko'radi. Kerak bo'lmasa, bekor qiling.
           </p>
           <template v-if="admin">
             <div v-for="f in feeds" :key="f.id" class="fd__feed" data-feed>
               <code>{{ link(f) }}</code>
-              <AppButton variant="ghost" size="sm" icon="content_copy" aria-label="Nusxa olish" @click="copy(f)" />
+              <AppButton
+                variant="ghost"
+                size="sm"
+                icon="content_copy"
+                aria-label="Nusxa olish"
+                @click="copy(f)"
+              />
               <AppButton
                 variant="ghost"
                 size="sm"
@@ -50,7 +64,9 @@
               @click="create"
             />
           </template>
-          <p v-else class="fd__note">Obuna havolasini faqat administrator yaratadi.</p>
+          <p v-else class="fd__note"
+            >Obuna havolasini faqat administrator yaratadi.</p
+          >
         </div>
       </q-card-section>
     </q-card>
@@ -82,13 +98,18 @@ watch(
   () => props.modelValue,
   async open => {
     if (!open || !props.admin) return
-    const res = await api.get('/api/pages/calendar/feeds', { params: { schoolId: school.activeSchoolId } })
+    const res = await api.get('/api/pages/calendar/feeds', {
+      params: { schoolId: school.activeSchoolId }
+    })
     feeds.value = res.data
   }
 )
 
 function link(f) {
-  const base = (api.defaults.baseURL || window.location.origin).replace(/\/$/, '')
+  const base = (api.defaults.baseURL || window.location.origin).replace(
+    /\/$/,
+    ''
+  )
   return `${base}/api/public/calendar/${f.token}.ics`
 }
 
@@ -115,7 +136,9 @@ async function download() {
 async function create() {
   creating.value = true
   try {
-    const res = await api.post('/api/pages/calendar/feeds', null, { params: { schoolId: school.activeSchoolId } })
+    const res = await api.post('/api/pages/calendar/feeds', null, {
+      params: { schoolId: school.activeSchoolId }
+    })
     feeds.value = [res.data, ...feeds.value]
     copy(res.data)
   } finally {
@@ -124,7 +147,9 @@ async function create() {
 }
 
 async function revoke(f) {
-  await api.delete(`/api/pages/calendar/feeds/${f.id}`, { params: { schoolId: school.activeSchoolId } })
+  await api.delete(`/api/pages/calendar/feeds/${f.id}`, {
+    params: { schoolId: school.activeSchoolId }
+  })
   feeds.value = feeds.value.filter(x => x.id !== f.id)
   $q.notify({ type: 'info', message: 'Havola bekor qilindi' })
 }

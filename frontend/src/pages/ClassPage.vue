@@ -17,27 +17,55 @@
       <!-- hero -->
       <section class="cpg__hero dash-card" data-class-hero>
         <div class="cpg__id">
-          <AppButton variant="ghost" icon="arrow_back" aria-label="Sinflar" to="/classes" />
-          <AvatarInitials size="xl" square gradient :id="c.grade" :text="c.name" />
+          <AppButton
+            variant="ghost"
+            icon="arrow_back"
+            aria-label="Sinflar"
+            to="/classes"
+          />
+          <AvatarInitials
+            size="xl"
+            square
+            gradient
+            :id="c.grade"
+            :text="c.name"
+          />
           <div class="cpg__titles">
             <h1>{{ c.name }} sinf</h1>
             <div class="cpg__facts">
               <span v-if="c.teacher"
                 ><q-icon name="person" /> {{ c.teacher }}
-                <a v-if="d.teacherPhone" :href="`tel:${d.teacherPhone}`">{{ formatPhone(d.teacherPhone) }}</a></span
+                <a v-if="d.teacherPhone" :href="`tel:${d.teacherPhone}`">{{
+                  formatPhone(d.teacherPhone)
+                }}</a></span
               >
-              <span v-if="c.room"><q-icon name="meeting_room" /> {{ roomLabel(c.room) }}</span>
+              <span v-if="c.room"
+                ><q-icon name="meeting_room" /> {{ roomLabel(c.room) }}</span
+              >
               <span><q-icon name="groups" /> {{ c.students }} o'quvchi</span>
             </div>
           </div>
           <div class="cpg__actions">
-            <AppButton icon="fact_check" label="Davomat olish" to="/attendance" />
-            <AppButton variant="secondary" icon="grade" label="Jurnal" :to="{ path: '/gradebook', query: { class: c.id } }" />
+            <AppButton
+              icon="fact_check"
+              label="Davomat olish"
+              to="/attendance"
+            />
+            <AppButton
+              variant="secondary"
+              icon="grade"
+              label="Jurnal"
+              :to="{ path: '/gradebook', query: { class: c.id } }"
+            />
             <AppButton
               variant="secondary"
               icon="send"
               label="Ota-onalarga xabar"
-              :to="auth.isAdmin ? { path: '/broadcasts', query: { class: c.id } } : { path: '/telegram-parents', query: { class: c.id } }"
+              :to="
+                auth.isAdmin
+                  ? { path: '/broadcasts', query: { class: c.id } }
+                  : { path: '/telegram-parents', query: { class: c.id } }
+              "
             />
           </div>
         </div>
@@ -109,43 +137,108 @@
         data-class-tabs
         @update:model-value="setTab"
       >
-        <q-tab v-for="t in TABS" :key="t.value" :name="t.value" :label="t.label" :data-tab="t.value" />
+        <q-tab
+          v-for="t in TABS"
+          :key="t.value"
+          :name="t.value"
+          :label="t.label"
+          :data-tab="t.value"
+        />
       </q-tabs>
 
       <!-- Umumiy -->
       <div v-if="tab === 'overview'" class="cpg__overview">
-        <ChartCard title="Davomat dinamikasi" :subtitle="`oxirgi ${d.dynamics.length} ish kuni`" :data="d" :empty="!d.dynamics.some(p => p.rate !== null)">
+        <ChartCard
+          title="Davomat dinamikasi"
+          :subtitle="`oxirgi ${d.dynamics.length} ish kuni`"
+          :data="d"
+          :empty="!d.dynamics.some(p => p.rate !== null)"
+        >
           <div class="cpg__line">
             <Line :key="themeKey" :data="lineData" :options="lineOptions" />
           </div>
         </ChartCard>
-        <ChartCard title="Baholar taqsimoti" subtitle="shu chorak" :data="d" :empty="!gradeTotal">
+        <ChartCard
+          title="Baholar taqsimoti"
+          subtitle="shu chorak"
+          :data="d"
+          :empty="!gradeTotal"
+        >
           <div class="cpg__stack">
             <span
               v-for="s in [5, 4, 3, 2]"
               :key="s"
-              :style="{ width: `${(d.gradeCounts[s] / gradeTotal) * 100}%`, background: `var(--gr-${s})` }"
+              :style="{
+                width: `${(d.gradeCounts[s] / gradeTotal) * 100}%`,
+                background: `var(--gr-${s})`
+              }"
               :title="`«${s}»: ${d.gradeCounts[s]}`"
-              >{{ d.gradeCounts[s] / gradeTotal >= 0.08 ? `${Math.round((d.gradeCounts[s] / gradeTotal) * 100)}%` : '' }}</span
+              >{{
+                d.gradeCounts[s] / gradeTotal >= 0.08
+                  ? `${Math.round((d.gradeCounts[s] / gradeTotal) * 100)}%`
+                  : ''
+              }}</span
             >
           </div>
           <div class="cpg__stack-legend">
-            <span v-for="s in [5, 4, 3, 2]" :key="s"><i :style="{ background: `var(--gr-${s})` }" />«{{ s }}» {{ d.gradeCounts[s] }}</span>
+            <span v-for="s in [5, 4, 3, 2]" :key="s"
+              ><i :style="{ background: `var(--gr-${s})` }" />«{{ s }}»
+              {{ d.gradeCounts[s] }}</span
+            >
+          </div>
+          <div class="cpg__gstats">
+            <div
+              ><small>Jami baholar</small><b>{{ gradeTotal }}</b></div
+            >
+            <div
+              ><small>O'rtacha</small><b>{{ gradeAvg }}</b></div
+            >
+            <div
+              ><small>«5» ulushi</small
+              ><b class="cpg__ok">{{ share(5) }}</b></div
+            >
+            <div
+              ><small>«2» ulushi</small
+              ><b class="cpg__bad">{{ share(2) }}</b></div
+            >
           </div>
         </ChartCard>
-        <ChartCard title="Fanlar: o'zlashtirish va sifat" subtitle="shu chorak" :data="d" :empty="!d.subjects.length">
+        <ChartCard
+          title="Fanlar: o'zlashtirish va sifat"
+          subtitle="shu chorak"
+          :data="d"
+          :empty="!d.subjects.length"
+        >
           <ul class="cpg__dumb">
             <li v-for="s in d.subjects" :key="s.subjectId">
-              <SubjectChip :subject-id="s.subjectId" :name="s.subject" :chosen-color="s.color" />
+              <SubjectChip
+                :subject-id="s.subjectId"
+                :name="s.subject"
+                :chosen-color="s.color"
+              />
               <span class="cpg__dumb-track">
                 <span
                   class="cpg__dumb-line"
-                  :style="{ left: `${s.quality || 0}%`, width: `${Math.max(0, (s.mastery || 0) - (s.quality || 0))}%` }"
+                  :style="{
+                    left: `${s.quality || 0}%`,
+                    width: `${Math.max(0, (s.mastery || 0) - (s.quality || 0))}%`
+                  }"
                 />
-                <span class="cpg__dumb-dot cpg__dumb-dot--q" :style="{ left: `${s.quality || 0}%` }" :title="`Sifat ${formatPercent(s.quality)}`" />
-                <span class="cpg__dumb-dot cpg__dumb-dot--m" :style="{ left: `${s.mastery || 0}%` }" :title="`O'zlashtirish ${formatPercent(s.mastery)}`" />
+                <span
+                  class="cpg__dumb-dot cpg__dumb-dot--q"
+                  :style="{ left: `${s.quality || 0}%` }"
+                  :title="`Sifat ${formatPercent(s.quality)}`"
+                />
+                <span
+                  class="cpg__dumb-dot cpg__dumb-dot--m"
+                  :style="{ left: `${s.mastery || 0}%` }"
+                  :title="`O'zlashtirish ${formatPercent(s.mastery)}`"
+                />
               </span>
-              <small>{{ formatPercent(s.quality) }} · {{ formatPercent(s.mastery) }}</small>
+              <small
+                >{{ formatPercent(s.quality) }} ·
+                {{ formatPercent(s.mastery) }}</small
+              >
             </li>
           </ul>
         </ChartCard>
@@ -157,12 +250,22 @@
           empty-kind="ok"
           empty-text="Xavf ostida o'quvchi yo'q"
         >
-          <RiskRow v-for="(r, i) in d.risk.slice(0, 8)" :key="r.studentId" :row="r" :index="i" @open="openStudent" />
+          <RiskRow
+            v-for="(r, i) in d.risk.slice(0, 8)"
+            :key="r.studentId"
+            :row="r"
+            :index="i"
+            @open="openStudent"
+          />
         </ChartCard>
       </div>
 
       <!-- O'quvchilar -->
-      <div v-else-if="tab === 'students'" class="cpg__card dash-card" data-tab-body="students">
+      <div
+        v-else-if="tab === 'students'"
+        class="cpg__card dash-card"
+        data-tab-body="students"
+      >
         <table class="cpg__table">
           <thead>
             <tr>
@@ -175,22 +278,56 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="s in d.students" :key="s.id" :data-student="s.id" @click="openStudent({ studentId: s.id })">
-              <td class="cpg__person"><AvatarInitials size="sm" :name="s.name" :id="s.id" /> {{ s.name }}</td>
+            <tr
+              v-for="s in d.students"
+              :key="s.id"
+              :data-student="s.id"
+              @click="openStudent({ studentId: s.id })"
+            >
+              <td class="cpg__person"
+                ><AvatarInitials size="sm" :name="s.name" :id="s.id" />
+                {{ s.name }}</td
+              >
               <td>{{ s.guardianName || '—' }}</td>
-              <td class="num" :class="{ 'cpg__bad': s.attendance !== null && s.attendance < 85 }">{{ formatPercent(s.attendance) }}</td>
-              <td class="num">{{ s.average === null ? '—' : s.average.toFixed(2) }}</td>
-              <td class="num"><ScoreRing v-if="s.risk !== null" :value="s.risk" :title="`Xavf balli ${s.risk}`" /><span v-else>—</span></td>
+              <td
+                class="num"
+                :class="{
+                  cpg__bad: s.attendance !== null && s.attendance < 85
+                }"
+                >{{ formatPercent(s.attendance) }}</td
+              >
+              <td class="num">{{
+                s.average === null ? '—' : s.average.toFixed(2)
+              }}</td>
+              <td class="num"
+                ><ScoreRing
+                  v-if="s.risk !== null"
+                  :value="s.risk"
+                  :title="`Xavf balli ${s.risk}`"
+                /><span v-else>—</span></td
+              >
               <td class="num">{{ s.telegram ? '✓' : '✗' }}</td>
             </tr>
           </tbody>
         </table>
-        <EmptyState v-if="!d.students.length" icon="person_add" title="Sinfda o'quvchi yo'q" />
+        <EmptyState
+          v-if="!d.students.length"
+          icon="person_add"
+          title="Sinfda o'quvchi yo'q"
+        />
       </div>
 
       <!-- Jadval -->
-      <div v-else-if="tab === 'schedule'" class="cpg__card cpg__schedule dash-card" data-tab-body="schedule">
-        <EmptyState v-if="week && !classLessons.length" icon="event_busy" title="Bu sinf uchun jadval kiritilmagan" />
+      <div
+        v-else-if="tab === 'schedule'"
+        class="cpg__card cpg__schedule dash-card"
+        data-tab-body="schedule"
+      >
+        <EmptyState
+          v-if="week && !classLessons.length"
+          icon="event_busy"
+          title="Bu sinf uchun jadval kiritilmagan"
+        />
         <WeekGrid
           v-else-if="week"
           :lessons="classLessons"
@@ -200,39 +337,77 @@
           :today="todayWd"
           :now-minutes="nowMin"
           mode="class"
-          @open="l => $router.push({ path: '/timetable', query: { class: c.id } })"
+          @open="
+            l => $router.push({ path: '/timetable', query: { class: c.id } })
+          "
         />
         <div v-else class="skel cpg__skel-body" />
       </div>
 
       <!-- Davomat -->
-      <div v-else-if="tab === 'attendance'" class="cpg__card dash-card" data-tab-body="attendance">
+      <div
+        v-else-if="tab === 'attendance'"
+        class="cpg__card dash-card"
+        data-tab-body="attendance"
+      >
         <div class="cpg__month-nav">
-          <AppButton variant="ghost" icon="chevron_left" aria-label="Oldingi oy" @click="shiftMonth(-1)" />
-          <b>{{ MONTHS[monthCursor.getMonth()] }} {{ monthCursor.getFullYear() }}</b>
-          <AppButton variant="ghost" icon="chevron_right" aria-label="Keyingi oy" @click="shiftMonth(1)" />
+          <AppButton
+            variant="ghost"
+            icon="chevron_left"
+            aria-label="Oldingi oy"
+            @click="shiftMonth(-1)"
+          />
+          <b
+            >{{ MONTHS[monthCursor.getMonth()] }}
+            {{ monthCursor.getFullYear() }}</b
+          >
+          <AppButton
+            variant="ghost"
+            icon="chevron_right"
+            aria-label="Keyingi oy"
+            @click="shiftMonth(1)"
+          />
         </div>
         <div class="cpg__month">
-          <span v-for="dn in DAYS_SHORT" :key="dn" class="cpg__wd">{{ dn }}</span>
+          <span v-for="dn in DAYS_SHORT" :key="dn" class="cpg__wd">{{
+            dn
+          }}</span>
           <template v-for="w in monthGrid" :key="w[0]">
             <span
               v-for="date in w"
               :key="date"
               class="cpg__mday"
-              :class="[{ 'cpg__mday--other': date.slice(5, 7) !== monthKey.slice(5, 7) }, monthHeat(date)]"
-              :title="monthRates[date] !== undefined ? `${monthRates[date]}%` : ''"
+              :class="[
+                {
+                  'cpg__mday--other': date.slice(5, 7) !== monthKey.slice(5, 7)
+                },
+                monthHeat(date)
+              ]"
+              :title="
+                monthRates[date] !== undefined ? `${monthRates[date]}%` : ''
+              "
               ><b>{{ Number(date.slice(8)) }}</b
-              ><small v-if="monthRates[date] !== undefined && monthRates[date] !== null">{{ Math.round(monthRates[date]) }}%</small></span
+              ><small
+                v-if="
+                  monthRates[date] !== undefined && monthRates[date] !== null
+                "
+                >{{ Math.round(monthRates[date]) }}%</small
+              ></span
             >
           </template>
         </div>
       </div>
 
       <!-- Ota-onalar -->
-      <div v-else-if="tab === 'parents'" class="cpg__card dash-card" data-tab-body="parents">
+      <div
+        v-else-if="tab === 'parents'"
+        class="cpg__card dash-card"
+        data-tab-body="parents"
+      >
         <p class="cpg__lead">
-          Telegramga ulangan: <b>{{ parents.linked }}</b> / {{ d.students.length }} ·
-          telefon yozilgan: <b>{{ parents.phones }}</b>
+          Telegramga ulangan: <b>{{ parents.linked }}</b> /
+          {{ d.students.length }} · telefon yozilgan:
+          <b>{{ parents.phones }}</b>
         </p>
         <table class="cpg__table">
           <thead>
@@ -245,13 +420,22 @@
           </thead>
           <tbody>
             <tr v-for="s in d.students" :key="s.id">
-              <td>{{ s.guardianName || '—' }}<small v-if="s.relation"> · {{ RELATION[s.relation] || s.relation }}</small></td>
+              <td
+                >{{ s.guardianName || '—'
+                }}<small v-if="s.relation">
+                  · {{ RELATION[s.relation] || s.relation }}</small
+                ></td
+              >
               <td>{{ s.name }}</td>
               <td>
-                <a v-if="s.guardianPhone" :href="`tel:${s.guardianPhone}`">{{ formatPhone(s.guardianPhone) }}</a>
+                <a v-if="s.guardianPhone" :href="`tel:${s.guardianPhone}`">{{
+                  formatPhone(s.guardianPhone)
+                }}</a>
                 <span v-else>—</span>
               </td>
-              <td class="num" :class="s.telegram ? 'cpg__ok' : 'cpg__bad'">{{ s.telegram ? '✓ ulangan' : '✗ ulanmagan' }}</td>
+              <td class="num" :class="s.telegram ? 'cpg__ok' : 'cpg__bad'">{{
+                s.telegram ? '✓ ulangan' : '✗ ulanmagan'
+              }}</td>
             </tr>
           </tbody>
         </table>
@@ -261,9 +445,15 @@
       <div v-else class="cpg__card dash-card" data-tab-body="behavior">
         <p class="cpg__lead">
           <span class="cpg__ok">👍 {{ behaviorCount.REWARD }} rag'bat</span> ·
-          <span class="cpg__bad">⚠ {{ behaviorCount.WARNING }} ogohlantirish</span>
+          <span class="cpg__bad"
+            >⚠ {{ behaviorCount.WARNING }} ogohlantirish</span
+          >
         </p>
-        <EmptyState v-if="!d.behavior.length" icon="sentiment_satisfied" title="Xulq yozuvlari yo'q" />
+        <EmptyState
+          v-if="!d.behavior.length"
+          icon="sentiment_satisfied"
+          title="Xulq yozuvlari yo'q"
+        />
         <SignalRow
           v-for="b in d.behavior"
           :key="b.id"
@@ -286,7 +476,15 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Line } from 'vue-chartjs'
-import { CategoryScale, Chart, Filler, LineElement, LinearScale, PointElement, Tooltip } from 'chart.js'
+import {
+  CategoryScale,
+  Chart,
+  Filler,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip
+} from 'chart.js'
 import PageLayout from '@/components/PageLayout.vue'
 import AppButton from '@/components/app/AppButton.vue'
 import ChartCard from '@/components/dashboard/ChartCard.vue'
@@ -298,8 +496,18 @@ import EmptyState from '@/components/pages/EmptyState.vue'
 import SignalRow from '@/components/pages/SignalRow.vue'
 import SubjectChip from '@/components/pages/SubjectChip.vue'
 import WeekGrid from '@/components/timetable/WeekGrid.vue'
-import { WEEKDAYS, roomLabel, todayWeekday } from '@/components/timetable/timetable'
-import { DAYS_SHORT, MONTHS, heatStep, iso, monthWeeks } from '@/components/calendar/calendar'
+import {
+  WEEKDAYS,
+  roomLabel,
+  todayWeekday
+} from '@/components/timetable/timetable'
+import {
+  DAYS_SHORT,
+  MONTHS,
+  heatStep,
+  iso,
+  monthWeeks
+} from '@/components/calendar/calendar'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
@@ -307,7 +515,14 @@ import { useChartTheme, alpha } from '@/charts/chartTheme'
 import { formatPercent } from '@/utils/format'
 import { formatPhone, tashkentNow } from '@/utils/tashkent'
 
-Chart.register(LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
+Chart.register(
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Filler,
+  Tooltip
+)
 
 const route = useRoute()
 const router = useRouter()
@@ -326,9 +541,13 @@ const TABS = [
 const RELATION = { OTASI: 'otasi', ONASI: 'onasi', BOSHQA: 'boshqa' }
 
 const id = computed(() => Number(route.params.id))
-const tab = computed(() => (TABS.some(t => t.value === route.query.tab) ? route.query.tab : 'overview'))
+const tab = computed(() =>
+  TABS.some(t => t.value === route.query.tab) ? route.query.tab : 'overview'
+)
 function setTab(t) {
-  router.replace({ query: { ...route.query, tab: t === 'overview' ? undefined : t } })
+  router.replace({
+    query: { ...route.query, tab: t === 'overview' ? undefined : t }
+  })
 }
 
 const d = ref(null)
@@ -336,7 +555,9 @@ const error = ref(null)
 async function load() {
   if (!school.activeSchoolId || !id.value) return
   try {
-    const res = await api.get(`/api/pages/classes/${id.value}`, { params: { schoolId: school.activeSchoolId } })
+    const res = await api.get(`/api/pages/classes/${id.value}`, {
+      params: { schoolId: school.activeSchoolId }
+    })
     d.value = res.data
     error.value = null
   } catch (e) {
@@ -356,7 +577,9 @@ function openStudent(r) {
 
 // overview
 const lineData = computed(() => ({
-  labels: (d.value?.dynamics || []).map(p => `${Number(p.date.slice(8))}.${p.date.slice(5, 7)}`),
+  labels: (d.value?.dynamics || []).map(
+    p => `${Number(p.date.slice(8))}.${p.date.slice(5, 7)}`
+  ),
   datasets: [
     {
       data: (d.value?.dynamics || []).map(p => p.rate),
@@ -374,21 +597,43 @@ const lineData = computed(() => ({
 }))
 const lineOptions = {
   interaction: { mode: 'index', intersect: false },
-  plugins: { tooltip: { callbacks: { label: i => `Davomat: ${formatPercent(i.raw)}` } } },
-  scales: { y: { suggestedMin: 80, max: 100, ticks: { callback: v => `${v}%` } } }
+  plugins: {
+    tooltip: { callbacks: { label: i => `Davomat: ${formatPercent(i.raw)}` } }
+  },
+  scales: {
+    y: { suggestedMin: 80, max: 100, ticks: { callback: v => `${v}%` } }
+  }
 }
-const gradeTotal = computed(() => Object.values(d.value?.gradeCounts || {}).reduce((a, b) => a + b, 0))
+const gradeTotal = computed(() =>
+  Object.values(d.value?.gradeCounts || {}).reduce((a, b) => a + b, 0)
+)
+const gradeAvg = computed(() => {
+  if (!gradeTotal.value) return '—'
+  const pts = Object.entries(d.value.gradeCounts).reduce(
+    (a, [k, v]) => a + Number(k) * v,
+    0
+  )
+  return (pts / gradeTotal.value).toFixed(2)
+})
+const share = s =>
+  gradeTotal.value
+    ? formatPercent((d.value.gradeCounts[s] / gradeTotal.value) * 100)
+    : '—'
 
 // schedule
 const week = ref(null)
-const classLessons = computed(() => (week.value?.lessons || []).filter(l => l.classId === id.value))
+const classLessons = computed(() =>
+  (week.value?.lessons || []).filter(l => l.classId === id.value)
+)
 const todayWd = todayWeekday()
 const nowMin = tashkentNow().minutes
 watch(
   tab,
   async t => {
     if (t === 'schedule' && !week.value) {
-      const res = await api.get('/api/pages/timetable/week', { params: { schoolId: school.activeSchoolId } })
+      const res = await api.get('/api/pages/timetable/week', {
+        params: { schoolId: school.activeSchoolId }
+      })
       week.value = res.data
     }
     if (t === 'attendance') loadMonth()
@@ -397,9 +642,13 @@ watch(
 )
 
 // attendance month
-const monthCursor = ref(new Date(`${tashkentNow().date.slice(0, 7)}-01T12:00:00`))
+const monthCursor = ref(
+  new Date(`${tashkentNow().date.slice(0, 7)}-01T12:00:00`)
+)
 const monthKey = computed(() => iso(monthCursor.value))
-const monthGrid = computed(() => monthWeeks(monthCursor.value.getFullYear(), monthCursor.value.getMonth()))
+const monthGrid = computed(() =>
+  monthWeeks(monthCursor.value.getFullYear(), monthCursor.value.getMonth())
+)
 const monthRates = ref({})
 async function loadMonth() {
   const res = await api.get(`/api/pages/classes/${id.value}/month`, {
@@ -508,7 +757,32 @@ const behaviorCount = computed(() => {
 
 .cpg__line {
   position: relative;
-  height: var(--chart-h);
+  height: var(--dyn-h);
+}
+
+.cpg__gstats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.cpg__gstats > div {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.cpg__gstats small {
+  font-size: var(--text-xs);
+  color: var(--brand-text-muted);
+}
+
+.cpg__gstats b {
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
 }
 
 .cpg__stack {

@@ -1,13 +1,20 @@
 <template>
   <div class="mv" data-month-view>
     <div class="mv__head">
-      <span v-for="(d, k) in DAYS_SHORT" :key="d" :class="{ 'mv__sun': k === 6 }">{{ d }}</span>
+      <span
+        v-for="(d, k) in DAYS_SHORT"
+        :key="d"
+        :class="{ mv__sun: k === 6 }"
+        >{{ d }}</span
+      >
     </div>
     <div
       v-for="(week, w) in weeks"
       :key="week[0]"
       class="mv__week"
-      :style="{ gridTemplateRows: `var(--space-6) repeat(${layout[w].lanes}, var(--legend-chip-h)) minmax(0, 1fr)` }"
+      :style="{
+        gridTemplateRows: `var(--space-6) repeat(${layout[w].lanes}, var(--legend-chip-h)) minmax(0, 1fr)`
+      }"
       @dragover="onDragOver($event)"
       @drop="onDrop($event, week)"
     >
@@ -21,7 +28,9 @@
         :data-date="date"
         @click="onDayClick(date, $event)"
       >
-        <span class="mv__num" @click.stop="emit('day', date)">{{ Number(date.slice(8)) }}</span>
+        <span class="mv__num" @click.stop="emit('day', date)">{{
+          Number(date.slice(8))
+        }}</span>
         <span
           v-if="heat(date)"
           class="mv__dot"
@@ -29,7 +38,6 @@
           :title="`Davomat ${attendance[date].toFixed(1)}%`"
           :data-attendance="attendance[date]"
         />
-        <span v-if="offName(date)" class="mv__off">{{ offName(date) }}</span>
       </div>
 
       <!-- multi-day events: one band across their days -->
@@ -37,7 +45,10 @@
         v-for="b in layout[w].bands"
         :key="b.event.id + week[0]"
         class="mv__band"
-        :class="{ 'mv__band--cut-start': b.cutStart, 'mv__band--cut-end': b.cutEnd }"
+        :class="{
+          'mv__band--cut-start': b.cutStart,
+          'mv__band--cut-end': b.cutEnd
+        }"
         :style="{
           gridColumn: `${b.col + 1} / span ${b.span}`,
           gridRow: b.lane + 2,
@@ -82,7 +93,9 @@
           @dragstart="onDragStart($event, e, 'move')"
           @click.stop="emit('open', e)"
         >
-          <span v-if="e.startTime" class="mv__time">{{ e.startTime.slice(0, 5) }}</span>
+          <span v-if="e.startTime" class="mv__time">{{
+            e.startTime.slice(0, 5)
+          }}</span>
           {{ e.title }}
         </button>
         <button
@@ -116,7 +129,7 @@
 
 <script setup>
 // A month as a grid, Monday first. Today has a ring in the brand colour; Sundays and
-// holidays are quieter, a holiday says its name. A vacation (any event over several days)
+// holidays are striped (the holiday's own pill says its name). A vacation (any event over several days)
 // is one band across its days. One-day events are pills in their type's colour; when more
 // do not fit, "+2" opens the rest. A past school day shows its attendance as a small dot
 // (the home page's colour steps). Editors drag an event to another day, stretch a band
@@ -154,10 +167,6 @@ function shown(date) {
 function hidden(date) {
   return dayEvents(date, props.events).slice(props.maxPills)
 }
-function offName(date) {
-  const h = daysOff(date, props.events).find(e => e.type === 'HOLIDAY')
-  return h ? h.title : ''
-}
 function heat(date) {
   if (date > props.today) return null
   return heatStep(props.attendance[date])
@@ -172,7 +181,9 @@ function dayClass(date, k) {
 }
 function title(e) {
   const t = EVENT_TYPES[e.type]?.label || ''
-  const time = e.startTime ? ` · ${e.startTime.slice(0, 5)}–${(e.endTime || '').slice(0, 5)}` : ''
+  const time = e.startTime
+    ? ` · ${e.startTime.slice(0, 5)}–${(e.endTime || '').slice(0, 5)}`
+    : ''
   return `${e.title} — ${t}${time}`
 }
 
@@ -199,12 +210,16 @@ function onDrop(ev, week) {
   ev.preventDefault()
   if (!drag) return
   const rect = ev.currentTarget.getBoundingClientRect()
-  const k = Math.max(0, Math.min(6, Math.floor(((ev.clientX - rect.left) / rect.width) * 7)))
+  const k = Math.max(
+    0,
+    Math.min(6, Math.floor(((ev.clientX - rect.left) / rect.width) * 7))
+  )
   const date = week[k]
   const { event, kind } = drag
   drag = null
   if (kind === 'resize') {
-    if (date >= event.startDate && date !== event.endDate) emit('resize', { event, endDate: date })
+    if (date >= event.startDate && date !== event.endDate)
+      emit('resize', { event, endDate: date })
   } else if (date !== event.startDate) {
     emit('move', { event, startDate: date })
   }
@@ -319,19 +334,6 @@ function onDrop(ev, week) {
 
 .mv__dot--4 {
   background: var(--heat-4);
-}
-
-.mv__off {
-  position: absolute;
-  left: var(--space-2);
-  right: var(--space-2);
-  bottom: var(--space-1);
-  font-size: var(--text-xs);
-  color: var(--subj-4);
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .mv__band {
@@ -452,8 +454,7 @@ function onDrop(ev, week) {
   }
 
   .mv__pill,
-  .mv__band-text,
-  .mv__off {
+  .mv__band-text {
     font-size: 0;
   }
 

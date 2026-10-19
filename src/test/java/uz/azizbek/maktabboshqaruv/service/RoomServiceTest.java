@@ -35,6 +35,9 @@ class RoomServiceTest {
     @Mock
     private LessonSlotRepository lessonSlotRepository;
 
+    @Mock
+    private uz.azizbek.maktabboshqaruv.service.dashboard.DashboardCache pageCache;
+
     @InjectMocks
     private RoomService roomService;
 
@@ -61,6 +64,9 @@ class RoomServiceTest {
         Building building = new Building();
         building.setId(1L);
         building.setName("Asosiy bino");
+        uz.azizbek.maktabboshqaruv.entity.School school = new uz.azizbek.maktabboshqaruv.entity.School();
+        school.setId(1L);
+        building.setSchool(school);
         when(buildingRepository.findById(1L)).thenReturn(Optional.of(building));
 
         Room saved = new Room();

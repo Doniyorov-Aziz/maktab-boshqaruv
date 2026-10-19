@@ -28,16 +28,40 @@
       <div class="cal__year dash-card" data-cal-hero>
         <div class="cal__year-head">
           <b>O'quv yili</b>
-          <small v-if="ov">{{ fmtDate(ov.yearStart) }} – {{ fmtDate(ov.yearEnd) }}</small>
+          <small v-if="ov"
+            >{{ fmtDate(ov.yearStart) }} – {{ fmtDate(ov.yearEnd) }}</small
+          >
         </div>
         <div v-if="!ov" class="skel cal__year-skel" />
         <YearLine v-else :data="ov" />
+        <ul v-if="upcoming.length" class="cal__soon" data-cal-soon>
+          <li
+            v-for="e in upcoming"
+            :key="e.id"
+            :style="{ '--c': EVENT_TYPES[e.type]?.color }"
+            @click="openEvent(e)"
+          >
+            <span class="cal__soon-date"
+              ><b>{{ Number(e.startDate.slice(8)) }}</b
+              ><small>{{
+                MONTHS[Number(e.startDate.slice(5, 7)) - 1].slice(0, 3)
+              }}</small></span
+            >
+            <span class="cal__soon-what"
+              ><b>{{ e.title }}</b
+              ><small>{{ EVENT_TYPES[e.type]?.label }}</small></span
+            >
+            <span class="cal__soon-left">{{
+              countdown(daysBetween(today, e.startDate))
+            }}</span>
+          </li>
+        </ul>
       </div>
       <div class="cal__kpis">
         <KpiCard
           kpi-key="next-event"
           label="Keyingi tadbir"
-          icon="event_upcoming"
+          icon="event"
           color="var(--subj-1)"
           compact
           clickable
@@ -45,8 +69,12 @@
           :value="ov?.nextEvent?.daysLeft ?? undefined"
           :empty-value="!!ov && !ov.nextEvent"
           empty-text="Yo'q"
-          :format="v => countdown(Math.round(v))"
-          :note="ov?.nextEvent?.title || ''"
+          :format="dayCount"
+          :note="
+            ov?.nextEvent
+              ? `${leftWord(ov.nextEvent.daysLeft)} · ${ov.nextEvent.title}`
+              : ''
+          "
           :spark="null"
           @click="ov?.nextEvent && openById(ov.nextEvent.id)"
         />
@@ -72,8 +100,12 @@
           :value="ov?.nextExam?.daysLeft ?? undefined"
           :empty-value="!!ov && !ov.nextExam"
           empty-text="Rejada yo'q"
-          :format="v => countdown(Math.round(v))"
-          :note="ov?.nextExam?.title || ''"
+          :format="dayCount"
+          :note="
+            ov?.nextExam
+              ? `${leftWord(ov.nextExam.daysLeft)} · ${ov.nextExam.title}`
+              : ''
+          "
           :spark="null"
           @click="ov?.nextExam && openById(ov.nextExam.id)"
         />
@@ -84,7 +116,11 @@
           color="var(--year-vacation)"
           compact
           :loading="overview.loading.value"
-          :value="ov && !ov.onVacation ? ov.nextVacation?.daysLeft ?? undefined : undefined"
+          :value="
+            ov && !ov.onVacation
+              ? (ov.nextVacation?.daysLeft ?? undefined)
+              : undefined
+          "
           :empty-value="!!ov && (ov.onVacation || !ov.nextVacation)"
           :empty-text="ov?.onVacation ? 'Ta\'tilda 🎉' : 'Rejada yo\'q'"
           :format="v => `${Math.round(v)} kun`"
@@ -96,11 +132,27 @@
 
     <!-- controls -->
     <div class="cal__bar">
-      <SegTabs :model-value="view" :options="VIEWS" label="Ko'rinish" data-cal-views @update:model-value="setView" />
+      <SegTabs
+        :model-value="view"
+        :options="VIEWS"
+        label="Ko'rinish"
+        data-cal-views
+        @update:model-value="setView"
+      />
       <div v-if="view !== 'agenda'" class="cal__nav">
-        <AppButton variant="ghost" icon="chevron_left" aria-label="Oldingi" @click="shift(-1)" />
+        <AppButton
+          variant="ghost"
+          icon="chevron_left"
+          aria-label="Oldingi"
+          @click="shift(-1)"
+        />
         <b class="cal__period" data-cal-period>{{ periodLabel }}</b>
-        <AppButton variant="ghost" icon="chevron_right" aria-label="Keyingi" @click="shift(1)" />
+        <AppButton
+          variant="ghost"
+          icon="chevron_right"
+          aria-label="Keyingi"
+          @click="shift(1)"
+        />
         <AppButton variant="ghost" size="sm" label="Bugun" @click="goToday" />
       </div>
       <div class="cal__filters" role="group" aria-label="Tadbir turlari">
@@ -175,7 +227,7 @@
       />
     </section>
 
-    <div class="cal__legend">
+    <div v-if="view === 'month'" class="cal__legend">
       <span v-for="s in [1, 2, 3, 4]" :key="s" class="cal__heat">
         <span :class="`cal__dot cal__dot--${s}`" />{{ HEAT_LABELS[s - 1] }}
       </span>
@@ -229,6 +281,7 @@ import {
   TYPE_ORDER,
   addDays,
   countdown,
+  daysBetween,
   monthWeeks,
   moved,
   parse,
@@ -258,18 +311,26 @@ const canEdit = computed(() => auth.isEditor)
 const today = ref(tashkentNow().date)
 
 // ---------------------------------------------------------------- the URL is the state
-const view = computed(() => (VIEWS.some(v => v.value === route.query.view) ? route.query.view : 'month'))
+const view = computed(() =>
+  VIEWS.some(v => v.value === route.query.view) ? route.query.view : 'month'
+)
 const anchor = computed(() =>
-  /^\d{4}-\d{2}$/.test(route.query.month || '') ? `${route.query.month}-01` : today.value
+  /^\d{4}-\d{2}$/.test(route.query.month || '')
+    ? `${route.query.month}-01`
+    : today.value
 )
 const cursor = computed(() => ({
   year: Number(anchor.value.slice(0, 4)),
   month: Number(anchor.value.slice(5, 7)) - 1
 }))
 const weekAnchor = computed(() =>
-  /^\d{4}-\d{2}-\d{2}$/.test(route.query.week || '') ? route.query.week : today.value
+  /^\d{4}-\d{2}-\d{2}$/.test(route.query.week || '')
+    ? route.query.week
+    : today.value
 )
-const monday = computed(() => addDays(weekAnchor.value, -weekdayIndex(weekAnchor.value)))
+const monday = computed(() =>
+  addDays(weekAnchor.value, -weekdayIndex(weekAnchor.value))
+)
 const yearStart = computed(() => {
   const y = cursor.value.month >= 8 ? cursor.value.year : cursor.value.year - 1
   return `${y}-09-01`
@@ -281,7 +342,9 @@ function setView(v, extra = {}) {
 function shift(n) {
   if (view.value === 'month') {
     const d = new Date(cursor.value.year, cursor.value.month + n, 1)
-    setView('month', { month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` })
+    setView('month', {
+      month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    })
   } else if (view.value === 'week') {
     setView('week', { week: addDays(monday.value, 7 * n) })
   } else {
@@ -294,7 +357,8 @@ function goToday() {
 }
 
 const periodLabel = computed(() => {
-  if (view.value === 'month') return `${MONTHS[cursor.value.month]} ${cursor.value.year}`
+  if (view.value === 'month')
+    return `${MONTHS[cursor.value.month]} ${cursor.value.year}`
   if (view.value === 'week') {
     const s = parse(monday.value)
     const e = parse(addDays(monday.value, 6))
@@ -303,7 +367,9 @@ const periodLabel = computed(() => {
   const y = Number(yearStart.value.slice(0, 4))
   return `${y}–${y + 1} o'quv yili`
 })
-const subtitle = computed(() => [school.activeSchoolName, periodLabel.value].filter(Boolean).join(' · '))
+const subtitle = computed(() =>
+  [school.activeSchoolName, periodLabel.value].filter(Boolean).join(' · ')
+)
 
 // ---------------------------------------------------------------- data
 const overview = useWidget('/api/pages/calendar/overview')
@@ -315,8 +381,10 @@ const range = computed(() => {
     const w = monthWeeks(cursor.value.year, cursor.value.month)
     return { from: w[0][0], to: w[w.length - 1][6] }
   }
-  if (view.value === 'week') return { from: monday.value, to: addDays(monday.value, 6) }
-  if (view.value === 'agenda') return { from: today.value, to: addDays(today.value, 180) }
+  if (view.value === 'week')
+    return { from: monday.value, to: addDays(monday.value, 6) }
+  if (view.value === 'agenda')
+    return { from: today.value, to: addDays(today.value, 180) }
   const y = Number(yearStart.value.slice(0, 4))
   return { from: `${y}-09-01`, to: `${y + 1}-08-31` }
 })
@@ -345,7 +413,9 @@ async function loadEvents() {
       const res = await api.get('/api/pages/calendar/attendance', {
         params: { schoolId: school.activeSchoolId, ...range.value }
       })
-      attendance.value = Object.fromEntries(res.data.filter(d => d.rate !== null).map(d => [d.date, d.rate]))
+      attendance.value = Object.fromEntries(
+        res.data.filter(d => d.rate !== null).map(d => [d.date, d.rate])
+      )
     } catch {
       attendance.value = {}
     }
@@ -359,7 +429,9 @@ const rooms = ref([])
 const classes = ref([])
 async function loadRefs() {
   if (!canEdit.value || !school.activeSchoolId) return
-  const res = await api.get('/api/pages/timetable/week', { params: { schoolId: school.activeSchoolId } })
+  const res = await api.get('/api/pages/timetable/week', {
+    params: { schoolId: school.activeSchoolId }
+  })
   rooms.value = res.data.rooms
   classes.value = res.data.classes
 }
@@ -369,10 +441,35 @@ onMounted(loadRefs)
 const hiddenTypes = ref(new Set())
 function toggleType(t) {
   const s = new Set(hiddenTypes.value)
-  s.has(t) ? s.delete(t) : s.add(t)
+  if (s.has(t)) s.delete(t)
+  else s.add(t)
   hiddenTypes.value = s
 }
-const shown = computed(() => events.value.filter(e => !hiddenTypes.value.has(e.type)))
+const shown = computed(() =>
+  events.value.filter(e => !hiddenTypes.value.has(e.type))
+)
+// the next three events (any view): under the year line
+const upcoming = ref([])
+async function loadUpcoming() {
+  if (!school.activeSchoolId) return
+  try {
+    const res = await api.get('/api/calendar-events/range', {
+      params: {
+        schoolId: school.activeSchoolId,
+        from: today.value,
+        to: addDays(today.value, 120)
+      }
+    })
+    upcoming.value = res.data
+      .filter(e => e.startDate >= today.value && e.type !== 'VACATION')
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))
+      .slice(0, 3)
+  } catch {
+    upcoming.value = []
+  }
+}
+onMounted(loadUpcoming)
+
 const typeCounts = computed(() => {
   const c = {}
   for (const e of events.value) c[e.type] = (c[e.type] || 0) + 1
@@ -393,7 +490,9 @@ function openEvent(e) {
 async function openById(id) {
   const e = events.value.find(x => x.id === id)
   if (e) return openEvent(e)
-  const res = await api.get('/api/calendar-events/upcoming', { params: { schoolId: school.activeSchoolId, limit: 50 } })
+  const res = await api.get('/api/calendar-events/upcoming', {
+    params: { schoolId: school.activeSchoolId, limit: 50 }
+  })
   const found = res.data.find(x => x.id === id)
   if (found) openEvent(found)
 }
@@ -404,6 +503,7 @@ function openCreate(date) {
 }
 function afterSave() {
   loadEvents()
+  loadUpcoming()
   overview.reload()
 }
 
@@ -446,15 +546,31 @@ async function change(e, patch, message) {
     })
   } catch (err) {
     Object.assign(local, before)
-    $q.notify({ type: 'negative', message: err.friendlyMessage || "O'zgartirib bo'lmadi" })
+    $q.notify({
+      type: 'negative',
+      message: err.friendlyMessage || "O'zgartirib bo'lmadi"
+    })
   }
 }
 
 function moveEvent({ event, startDate }) {
-  change(event, moved(event, startDate), `«${event.title}» → ${fmtDate(startDate)}`)
+  change(
+    event,
+    moved(event, startDate),
+    `«${event.title}» → ${fmtDate(startDate)}`
+  )
 }
 function resizeEvent({ event, endDate }) {
   change(event, { endDate }, `«${event.title}» ${fmtDate(endDate)} gacha`)
+}
+
+// "6 kun" big, "qoldi · Ota-onalar yig'ilishi" under it ("bugun" / "ertaga" as they are)
+function dayCount(v) {
+  const n = Math.round(v)
+  return n <= 0 ? 'bugun' : n === 1 ? 'ertaga' : `${n} kun`
+}
+function leftWord(n) {
+  return n > 1 ? 'qoldi' : countdown(n)
 }
 
 function fmtDate(s) {
@@ -498,6 +614,71 @@ const feedOpen = ref(false)
 
 .cal__year-skel {
   height: var(--space-8);
+}
+
+.cal__soon {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--dash-edge);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.cal__soon li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.cal__soon li:hover {
+  background: var(--surface-2);
+}
+
+.cal__soon-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--tile-md);
+  height: var(--tile-md);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  color: var(--c);
+  line-height: 1.05;
+}
+
+.cal__soon-date small {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+}
+
+.cal__soon-what {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cal__soon-what b {
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal__soon-what small {
+  font-size: var(--text-xs);
+  color: var(--c);
+}
+
+.cal__soon-left {
+  font-size: var(--text-xs);
+  font-weight: 700;
 }
 
 .cal__kpis {

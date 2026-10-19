@@ -549,7 +549,7 @@ export const modules = [
         type: 'select',
         required: false,
         options: SUBJECT_COLOR_OPTIONS,
-        hint: "Avtomatik — fan raqamidan 12 rangdan biri"
+        hint: 'Avtomatik — fan raqamidan 12 rangdan biri'
       },
       { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
     ]

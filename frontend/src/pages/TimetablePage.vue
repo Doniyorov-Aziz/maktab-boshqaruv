@@ -21,12 +21,20 @@
       >
         <q-list dense>
           <q-item v-close-popup clickable @click="downloadPdf(false)">
-            <q-item-section avatar><q-icon name="description" /></q-item-section>
-            <q-item-section>{{ currentName || 'Sinf' }} — A4, bitta sahifa</q-item-section>
+            <q-item-section avatar
+              ><q-icon name="description"
+            /></q-item-section>
+            <q-item-section
+              >{{ currentName || 'Sinf' }} — A4, bitta sahifa</q-item-section
+            >
           </q-item>
           <q-item v-close-popup clickable @click="downloadPdf(true)">
-            <q-item-section avatar><q-icon name="library_books" /></q-item-section>
-            <q-item-section>Barcha sinflar (har sinf alohida sahifada)</q-item-section>
+            <q-item-section avatar
+              ><q-icon name="library_books"
+            /></q-item-section>
+            <q-item-section
+              >Barcha sinflar (har sinf alohida sahifada)</q-item-section
+            >
           </q-item>
         </q-list>
       </q-btn-dropdown>
@@ -104,13 +112,7 @@
         clickable
         :loading="kpis.loading.value"
         :value="k ? conflicts.length : undefined"
-        :note="
-          k
-            ? conflicts.length
-              ? 'bosing — ro\'yxat va yechim'
-              : 'hammasi joyida'
-            : ''
-        "
+        :note="k ? conflictNote : ''"
         :spark="null"
         :class="['ttp__conflicts', conflicts.length ? 'is-bad' : 'is-ok']"
         style="--i: 3"
@@ -177,7 +179,10 @@
         <b>{{ teacherInfo.lessons }}</b> dars ·
         <span v-if="teacherInfo.windows.length" class="ttp__windows"
           >bo'sh oynalar:
-          <span v-for="w in teacherInfo.windows" :key="w.day" class="ttp__window"
+          <span
+            v-for="w in teacherInfo.windows"
+            :key="w.day"
+            class="ttp__window"
             >{{ w.day.slice(0, 2) }} {{ w.periods.join(', ') }}-dars</span
           ></span
         >
@@ -196,7 +201,11 @@
       ref="box"
       class="ttp__box dash-card"
       :class="{ 'ttp__box--grid': gridView && !isPhone }"
-      :style="gridView && !isPhone && boxHeight ? { height: `${boxHeight}px` } : undefined"
+      :style="
+        gridView && !isPhone && boxHeight
+          ? { height: `${boxHeight}px` }
+          : undefined
+      "
       data-tt-box
     >
       <div v-if="weekLoading && !week" class="ttp__skel">
@@ -253,7 +262,9 @@
           <EmptyState
             v-if="!dayLessons.length"
             icon="weekend"
-            :title="today ? 'Bu kunda dars yo\'q' : 'Bugun yakshanba — darslar yo\'q'"
+            :title="
+              today ? 'Bu kunda dars yo\'q' : 'Bugun yakshanba — darslar yo\'q'
+            "
           />
           <TodayTimeline
             v-else
@@ -277,7 +288,11 @@
     </section>
 
     <!-- subject legend: a chip focuses one subject -->
-    <div v-if="week && legend.length && view !== 'load'" class="ttp__legend no-print" data-tt-legend>
+    <div
+      v-if="week && legend.length && view !== 'load'"
+      class="ttp__legend no-print"
+      data-tt-legend
+    >
       <SubjectChip
         v-for="s in legend"
         :key="s.id"
@@ -295,7 +310,11 @@
     <SideDrawer
       v-model="conflictsOpen"
       title="Konfliktlar"
-      :subtitle="conflicts.length ? `${conflicts.length} ta — bosing, dars ochiladi` : 'Hammasi joyida'"
+      :subtitle="
+        conflicts.length
+          ? `${conflicts.length} ta — bosing, dars ochiladi`
+          : 'Hammasi joyida'
+      "
       icon="report"
       :color="conflicts.length ? 'var(--st-absent)' : 'var(--st-present)'"
     >
@@ -393,7 +412,11 @@ const VIEWS = [
   { value: 'load', label: 'Yuklama' }
 ]
 const NOUN = { class: 'sinf', teacher: "o'qituvchi", room: 'xona' }
-const CONFLICT_ICON = { TEACHER: 'person', ROOM: 'meeting_room', CLASS: 'groups' }
+const CONFLICT_ICON = {
+  TEACHER: 'person',
+  ROOM: 'meeting_room',
+  CLASS: 'groups'
+}
 
 const canEdit = computed(() => auth.isEditor)
 const isPhone = computed(() => $q.screen.lt.sm)
@@ -402,9 +425,13 @@ const isPhone = computed(() => $q.screen.lt.sm)
 const view = computed(() =>
   VIEWS.some(v => v.value === route.query.view) ? route.query.view : 'class'
 )
-const gridView = computed(() => ['class', 'teacher', 'room'].includes(view.value))
+const gridView = computed(() =>
+  ['class', 'teacher', 'room'].includes(view.value)
+)
 const classId = computed(() => Number(route.query.class) || defaultClass.value)
-const teacherId = computed(() => Number(route.query.teacher) || defaultTeacher.value)
+const teacherId = computed(
+  () => Number(route.query.teacher) || defaultTeacher.value
+)
 const roomId = computed(() => Number(route.query.room) || defaultRoom.value)
 
 function setQuery(patch) {
@@ -440,6 +467,18 @@ async function loadWeek() {
 const kpis = useWidget('/api/pages/timetable/kpis')
 const k = computed(() => kpis.data.value)
 const conflicts = computed(() => k.value?.conflicts || [])
+const conflictNote = computed(() => {
+  if (!conflicts.value.length)
+    return 'hammasi joyida — hech kim ikki joyda emas'
+  const n = { TEACHER: 0, ROOM: 0, CLASS: 0 }
+  for (const c of conflicts.value) n[c.kind]++
+  const parts = [
+    n.TEACHER && `${n.TEACHER} o'qituvchi`,
+    n.ROOM && `${n.ROOM} xona`,
+    n.CLASS && `${n.CLASS} sinf`
+  ].filter(Boolean)
+  return `${parts.join(' · ')} — bosing, ro'yxat`
+})
 
 const todayDate = ref(tashkentNow().date)
 const todayInfo = useWidget('/api/pages/timetable/day', {
@@ -448,7 +487,8 @@ const todayInfo = useWidget('/api/pages/timetable/day', {
 const todayStates = computed(() => todayInfo.data.value?.states || {})
 const todaySubs = computed(() => {
   const m = {}
-  for (const s of todayInfo.data.value?.substitutions || []) m[s.lessonSlotId] = s.substitute
+  for (const s of todayInfo.data.value?.substitutions || [])
+    m[s.lessonSlotId] = s.substitute
   return m
 })
 function reloadToday() {
@@ -497,7 +537,9 @@ const teacherOptions = computed(() => {
   const withLessons = new Set((week.value?.lessons || []).map(l => l.teacherId))
   const q = teacherQuery.value.toLowerCase()
   return (week.value?.teachers || [])
-    .filter(t => withLessons.has(t.id) && (!q || t.name.toLowerCase().includes(q)))
+    .filter(
+      t => withLessons.has(t.id) && (!q || t.name.toLowerCase().includes(q))
+    )
     .map(t => ({ value: t.id, label: t.name }))
 })
 function filterTeachers(val, update) {
@@ -518,7 +560,9 @@ const currentName = computed(() => {
     return week.value.teachers.find(t => t.id === teacherId.value)?.name || ''
   if (view.value === 'room')
     return roomLabel(week.value.rooms.find(r => r.id === roomId.value)?.number)
-  return view.value === 'today' ? 'Bugun — butun maktab' : "O'qituvchilar yuklamasi"
+  return view.value === 'today'
+    ? 'Bugun — butun maktab'
+    : "O'qituvchilar yuklamasi"
 })
 const subtitle = computed(() =>
   [school.activeSchoolName, currentName.value].filter(Boolean).join(' · ')
@@ -526,8 +570,10 @@ const subtitle = computed(() =>
 
 const viewLessons = computed(() => {
   const all = week.value?.lessons || []
-  if (view.value === 'class') return all.filter(l => l.classId === classId.value)
-  if (view.value === 'teacher') return all.filter(l => l.teacherId === teacherId.value)
+  if (view.value === 'class')
+    return all.filter(l => l.classId === classId.value)
+  if (view.value === 'teacher')
+    return all.filter(l => l.teacherId === teacherId.value)
   if (view.value === 'room') return all.filter(l => l.roomId === roomId.value)
   return all
 })
@@ -543,13 +589,18 @@ const teacherInfo = computed(() => {
 })
 const roomUse = computed(() => {
   if (view.value !== 'room' || !week.value?.periods.length) return null
-  const cells = new Set(viewLessons.value.map(l => `${l.weekday}|${hm(l.start)}`))
+  const cells = new Set(
+    viewLessons.value.map(l => `${l.weekday}|${hm(l.start)}`)
+  )
   return Math.round((cells.size / (week.value.periods.length * 6)) * 1000) / 10
 })
 
 // phone: one day at a time
 const phoneDay = ref(todayWeekday() || 'Dushanba')
-const phoneDays = WEEKDAYS.map((d, i) => ({ value: d, label: WEEKDAY_SHORT[i] }))
+const phoneDays = WEEKDAYS.map((d, i) => ({
+  value: d,
+  label: WEEKDAY_SHORT[i]
+}))
 
 // today's view
 const todayDay = ref(todayWeekday() || 'Dushanba')
@@ -574,10 +625,17 @@ const legend = computed(() => {
   const m = new Map()
   for (const l of list) {
     if (!m.has(l.subjectId))
-      m.set(l.subjectId, { id: l.subjectId, name: l.subject, color: l.subjectColor, count: 0 })
+      m.set(l.subjectId, {
+        id: l.subjectId,
+        name: l.subject,
+        color: l.subjectColor,
+        count: 0
+      })
     m.get(l.subjectId).count++
   }
-  return [...m.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+  return [...m.values()].sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name)
+  )
 })
 watch(view, () => (focusSubject.value = null))
 
@@ -588,7 +646,10 @@ function fit() {
   if (!box.value || isPhone.value || !gridView.value) return
   const top = box.value.getBoundingClientRect().top + window.scrollY
   const legendH = 44
-  boxHeight.value = Math.max(360, Math.floor(window.innerHeight - top - legendH - 16))
+  boxHeight.value = Math.max(
+    360,
+    Math.floor(window.innerHeight - top - legendH - 16)
+  )
 }
 let resizeTimer = null
 function onResize() {
@@ -605,7 +666,9 @@ function openLesson(l) {
   lessonOpen.value = true
 }
 const lessonPhone = computed(
-  () => week.value?.teachers.find(t => t.id === lesson.value?.teacherId)?.phone || null
+  () =>
+    week.value?.teachers.find(t => t.id === lesson.value?.teacherId)?.phone ||
+    null
 )
 function openConflict(c) {
   const l = week.value?.lessons.find(x => x.id === c.lessonIds[0])
@@ -632,19 +695,28 @@ async function moveLesson({ lesson: l, day, period }) {
   const local = week.value.lessons.find(x => x.id === l.id)
   Object.assign(local, { weekday: day, start: period.start, end: period.end })
   try {
-    await api.put(`/api/lesson-slots/${l.id}`, body(l, day, period.start, period.end))
+    await api.put(
+      `/api/lesson-slots/${l.id}`,
+      body(l, day, period.start, period.end)
+    )
     kpis.reload()
     confirmUndoToast(
       `${l.subject} (${l.className}) → ${day}, ${period.n}-dars`,
       async () => {
-        await api.put(`/api/lesson-slots/${l.id}`, body(l, before.weekday, before.start, before.end))
+        await api.put(
+          `/api/lesson-slots/${l.id}`,
+          body(l, before.weekday, before.start, before.end)
+        )
         Object.assign(local, before)
         kpis.reload()
       }
     )
   } catch (e) {
     Object.assign(local, before)
-    $q.notify({ type: 'negative', message: e.friendlyMessage || "Ko'chirib bo'lmadi" })
+    $q.notify({
+      type: 'negative',
+      message: e.friendlyMessage || "Ko'chirib bo'lmadi"
+    })
   }
 }
 

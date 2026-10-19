@@ -19,12 +19,19 @@
         v-for="v in vacations"
         :key="v.label + v.from"
         class="yl__vac"
-        :style="{ left: `${pos(v.from)}%`, width: `${Math.max(len(v.from, v.to), 0.6)}%` }"
+        :style="{
+          left: `${pos(v.from)}%`,
+          width: `${Math.max(len(v.from, v.to), 0.6)}%`
+        }"
         :title="`${v.label}: ${fmt(v.from)} – ${fmt(v.to)}`"
         data-segment="vacation"
       />
       <span class="yl__done" :style="{ width: `${pos(today)}%` }" />
-      <span class="yl__here" :style="{ left: `${pos(today)}%` }" data-you-are-here>
+      <span
+        class="yl__here"
+        :style="{ left: `${pos(today)}%` }"
+        data-you-are-here
+      >
         <span class="yl__here-label">Siz shu yerdasiz</span>
       </span>
     </div>
@@ -38,7 +45,10 @@
     </div>
     <div class="yl__note">
       <template v-if="quarter">
-        <b>{{ ROMAN[quarter] }} chorak: {{ done === null ? '—' : `${Math.round(done)}%` }} o'tdi</b>
+        <b
+          >{{ ROMAN[quarter] }} chorak:
+          {{ done === null ? '—' : `${Math.round(done)}%` }} o'tdi</b
+        >
         · {{ left }} ish kuni qoldi
       </template>
       <template v-else-if="onVacation"><b>Ta'til</b> — dam oling!</template>
@@ -63,9 +73,14 @@ const props = defineProps({
 })
 
 const ROMAN = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
-const total = computed(() => Math.max(1, daysBetween(props.data.yearStart, props.data.yearEnd) + 1))
+const total = computed(() =>
+  Math.max(1, daysBetween(props.data.yearStart, props.data.yearEnd) + 1)
+)
 const pos = d =>
-  Math.max(0, Math.min(100, (daysBetween(props.data.yearStart, d) / total.value) * 100))
+  Math.max(
+    0,
+    Math.min(100, (daysBetween(props.data.yearStart, d) / total.value) * 100)
+  )
 const len = (a, b) => ((daysBetween(a, b) + 1) / total.value) * 100
 const fmt = d => {
   const x = parse(d)
@@ -77,7 +92,9 @@ const quarters = computed(() =>
     .filter(s => s.kind === 'QUARTER')
     .map(s => ({ ...s, n: Number(s.label[0]) }))
 )
-const vacations = computed(() => props.data.segments.filter(s => s.kind === 'VACATION'))
+const vacations = computed(() =>
+  props.data.segments.filter(s => s.kind === 'VACATION')
+)
 const today = computed(() => props.data.today)
 const quarter = computed(() => props.data.quarter)
 const done = computed(() => props.data.quarterDone)
@@ -89,7 +106,8 @@ const months = computed(() => {
   d.setDate(1)
   while (d <= parse(props.data.yearEnd)) {
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-    if (key >= props.data.yearStart) out.push({ key, date: key, label: MONTHS[d.getMonth()].slice(0, 3) })
+    if (key >= props.data.yearStart)
+      out.push({ key, date: key, label: MONTHS[d.getMonth()].slice(0, 3) })
     d.setMonth(d.getMonth() + 1)
   }
   return out
@@ -97,7 +115,9 @@ const months = computed(() => {
 const aria = computed(
   () =>
     `O'quv yili ${props.data.yearStart} – ${props.data.yearEnd}` +
-    (quarter.value ? `, ${quarter.value}-chorak, ${Math.round(done.value || 0)}% o'tdi` : '')
+    (quarter.value
+      ? `, ${quarter.value}-chorak, ${Math.round(done.value || 0)}% o'tdi`
+      : '')
 )
 </script>
 

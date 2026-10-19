@@ -419,3 +419,12 @@ body.body--dark {
   --avatar-xs: 20px;
   --legend-chip-h: 28px;
 }
+
+// short screens (1366×768 laptops): lower timetable rows so the whole week still fits
+@media (max-height: 820px) {
+  :root {
+    --tt-head-h: 28px;
+    --tt-break-h: 8px;
+    --tt-row-min: 36px;
+  }
+}

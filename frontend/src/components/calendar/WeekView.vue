@@ -27,10 +27,16 @@
         >
           <span class="wv__type">
             <q-icon :name="EVENT_TYPES[e.type]?.icon" />
-            {{ e.startTime ? `${e.startTime.slice(0, 5)}–${(e.endTime || '').slice(0, 5)}` : 'kun bo\'yi' }}
+            {{
+              e.startTime
+                ? `${e.startTime.slice(0, 5)}–${(e.endTime || '').slice(0, 5)}`
+                : "kun bo'yi"
+            }}
           </span>
           <b>{{ e.title }}</b>
-          <small v-if="e.roomNumber || e.location">📍 {{ e.roomNumber ? roomLabel(e.roomNumber) : e.location }}</small>
+          <small v-if="e.roomNumber || e.location"
+            >📍 {{ e.roomNumber ? roomLabel(e.roomNumber) : e.location }}</small
+          >
         </button>
         <button
           v-if="editable"
@@ -62,7 +68,9 @@ const props = defineProps({
 })
 const emit = defineEmits(['open', 'day', 'create'])
 
-const days = computed(() => Array.from({ length: 7 }, (_, k) => addDays(props.monday, k)))
+const days = computed(() =>
+  Array.from({ length: 7 }, (_, k) => addDays(props.monday, k))
+)
 function on(date) {
   return props.events
     .filter(e => e.startDate <= date && e.endDate >= date)
@@ -90,11 +98,16 @@ function on(date) {
 
 .wv__col--today {
   background: color-mix(in srgb, var(--c-primary) 8%, var(--surface-2));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-primary) 40%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--c-primary) 40%, transparent);
 }
 
 .wv__col--off {
-  background: repeating-linear-gradient(135deg, var(--surface-2) 0 6px, var(--tile-stripe) 6px 7px);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--surface-2) 0 6px,
+    var(--tile-stripe) 6px 7px
+  );
 }
 
 .wv__head {

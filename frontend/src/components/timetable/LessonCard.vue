@@ -142,7 +142,11 @@ function onDragStart(e) {
 
 .lc:hover,
 .lc:focus-visible {
-  background: color-mix(in srgb, var(--c) var(--lesson-tint-hover), var(--card-bg));
+  background: color-mix(
+    in srgb,
+    var(--c) var(--lesson-tint-hover),
+    var(--card-bg)
+  );
   outline: none;
   box-shadow: var(--dash-shadow);
 }

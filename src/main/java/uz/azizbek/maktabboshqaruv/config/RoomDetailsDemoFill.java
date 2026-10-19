@@ -42,7 +42,7 @@ public class RoomDetailsDemoFill implements CommandLineRunner {
         }
     }
 
-    void fill() {
+    public void fill() {
         List<Map<String, Object>> rooms = jdbc.queryForList("""
                 select r.id, r.room_number, r.type, r.floor, b.school_id,
                        exists (select 1 from lesson_slot ls where ls.room_id = r.id) as used

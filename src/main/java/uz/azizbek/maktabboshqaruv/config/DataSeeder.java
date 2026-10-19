@@ -323,7 +323,6 @@ public class DataSeeder implements CommandLineRunner {
                 List.of("101", "102", "103", "104", "105", "106", "107", "108", "109", "110"), 32);
         infra.computerRoom = findOrCreateRoom(infra.mainBuilding, "Kompyuter xonasi", 24);
         findOrCreateRoom(infra.mainBuilding, "Kutubxona", 40);
-        findOrCreateRoom(infra.mainBuilding, "Faollar zali", 120);
 
         infra.elemHomeRooms = findOrCreateRooms(infra.elemBuilding,
                 List.of("201", "202", "203", "204", "205", "206", "207", "208"), 28);

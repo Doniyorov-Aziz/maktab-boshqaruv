@@ -5,12 +5,24 @@
   >
     <q-card class="app-dialog app-dialog--sm" data-booking-dialog>
       <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">Band qilish · {{ room ? roomLabel(room.number) : '' }}</div>
+        <div class="text-h6"
+          >Band qilish · {{ room ? roomLabel(room.number) : '' }}</div
+        >
         <q-space />
-        <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+        <AppButton
+          variant="ghost"
+          icon="close"
+          aria-label="Yopish"
+          v-close-popup
+        />
       </q-card-section>
       <q-card-section class="bd">
-        <AppDateInput v-model="form.date" label="Sana" :min="today" class="bd__wide" />
+        <AppDateInput
+          v-model="form.date"
+          label="Sana"
+          :min="today"
+          class="bd__wide"
+        />
         <AppTimeInput v-model="form.start" label="Boshlanishi" />
         <AppTimeInput v-model="form.end" label="Tugashi" />
         <AppInput
@@ -20,7 +32,12 @@
           data-booking-purpose
         />
         <AppInput v-model="form.responsible" label="Mas'ul" class="bd__wide" />
-        <q-banner v-if="error" dense class="bd__error bd__wide" data-booking-error>
+        <q-banner
+          v-if="error"
+          dense
+          class="bd__error bd__wide"
+          data-booking-error
+        >
           <template #avatar><q-icon name="error_outline" /></template>
           {{ error }}
         </q-banner>
@@ -65,7 +82,13 @@ const $q = useQuasar()
 const school = useSchoolStore()
 const today = tashkentNow().date
 
-const form = reactive({ date: '', start: '', end: '', purpose: '', responsible: '' })
+const form = reactive({
+  date: '',
+  start: '',
+  end: '',
+  purpose: '',
+  responsible: ''
+})
 const error = ref('')
 const saving = ref(false)
 watch(
@@ -82,7 +105,9 @@ watch(
     error.value = ''
   }
 )
-const ready = computed(() => form.date && form.start && form.end && form.purpose.trim())
+const ready = computed(
+  () => form.date && form.start && form.end && form.purpose.trim()
+)
 
 async function save() {
   saving.value = true
@@ -100,7 +125,10 @@ async function save() {
       },
       { params: { schoolId: school.activeSchoolId } }
     )
-    $q.notify({ type: 'positive', message: `${roomLabel(props.room.number)} band qilindi` })
+    $q.notify({
+      type: 'positive',
+      message: `${roomLabel(props.room.number)} band qilindi`
+    })
     emit('update:modelValue', false)
     emit('saved')
   } catch (e) {

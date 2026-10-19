@@ -7,12 +7,16 @@
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6">Dars qo'shish</div>
         <q-space />
-        <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+        <AppButton
+          variant="ghost"
+          icon="close"
+          aria-label="Yopish"
+          v-close-popup
+        />
       </q-card-section>
       <q-card-section v-if="slot" class="qa__when">
-        {{ slot.day }}, {{ slot.period.n }}-dars · {{ hm(slot.period.start) }}–{{
-          hm(slot.period.end)
-        }}
+        {{ slot.day }}, {{ slot.period.n }}-dars ·
+        {{ hm(slot.period.start) }}–{{ hm(slot.period.end) }}
       </q-card-section>
       <q-card-section class="q-gutter-md">
         <AppSelect
@@ -86,7 +90,12 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'saved'])
 const $q = useQuasar()
 
-const form = reactive({ classId: null, subjectId: null, teacherId: null, roomId: null })
+const form = reactive({
+  classId: null,
+  subjectId: null,
+  teacherId: null,
+  roomId: null
+})
 const saving = ref(false)
 
 watch(
@@ -102,7 +111,12 @@ watch(
 
 const taken = computed(() =>
   props.slot
-    ? busy(props.week.lessons, props.slot.day, props.slot.period.start, props.slot.period.end)
+    ? busy(
+        props.week.lessons,
+        props.slot.day,
+        props.slot.period.start,
+        props.slot.period.end
+      )
     : { teachers: new Set(), rooms: new Set(), classes: new Set() }
 )
 const classOptions = computed(() =>
@@ -123,7 +137,10 @@ const teacherOptions = computed(() =>
 const roomOptions = computed(() =>
   props.week.rooms
     .filter(r => r.status !== 'REPAIR' && !taken.value.rooms.has(r.id))
-    .map(r => ({ value: r.id, label: `${roomLabel(r.number)} · ${r.building}` }))
+    .map(r => ({
+      value: r.id,
+      label: `${roomLabel(r.number)} · ${r.building}`
+    }))
 )
 const ready = computed(
   () => form.classId && form.subjectId && form.teacherId && form.roomId

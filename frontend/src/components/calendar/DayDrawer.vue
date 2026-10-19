@@ -18,7 +18,9 @@
         </div>
         <div>
           <small>Davomat</small>
-          <b :class="heatClass">{{ day.attendance === null ? '—' : `${day.attendance.toFixed(1)}%` }}</b>
+          <b :class="heatClass">{{
+            day.attendance === null ? '—' : `${day.attendance.toFixed(1)}%`
+          }}</b>
           <small v-if="day.absent !== null">{{ day.absent }} kelmagan</small>
         </div>
         <div>
@@ -27,7 +29,7 @@
         </div>
       </div>
       <p v-if="!day.schoolDay" class="dd__off">
-        {{ day.weekday ? 'Dam olish kuni (bayram yoki ta\'til)' : 'Yakshanba' }}
+        {{ day.weekday ? "Dam olish kuni (bayram yoki ta'til)" : 'Yakshanba' }}
       </p>
 
       <section>
@@ -53,9 +55,14 @@
             <small
               >{{ EVENT_TYPES[e.type]?.label
               }}<template v-if="e.startTime">
-                · {{ e.startTime.slice(0, 5) }}–{{ (e.endTime || '').slice(0, 5) }}</template
+                · {{ e.startTime.slice(0, 5) }}–{{
+                  (e.endTime || '').slice(0, 5)
+                }}</template
               ><template v-if="e.roomNumber || e.location">
-                · 📍 {{ e.roomNumber ? roomLabel(e.roomNumber) : e.location }}</template
+                · 📍
+                {{
+                  e.roomNumber ? roomLabel(e.roomNumber) : e.location
+                }}</template
               ></small
             >
           </span>
@@ -72,7 +79,8 @@
         >
           <AvatarInitials size="sm" :name="b.name" :id="b.studentId" />
           <span
-            ><b>{{ b.name }}</b> <small>{{ b.className }} · {{ b.age }} yosh</small></span
+            ><b>{{ b.name }}</b>
+            <small>{{ b.className }} · {{ b.age }} yosh</small></span
           >
         </router-link>
       </section>
@@ -99,7 +107,10 @@
           icon="fact_check"
           label="Davomat kalendari"
           size="sm"
-          :to="{ path: '/attendance/calendar', query: { month: date.slice(0, 7) } }"
+          :to="{
+            path: '/attendance/calendar',
+            query: { month: date.slice(0, 7) }
+          }"
         />
       </div>
     </div>
@@ -141,13 +152,23 @@ watch(
   { immediate: true }
 )
 
-const WEEKDAYS = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba']
+const WEEKDAYS = [
+  'Yakshanba',
+  'Dushanba',
+  'Seshanba',
+  'Chorshanba',
+  'Payshanba',
+  'Juma',
+  'Shanba'
+]
 const title = computed(() => {
   if (!props.date) return ''
   const d = parse(props.date)
   return `${d.getDate()}-${MONTHS[d.getMonth()].toLowerCase()}`
 })
-const subtitle = computed(() => (props.date ? WEEKDAYS[parse(props.date).getDay()] : ''))
+const subtitle = computed(() =>
+  props.date ? WEEKDAYS[parse(props.date).getDay()] : ''
+)
 const heatClass = computed(() => {
   const s = heatStep(day.value?.attendance)
   return s ? `dd__heat-${s}` : ''

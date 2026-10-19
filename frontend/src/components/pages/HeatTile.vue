@@ -20,7 +20,9 @@ const props = defineProps({
   title: { type: String, default: '' }
 })
 const share = computed(() =>
-  !props.value ? 0 : Math.round(12 + (props.value / Math.max(props.max, 1)) * 70)
+  !props.value
+    ? 0
+    : Math.round(12 + (props.value / Math.max(props.max, 1)) * 70)
 )
 </script>
 

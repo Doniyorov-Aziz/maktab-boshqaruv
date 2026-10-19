@@ -12,9 +12,16 @@
           :text-color="EVENT_TYPES[form.type]?.color"
           class="q-mr-sm"
         />
-        <div class="text-h6">{{ event?.id ? 'Tadbirni tahrirlash' : 'Yangi tadbir' }}</div>
+        <div class="text-h6">{{
+          event?.id ? 'Tadbirni tahrirlash' : 'Yangi tadbir'
+        }}</div>
         <q-space />
-        <AppButton variant="ghost" icon="close" aria-label="Yopish" v-close-popup />
+        <AppButton
+          variant="ghost"
+          icon="close"
+          aria-label="Yopish"
+          v-close-popup
+        />
       </q-card-section>
 
       <q-card-section class="ed__form">
@@ -41,7 +48,11 @@
           </button>
         </div>
         <AppDateInput v-model="form.startDate" label="Boshlanishi" />
-        <AppDateInput v-model="form.endDate" label="Tugashi" :min="form.startDate" />
+        <AppDateInput
+          v-model="form.endDate"
+          label="Tugashi"
+          :min="form.startDate"
+        />
         <q-toggle v-model="form.timed" label="Vaqti bor" class="ed__wide" />
         <template v-if="form.timed">
           <AppTimeInput v-model="form.startTime" label="Boshlanish vaqti" />
@@ -59,7 +70,11 @@
         <AppInput v-model="form.location" label="Yoki joy (hovli, stadion…)" />
         <div class="ed__wide ed__aud">
           <span class="ed__label">Kimlar uchun</span>
-          <SegTabs v-model="audience" :options="AUDIENCE" label="Kimlar uchun" />
+          <SegTabs
+            v-model="audience"
+            :options="AUDIENCE"
+            label="Kimlar uchun"
+          />
           <AppSelect
             v-if="audience === 'classes'"
             v-model="form.classIds"
@@ -212,9 +227,14 @@ watch(
 const roomOptions = computed(() =>
   props.rooms
     .filter(r => r.status !== 'REPAIR')
-    .map(r => ({ value: r.id, label: `${roomLabel(r.number)} · ${r.building}` }))
+    .map(r => ({
+      value: r.id,
+      label: `${roomLabel(r.number)} · ${r.building}`
+    }))
 )
-const classOptions = computed(() => props.classes.map(c => ({ value: c.id, label: c.name })))
+const classOptions = computed(() =>
+  props.classes.map(c => ({ value: c.id, label: c.name }))
+)
 const ready = computed(
   () =>
     form.title?.trim() &&
@@ -247,11 +267,15 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    if (props.event?.id) await api.put(`/api/calendar-events/${props.event.id}`, payload())
+    if (props.event?.id)
+      await api.put(`/api/calendar-events/${props.event.id}`, payload())
     else await api.post('/api/calendar-events', payload())
     $q.notify({
       type: 'positive',
-      message: form.notifyParents && !props.event?.id ? 'Saqlandi · ota-onalarga xabar navbatda' : 'Saqlandi'
+      message:
+        form.notifyParents && !props.event?.id
+          ? 'Saqlandi · ota-onalarga xabar navbatda'
+          : 'Saqlandi'
     })
     emit('update:modelValue', false)
     emit('saved')

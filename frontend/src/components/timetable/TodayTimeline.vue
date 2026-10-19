@@ -7,13 +7,21 @@
           v-for="p in periods"
           :key="p.n"
           class="tl__tick"
-          :style="{ left: `${pos(p.start)}%`, width: `${len(p.start, p.end)}%` }"
+          :style="{
+            left: `${pos(p.start)}%`,
+            width: `${len(p.start, p.end)}%`
+          }"
           >{{ p.n }} · {{ hm(p.start) }}</span
         >
       </div>
     </div>
     <div class="tl__body">
-      <div v-for="c in classes" :key="c.id" class="tl__row" :data-class-row="c.id">
+      <div
+        v-for="c in classes"
+        :key="c.id"
+        class="tl__row"
+        :data-class-row="c.id"
+      >
         <span class="tl__name">{{ c.name }}</span>
         <div class="tl__track">
           <button
@@ -27,7 +35,8 @@
                 isToday &&
                 nowMinutes >= minutes(l.start) &&
                 nowMinutes < minutes(l.end),
-              'tl__chip--dim': focusSubject !== null && l.subjectId !== focusSubject
+              'tl__chip--dim':
+                focusSubject !== null && l.subjectId !== focusSubject
             }"
             :style="{
               left: `${pos(l.start)}%`,
@@ -169,7 +178,11 @@ const byClass = computed(() => {
   border: 0;
   border-left: var(--tt-stripe) solid var(--c);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--c) var(--lesson-tint-hover), var(--card-bg));
+  background: color-mix(
+    in srgb,
+    var(--c) var(--lesson-tint-hover),
+    var(--card-bg)
+  );
   color: var(--text-primary);
   font: inherit;
   font-size: var(--text-xs);

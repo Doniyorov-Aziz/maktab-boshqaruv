@@ -18,7 +18,7 @@ export const SUBJECT_PALETTE = [
 /** CSS colour of a subject: its own "#rrggbb", else var(--subj-N) (light and dark shades). */
 export function subjectColor(subjectId, chosen) {
   if (chosen) return chosen
-  const n = ((Number(subjectId) || 0) % 12 + 12) % 12
+  const n = (((Number(subjectId) || 0) % 12) + 12) % 12
   return `var(--subj-${n + 1})`
 }
 
@@ -35,7 +35,7 @@ export const SUBJECT_COLOR_OPTIONS = [
     'Feruza',
     'Qizil',
     "Ko'k",
-     'Yashil',
+    'Yashil',
     "To'q sariq",
     'Siyohrang'
   ].map((label, k) => ({ value: SUBJECT_PALETTE[k], label }))

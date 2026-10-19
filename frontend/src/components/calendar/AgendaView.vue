@@ -20,19 +20,37 @@
       >
         <span class="ag__date">
           <b>{{ Number(e.startDate.slice(8)) }}</b>
-          <small>{{ MONTHS[Number(e.startDate.slice(5, 7)) - 1].slice(0, 3) }}</small>
+          <small>{{
+            MONTHS[Number(e.startDate.slice(5, 7)) - 1].slice(0, 3)
+          }}</small>
         </span>
         <span class="ag__main">
           <b>{{ e.title }}</b>
           <small>
-            <span class="ag__type"><q-icon :name="EVENT_TYPES[e.type]?.icon" /> {{ EVENT_TYPES[e.type]?.label }}</span>
-            <template v-if="e.endDate !== e.startDate"> · {{ daysBetween(e.startDate, e.endDate) + 1 }} kun</template>
-            <template v-if="e.startTime"> · {{ e.startTime.slice(0, 5) }}–{{ (e.endTime || '').slice(0, 5) }}</template>
-            <template v-if="e.roomNumber || e.location"> · 📍 {{ e.roomNumber ? roomLabel(e.roomNumber) : e.location }}</template>
+            <span class="ag__type"
+              ><q-icon :name="EVENT_TYPES[e.type]?.icon" />
+              {{ EVENT_TYPES[e.type]?.label }}</span
+            >
+            <template v-if="e.endDate !== e.startDate">
+              · {{ daysBetween(e.startDate, e.endDate) + 1 }} kun</template
+            >
+            <template v-if="e.startTime">
+              · {{ e.startTime.slice(0, 5) }}–{{
+                (e.endTime || '').slice(0, 5)
+              }}</template
+            >
+            <template v-if="e.roomNumber || e.location">
+              · 📍
+              {{
+                e.roomNumber ? roomLabel(e.roomNumber) : e.location
+              }}</template
+            >
             <template v-if="e.notifyParents"> · 🔔 ota-onalarga</template>
           </small>
         </span>
-        <span class="ag__left">{{ countdown(daysBetween(today, e.startDate)) }}</span>
+        <span class="ag__left">{{
+          countdown(daysBetween(today, e.startDate))
+        }}</span>
       </button>
     </section>
   </div>

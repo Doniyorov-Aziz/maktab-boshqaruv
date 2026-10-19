@@ -68,9 +68,7 @@ const rows = computed(() => {
     (a, b) => b.hours - a.hours || a.name.localeCompare(b.name)
   )
 })
-const maxDay = computed(() =>
-  Math.max(1, ...rows.value.flatMap(r => r.days))
-)
+const maxDay = computed(() => Math.max(1, ...rows.value.flatMap(r => r.days)))
 const maxHours = computed(() => Math.max(1, ...rows.value.map(r => r.hours)))
 </script>
 
@@ -85,10 +83,9 @@ const maxHours = computed(() => Math.max(1, ...rows.value.map(r => r.hours)))
 .load__head,
 .load__row {
   display: grid;
-  grid-template-columns: var(--heat-name-w) repeat(6, minmax(var(--heat-cell), 1fr)) minmax(
-      var(--field-w-sm),
-      1.5fr
-    );
+  grid-template-columns:
+    var(--heat-name-w) repeat(6, minmax(var(--heat-cell), 1fr))
+    minmax(var(--field-w-sm), 1.5fr);
   gap: var(--space-1);
   align-items: center;
 }
@@ -155,13 +152,19 @@ const maxHours = computed(() => Math.max(1, ...rows.value.map(r => r.hours)))
   display: block;
   height: 100%;
   border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, var(--chart-primary), var(--chart-secondary));
+  background: linear-gradient(
+    90deg,
+    var(--chart-primary),
+    var(--chart-secondary)
+  );
 }
 
 @media (max-width: 599px) {
   .load__head,
   .load__row {
-    grid-template-columns: minmax(0, 1fr) repeat(6, var(--heat-cell)) var(--tile-md);
+    grid-template-columns: minmax(0, 1fr) repeat(6, var(--heat-cell)) var(
+        --tile-md
+      );
   }
 
   .load__bar {
