@@ -63,6 +63,8 @@ class AttendanceJournalFixtureDump {
     GradeController grades;
     @Autowired
     SubjectController subjects;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.controller.AttendanceJournalController pages;
 
     static Map<String, Object> page(Page<?> p) {
         Map<String, Object> m = new LinkedHashMap<>();
@@ -113,6 +115,27 @@ class AttendanceJournalFixtureDump {
         long subject = ov.subjects().get(0).id();
         out.put("subjectA", subject);
         out.put("/api/grades/journal", grades.journal(classA, subject, today.toString().substring(0, 7)));
+
+        // the new pages: the class's day (today and the school day before), rosters of today's lessons
+        String m = today.toString().substring(0, 7);
+        LocalDate before = today.minusDays(today.getDayOfWeek() == java.time.DayOfWeek.MONDAY ? 2 : 1);
+        for (long cid : List.of(classA, classB)) {
+            for (LocalDate d : List.of(today, before)) {
+                var day = pages.day(SCHOOL, cid, d);
+                out.put("/api/pages/attendance/day?classId=" + cid + "&date=" + d, day);
+                for (var l : day.lessons()) {
+                    out.put("/api/pages/attendance/roster?lessonSlotId=" + l.lessonSlotId() + "&date=" + d,
+                            pages.roster(l.lessonSlotId(), d));
+                }
+            }
+        }
+        for (var sub : ov.subjects()) {
+            out.put("/api/grades/journal?subjectId=" + sub.id(), grades.journal(classA, sub.id(), m));
+            out.put("/api/pages/journal/summary?subjectId=" + sub.id(), pages.summary(classA, sub.id(), m));
+            out.put("/api/pages/journal/day-attendance?subjectId=" + sub.id(), pages.dayAttendance(classA, sub.id(), today));
+        }
+        var firstStudent = grades.journal(classA, subject, m).students().get(0).id();
+        out.put("/api/pages/journal/student", pages.student(firstStudent, subject));
 
         Path file = Path.of(System.getenv("AJ_FIXTURES"));
         Files.createDirectories(file.getParent());

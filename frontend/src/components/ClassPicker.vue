@@ -1,29 +1,41 @@
 <template>
-  <!-- parallel first (1…11), then its letters (1-A, 1-B) — shared by attendance and the journal -->
-  <div class="class-picker">
-    <div class="row items-center no-wrap cp-row">
-      <span class="cp-label">Sinf:</span>
-      <div class="row items-center q-gutter-xs cp-scroll">
-        <AppButton
+  <!-- parallel first (1…11), then its letters (1-A, 1-B) — shared by attendance, the journal and others -->
+  <div class="cp" :class="{ 'cp--compact': compact }" data-class-picker>
+    <div class="cp-row">
+      <span v-if="!compact" class="cp-label">Sinf:</span>
+      <div class="cp-list" role="group" aria-label="Parallel">
+        <button
           v-for="g in GRADES"
           :key="g"
-          :label="String(g)"
+          type="button"
           class="cp-grade"
           :class="{ 'cp-grade--on': g === grade }"
-          :disable="!usable(g)"
+          :disabled="!usable(g)"
           :aria-pressed="g === grade"
           :aria-label="`${g}-sinflar`"
+          :title="usable(g) ? '' : `${g}-sinflarda o'quvchi yo'q`"
+          :data-grade="g"
           @click="pickGrade(g)"
         >
-          <q-tooltip v-if="!usable(g)"
-            >{{ g }}-sinflarda o'quvchi yo'q</q-tooltip
-          >
-        </AppButton>
+          {{ g }}
+          <span
+            v-if="gradeState(g)"
+            class="cp-dot"
+            :class="`cp-dot--${gradeState(g)}`"
+          />
+        </button>
       </div>
-    </div>
-    <div v-if="letters.length" class="row items-center no-wrap cp-row q-mt-xs">
-      <span class="cp-label"></span>
-      <div class="row items-center q-gutter-xs cp-scroll">
+      <span
+        v-if="compact && letters.length"
+        class="cp-sep"
+        aria-hidden="true"
+      />
+      <div
+        v-if="compact && letters.length"
+        class="cp-list"
+        role="group"
+        aria-label="Sinf"
+      >
         <button
           v-for="c in letters"
           :key="c.id"
@@ -32,10 +44,40 @@
           :class="{ 'cp-letter--on': c.id === modelValue }"
           :disabled="!hasStudents(c)"
           :aria-pressed="c.id === modelValue"
-          :title="hasStudents(c) ? '' : 'Sinfda o\'quvchi yo\'q'"
+          :title="hasStudents(c) ? stateTitle(c.id) : 'Sinfda o\'quvchi yo\'q'"
+          :data-class="c.id"
           @click="emit('update:modelValue', c.id)"
         >
           {{ c.gradeNumber }}-{{ c.sectionLetter }}
+          <span
+            v-if="states[c.id]"
+            class="cp-dot"
+            :class="`cp-dot--${states[c.id]}`"
+          />
+        </button>
+      </div>
+    </div>
+    <div v-if="!compact && letters.length" class="cp-row">
+      <span class="cp-label"></span>
+      <div class="cp-list" role="group" aria-label="Sinf">
+        <button
+          v-for="c in letters"
+          :key="c.id"
+          type="button"
+          class="cp-letter"
+          :class="{ 'cp-letter--on': c.id === modelValue }"
+          :disabled="!hasStudents(c)"
+          :aria-pressed="c.id === modelValue"
+          :title="hasStudents(c) ? stateTitle(c.id) : 'Sinfda o\'quvchi yo\'q'"
+          :data-class="c.id"
+          @click="emit('update:modelValue', c.id)"
+        >
+          {{ c.gradeNumber }}-{{ c.sectionLetter }}
+          <span
+            v-if="states[c.id]"
+            class="cp-dot"
+            :class="`cp-dot--${states[c.id]}`"
+          />
         </button>
       </div>
     </div>
@@ -43,18 +85,28 @@
 </template>
 
 <script setup>
-import AppButton from '@/components/app/AppButton.vue'
+// The class picker: the chosen parallel and class are filled in the brand colour, the others
+// are see-through with a faint edge, a parallel without students is faded and cannot be
+// pressed. compact: parallels and letters in one row. states (classId → FULL / PARTIAL /
+// NONE): a small dot — today's attendance taken (green), partly (amber), not yet (grey).
 import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   /** /api/school-classes rows: { id, gradeNumber, sectionLetter, studentCount } */
   classes: { type: Array, default: () => [] },
-  modelValue: { type: Number, default: null }
+  modelValue: { type: Number, default: null },
+  compact: { type: Boolean, default: false },
+  states: { type: Object, default: () => ({}) }
 })
 const emit = defineEmits(['update:modelValue', 'update:grade'])
 
 const GRADES = Array.from({ length: 11 }, (_, i) => i + 1)
 const grade = ref(null)
+const STATE_TITLE = {
+  FULL: 'Davomat olingan',
+  PARTIAL: 'Davomat qisman olingan',
+  NONE: 'Davomat olinmagan'
+}
 
 // a class counts when it has students (older API rows without the count count as usable)
 const hasStudents = c => c.studentCount == null || c.studentCount > 0
@@ -70,6 +122,21 @@ const letters = computed(() => byGrade.value[grade.value] || [])
 
 function usable(g) {
   return (byGrade.value[g] || []).some(hasStudents)
+}
+
+/** A parallel's dot: the worst state of its classes (only when states are given). */
+function gradeState(g) {
+  const list = (byGrade.value[g] || [])
+    .map(c => props.states[c.id])
+    .filter(Boolean)
+  if (!list.length) return null
+  if (list.every(s => s === 'FULL')) return 'FULL'
+  if (list.some(s => s !== 'NONE')) return 'PARTIAL'
+  return 'NONE'
+}
+
+function stateTitle(id) {
+  return STATE_TITLE[props.states[id]] || ''
 }
 
 function pickGrade(g) {
@@ -95,74 +162,135 @@ watch(
 </script>
 
 <style scoped>
-.cp-row {
+.cp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   min-width: 0;
 }
 
-.cp-scroll {
-  flex-wrap: wrap;
+.cp-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   min-width: 0;
+}
+
+.cp--compact .cp-row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  /* room for the status dots, which sit over the corner */
+  padding: var(--space-1) var(--space-1) var(--hairline);
+}
+
+.cp-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cp--compact .cp-list {
+  flex-wrap: nowrap;
 }
 
 .cp-label {
-  width: 40px;
+  width: var(--space-7);
   flex: none;
   font-weight: 600;
   color: var(--brand-text-muted);
 }
 
-.cp-grade {
-  min-width: 38px;
-  font-weight: 700;
-  background: var(--surface-2);
-  color: var(--text-primary);
-  border: 1px solid var(--brand-border);
+.cp-sep {
+  flex: none;
+  width: var(--hairline);
+  height: var(--space-5);
+  background: var(--dash-edge);
 }
 
-.cp-grade--on {
-  background: var(--color-brand);
-  color: #fff;
-  border-color: var(--color-brand);
-}
-
+.cp-grade,
 .cp-letter {
-  font: inherit;
-  font-weight: 600;
-  font-size: var(--text-sm, 13px);
-  padding: 4px 14px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--c-border-control);
   border-radius: var(--radius-sm);
-  border: 1.5px solid var(--color-brand);
   background: transparent;
-  color: var(--color-brand);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
   transition:
-    background 0.15s,
-    color 0.15s;
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
 
-.body--dark .cp-letter {
-  color: #a5b4fc;
-  border-color: #818cf8;
+.cp-grade {
+  padding: 0 var(--space-2);
 }
 
+.cp-grade:hover:not(:disabled),
 .cp-letter:hover:not(:disabled) {
-  background: rgba(79, 70, 229, 0.08);
+  border-color: var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 8%, transparent);
 }
 
+.cp-grade--on,
 .cp-letter--on,
-.body--dark .cp-letter--on {
-  background: var(--color-brand);
-  border-color: var(--color-brand);
-  color: #fff;
+.cp-grade--on:hover:not(:disabled),
+.cp-letter--on:hover:not(:disabled) {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: white;
 }
 
+.cp-grade:disabled,
 .cp-letter:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
+.cp-grade:focus-visible,
 .cp-letter:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
+  outline: var(--border-focus);
+  outline-offset: var(--hairline);
+}
+
+.cp-dot {
+  position: absolute;
+  top: calc(var(--space-1) * -1);
+  right: calc(var(--space-1) * -1);
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 2px var(--card-bg);
+}
+
+.cp-dot--FULL {
+  background: var(--st-present);
+}
+
+.cp-dot--PARTIAL {
+  background: var(--gr-3);
+}
+
+.cp-dot--NONE {
+  background: var(--st-unmarked);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-grade,
+  .cp-letter {
+    transition: none;
+  }
 }
 </style>

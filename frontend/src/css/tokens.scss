@@ -420,6 +420,25 @@ body.body--dark {
   --legend-chip-h: 28px;
 }
 
+// ---------------------------------------------------------------- attendance + journal
+:root {
+  // a roster row's status stripe, the history dots, a student card in the cards view
+  --row-stripe: 3px;
+  --hist-dot: 7px;
+  --att-card-w: 168px;
+  --att-card-h: 92px;
+  // the gradebook: name column, a day column, a grade chip, the right-hand stats columns
+  --gb-name-w: 240px;
+  --gb-day-w: 44px;
+  --gb-chip: 28px;
+  --gb-stat-w: 64px;
+  --gb-dist-w: 96px;
+  --gb-row-h: 40px;
+  --gb-head-h: 44px;
+  --gb-panel-max-h: 120px;
+  --gb-grade-btn: 56px;
+}
+
 // short screens (1366×768 laptops): lower timetable rows so the whole week still fits
 @media (max-height: 820px) {
   :root {

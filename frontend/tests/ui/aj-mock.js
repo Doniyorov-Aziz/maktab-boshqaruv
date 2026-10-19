@@ -16,15 +16,24 @@ export function fixtures() {
 }
 
 const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url')
-const token = role => `${b64({ alg: 'none' })}.${b64({ sub: 'ui_mock', role, exp: 4102444800 })}.mock`
+const token = role =>
+  `${b64({ alg: 'none' })}.${b64({ sub: 'ui_mock', role, exp: 4102444800 })}.mock`
 
-/** The fixture for a request: "path?param=value" for the keys that tell rosters apart, else "path". */
+const KEYS = ['lessonSlotId', 'studentId', 'classId', 'subjectId', 'date']
+
+/**
+ * The fixture for a request: the most specific "path?a=1&b=2" written for it (the parameters that
+ * tell answers apart, in KEYS order), then each one alone, then the bare path.
+ */
 function lookup(path, search) {
   const f = fixtures()
   const q = new URLSearchParams(search)
-  for (const p of ['lessonSlotId', 'studentId', 'date']) {
-    const v = q.get(p)
-    if (v && f[`${path}?${p}=${v}`] !== undefined) return f[`${path}?${p}=${v}`]
+  const present = KEYS.filter(k => q.get(k))
+  const all = present.map(k => `${k}=${q.get(k)}`).join('&')
+  if (all && f[`${path}?${all}`] !== undefined) return f[`${path}?${all}`]
+  for (const k of present) {
+    const key = `${path}?${k}=${q.get(k)}`
+    if (f[key] !== undefined) return f[key]
   }
   return f[path]
 }
@@ -33,8 +42,16 @@ function lookup(path, search) {
  * A browser context signed in as a placeholder user (ADMIN by default), /api answered from the
  * fixtures. context.requests lists what the page sent; context.state holds what it saved.
  */
-export async function mockContext(browser, viewport, { dark = false, role = 'ADMIN', reducedMotion = 'reduce' } = {}) {
-  const context = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion })
+export async function mockContext(
+  browser,
+  viewport,
+  { dark = false, role = 'ADMIN', reducedMotion = 'reduce' } = {}
+) {
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor: 1,
+    reducedMotion
+  })
   await context.addInitScript(
     ({ t, dark, role }) => {
       localStorage.setItem('darkMode', String(dark))
@@ -54,19 +71,40 @@ export async function mockContext(browser, viewport, { dark = false, role = 'ADM
     const url = new URL(req.url())
     const method = req.method()
     const body = req.postData()
-    context.requests.push({ method, path: url.pathname, search: url.search, body })
+    context.requests.push({
+      method,
+      path: url.pathname,
+      search: url.search,
+      body
+    })
     const reply = (status, data) =>
-      route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data ?? null) })
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        body: JSON.stringify(data ?? null)
+      })
     const o = context.overrides[`${method} ${url.pathname}`]
     if (o) return reply(o.status || 200, o.body)
-    if (method !== 'GET') return reply(200, write(context.state, method, url.pathname, body))
-    if (url.pathname === '/api/me/current-lesson') return route.fulfill({ status: 204, body: '' })
+    if (method !== 'GET')
+      return reply(200, write(context.state, method, url.pathname, body))
+    if (url.pathname === '/api/me/current-lesson')
+      return route.fulfill({ status: 204, body: '' })
     if (url.pathname === '/api/schools')
-      return reply(200, { content: [{ id: 1, name: '1-maktab', address: 'Toshkent' }], totalElements: 1 })
+      return reply(200, {
+        content: [{ id: 1, name: '1-maktab', address: 'Toshkent' }],
+        totalElements: 1
+      })
     const found = lookup(url.pathname, url.search)
-    if (found !== undefined) return reply(200, read(context.state, url.pathname, url.search, found))
-    if (url.pathname.startsWith('/api/dashboard/')) return reply(200, { asOf: null, data: null })
-    return reply(200, url.search.includes('size') ? { content: [], totalElements: 0, totalPages: 0 } : [])
+    if (found !== undefined)
+      return reply(200, read(context.state, url.pathname, url.search, found))
+    if (url.pathname.startsWith('/api/dashboard/'))
+      return reply(200, { asOf: null, data: null })
+    return reply(
+      200,
+      url.search.includes('size')
+        ? { content: [], totalElements: 0, totalPages: 0 }
+        : []
+    )
   })
   return context
 }
@@ -75,15 +113,27 @@ export async function mockContext(browser, viewport, { dark = false, role = 'ADM
 
 function write(state, method, path, body) {
   const data = body ? JSON.parse(body) : {}
-  if (path === '/api/attendance/bulk' || path === '/api/pages/attendance/save') {
+  if (
+    path === '/api/attendance/bulk' ||
+    path === '/api/pages/attendance/save'
+  ) {
     for (const e of data.entries || [])
-      state.attendance[`${data.lessonSlotId}|${data.recordDate || data.date}|${e.studentId}`] = e
-    return { saved: (data.entries || []).length, savedAt: new Date().toISOString() }
+      state.attendance[
+        `${data.lessonSlotId}|${data.recordDate || data.date}|${e.studentId}`
+      ] = e
+    return {
+      saved: (data.entries || []).length,
+      savedAt: new Date().toISOString()
+    }
   }
   if (path === '/api/grades' && method === 'POST') {
     const g = { id: ++state.nextId, ...data }
     state.grades.push(g)
-    return { id: g.id, createdBy: 'ui_mock', createdAt: new Date().toISOString() }
+    return {
+      id: g.id,
+      createdBy: 'ui_mock',
+      createdAt: new Date().toISOString()
+    }
   }
   return {}
 }
@@ -91,10 +141,20 @@ function write(state, method, path, body) {
 /** A roster with the remembered saves on top; a journal with the remembered grades. */
 function read(state, path, search, data) {
   const q = new URLSearchParams(search)
-  if (/roster$/.test(path) && Array.isArray(data?.rows || data)) {
+  if (path.endsWith('roster') && Array.isArray(data?.rows || data)) {
     const rows = (data.rows || data).map(r => {
-      const saved = state.attendance[`${q.get('lessonSlotId')}|${q.get('date')}|${r.studentId}`]
-      return saved ? { ...r, status: saved.status, source: 'MANUAL', lateMinutes: saved.lateMinutes ?? null } : r
+      const saved =
+        state.attendance[
+          `${q.get('lessonSlotId')}|${q.get('date')}|${r.studentId}`
+        ]
+      return saved
+        ? {
+            ...r,
+            status: saved.status,
+            source: 'MANUAL',
+            lateMinutes: saved.lateMinutes ?? null
+          }
+        : r
     })
     return data.rows ? { ...data, rows } : rows
   }
