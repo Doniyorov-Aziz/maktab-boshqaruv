@@ -1,7 +1,9 @@
 <template>
+  <!-- mounted only with its button: the menu reads its anchor when it is created -->
   <q-menu
-    :model-value="modelValue"
-    :target="target || false"
+    v-if="modelValue && target"
+    model-value
+    :target="target"
     no-parent-event
     anchor="bottom middle"
     self="top middle"

@@ -37,8 +37,10 @@
     </button>
 
     <q-menu
+      v-if="menu.open && menu.el"
+      :key="menu.row?.studentId"
       v-model="menu.open"
-      :target="menu.el || false"
+      :target="menu.el"
       no-parent-event
       anchor="bottom middle"
       self="top middle"
@@ -66,7 +68,7 @@
 <script setup>
 // The cards view (phones open on it): a card per student coloured by status; a tap moves it
 // Keldi → Kelmadi → Kechikdi → Sababli, a long press or right click opens all four.
-import { reactive } from 'vue'
+import { reactive, markRaw } from 'vue'
 import AvatarInitials from '@/components/pages/AvatarInitials.vue'
 import { STATUS, STATUSES, nextStatus } from './attendance'
 
@@ -94,7 +96,7 @@ function onClick(r, e) {
 
 function openMenu(r, e) {
   menu.row = r
-  menu.el = e.currentTarget
+  menu.el = markRaw(e.currentTarget)
   menu.open = true
 }
 

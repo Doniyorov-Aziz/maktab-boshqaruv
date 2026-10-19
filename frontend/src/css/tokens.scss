@@ -437,6 +437,8 @@ body.body--dark {
   --gb-head-h: 44px;
   --gb-panel-max-h: 120px;
   --gb-grade-btn: 56px;
+  // what sits above and below the table on a desktop (header, controls, panel, page gaps)
+  --gb-chrome-h: 480px;
 }
 
 // short screens (1366×768 laptops): lower timetable rows so the whole week still fits

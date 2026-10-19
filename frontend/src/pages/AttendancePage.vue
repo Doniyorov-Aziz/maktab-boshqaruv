@@ -249,6 +249,7 @@
     </div>
 
     <MarkPopover
+      :key="`${pop.row?.studentId}|${pop.kind}`"
       v-model="pop.open"
       :target="pop.el"
       :kind="pop.kind"
@@ -265,7 +266,15 @@
 // chosen lesson's summary and its students — as a list (keyboard, Shift ranges) or as cards
 // (tap to cycle). Every change is saved by itself 1.5 s later; only the changed rows are sent,
 // so automatic marks nobody touched stay automatic and nothing manual is overwritten unasked.
-import { ref, reactive, computed, watch, onBeforeUnmount, nextTick } from 'vue'
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  onBeforeUnmount,
+  nextTick,
+  markRaw
+} from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
@@ -619,7 +628,7 @@ function pick(r, status, el) {
   if (ids.length === 1 && (status === 'LATE' || status === 'EXCUSED')) {
     pop.row = r
     pop.kind = status
-    pop.el = el
+    pop.el = markRaw(el)
     pop.open = true
   }
 }

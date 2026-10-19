@@ -6,7 +6,11 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { hasFixtures, mockContext, open } from './aj-mock.js'
 
-const DIR = process.env.SHOTS_DIR || fileURLToPath(new URL('../../../docs/images/attendance-journal/', import.meta.url))
+const DIR =
+  process.env.SHOTS_DIR ||
+  fileURLToPath(
+    new URL('../../../docs/images/attendance-journal/', import.meta.url)
+  )
 
 test.skip(!hasFixtures(), 'AJ_FIXTURES is not set')
 test.skip(!process.env.AJ_BEFORE, 'only when AJ_BEFORE=1 (the old pages)')
@@ -35,7 +39,10 @@ for (const s of SIZES) {
     const context = await mockContext(browser, s.size, { dark: s.dark })
     const page = await context.newPage()
     await oldAttendance(page)
-    await page.screenshot({ path: join(DIR, `before-attendance-${s.tag}.png`), fullPage: true })
+    await page.screenshot({
+      path: join(DIR, `before-attendance-${s.tag}.png`),
+      fullPage: true
+    })
     await context.close()
   })
   test(`before journal ${s.tag}`, async ({ browser }, info) => {
@@ -45,7 +52,10 @@ for (const s of SIZES) {
     const page = await context.newPage()
     const { fixtures } = await import('./aj-mock.js')
     await open(page, `/gradebook?class=${fixtures().classA}`)
-    await page.screenshot({ path: join(DIR, `before-journal-${s.tag}.png`), fullPage: true })
+    await page.screenshot({
+      path: join(DIR, `before-journal-${s.tag}.png`),
+      fullPage: true
+    })
     await context.close()
   })
 }

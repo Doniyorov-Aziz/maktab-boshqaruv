@@ -109,3 +109,65 @@ test('after attendance mobile', async ({ browser }) => {
   })
   await context.close()
 })
+
+// ---------------------------------------------------------------- journal
+
+async function journal(browser, size, opts = {}) {
+  const context = await mockContext(browser, size, opts)
+  const page = await context.newPage()
+  const f = fixtures()
+  await open(
+    page,
+    `/gradebook?class=${f.classA}&subject=${f.subjectA}&month=${f.today.slice(0, 7)}`,
+    {
+      at: opts.at || '11:30'
+    }
+  )
+  return { context, page }
+}
+
+test('after journal dark', async ({ browser }) => {
+  mkdirSync(DIR, { recursive: true })
+  const { context, page } = await journal(browser, WIDE, { dark: true })
+  await page.screenshot({ path: join(DIR, 'after-journal-dark.png') })
+  await context.close()
+})
+
+test('after journal light', async ({ browser }) => {
+  const { context, page } = await journal(browser, WIDE, { dark: false })
+  await page.screenshot({ path: join(DIR, 'after-journal-light.png') })
+  await context.close()
+})
+
+test('after journal 1366', async ({ browser }) => {
+  const { context, page } = await journal(browser, LAPTOP, { dark: true })
+  await page.screenshot({ path: join(DIR, 'after-journal-1366.png') })
+  await context.close()
+})
+
+test('after journal heat', async ({ browser }) => {
+  const { context, page } = await journal(browser, WIDE, { dark: true })
+  await page.locator('[data-heat-toggle]').click()
+  await page.waitForTimeout(200)
+  await page.screenshot({ path: join(DIR, 'after-journal-heat.png') })
+  await context.close()
+})
+
+test('after journal popover', async ({ browser }) => {
+  const { context, page } = await journal(browser, WIDE, { dark: true })
+  const ci = await page.locator('thead .gb--today').getAttribute('data-col')
+  await page.locator(`td[data-row="2"][data-col="${ci}"]`).click()
+  await page.waitForSelector('[data-grade-popover]')
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: join(DIR, 'after-journal-popover.png') })
+  await context.close()
+})
+
+test('after journal mobile', async ({ browser }) => {
+  const { context, page } = await journal(browser, PHONE, { dark: true })
+  await page.screenshot({
+    path: join(DIR, 'after-journal-mobile.png'),
+    fullPage: true
+  })
+  await context.close()
+})
