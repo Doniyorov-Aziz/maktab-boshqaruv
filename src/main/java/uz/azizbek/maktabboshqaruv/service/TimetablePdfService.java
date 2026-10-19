@@ -51,7 +51,7 @@ public class TimetablePdfService {
         this.bold = font("/fonts/Inter-Bold.ttf");
     }
 
-    private static BaseFont font(String path) {
+    public static BaseFont font(String path) {
         try (InputStream in = TimetablePdfService.class.getResourceAsStream(path)) {
             if (in == null) throw new IllegalStateException("Shrift topilmadi: " + path);
             byte[] bytes = in.readAllBytes();

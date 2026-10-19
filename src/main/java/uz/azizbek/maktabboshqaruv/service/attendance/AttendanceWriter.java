@@ -38,10 +38,10 @@ public class AttendanceWriter {
     private static final String UPSERT_MANUAL = """
             insert into attendance (lesson_slot_id, student_id, record_date, status, comment, source,
                                     created_by, auto_at, late_minutes, auto_note, created_date)
-            values (?, ?, ?, ?, ?, 'MANUAL', ?, null, null, null, ?)
+            values (?, ?, ?, ?, ?, 'MANUAL', ?, null, ?, null, ?)
             on conflict (lesson_slot_id, student_id, record_date) do update
                set status = excluded.status, comment = excluded.comment, source = 'MANUAL',
-                   created_by = excluded.created_by, auto_at = null, late_minutes = null, auto_note = null
+                   created_by = excluded.created_by, auto_at = null, late_minutes = excluded.late_minutes, auto_note = null
             returning id""";
 
     private static final String INSERT_IF_ABSENT = """
@@ -61,7 +61,11 @@ public class AttendanceWriter {
             returning id""";
 
     /** A staff member's mark for one student. */
-    public record ManualMark(long studentId, AttendanceStatus status, String comment) {
+    /** lateMinutes: how late (LATE only, else null) — the "5 / 10 / 15 / 20+ daq" of the page. */
+    public record ManualMark(long studentId, AttendanceStatus status, String comment, Integer lateMinutes) {
+        public ManualMark(long studentId, AttendanceStatus status, String comment) {
+            this(studentId, status, comment, null);
+        }
     }
 
     /** An automatic mark for one student and lesson; note says why ("2-darsdan ko'chirildi"). */
@@ -97,7 +101,8 @@ public class AttendanceWriter {
         List<Long> ids = new ArrayList<>(marks.size());
         for (ManualMark m : marks) {
             Long id = jdbc.queryForObject(UPSERT_MANUAL, Long.class, lessonSlotId, m.studentId(), Date.valueOf(date),
-                    m.status().name(), blankToNull(m.comment()), username, now);
+                    m.status().name(), blankToNull(m.comment()), username,
+                    m.status() == AttendanceStatus.LATE ? m.lateMinutes() : null, now);
             ids.add(id);
             publishIfNotifiable(id, before.get(m.studentId()), m.status(), notifyOnAuto);
         }
