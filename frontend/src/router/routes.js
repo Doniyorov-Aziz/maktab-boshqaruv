@@ -72,6 +72,18 @@ const routes = [
         component: () => import('@/pages/CalendarPage.vue')
       },
       {
+        path: 'classes',
+        component: () => import('@/pages/ClassesPage.vue')
+      },
+      {
+        path: 'classes/:id',
+        component: () => import('@/pages/ClassPage.vue')
+      },
+      {
+        path: 'rooms',
+        component: () => import('@/pages/RoomsPage.vue')
+      },
+      {
         path: 'notifications',
         component: () => import('@/pages/NotificationsPage.vue'),
         meta: { editorOnly: true }

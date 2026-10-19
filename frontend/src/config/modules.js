@@ -1,5 +1,6 @@
 import { formatDate } from '@/utils/date'
 import { guardianLabel, guardianRelationOptions } from '@/utils/guardian'
+import { SUBJECT_COLOR_OPTIONS } from '@/utils/subjectColor'
 
 const dateFormat = val => (val ? formatDate(val) : '')
 
@@ -46,20 +47,30 @@ function placeFields(prefix, label) {
   ]
 }
 
-const roomTypeLabels = {
+export const roomTypeLabels = {
   CLASSROOM: 'Sinfxona',
   LAB: 'Laboratoriya',
   COMPUTER_LAB: 'Kompyuter xonasi',
   GYM: 'Sport zali',
-  LIBRARY: 'Kutubxona'
+  ASSEMBLY_HALL: 'Faollar zali',
+  LIBRARY: 'Kutubxona',
+  OTHER: 'Boshqa'
 }
 const roomTypeColors = {
   CLASSROOM: '#4f46e5',
   LAB: '#f59e0b',
   COMPUTER_LAB: '#0ea5e9',
   GYM: '#10b981',
-  LIBRARY: '#ec4899'
+  ASSEMBLY_HALL: '#db2777',
+  LIBRARY: '#ec4899',
+  OTHER: '#64748b'
 }
+export const roomEquipmentLabels = {
+  PROJECTOR: 'Proyektor',
+  SMARTBOARD: 'Interaktiv doska',
+  AC: 'Konditsioner'
+}
+export const roomStatusLabels = { ACTIVE: 'Faol', REPAIR: "Ta'mirda" }
 
 export const employeeStatusLabels = {
   ACTIVE: 'Ishda',
@@ -134,6 +145,8 @@ export const modules = [
     icon: 'meeting_room',
     color: '#14b8a6',
     group: "Ta'lim tuzilmasi",
+    // the menu opens the live map (/rooms); this list is its "Boshqarish"
+    path: '/rooms',
     endpoint: '/api/rooms',
     schoolScoped: true,
     filters: [
@@ -209,6 +222,33 @@ export const modules = [
         optionsEndpoint: '/api/buildings',
         optionValue: 'id',
         optionLabel: 'name'
+      },
+      {
+        key: 'status',
+        label: 'Holati',
+        type: 'select',
+        required: false,
+        options: Object.entries(roomStatusLabels).map(([value, label]) => ({
+          value,
+          label
+        }))
+      },
+      {
+        key: 'equipment',
+        label: 'Jihozlar',
+        type: 'select',
+        multiple: true,
+        required: false,
+        options: Object.entries(roomEquipmentLabels).map(([value, label]) => ({
+          value,
+          label
+        }))
+      },
+      {
+        key: 'computers',
+        label: 'Kompyuterlar soni',
+        type: 'number',
+        required: false
       }
     ]
   },
@@ -268,6 +308,8 @@ export const modules = [
     icon: 'groups',
     color: '#8b5cf6',
     group: "O'quv jarayoni",
+    // the menu opens the class cards (/classes); this list is its "Boshqarish"
+    path: '/classes',
     endpoint: '/api/school-classes',
     schoolScoped: true,
     rowLink: 'class',
@@ -501,6 +543,14 @@ export const modules = [
     ],
     fields: [
       { key: 'name', label: 'Nomi', type: 'text', required: true },
+      {
+        key: 'color',
+        label: 'Rangi (jadval, taqvim, sinflar)',
+        type: 'select',
+        required: false,
+        options: SUBJECT_COLOR_OPTIONS,
+        hint: "Avtomatik — fan raqamidan 12 rangdan biri"
+      },
       { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
     ]
   },

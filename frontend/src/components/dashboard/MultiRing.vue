@@ -10,20 +10,23 @@
           :style="{ strokeWidth: r.width }"
         />
         <circle
-          v-if="r.value !== null"
+          v-if="r.arc"
           cx="100"
           cy="100"
           :r="r.radius"
+          pathLength="100"
           class="mring__arc"
+          :data-ring-key="r.key"
+          :data-ring-value="r.arc.value"
           :style="{
             stroke: r.color,
             strokeWidth: r.width,
-            strokeDasharray: r.circ,
-            strokeDashoffset: grown ? r.offset : r.circ,
+            strokeLinecap: r.arc.cap,
+            strokeDasharray: grown ? r.arc.dasharray : r.arc.empty,
             transitionDelay: `${i * 70}ms`
           }"
         >
-          <title>{{ r.label }}: {{ r.value }}%</title>
+          <title>{{ r.label }}: {{ r.arc.value }}%</title>
         </circle>
       </g>
     </svg>
@@ -40,6 +43,7 @@
 // value shows only its track.
 import { computed, ref, onMounted } from 'vue'
 import { reducedMotion } from '@/composables/useCountUp'
+import { ringArc } from './ringArc'
 
 const props = defineProps({
   // the thick outer ring: { key, label, value, color } or null
@@ -58,25 +62,12 @@ onMounted(() => {
     )
 })
 
-const clamp = v => Math.max(0, Math.min(100, v))
-
+// each ring's arc (see ringArc.js): a value fills exactly its share of the circle
 const drawn = computed(() => {
   const out = []
   let radius = 90
   const add = (r, width) => {
-    const circ = 2 * Math.PI * radius
-    const v =
-      typeof r.value === 'number' && Number.isFinite(r.value)
-        ? clamp(r.value)
-        : null
-    out.push({
-      ...r,
-      value: v,
-      radius,
-      width,
-      circ,
-      offset: v === null ? circ : circ * (1 - v / 100)
-    })
+    out.push({ ...r, arc: ringArc(r.value), radius, width })
   }
   if (props.main) {
     radius = 88
@@ -127,8 +118,7 @@ const ariaLabel = computed(() =>
 
 .mring__arc {
   fill: none;
-  stroke-linecap: round;
-  transition: stroke-dashoffset var(--dur-ring) var(--ease-out);
+  transition: stroke-dasharray var(--dur-ring) var(--ease-out);
 }
 
 .mring__center {

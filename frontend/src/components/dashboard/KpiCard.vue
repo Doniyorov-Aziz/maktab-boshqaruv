@@ -3,9 +3,13 @@
     :is="to ? 'router-link' : 'div'"
     :to="to || undefined"
     class="kpi dash-card"
-    :class="{ 'kpi--link': !!to }"
+    :class="{ 'kpi--link': !!to || clickable, 'kpi--compact': compact }"
     :data-kpi="kpiKey"
     :aria-busy="loading"
+    :role="clickable && !to ? 'button' : undefined"
+    :tabindex="clickable && !to ? 0 : undefined"
+    @click="clickable && !to && emit('click')"
+    @keydown.enter="clickable && !to && emit('click')"
   >
     <template v-if="loading && value === undefined">
       <div class="kpi__head">
@@ -42,7 +46,7 @@
       </div>
       <Sparkline
         class="kpi__spark"
-        large
+        :large="!compact"
         :values="spark || []"
         :color="color"
         :min="sparkMin"
@@ -81,8 +85,13 @@ defineProps({
   sparkMin: { type: Number, default: null },
   sparkMax: { type: Number, default: null },
   to: { type: [String, Object], default: null },
-  loading: { type: Boolean, default: false }
+  loading: { type: Boolean, default: false },
+  // a card that opens something on the page (a list in a side panel) rather than a link
+  clickable: { type: Boolean, default: false },
+  // a lower card (smaller number and sparkline) for pages that need the room below
+  compact: { type: Boolean, default: false }
 })
+const emit = defineEmits(['click'])
 </script>
 
 <style scoped>
@@ -148,6 +157,20 @@ defineProps({
 
 .kpi__spark {
   margin-top: auto;
+}
+
+.kpi--compact {
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4) var(--space-2);
+}
+
+.kpi--compact .kpi__value {
+  font-size: var(--kpi-value-md);
+  margin-top: 0;
+}
+
+.kpi--compact .kpi__note {
+  min-height: 0;
 }
 
 .kpi__skel-icon {

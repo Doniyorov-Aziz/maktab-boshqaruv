@@ -6,7 +6,8 @@ import { useSchoolStore } from '@/stores/school'
 
 const REFRESH_MS = 60_000
 
-// params may be a ref / computed (a widget's tab): a change reloads the widget
+// params may be a ref / computed (a widget's tab): a change reloads the widget.
+// path: 'health' → /api/dashboard/health; a path starting with '/' is used as it is.
 export function useWidget(path, { params = {}, enabled = true } = {}) {
   const school = useSchoolStore()
   const data = ref(null)
@@ -20,7 +21,8 @@ export function useWidget(path, { params = {}, enabled = true } = {}) {
     if (!school.activeSchoolId || !on) return
     if (!quiet) loading.value = true
     try {
-      const res = await api.get(`/api/dashboard/${path}`, {
+      const url = path.startsWith('/') ? path : `/api/dashboard/${path}`
+      const res = await api.get(url, {
         params: {
           schoolId: school.activeSchoolId,
           ...(isRef(params) ? params.value : params)

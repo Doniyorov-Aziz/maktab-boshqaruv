@@ -128,7 +128,8 @@ const range = computed(() => {
 const options = computed(() => ({
   // a gradient fill cannot be tweened: animate positions only
   animations: { colors: false },
-  layout: { padding: { top: 8, right: 16, left: 4, bottom: 0 } },
+  // room on the left for the rotated y-axis title, so it is never clipped
+  layout: { padding: { top: 8, right: 16, left: 14, bottom: 4 } },
   scales: {
     x: {
       min: range.value.xMin,
@@ -147,7 +148,8 @@ const options = computed(() => ({
       title: {
         display: true,
         text: `Sifat, % (${range.value.yMin}–${range.value.yMax})`,
-        color: colors.value.text
+        color: colors.value.text,
+        padding: { top: 0, bottom: 8 }
       },
       ticks: { callback: v => `${v}%` }
     }
@@ -226,8 +228,10 @@ const quadrants = {
   }
 }
 
-// the class name beside each bubble — biggest classes first; a name that would cover
-// another name or bubble is left out (hover still tells it)
+// the class name beside each bubble — biggest classes first. Each name tries four places
+// (right, left, above, below its bubble) and takes the first that covers no other name,
+// no other bubble and stays inside the chart; with none free it is left out and the
+// hover tooltip tells it.
 const names = {
   id: 'bubbleNames',
   afterDatasetsDraw(chart) {
@@ -247,28 +251,46 @@ const names = {
     const taken = []
     const hits = (a, b) =>
       a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
+    const overBubble = (box, i) =>
+      circles.some(
+        (o, k) =>
+          k !== i &&
+          box.x < o.x + o.r &&
+          box.x + box.w > o.x - o.r &&
+          box.y < o.y + o.r &&
+          box.y + box.h > o.y - o.r
+      )
+    const inside = box =>
+      box.x >= area.left &&
+      box.x + box.w <= area.right &&
+      box.y >= area.top &&
+      box.y + box.h <= area.bottom
     const order = meta.data
       .map((_, i) => i)
       .sort((i, j) => circles[j].r - circles[i].r)
+    const placed = []
     for (const i of order) {
       const c = points.value[i]
       if (!c) continue
       const el = circles[i]
       const w = ctx.measureText(c.name).width
-      const box = { x: el.x + el.r + 3, y: el.y - 6, w, h: 12 }
-      if (box.x + w > area.right) box.x = el.x - el.r - 3 - w
-      const overBubble = circles.some(
-        (o, k) =>
-          k !== i &&
-          box.x < o.x + o.r &&
-          box.x + w > o.x - o.r &&
-          box.y < o.y + o.r &&
-          box.y + box.h > o.y - o.r
+      const h = 12
+      const gap = 3
+      const tries = [
+        { x: el.x + el.r + gap, y: el.y - h / 2 },
+        { x: el.x - el.r - gap - w, y: el.y - h / 2 },
+        { x: el.x - w / 2, y: el.y - el.r - gap - h },
+        { x: el.x - w / 2, y: el.y + el.r + gap }
+      ].map(t => ({ ...t, w, h }))
+      const box = tries.find(
+        b => inside(b) && !overBubble(b, i) && !taken.some(t => hits(b, t))
       )
-      if (overBubble || taken.some(t => hits(box, t))) continue
+      if (!box) continue
       taken.push(box)
-      ctx.fillText(c.name, box.x, el.y)
+      placed.push(c.name)
+      ctx.fillText(c.name, box.x, box.y + h / 2)
     }
+    chart.canvas.dataset.labels = placed.join(',')
     ctx.restore()
   }
 }

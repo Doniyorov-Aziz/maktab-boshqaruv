@@ -513,6 +513,8 @@
             v-if="!field.autoSchool && field.type === 'select'"
             v-model="formModel[field.key]"
             :label="field.label"
+            :multiple="!!field.multiple"
+            :use-chips="!!field.multiple"
             :options="optionsFor(field)"
             @update:model-value="clearOrphanChildren(field)"
             option-value="value"

@@ -1,593 +1,635 @@
 <template>
   <page-layout
     icon="event_available"
-    color="#22c55e"
-    title="Tadbirlar taqvimi"
-    :subtitle="schoolStore.activeSchoolName"
+    color="var(--st-present)"
+    title="Taqvim"
+    :subtitle="subtitle"
+    class="cal"
   >
-    <template v-slot:actions>
-      <q-btn-toggle
-        v-model="viewMode"
-        dense
-        no-caps
-        toggle-color="primary"
-        :options="[
-          { label: 'Oylik', value: 'month' },
-          { label: 'Haftalik', value: 'week' }
-        ]"
-      />
-      <AppButton variant="ghost" icon="chevron_left" @click="shift(-1)" />
-      <AppButton variant="ghost" label="Bugun" @click="goToday" />
-      <div class="text-subtitle1 text-weight-medium range-label">{{
-        rangeLabel
-      }}</div>
-      <AppButton variant="ghost" icon="chevron_right" @click="shift(1)" />
+    <template #actions>
       <AppButton
-        v-if="canCreate"
+        variant="secondary"
+        icon="ios_share"
+        label="Kalendarga qo'shish"
+        data-cal-export
+        @click="feedOpen = true"
+      />
+      <AppButton
+        v-if="canEdit"
         icon="add"
         label="Tadbir"
-        @click="openCreateDialog"
+        data-cal-add
+        @click="openCreate(today)"
       />
     </template>
 
-    <div class="row items-center q-gutter-sm q-mb-md legend-row">
-      <div
-        v-for="t in eventTypes"
-        :key="t.value"
-        class="legend-chip"
-        :class="{ 'legend-chip--off': !activeTypes.has(t.value) }"
-        @click="toggleType(t.value)"
-      >
-        <span class="legend-dot" :style="{ background: t.color }" />
-        {{ t.label }}
-      </div>
-    </div>
-
-    <div v-if="loading" class="brand-card q-pa-md">
-      <q-skeleton type="rect" height="400px" />
-    </div>
-
-    <div v-else class="brand-card q-pa-sm">
-      <div
-        class="calendar-grid"
-        :class="{ 'calendar-grid--week': viewMode === 'week' }"
-      >
-        <div
-          v-for="(d, i) in weekdayLabels"
-          :key="d"
-          class="day-header"
-          :class="{ 'day-header--weekend': i === 6 }"
-          >{{ d }}</div
-        >
-        <div
-          v-for="(cell, i) in cells"
-          :key="cell.dateStr"
-          class="day-cell"
-          :class="{
-            'day-cell--muted': !cell.inRange,
-            'day-cell--today': cell.isToday,
-            'day-cell--weekend': i % 7 === 6
-          }"
-          @click="onCellClick(cell)"
-        >
-          <div class="row items-center justify-between no-wrap">
-            <div class="day-number">{{ cell.day }}</div>
-            <div v-if="cell.isToday" class="live-clock">{{ liveClock }}</div>
-          </div>
-          <div
-            v-for="ev in cell.events.slice(0, 3)"
-            :key="ev.id"
-            class="event-chip"
-            :style="{ background: typeColor(ev.type) }"
-            @click.stop="openEditDialog(ev)"
-          >
-            {{ ev.title }}
-          </div>
-          <div
-            v-if="cell.events.length > 3"
-            class="event-more"
-            @click.stop="openDayDetail(cell)"
-          >
-            +{{ cell.events.length - 3 }}
-          </div>
+    <!-- hero: the year line and four numbers -->
+    <section class="cal__hero">
+      <div class="cal__year dash-card" data-cal-hero>
+        <div class="cal__year-head">
+          <b>O'quv yili</b>
+          <small v-if="ov">{{ fmtDate(ov.yearStart) }} – {{ fmtDate(ov.yearEnd) }}</small>
         </div>
+        <div v-if="!ov" class="skel cal__year-skel" />
+        <YearLine v-else :data="ov" />
+      </div>
+      <div class="cal__kpis">
+        <KpiCard
+          kpi-key="next-event"
+          label="Keyingi tadbir"
+          icon="event_upcoming"
+          color="var(--subj-1)"
+          compact
+          clickable
+          :loading="overview.loading.value"
+          :value="ov?.nextEvent?.daysLeft ?? undefined"
+          :empty-value="!!ov && !ov.nextEvent"
+          empty-text="Yo'q"
+          :format="v => countdown(Math.round(v))"
+          :note="ov?.nextEvent?.title || ''"
+          :spark="null"
+          @click="ov?.nextEvent && openById(ov.nextEvent.id)"
+        />
+        <KpiCard
+          kpi-key="month-events"
+          label="Shu oy tadbirlari"
+          icon="date_range"
+          color="var(--chart-secondary)"
+          compact
+          :loading="overview.loading.value"
+          :value="ov?.monthEvents ?? undefined"
+          note="o'quv yili bo'yicha oylar"
+          :spark="ov?.eventsByMonth"
+        />
+        <KpiCard
+          kpi-key="next-exam"
+          label="Keyingi imtihon"
+          icon="quiz"
+          color="var(--st-absent)"
+          compact
+          clickable
+          :loading="overview.loading.value"
+          :value="ov?.nextExam?.daysLeft ?? undefined"
+          :empty-value="!!ov && !ov.nextExam"
+          empty-text="Rejada yo'q"
+          :format="v => countdown(Math.round(v))"
+          :note="ov?.nextExam?.title || ''"
+          :spark="null"
+          @click="ov?.nextExam && openById(ov.nextExam.id)"
+        />
+        <KpiCard
+          kpi-key="vacation"
+          label="Ta'tilgacha"
+          icon="beach_access"
+          color="var(--year-vacation)"
+          compact
+          :loading="overview.loading.value"
+          :value="ov && !ov.onVacation ? ov.nextVacation?.daysLeft ?? undefined : undefined"
+          :empty-value="!!ov && (ov.onVacation || !ov.nextVacation)"
+          :empty-text="ov?.onVacation ? 'Ta\'tilda 🎉' : 'Rejada yo\'q'"
+          :format="v => `${Math.round(v)} kun`"
+          :note="ov?.nextVacation?.title || ''"
+          :spark="null"
+        />
+      </div>
+    </section>
+
+    <!-- controls -->
+    <div class="cal__bar">
+      <SegTabs :model-value="view" :options="VIEWS" label="Ko'rinish" data-cal-views @update:model-value="setView" />
+      <div v-if="view !== 'agenda'" class="cal__nav">
+        <AppButton variant="ghost" icon="chevron_left" aria-label="Oldingi" @click="shift(-1)" />
+        <b class="cal__period" data-cal-period>{{ periodLabel }}</b>
+        <AppButton variant="ghost" icon="chevron_right" aria-label="Keyingi" @click="shift(1)" />
+        <AppButton variant="ghost" size="sm" label="Bugun" @click="goToday" />
+      </div>
+      <div class="cal__filters" role="group" aria-label="Tadbir turlari">
+        <button
+          v-for="t in TYPE_ORDER"
+          :key="t"
+          type="button"
+          class="cal__chip"
+          :class="{ 'cal__chip--off': hiddenTypes.has(t) }"
+          :style="{ '--c': EVENT_TYPES[t].color }"
+          :aria-pressed="!hiddenTypes.has(t)"
+          :data-type-filter="t"
+          @click="toggleType(t)"
+        >
+          <q-icon :name="EVENT_TYPES[t].icon" /> {{ EVENT_TYPES[t].label }}
+          <b>{{ typeCounts[t] || 0 }}</b>
+        </button>
       </div>
     </div>
 
-    <q-dialog v-model="dayDetailOpen">
-      <q-card class="app-dialog app-dialog--sm">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">{{
-            dayDetailDate && formatDate(dayDetailDate)
-          }}</div>
-          <q-space />
-          <AppButton variant="ghost" icon="close" v-close-popup />
-        </q-card-section>
-        <q-list separator class="q-mt-sm">
-          <q-item
-            v-for="ev in dayDetailEvents"
-            :key="ev.id"
-            clickable
-            v-close-popup
-            @click="openEditDialog(ev)"
-          >
-            <q-item-section avatar>
-              <IconTile icon="event" size="32" :color="typeColor(ev.type)" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>{{ ev.title }}</q-item-label>
-              <q-item-label caption>{{ typeLabel(ev.type) }}</q-item-label>
-            </q-item-section>
-          </q-item>
-        </q-list>
-      </q-card>
-    </q-dialog>
+    <section class="cal__box dash-card" data-cal-box>
+      <div v-if="loading && !events.length" class="cal__skel">
+        <div v-for="i in 5" :key="i" class="skel cal__skel-row" />
+      </div>
+      <EmptyState
+        v-else-if="error && !events.length"
+        icon="cloud_off"
+        title="Taqvimni yuklab bo'lmadi"
+        :text="error"
+        action="Qayta urinish"
+        action-icon="refresh"
+        @action="loadEvents"
+      />
+      <MonthView
+        v-else-if="view === 'month'"
+        :year="cursor.year"
+        :month="cursor.month"
+        :events="shown"
+        :attendance="attendance"
+        :today="today"
+        :editable="canEdit"
+        @open="openEvent"
+        @day="openDay"
+        @create="openCreate"
+        @move="moveEvent"
+        @resize="resizeEvent"
+      />
+      <WeekView
+        v-else-if="view === 'week'"
+        :monday="monday"
+        :events="shown"
+        :today="today"
+        :editable="canEdit"
+        @open="openEvent"
+        @day="openDay"
+        @create="openCreate"
+      />
+      <AgendaView
+        v-else-if="view === 'agenda'"
+        :events="shown"
+        :today="today"
+        :editable="canEdit"
+        @open="openEvent"
+        @create="openCreate"
+      />
+      <YearView
+        v-else
+        :start="yearStart"
+        :events="shown"
+        :today="today"
+        @month="m => setView('month', { month: m.key })"
+      />
+    </section>
 
-    <q-dialog v-model="dialogOpen" persistent>
-      <q-card class="app-dialog app-dialog--sm">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-h6">{{
-            editingId ? 'Tadbirni tahrirlash' : 'Yangi tadbir'
-          }}</div>
-          <q-space />
-          <AppButton variant="ghost" icon="close" v-close-popup />
-        </q-card-section>
-        <q-form @submit.prevent="saveEvent">
-          <q-card-section class="q-gutter-md q-pt-md">
-            <AppInput
-              v-model="form.title"
-              label="Nomi"
-              :rules="[v => !!v || 'Majburiy']"
-            />
-            <AppInput
-              v-model="form.description"
-              label="Tavsif"
-              type="textarea"
-              autogrow
-            />
-            <AppSelect
-              v-model="form.type"
-              :options="[
-                { value: 'HOLIDAY', label: 'Bayram' },
-                { value: 'EXAM', label: 'Imtihon' },
-                { value: 'PARENT_MEETING', label: 'Ota-onalar yig\'ilishi' },
-                { value: 'VACATION', label: 'Ta\'til' },
-                { value: 'OTHER', label: 'Boshqa' }
-              ]"
-              option-value="value"
-              option-label="label"
-              emit-value
-              map-options
-              label="Turi"
-            />
-            <AppDateInput
-              v-model="form.startDate"
-              label="Boshlanish"
-              :rules="[v => !!v || 'Majburiy']"
-            />
-            <AppDateInput
-              v-model="form.endDate"
-              label="Tugash"
-              :rules="[v => !!v || 'Majburiy']"
-            />
-            <q-banner
-              v-if="formError"
-              class="bg-red-1 text-negative rounded-borders"
-              dense
-              >{{ formError }}</q-banner
-            >
-          </q-card-section>
-          <q-card-actions align="right" class="q-pa-md">
-            <AppButton
-              variant="ghost"
-              v-if="editingId"
-              color="negative"
-              label="O'chirish"
-              :loading="deleting"
-              @click="deleteEvent"
-            />
-            <q-space />
-            <AppButton
-              variant="ghost"
-              label="Bekor qilish"
-              color="grey-7"
-              v-close-popup
-            />
-            <AppButton type="submit" label="Saqlash" :loading="saving" />
-          </q-card-actions>
-        </q-form>
-      </q-card>
-    </q-dialog>
+    <div class="cal__legend">
+      <span v-for="s in [1, 2, 3, 4]" :key="s" class="cal__heat">
+        <span :class="`cal__dot cal__dot--${s}`" />{{ HEAT_LABELS[s - 1] }}
+      </span>
+      <span class="cal__legend-note">— o'tgan ish kunlari davomati</span>
+    </div>
+
+    <EventDialog
+      v-model="editOpen"
+      :event="editing"
+      :rooms="rooms"
+      :classes="classes"
+      :can-delete="auth.isAdmin"
+      @saved="afterSave"
+    />
+    <DayDrawer
+      v-model="dayOpen"
+      :date="dayDate"
+      :editable="canEdit"
+      @open="e => ((dayOpen = false), openEvent(e))"
+      @create="d => ((dayOpen = false), openCreate(d))"
+    />
+    <FeedDialog v-model="feedOpen" :admin="auth.isAdmin" />
   </page-layout>
 </template>
 
 <script setup>
-import IconTile from '@/components/app/IconTile.vue'
-import AppButton from '@/components/app/AppButton.vue'
-import AppInput from '@/components/app/AppInput.vue'
-import AppSelect from '@/components/app/AppSelect.vue'
-import AppDateInput from '@/components/app/AppDateInput.vue'
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+// "Taqvim": the school year as one line (quarters, vacations, "you are here") and four
+// numbers (the next event counting down, this month, the next exam, days to the vacation);
+// four views — month, week, list, year — and type filters. Editors click an empty day to
+// add an event, drag one to another day (5 s to undo), stretch a vacation from its edge.
+// A day opens its summary. The calendar can be taken to Google / Apple as .ics.
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
-import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
+import AppButton from '@/components/app/AppButton.vue'
+import KpiCard from '@/components/dashboard/KpiCard.vue'
+import SegTabs from '@/components/dashboard/SegTabs.vue'
+import EmptyState from '@/components/pages/EmptyState.vue'
+import YearLine from '@/components/calendar/YearLine.vue'
+import MonthView from '@/components/calendar/MonthView.vue'
+import WeekView from '@/components/calendar/WeekView.vue'
+import AgendaView from '@/components/calendar/AgendaView.vue'
+import YearView from '@/components/calendar/YearView.vue'
+import EventDialog from '@/components/calendar/EventDialog.vue'
+import DayDrawer from '@/components/calendar/DayDrawer.vue'
+import FeedDialog from '@/components/calendar/FeedDialog.vue'
+import {
+  EVENT_TYPES,
+  MONTHS,
+  TYPE_ORDER,
+  addDays,
+  countdown,
+  monthWeeks,
+  moved,
+  parse,
+  weekdayIndex
+} from '@/components/calendar/calendar'
+import { confirmUndoToast } from '@/composables/useUndoToast'
+import { useWidget } from '@/composables/useWidget'
+import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
-import { toLocalDateStr, todayStr, monthName, formatDate } from '@/utils/date'
+import { tashkentNow } from '@/utils/tashkent'
 
+const route = useRoute()
+const router = useRouter()
 const $q = useQuasar()
-const authStore = useAuthStore()
-const schoolStore = useSchoolStore()
+const auth = useAuthStore()
+const school = useSchoolStore()
 
-const canCreate = computed(() => authStore.isEditor)
-const viewMode = ref('month')
-const anchorDate = ref(new Date())
+const VIEWS = [
+  { value: 'month', label: 'Oy' },
+  { value: 'week', label: 'Hafta' },
+  { value: 'agenda', label: "Ro'yxat" },
+  { value: 'year', label: 'Yil' }
+]
+const HEAT_LABELS = ['≥ 95%', '90–95%', '85–90%', '< 85%']
+const canEdit = computed(() => auth.isEditor)
+const today = ref(tashkentNow().date)
+
+// ---------------------------------------------------------------- the URL is the state
+const view = computed(() => (VIEWS.some(v => v.value === route.query.view) ? route.query.view : 'month'))
+const anchor = computed(() =>
+  /^\d{4}-\d{2}$/.test(route.query.month || '') ? `${route.query.month}-01` : today.value
+)
+const cursor = computed(() => ({
+  year: Number(anchor.value.slice(0, 4)),
+  month: Number(anchor.value.slice(5, 7)) - 1
+}))
+const weekAnchor = computed(() =>
+  /^\d{4}-\d{2}-\d{2}$/.test(route.query.week || '') ? route.query.week : today.value
+)
+const monday = computed(() => addDays(weekAnchor.value, -weekdayIndex(weekAnchor.value)))
+const yearStart = computed(() => {
+  const y = cursor.value.month >= 8 ? cursor.value.year : cursor.value.year - 1
+  return `${y}-09-01`
+})
+
+function setView(v, extra = {}) {
+  router.replace({ query: { ...route.query, view: v, ...extra } })
+}
+function shift(n) {
+  if (view.value === 'month') {
+    const d = new Date(cursor.value.year, cursor.value.month + n, 1)
+    setView('month', { month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` })
+  } else if (view.value === 'week') {
+    setView('week', { week: addDays(monday.value, 7 * n) })
+  } else {
+    const y = Number(yearStart.value.slice(0, 4)) + n
+    setView('year', { month: `${y}-09` })
+  }
+}
+function goToday() {
+  router.replace({ query: { view: view.value } })
+}
+
+const periodLabel = computed(() => {
+  if (view.value === 'month') return `${MONTHS[cursor.value.month]} ${cursor.value.year}`
+  if (view.value === 'week') {
+    const s = parse(monday.value)
+    const e = parse(addDays(monday.value, 6))
+    return `${s.getDate()} ${MONTHS[s.getMonth()].slice(0, 3)} – ${e.getDate()} ${MONTHS[e.getMonth()].slice(0, 3)}`
+  }
+  const y = Number(yearStart.value.slice(0, 4))
+  return `${y}–${y + 1} o'quv yili`
+})
+const subtitle = computed(() => [school.activeSchoolName, periodLabel.value].filter(Boolean).join(' · '))
+
+// ---------------------------------------------------------------- data
+const overview = useWidget('/api/pages/calendar/overview')
+const ov = computed(() => overview.data.value)
+
+// the range on screen (with a margin for weeks that cross months)
+const range = computed(() => {
+  if (view.value === 'month') {
+    const w = monthWeeks(cursor.value.year, cursor.value.month)
+    return { from: w[0][0], to: w[w.length - 1][6] }
+  }
+  if (view.value === 'week') return { from: monday.value, to: addDays(monday.value, 6) }
+  if (view.value === 'agenda') return { from: today.value, to: addDays(today.value, 180) }
+  const y = Number(yearStart.value.slice(0, 4))
+  return { from: `${y}-09-01`, to: `${y + 1}-08-31` }
+})
+
 const events = ref([])
 const loading = ref(false)
-const dialogOpen = ref(false)
-const editingId = ref(null)
-const saving = ref(false)
-const formError = ref('')
-const form = ref({
-  title: '',
-  description: '',
-  type: 'OTHER',
-  startDate: '',
-  endDate: ''
-})
-
-const dayDetailOpen = ref(false)
-const dayDetailDate = ref('')
-const dayDetailEvents = ref([])
-
-const eventTypes = [
-  { value: 'HOLIDAY', label: 'Bayram', color: '#f59e0b' },
-  { value: 'EXAM', label: 'Imtihon', color: '#ef4444' },
-  { value: 'PARENT_MEETING', label: "Yig'ilish", color: '#3b82f6' },
-  { value: 'VACATION', label: "Ta'til", color: '#10b981' },
-  { value: 'OTHER', label: 'Boshqa', color: '#8b5cf6' }
-]
-const activeTypes = ref(new Set(eventTypes.map(t => t.value)))
-function toggleType(t) {
-  const next = new Set(activeTypes.value)
-  if (next.has(t)) next.delete(t)
-  else next.add(t)
-  activeTypes.value = next
-}
-
-const weekdayLabels = ['Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan', 'Yak']
-
-const rangeStart = computed(() => {
-  const d = new Date(anchorDate.value)
-  if (viewMode.value === 'month') {
-    const first = new Date(d.getFullYear(), d.getMonth(), 1)
-    const dow = (first.getDay() + 6) % 7
-    first.setDate(first.getDate() - dow)
-    return first
-  }
-  const dow = (d.getDay() + 6) % 7
-  const monday = new Date(d)
-  monday.setDate(d.getDate() - dow)
-  return monday
-})
-
-const rangeEnd = computed(() => {
-  const start = new Date(rangeStart.value)
-  const days = viewMode.value === 'month' ? 41 : 6
-  const end = new Date(start)
-  end.setDate(start.getDate() + days)
-  return end
-})
-
-const rangeLabel = computed(() => {
-  const d = anchorDate.value
-  return `${monthName(d.getMonth())} ${d.getFullYear()}`
-})
-
-const cells = computed(() => {
-  const result = []
-  const start = new Date(rangeStart.value)
-  const end = new Date(rangeEnd.value)
-  const today = todayStr()
-  const currentMonth = anchorDate.value.getMonth()
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = toLocalDateStr(d)
-    result.push({
-      dateStr,
-      day: d.getDate(),
-      inRange: viewMode.value === 'week' || d.getMonth() === currentMonth,
-      isToday: dateStr === today,
-      events: events.value.filter(
-        ev =>
-          dateStr >= ev.startDate &&
-          dateStr <= ev.endDate &&
-          activeTypes.value.has(ev.type)
-      )
-    })
-  }
-  return result
-})
-
-const typeColors = {
-  HOLIDAY: '#f59e0b',
-  EXAM: '#ef4444',
-  PARENT_MEETING: '#3b82f6',
-  VACATION: '#10b981',
-  OTHER: '#8b5cf6'
-}
-function typeColor(t) {
-  return typeColors[t] || '#8b5cf6'
-}
-function typeLabel(t) {
-  return eventTypes.find(x => x.value === t)?.label || 'Boshqa'
-}
-
-function shift(dir) {
-  const d = new Date(anchorDate.value)
-  if (viewMode.value === 'month') d.setMonth(d.getMonth() + dir)
-  else d.setDate(d.getDate() + dir * 7)
-  anchorDate.value = d
-}
-
-function goToday() {
-  anchorDate.value = new Date()
-}
-
-function openDayDetail(cell) {
-  dayDetailDate.value = cell.dateStr
-  dayDetailEvents.value = cell.events
-  dayDetailOpen.value = true
-}
-
-function onCellClick(cell) {
-  if (!canCreate.value || cell.events.length) return
-  editingId.value = null
-  formError.value = ''
-  form.value = {
-    title: '',
-    description: '',
-    type: 'OTHER',
-    startDate: cell.dateStr,
-    endDate: cell.dateStr
-  }
-  dialogOpen.value = true
-}
+const error = ref(null)
+const attendance = ref({})
 
 async function loadEvents() {
-  if (!schoolStore.activeSchoolId) return
+  if (!school.activeSchoolId) return
   loading.value = true
   try {
-    const response = await api.get('/api/calendar-events/range', {
-      params: {
-        schoolId: schoolStore.activeSchoolId,
-        from: toLocalDateStr(rangeStart.value),
-        to: toLocalDateStr(rangeEnd.value)
-      }
+    const res = await api.get('/api/calendar-events/range', {
+      params: { schoolId: school.activeSchoolId, ...range.value }
     })
-    events.value = response.data
+    events.value = res.data
+    error.value = null
+  } catch (e) {
+    error.value = e.friendlyMessage || "Yuklab bo'lmadi"
   } finally {
     loading.value = false
   }
-}
-
-function openCreateDialog() {
-  editingId.value = null
-  formError.value = ''
-  form.value = {
-    title: '',
-    description: '',
-    type: 'OTHER',
-    startDate: toLocalDateStr(new Date()),
-    endDate: toLocalDateStr(new Date())
-  }
-  dialogOpen.value = true
-}
-
-function openEditDialog(ev) {
-  if (!canCreate.value) return
-  editingId.value = ev.id
-  formError.value = ''
-  form.value = {
-    title: ev.title,
-    description: ev.description || '',
-    type: ev.type,
-    startDate: ev.startDate,
-    endDate: ev.endDate
-  }
-  dialogOpen.value = true
-}
-
-async function saveEvent() {
-  if (saving.value) return
-  saving.value = true
-  formError.value = ''
-  try {
-    const payload = { ...form.value, schoolId: schoolStore.activeSchoolId }
-    if (editingId.value) {
-      await api.put(`/api/calendar-events/${editingId.value}`, payload)
-    } else {
-      await api.post('/api/calendar-events', payload)
+  if (view.value === 'month') {
+    try {
+      const res = await api.get('/api/pages/calendar/attendance', {
+        params: { schoolId: school.activeSchoolId, ...range.value }
+      })
+      attendance.value = Object.fromEntries(res.data.filter(d => d.rate !== null).map(d => [d.date, d.rate]))
+    } catch {
+      attendance.value = {}
     }
-    dialogOpen.value = false
-    $q.notify({ type: 'positive', message: 'Saqlandi', icon: 'check_circle' })
-    loadEvents()
-  } catch (error) {
-    formError.value = error.response?.data || 'Xatolik yuz berdi'
-  } finally {
-    saving.value = false
+  }
+}
+onMounted(loadEvents)
+watch([range, () => school.activeSchoolId], loadEvents)
+
+// rooms and classes for the event form
+const rooms = ref([])
+const classes = ref([])
+async function loadRefs() {
+  if (!canEdit.value || !school.activeSchoolId) return
+  const res = await api.get('/api/pages/timetable/week', { params: { schoolId: school.activeSchoolId } })
+  rooms.value = res.data.rooms
+  classes.value = res.data.classes
+}
+onMounted(loadRefs)
+
+// type filters
+const hiddenTypes = ref(new Set())
+function toggleType(t) {
+  const s = new Set(hiddenTypes.value)
+  s.has(t) ? s.delete(t) : s.add(t)
+  hiddenTypes.value = s
+}
+const shown = computed(() => events.value.filter(e => !hiddenTypes.value.has(e.type)))
+const typeCounts = computed(() => {
+  const c = {}
+  for (const e of events.value) c[e.type] = (c[e.type] || 0) + 1
+  return c
+})
+
+// ---------------------------------------------------------------- events
+const editOpen = ref(false)
+const editing = ref(null)
+function openEvent(e) {
+  if (!canEdit.value) {
+    openDay(e.startDate)
+    return
+  }
+  editing.value = e
+  editOpen.value = true
+}
+async function openById(id) {
+  const e = events.value.find(x => x.id === id)
+  if (e) return openEvent(e)
+  const res = await api.get('/api/calendar-events/upcoming', { params: { schoolId: school.activeSchoolId, limit: 50 } })
+  const found = res.data.find(x => x.id === id)
+  if (found) openEvent(found)
+}
+function openCreate(date) {
+  if (!canEdit.value) return
+  editing.value = { startDate: date, endDate: date }
+  editOpen.value = true
+}
+function afterSave() {
+  loadEvents()
+  overview.reload()
+}
+
+const dayOpen = ref(false)
+const dayDate = ref(null)
+function openDay(date) {
+  dayDate.value = date
+  dayOpen.value = true
+}
+
+function body(e, patch) {
+  return {
+    schoolId: school.activeSchoolId,
+    title: e.title,
+    description: e.description,
+    type: e.type,
+    startDate: e.startDate,
+    endDate: e.endDate,
+    startTime: e.startTime,
+    endTime: e.endTime,
+    roomId: e.roomId,
+    location: e.location,
+    classIds: e.classIds || [],
+    notifyParents: e.notifyParents,
+    ...patch
   }
 }
 
-const deleting = ref(false)
-
-async function deleteEvent() {
-  if (deleting.value) return // a second click while the first is on its way
-  deleting.value = true
+async function change(e, patch, message) {
+  const before = { startDate: e.startDate, endDate: e.endDate }
+  const local = events.value.find(x => x.id === e.id)
+  Object.assign(local, patch)
   try {
-    await api.delete(`/api/calendar-events/${editingId.value}`)
-    dialogOpen.value = false
-    $q.notify({ type: 'positive', message: "O'chirildi", icon: 'check_circle' })
-    loadEvents()
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: error.response?.data || 'Xatolik yuz berdi'
+    await api.put(`/api/calendar-events/${e.id}`, body(e, patch))
+    overview.reload()
+    confirmUndoToast(message, async () => {
+      await api.put(`/api/calendar-events/${e.id}`, body(e, before))
+      Object.assign(local, before)
+      overview.reload()
     })
-  } finally {
-    deleting.value = false
+  } catch (err) {
+    Object.assign(local, before)
+    $q.notify({ type: 'negative', message: err.friendlyMessage || "O'zgartirib bo'lmadi" })
   }
 }
 
-watch([viewMode, anchorDate], loadEvents)
-watch(() => schoolStore.activeSchoolId, loadEvents)
-loadEvents()
-
-const liveClock = ref('')
-let clockTimer = null
-function tickClock() {
-  liveClock.value = new Date().toTimeString().slice(0, 5)
+function moveEvent({ event, startDate }) {
+  change(event, moved(event, startDate), `«${event.title}» → ${fmtDate(startDate)}`)
 }
-onMounted(() => {
-  tickClock()
-  clockTimer = setInterval(tickClock, 30000)
-})
-onBeforeUnmount(() => {
-  if (clockTimer) clearInterval(clockTimer)
-})
+function resizeEvent({ event, endDate }) {
+  change(event, { endDate }, `«${event.title}» ${fmtDate(endDate)} gacha`)
+}
+
+function fmtDate(s) {
+  if (!s) return ''
+  const d = parse(s)
+  return `${d.getDate()}-${MONTHS[d.getMonth()].slice(0, 3).toLowerCase()}`
+}
+
+const feedOpen = ref(false)
 </script>
 
 <style scoped>
-.muted-text {
+.cal :deep(.page-layout__body) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cal__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr);
+  gap: var(--space-3);
+}
+
+.cal__year {
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cal__year-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.cal__year-head small {
   color: var(--brand-text-muted);
 }
 
-.range-label {
-  min-width: 130px;
-  text-align: center;
+.cal__year-skel {
+  height: var(--space-8);
 }
 
-.legend-row {
+.cal__kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.cal__bar {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
 }
 
-.legend-chip {
+.cal__nav {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--brand-border);
+  gap: var(--space-1);
+}
+
+.cal__period {
+  min-width: var(--field-w-sm);
+  text-align: center;
+  font-size: var(--text-md);
+}
+
+.cal__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.cal__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
   cursor: pointer;
-  user-select: none;
-  transition: opacity 0.15s ease;
 }
 
-.legend-chip--off {
+.cal__chip .q-icon {
+  color: var(--c);
+}
+
+.cal__chip b {
+  color: var(--brand-text-muted);
+}
+
+.cal__chip--off {
   opacity: 0.4;
+  background: transparent;
+  text-decoration: line-through;
 }
 
-.legend-dot {
+.cal__box {
+  padding: var(--space-3);
+  min-width: 0;
+}
+
+.cal__box:hover {
+  transform: none;
+}
+
+.cal__skel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cal__skel-row {
+  height: var(--month-cell-h);
+}
+
+.cal__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--brand-text-muted);
+}
+
+.cal__heat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.cal__dot {
   width: var(--dot);
   height: var(--dot);
   border-radius: var(--radius-pill);
-  display: inline-block;
 }
 
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-  min-width: 0;
+.cal__dot--1 {
+  background: var(--heat-1);
 }
 
-.day-header {
-  text-align: center;
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--brand-text-muted);
-  padding: 6px 0;
+.cal__dot--2 {
+  background: var(--heat-2);
 }
 
-.day-header--weekend {
-  color: var(--color-danger);
+.cal__dot--3 {
+  background: var(--heat-3);
 }
 
-.day-cell {
-  min-height: var(--day-min-h);
-  min-width: 0;
-  border: 1px solid var(--brand-border);
-  border-radius: var(--radius-sm);
-  padding: 4px;
-  cursor: pointer;
-  overflow: hidden;
+.cal__dot--4 {
+  background: var(--heat-4);
 }
 
-.calendar-grid--week .day-cell {
-  min-height: var(--day-min-h-week);
-}
-
-.day-cell--muted {
-  opacity: 0.4;
-}
-
-.day-cell--weekend {
-  background: rgba(239, 68, 68, 0.04);
-}
-
-.day-cell--today {
-  border-color: var(--q-primary);
-  box-shadow: inset 0 0 0 1px var(--q-primary);
-}
-
-.day-number {
-  font-size: 12px;
-  color: var(--brand-text-muted);
-  margin-bottom: 3px;
-}
-
-.live-clock {
-  font-size: 10px;
-  font-weight: 700;
-  color: white;
-  background: var(--q-primary);
-  padding: 1px 5px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 3px;
-  font-variant-numeric: tabular-nums;
-}
-
-.event-chip {
-  font-size: 11px;
-  color: white;
-  border-radius: var(--radius-sm);
-  padding: 2px 5px;
-  margin-bottom: 2px;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.event-more {
-  font-size: 11px;
-  color: var(--brand-text-muted);
-  font-weight: 600;
-  cursor: pointer;
-  padding: 1px 5px;
-}
-
-.event-more:hover {
-  color: var(--q-primary);
+@media (max-width: 1279px) {
+  .cal__hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 599px) {
-  .day-cell {
-    min-height: var(--day-min-h-sm);
+  .cal__kpis {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
-  .day-header {
-    font-size: 10px;
+  .cal__filters {
+    margin-left: 0;
   }
 }
 </style>

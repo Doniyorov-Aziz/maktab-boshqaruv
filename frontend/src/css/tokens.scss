@@ -331,3 +331,91 @@ body.body--dark {
     --ring-hero: 210px;
   }
 }
+
+// ---------------------------------------------------------------- pages v2
+// Subject colours (12, one per subject: chosen on the subjects page, else by id — see
+// src/utils/subjectColor.js and SubjectColors.java, same order). Light shades read on white,
+// the dark theme lifts them so they read on dark cards.
+body {
+  --subj-1: #6d28d9;
+  --subj-2: #0284c7;
+  --subj-3: #059669;
+  --subj-4: #d97706;
+  --subj-5: #db2777;
+  --subj-6: #4f46e5;
+  --subj-7: #0d9488;
+  --subj-8: #dc2626;
+  --subj-9: #2563eb;
+  --subj-10: #65a30d;
+  --subj-11: #c2410c;
+  --subj-12: #9333ea;
+  // a lesson card's tint and the "now" glow
+  --lesson-tint: 9%;
+  --lesson-tint-hover: 15%;
+  --now-line: #ef4444;
+  --now-glow: rgba(109, 40, 217, 0.35);
+  // repair stripes, the "you are here" marker and quarter / vacation colours of the year line
+  --year-quarter-1: #8b5cf6;
+  --year-quarter-2: #0ea5e9;
+  --year-quarter-3: #10b981;
+  --year-quarter-4: #f59e0b;
+  --year-vacation: #f43f5e;
+  // room states on the live map
+  --room-busy: #7c3aed;
+  --room-free: #16a34a;
+  --room-booked: #0284c7;
+  --room-repair: #94a3b8;
+}
+
+body.body--dark {
+  --subj-1: #a78bfa;
+  --subj-2: #38bdf8;
+  --subj-3: #34d399;
+  --subj-4: #fbbf24;
+  --subj-5: #f472b6;
+  --subj-6: #818cf8;
+  --subj-7: #2dd4bf;
+  --subj-8: #f87171;
+  --subj-9: #60a5fa;
+  --subj-10: #a3e635;
+  --subj-11: #fb923c;
+  --subj-12: #c084fc;
+  --lesson-tint: 14%;
+  --lesson-tint-hover: 22%;
+  --now-line: #f87171;
+  --now-glow: rgba(167, 139, 250, 0.45);
+  --year-quarter-1: #a78bfa;
+  --year-quarter-2: #38bdf8;
+  --year-quarter-3: #34d399;
+  --year-quarter-4: #fbbf24;
+  --year-vacation: #fb7185;
+  --room-busy: #a78bfa;
+  --room-free: #4ade80;
+  --room-booked: #38bdf8;
+  --room-repair: #64748b;
+}
+
+:root {
+  // week grid: the day header row, the period column, a break row, the smallest lesson row
+  --tt-head-h: 40px;
+  --tt-period-w: 72px;
+  --tt-break-h: 14px;
+  --tt-row-min: 46px;
+  --tt-stripe: 4px;
+  // the "today" timeline: a row per class, a class name column
+  --tl-row-h: 34px;
+  --tl-name-w: 64px;
+  // heat cells (teachers' load, a room's week)
+  --heat-cell: 28px;
+  --heat-name-w: 160px;
+  // the year line, month cells, mini months, room tiles, class cards
+  --year-h: 18px;
+  --month-cell-h: 112px;
+  --mini-cell: 22px;
+  --room-tile-w: 170px;
+  --room-tile-h: 104px;
+  --class-avatar: 56px;
+  --kpi-value-md: 28px;
+  --avatar-xs: 20px;
+  --legend-chip-h: 28px;
+}

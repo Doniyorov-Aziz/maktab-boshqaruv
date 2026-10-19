@@ -910,7 +910,7 @@ const pageEntries = [
       sublabel: 'Sahifa',
       icon: m.icon,
       color: 'primary',
-      path: `/app/${m.key}`
+      path: m.path || `/app/${m.key}`
     }))
 ]
 
