@@ -24,8 +24,9 @@ import static uz.azizbek.maktabboshqaruv.service.pages.PageSql.*;
  * <ul>
  *   <li>a student: attendance over 30 days (present + late of present + late + absent, excused
  *       left out — the home page's rule), average grade of the last 30 days and of the 30 before,
- *       the risk score (only from 40, the risk list's floor; below it null), parents in Telegram;</li>
- *   <li>an employee: lessons a week and journal completeness over the last 7 school days;</li>
+ *       the risk score of every student (0–100, the home page's rule; 40+ is the risk list), parents in Telegram;</li>
+ *   <li>an employee: journal completeness over the last 7 school days (lessons a week come with
+ *       what they teach, EmployeeService);</li>
  *   <li>a subject: teachers, classes and lessons a week; a position: its employees in the school;
  *       a school year: its classes and students.</li>
  * </ul>
@@ -34,9 +35,6 @@ import static uz.azizbek.maktabboshqaruv.service.pages.PageSql.*;
 public class ListStatsService {
 
     public record StudentStats(Double attendance30, Double average30, Double averagePrev, Integer risk, boolean telegram) {
-    }
-
-    public record EmployeeStats(int weeklyLessons, Double journal7) {
     }
 
     /** A person on a card: avatar and name (and lessons a week where it matters). */
@@ -85,7 +83,7 @@ public class ListStatsService {
 
     /**
      * One page of students in one statement (through Hibernate, so its statistics see it). The
-     * risk scores come from the school's cached risk list.
+     * risk scores come from the school's cached scores of every student.
      */
     @SuppressWarnings("unchecked")
     public Map<Long, StudentStats> students(long schoolId, Collection<Long> studentIds) {
@@ -109,14 +107,25 @@ public class ListStatsService {
                 .setParameter("from30", Date.valueOf(today.minusDays(29)))
                 .setParameter("from60", Date.valueOf(today.minusDays(59)))
                 .getResultList();
-        Map<Long, Integer> risk = riskScores(schoolId);
+        Map<Long, HomeDashboardService.RiskRow> risk = allRisk(schoolId);
         Map<Long, StudentStats> out = new HashMap<>();
         for (Object[] r : rows) {
             long id = l(r[0]);
             out.put(id, new StudentStats(DashboardMetrics.pct(l(r[1]), l(r[2])), round2(r[3]), round2(r[4]),
-                    risk.get(id), Boolean.TRUE.equals(r[5])));
+                    risk.get(id) == null ? null : risk.get(id).score(), Boolean.TRUE.equals(r[5])));
         }
         return out;
+    }
+
+    /** studentId → risk row of EVERY student of the school (score 0–100 and its parts), cached 90 s. */
+    public Map<Long, HomeDashboardService.RiskRow> allRisk(long schoolId) {
+        return cache.get(schoolId, "risk:all", () -> {
+            Map<Long, HomeDashboardService.RiskRow> out = new HashMap<>();
+            for (HomeDashboardService.RiskRow r : home.riskStudents(schoolId, null, Integer.MAX_VALUE, false, 0).rows()) {
+                out.put(r.studentId(), r);
+            }
+            return out;
+        }).data();
     }
 
     /** studentId → risk score (40+) of the school, from the shared 90-second cache. */
@@ -168,22 +177,12 @@ public class ListStatsService {
 
     // ------------------------------------------------------------------ employees
 
-    /** Lessons a week per employee of the page, and journal completeness from the cached 7-day table. */
-    public Map<Long, EmployeeStats> employees(long schoolId, Collection<Long> employeeIds) {
-        if (employeeIds.isEmpty()) return Map.of();
-        Map<Long, Integer> lessons = new HashMap<>();
-        for (Map<String, Object> r : jdbc.queryForList("""
-                select ls.employee_id, count(*) as n from lesson_slot ls
-                 where ls.employee_id = any(cast(:ids as bigint[])) group by ls.employee_id""",
-                new MapSqlParameterSource("ids", ids(employeeIds)))) {
-            lessons.put(l(r.get("employee_id")), i(r.get("n")));
-        }
-        Map<Long, Double> journal = new HashMap<>();
+    /** employeeId → journal completeness over the last 7 school days (the shared cached table, no query). */
+    public Map<Long, Double> journal7(long schoolId) {
+        Map<Long, Double> out = new HashMap<>();
         for (HomeDashboardService.TeacherRow t : cache.get(schoolId, "journal", () -> home.journal(schoolId)).data().teachers()) {
-            journal.put(t.employeeId(), t.completeness());
+            out.put(t.employeeId(), t.completeness());
         }
-        Map<Long, EmployeeStats> out = new HashMap<>();
-        for (Long id : employeeIds) out.put(id, new EmployeeStats(lessons.getOrDefault(id, 0), journal.get(id)));
         return out;
     }
 

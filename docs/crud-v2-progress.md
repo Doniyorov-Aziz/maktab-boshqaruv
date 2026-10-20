@@ -23,7 +23,7 @@ Sessiya uzilsa — ❌ bandlardan davom eting. **Backend testlari faqat `DB_URL=
   - Xodim: `weeklyLessons` (haftalik dars soni), `journal7` (oxirgi 7 ish kuni jurnal to'liqligi %, keshdan).
   - Fan: `teacherCount`, `classCount`, `weeklyLessons`. Lavozim: `employeeCount` (maktab bo'yicha; `schoolId` siz — hamma maktab). O'quv yili: `classCount`, `studentCount`.
 - ✅ Kesh: xavf ro'yxati va jurnal to'liqligi — mavjud `DashboardCache` (90 s, davomat/baho saqlanganda tozalanadi).
-- ✅ SQL soni: o'quvchilar sahifasi **3 ta** (sahifa + count + raqamlar) — 521 o'quvchi bilan Hibernate statistics testi (xavf keshi isitilgan holda). Xodimlar: 5 ta (sahifa, count, nimani o'qitadi, sinf rahbarligi, haftalik dars) — qator soniga bog'liq emas. Fan/lavozim/yil: sahifa + count + 1 guruhlangan SQL.
+- ✅ SQL soni: o'quvchilar sahifasi **3 ta** (sahifa + count + raqamlar) — 521 o'quvchi bilan Hibernate statistics testi (xavf keshi isitilgan holda). Xodimlar ham **3 ta** (sahifa + count + bitta so'rov: nimani o'qitadi, qaysi sinfga rahbar, haftalik dars; jurnal keshdan) — 3-qismda 5 tadan tushirildi, testi bor. Fan/lavozim/yil: sahifa + count + 1 guruhlangan SQL.
 - ✅ Server tomonda qidiruv `q`: o'quvchi (ism-familiya), xodim (ism-familiya, telefon), fan, lavozim, o'quv yili. Saralash: ko'rinadigan ustun → entity maydonlari (`fullName` → familiya, ism; `className` → sinf raqami, harfi; `positionTitle` → lavozim nomi); noma'lum ustun avvalgidek 400 «Saralash …» (mavjud `ErrorResponsesIntegrationTest` qoidasi) — `util/PageSort`.
 - ✅ Filtr chiplari soni: `GET /api/students/facets` (sinf bo'yicha, Telegram bor/yo'q), `GET /api/employees/facets` (holat, lavozim), `GET /api/subjects/facets` (faol/nofaol).
 - ✅ Lavozimni xodimi bilan o'chirish — **409** «Bu lavozimda N ta xodim bor — o'chirib bo'lmaydi».
@@ -35,7 +35,7 @@ Sessiya uzilsa — ❌ bandlardan davom eting. **Backend testlari faqat `DB_URL=
 
 ### 1. Umumiy CrudPage (`pages/CrudPage.vue` + `components/crud/`)
 - ✅ 1.1 Sarlavha: PageLayout (IconTile, nom, «1-maktab · 511 ta»); o'ngda sahifa ichidagi qidiruv (**«/»** fokus beradi), **Eksport ▾ Excel / PDF** (`POST /api/export/table`, hozirgi qidiruv va filtrning hamma qatorlari), **Yangi qo'shish**.
-- ✅ 1.2 Hero KPI imkoniyati: `module.hero` (endpoint + KpiCard lar). ⚠️ Hech bir modulda hali **yoqilmagan** — KPI lar 4- va 6-bo'limlarga tegishli (keyingi qism).
+- ✅ 1.2 Hero KPI: `module.hero` (endpoint + KpiCard lar) — O'quvchilar va Xodimlar sahifalarida yoqilgan (2-qism).
 - ✅ 1.3 Filtrlar select o'rniga **chiplar**, yonida soni (facet endpointlari): «Lavozim: Direktor 1 · Fan o'qituvchisi 21…», «Holat: Ishda 37». Sinf filtri **ClassPicker** («Barchasi» tugmasi ClassPicker ning o'ziga qo'shildi: `allow-all`). Toggle lar ham chip. Faol filtr bo'lsa «× tozalash».
 - ✅ 1.4 **Jadval | Kartochkalar** (SegTabs, modulda `cards` bo'lsa). Ko'rinish, qidiruv, filtrlar, saralash, sahifa va hajm **URL da** (`?view=cards&positionId=5&page=2…`); orqaga/oldinga ishlaydi. Telefonda kartochkasi bor modul kartochkalarda ochiladi.
 - ✅ 1.5 Jadval (`CrudTable` + `CrudCell`):
@@ -60,7 +60,7 @@ Sessiya uzilsa — ❌ bandlardan davom eting. **Backend testlari faqat `DB_URL=
 - ✅ Umumiy komponentlarga tegilgani uchun: `aj-logic` + `aj` + `pages-v2-logic` + `pages-v2` — **94/94**.
 - ✅ «Keyin» rasmlari `docs/images/crud-v2/after-*.png` (5 sahifa × 1920 light, 1920 dark, 390 + `crud-detail-*`, `crud-form-*`, `crud-cards-dark`, `crud-bulk-dark`), har biri ko'rib chiqildi. Topilgan va tuzatilgan: panelda Ism/Familiya/Lavozim takrorlanardi; panel sarlavhasida ism ikki marta; filtrsiz sahifada bo'sh katta kartochka; filtr asboblari alohida qatorga tushardi; dark da oq checkbox lar; telefonda jadval ichki scroll.
 - ❌ Haqiqiy backend bilan UI testi — `UI_PASS` yo'q.
-- ℹ️ «Bosh sahifa darajasidami?» — karkas (sarlavha, chiplar, jadval, panel, forma, kartochkalar) dashboard tilida. Hali **oddiy** ko'rinadigani — mazmun: o'quvchi/xodim qatorlarida davomat %, baho, xavf, yuklama yo'q; o'quv yillari, fanlar, lavozimlar oddiy jadval. Bular 2–6 bo'limlar.
+- ℹ️ «Bosh sahifa darajasidami?» — karkas (sarlavha, chiplar, jadval, panel, forma, kartochkalar) dashboard tilida; sahifalarning mazmuni (ko'rsatkichlar, kartochkalar, panellar) 2-qismda qo'shildi.
 
 ## CrudPage konfiguratsiyasi — qisqa qo'llanma (`config/modules.js`)
 Modul: `serverSearch`, `facetsEndpoint`, `filters: [{ key, label, options | optionsEndpoint…, picker: 'class' }]`, `toggles`, `cards: { title, subtitle?, avatar?, icon?, color?, badge?, text?, stats? (≤4), footer?, footerIcon? }`, `viewType: 'cards'`, `hero: { endpoint, cards: [{ key, label, icon, color, value, format?, delta?, spark? }] }`, `detail: [{ title, items: [{ key, label, value?, col? }] }]`, `titleOf`, `detailSubtitle`, `profileLink`, `deleteImpact(row) → { blocked, message }`, `deactivate: { label, applies, payload }`, `softDelete`, `rowActions`, `bulkActions`.
@@ -81,19 +81,19 @@ Frontend: `pages/CrudPage.vue` (qayta yozildi); `components/crud/*` (yangi); `Cl
 - ✅ Choraklar va ta'tillar — yangi `AcademicTerm` entity (nom, tur QUARTER/VACATION, sanalar, yil); panelda tahrir (`YearDetail`), «Odatiy taqvim», bir martada saqlash.
 - ✅ «Joriy yil qilib belgilash» (`AcademicYear.current`, maktabda bitta), «Keyingi yilni yaratish» (oxirgi yil sanalari va choraklari +1 yil; yil bo'lmasa odatiy taqvim; dialogda o'zgartirish mumkin).
 - ✅ Backend: yillar kesishsa **409**; chorak yil tashqarisida yoki ustma-ust bo'lsa **409** (hech narsa saqlanmaydi). Ish kunlari — yakshanba va bayram/ta'til tadbirlarisiz.
-- ℹ️ Vaqt chizig'ida sudrab o'zgartirish (ixtiyoriy) qilinmadi — sanalar panelda o'zgartiriladi.
+- ✅ Vaqt chizig'ida **sudrab o'zgartirish** (3-qism): panelda yil bari, har chorak/ta'tilning boshlanish va tugash chetini sichqoncha bilan sudrash yoki fokus qilib ← → (Shift — 7 kun); yil ichida, qo'shni qismga tegmasdan, o'z boshqa chetidan o'tmasdan (`years.js#moveEdge`), keyin «Choraklarni saqlash».
 
 ### 3. Fanlar
 - ✅ Default **kartochkalar** (`SubjectCard`): fan rangidagi ikonka (`Subject.icon`, bo'lmasa nomdan taklif: Matematika → calculate, Fizika → science, Ona tili → menu_book …), nom, soat/hafta, sinflar, o'qituvchilar avatar stack, **shu chorak sifati + DeltaPill**, **30 kunlik o'rtacha sparkline**; nofaol — xira + «Nofaol».
 - ✅ **Faol | Nofaol** tablar (sonlari bilan) eski toggle o'rniga (`?status=ACTIVE|INACTIVE`, URL da).
-- ✅ Panel (`SubjectDetail`): baholar taqsimoti 5/4/3/2, sifat va oldingi davr, o'qituvchilar va yuklama, sinflar bo'yicha soat va sifat.
+- ✅ Panel (`SubjectDetail`): baholar taqsimoti 5/4/3/2, sifat va oldingi davr, o'qituvchilar va yuklama, **har o'qituvchi qaysi sinflarda haftasiga necha soat** (3-qism), sinflar bo'yicha soat va sifat.
 - ✅ Formada **12 rangli palitra** va **ikonka tanlash** (taklif qilingani punktir bilan).
 - ℹ️ «Chorak» — joriy yilning `AcademicTerm` choraklaridan; ular kiritilmagan bo'lsa oxirgi 60 kun va undan oldingi 60 kun.
 
 ### 4. O'quvchilar
 - ✅ **Hero KPI**: jami, bugungi davomat (14 kunlik sparkline; bugun hali belgilanmagan bo'lsa — oxirgi ish kuni, izohda sanasi), xavf ostidagilar (bosilsa filtr), Telegramdagi ota-onalar %. ⚠️ O'g'il/qiz nisbati yo'q — jins maydoni yo'q.
 - ✅ Filtrlar: ClassPicker («Barchasi») + chiplar **Xavf ostida · Telegram ✓/✗ · 🎂 Bugun** (sonlari bilan, server tomonda).
-- ✅ Ustunlar: avatar + ism (ostida «1-A sinf · 7 yosh») · ota-ona (ism, ostida bosiladigan telefon) · davomat % (30 kun, bar) · o'rtacha baho (pill + trend) · xavf (kichik halqa) · Telegram ✓/✗. **Manzil jadvalda ham, ustun menyusida ham yo'q** — faqat panelda.
+- ✅ Ustunlar: avatar + ism (ostida «1-A sinf · 7 yosh») · ota-ona (ism, ostida bosiladigan telefon) · davomat % (30 kun, bar) · o'rtacha baho (pill + trend) · **xavf balli har bir o'quvchida** (kichik halqa, 0–100; 3-qismda faqat 40+ emas, hammasi) · Telegram ✓/✗. **Manzil jadvalda ham, ustun menyusida ham yo'q** — faqat panelda.
 - ✅ Kartochkalar: avatar, ism, sinf, 3 ko'rsatkich.
 - ✅ Panel (`StudentDetail`): sinf, yosh, Telegram; 3 KPI; **30 kunlik davomat nuqtalari**; **xavf sabablari**; fanlar bo'yicha o'rtacha; ota-ona va telefon; tug'ilgan sana, joy, manzil; xulq yozuvlari; [Ota-onaga xabar] [Profil].
 - ✅ Ommaviy: **boshqa sinfga ko'chirish** (boshqa maktabga — 409), Excel/PDF, **ota-onalarga xabar** (Xabarlar sahifasi `?students=…` bilan ochiladi va Telegramga ulangan ota-onalarni o'zi belgilaydi).
@@ -123,4 +123,21 @@ Frontend: `pages/CrudPage.vue` (qayta yozildi); `components/crud/*` (yangi); `Cl
 - ✅ Rasmlar ko'rib chiqildi va tuzatildi: fan ikonkalari kichik edi, avatarlar yopishardi, filtr qatorlari bir qatorga sig'masdi, lavozim nomi kesilardi, dars bermaydigan xodimda «0 soat», telefonda hero 4 qator, 13 sinf rahbari uzun qator, bugun davomat bo'lmaganda «—».
 - ℹ️ Test bazasida bugungi sanani o'z ichiga olgan o'quv yili yo'q — «Bugun» markeri testi va rasmi uchun mock **sun'iy joriy yil** qo'shadi (`crud-mock.js#syntheticYear`).
 - ❌ Haqiqiy backend bilan UI testi — `UI_PASS` yo'q.
-- ℹ️ Foydalanuvchilar formasidagi rol taklifi brauzerda tekshirilmadi (fixture da foydalanuvchilar yo'q).
+- ✅ Foydalanuvchilar formasidagi rol taklifi brauzerda tekshirildi (3-qism, `crud-pages-2`).
+
+## 3-qism — chala qolganlar tugatildi (2026-10-20)
+- ✅ **2. O'quv yillari:** chorak/ta'tillarni **vaqt chizig'ida sudrab** o'zgartirish (sichqoncha va klaviatura), qoidalari `years.js#moveEdge`. Panelda chorak qatori ikki qavat (nom va tur, keyin sanalar) — hamma maydon o'qiladi. Topilgan va tuzatilgan: bar qo'shilganda tahrir ro'yxati `v-else` ostida qolib yashirinardi; yuklanish tugamay «Odatiy taqvim» bosilsa kechikkan javob kiritilganni o'chirardi (tugmalar yuklanish tugaguncha o'chiq).
+- ✅ **3. Fanlar:** panelda o'qituvchi → sinflar (haftasiga soat) — `/api/pages/lists/subjects/{id}/extra` ga `byTeacher`.
+- ✅ **4. O'quvchilar:** xavf balli **har bir o'quvchi** uchun (`HomeDashboardService.riskStudents(..., minScore)` — xavf ro'yxati avvalgidek 40 dan, ro'yxat sahifasi 0 dan; `ListStatsService.allRisk`, kesh 90 s); kartochka va panel ham (xavf 0 bo'lsa «Xavf belgilari yo'q»). ⚠️ O'g'il/qiz nisbati — jins maydoni yo'q, qilinmadi (topshiriqda «agar maydon bo'lsa»).
+- ✅ **5. Lavozimlar:** lavozimning roli Foydalanuvchilar formasida taklif qilinishi — brauzer testi.
+- ✅ **6. Xodimlar:** ro'yxat **3 ta SQL** (5 dan) — bitta native so'rov (o'qitadi + rahbar + haftalik dars), jurnal keshdan; Hibernate statistics testi.
+- ✅ **Har sahifa 4 o'lchamda** (1920 light, 1920 dark, 1366, 390): asosiy element, gorizontal scroll yo'q, panel ekranga sig'adi, telefonda hero 2 ustun, konsolda xato yo'q (`crud-pages-2.spec.js`, 20 test).
+
+### Tekshiruv (3-qism)
+- ✅ `./gradlew build` (test bazasi, fixture dumplarsiz): **321 test, 0 xato**, 3 o'tkazilgan. `EmployeeServiceTest` (mock) ga `EntityManager` mock qo'shildi.
+- ✅ `npm run lint`, `lint:check`, `build` — xatosiz.
+- ✅ Playwright: `crud-logic` **10/10** (sudrash qoidalari), `crud.spec` 26/26, `crud-pages` 12/12, **`crud-pages-2` 24/24**, `crud-shots` 18/18 — jami **90/90**.
+- ✅ Yangi rasm `after-year-drawer.png` (bar + ikki qavatli qatorlar), qolganlari qayta olindi va ko'rib chiqildi.
+- ⚠️ Regressiya `aj` + `pages-v2`: 89/94 — 5 tasi **sanaga bog'liq** (dushanba darslari, «hozirgi dars», kalendar tadbiri). Sabab: bugun backend build paytida eski fixture fayllar (kechagi sessiya, 19-oktabr dushanba) test bazasidan bugungi sana bilan qayta yozildi (muhit o'zgaruvchilari ochiq qolgan — mening xatoim; faqat test bazasi). **Isbot:** o'sha 5 ta test `main` (7971c5f) build ida ham aynan shu fixture lar bilan yiqiladi — kod emas, ma'lumot.
+- ❌ Haqiqiy backend bilan UI testi — `UI_PASS` yo'q.
+

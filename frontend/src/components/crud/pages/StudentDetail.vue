@@ -35,7 +35,9 @@
       </div>
       <div class="std__kpi">
         <small>Xavf balli</small>
-        <b :style="{ color: riskTone }">{{ extra?.risk ?? 'Past' }}</b>
+        <b :style="{ color: riskTone }"
+          >{{ extra?.risk ?? '—' }}<em v-if="extra?.risk != null"> / 100</em></b
+        >
       </div>
     </div>
 
@@ -66,7 +68,11 @@
 
     <section v-if="extra?.risk != null">
       <h4>Xavf sabablari</h4>
-      <ul class="std__reasons" data-risk-reasons>
+      <p v-if="!extra.risk" class="std__muted" data-risk-none>
+        Xavf belgilari yo'q: kelmagan kun, past va pasayayotgan baho, «2» lar
+        yo'q.
+      </p>
+      <ul v-else class="std__reasons" data-risk-reasons>
         <li v-if="extra.parts.absence">
           <q-icon name="event_busy" /> 30 kunda {{ extra.absentDays }} kun
           kelmagan
@@ -253,8 +259,12 @@ const trend = computed(() => {
 })
 const riskTone = computed(() => {
   const r = extra.value?.risk
-  if (r == null) return 'var(--st-present)'
-  return r >= 70 ? 'var(--st-absent)' : 'var(--st-late)'
+  if (r == null) return 'var(--brand-text-muted)'
+  return r >= 70
+    ? 'var(--st-absent)'
+    : r >= 40
+      ? 'var(--st-late)'
+      : 'var(--st-present)'
 })
 const pct = v => (v == null ? '—' : `${Math.round(v)}%`)
 const pctTone = v =>
@@ -337,6 +347,13 @@ const pctTone = v =>
   font-size: var(--text-lg);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+}
+
+.std__kpi em {
+  color: var(--brand-text-muted);
+  font-size: var(--text-xs);
+  font-style: normal;
+  font-weight: 500;
 }
 
 .std__trend--up {

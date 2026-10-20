@@ -48,6 +48,10 @@ class EmployeeServiceTest {
     @Mock
     private AccountStatusService accountStatusService;
 
+    // what an employee teaches comes from one native query: here it finds nothing (an empty list)
+    @Mock(answer = org.mockito.Answers.RETURNS_DEEP_STUBS)
+    private jakarta.persistence.EntityManager em;
+
     @InjectMocks
     private EmployeeService employeeService;
 

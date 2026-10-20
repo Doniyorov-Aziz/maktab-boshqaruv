@@ -525,6 +525,11 @@ public class HomeDashboardService {
     }
 
     public RiskList riskStudents(long schoolId, Collection<Long> classIds, int limit, boolean withPhones) {
+        return riskStudents(schoolId, classIds, limit, withPhones, DashboardMetrics.RISK_LIST_FROM);
+    }
+
+    /** minScore 0: every student with their score and its parts (the O'quvchilar list shows each one's ring). */
+    public RiskList riskStudents(long schoolId, Collection<Long> classIds, int limit, boolean withPhones, int minScore) {
         LocalDate today = today();
         Map<Long, Integer> absent = new HashMap<>();
         for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
@@ -565,7 +570,7 @@ public class HomeDashboardService {
             int twos = g == null ? 0 : i(g.get("twos"));
             int abs = absent.getOrDefault(id, 0);
             DashboardMetrics.Risk risk = DashboardMetrics.risk(abs, now, before, twos);
-            if (risk.score() < DashboardMetrics.RISK_LIST_FROM) continue;
+            if (risk.score() < minScore) continue;
             rows.add(new RiskRow(id, (String) r.get("name"), classId, (String) r.get("class_name"), risk.score(), abs,
                     before, now, twos, risk, withPhones ? blankToNull((String) r.get("guardian_phone")) : null,
                     Boolean.TRUE.equals(r.get("telegram"))));

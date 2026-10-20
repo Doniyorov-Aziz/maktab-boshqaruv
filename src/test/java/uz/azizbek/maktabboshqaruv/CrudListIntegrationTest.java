@@ -148,10 +148,45 @@ class CrudListIntegrationTest {
         assertTrue(st.getPrepareStatementCount() <= 3, "all 521 at once, got " + st.getPrepareStatementCount());
         assertNotNull(whole.getContent().get(0).getBirthPlace(), "places came with the page");
 
+        // every student has a risk score (0–100), not only those on the risk list
+        assertTrue(whole.getContent().stream().allMatch(s -> s.getRisk() != null), "a score for everyone");
         StudentResponseDto one = whole.getContent().stream().filter(s -> s.getId() == first).findFirst().orElseThrow();
         assertEquals(50.0, one.getAttendance30());
         assertEquals(4.0, one.getAverage30());
         assertEquals(Boolean.FALSE, one.getTelegram());
+    }
+
+    @Test
+    void employees_aPage_inAtMost3Statements_withWhatTheyTeach() {
+        long sid = big.id();
+        // more people in the school: five more teachers, each leading nothing, one leading a class
+        Employee lead = null;
+        for (int k = 0; k < 5; k++) {
+            Employee e = new Employee();
+            e.setSchool(big.school);
+            e.setPosition(big.teacher.getPosition());
+            e.setFirstName("Ustoz" + k);
+            e.setLastName("Test");
+            e.setPhone("+99890" + (1_000_000 + big.id() % 1000 * 10 + k));
+            e = employees.save(e);
+            if (k == 0) lead = e;
+        }
+        jdbc.update("update school_class set class_teacher_id = ? where id = ?", lead.getId(), big.classes.get(1).getId());
+        listStats.journal7(sid); // the shared journal table is cached (90 s) like on a running server
+
+        Statistics st = stats();
+        st.clear();
+        var page = employeeService.getAllEmployees(sid, null, null, null, false, PageRequest.of(0, 25, Sort.by("fullName")));
+        long statements = st.getPrepareStatementCount();
+        assertEquals(6, page.getTotalElements());
+        assertTrue(statements <= 3, "page + count + teaching, got " + statements);
+        EmployeeResponseDto teacher = page.getContent().stream().filter(e -> e.getId().equals(big.teacher.getId())).findFirst().orElseThrow();
+        assertEquals(3 * TestSchool.STARTS.length, teacher.getWeeklyLessons());
+        assertEquals("5-A", teacher.getClassTeacherOf());
+        Long leadId = lead.getId();
+        EmployeeResponseDto leader = page.getContent().stream().filter(e -> e.getId().equals(leadId)).findFirst().orElseThrow();
+        assertEquals("6-A", leader.getClassTeacherOf());
+        assertEquals(0, leader.getWeeklyLessons());
     }
 
     @Test

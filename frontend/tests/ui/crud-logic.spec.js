@@ -20,7 +20,10 @@ import {
   along,
   segment,
   progressLine,
-  termOn
+  termOn,
+  moveEdge,
+  isoPlus,
+  daysBetween
 } from '../../src/components/crud/pages/years.js'
 import {
   suggestSubjectIcon,
@@ -188,4 +191,30 @@ test('icons: a subject from its name, a position from its title', () => {
     'supervisor_account'
   )
   expect(positionLook('Qorovul').icon).toBe('security')
+})
+
+test('dragging a term edge stays inside the year, off its neighbours, before its other edge', () => {
+  const year = { startDate: '2026-09-02', endDate: '2027-05-25' }
+  const terms = [
+    { name: 'Q1', startDate: '2026-09-02', endDate: '2026-11-02' },
+    { name: 'V1', startDate: '2026-11-03', endDate: '2026-11-09' },
+    { name: 'Q2', startDate: '2026-11-10', endDate: '2026-12-28' }
+  ]
+  expect(isoPlus('2026-11-02', 1)).toBe('2026-11-03')
+  expect(isoPlus('2026-03-01', -1)).toBe('2026-02-28')
+  expect(daysBetween('2026-09-02', '2026-09-12')).toBe(10)
+  // Q1's end cannot pass V1's start, nor its own start
+  expect(moveEdge(terms, 0, 'endDate', '2026-11-20', year)).toBe('2026-11-02')
+  expect(moveEdge(terms, 0, 'endDate', '2026-10-15', year)).toBe('2026-10-15')
+  expect(moveEdge(terms, 0, 'endDate', '2026-08-01', year)).toBe('2026-09-02')
+  // Q1's start cannot leave the year
+  expect(moveEdge(terms, 0, 'startDate', '2026-08-20', year)).toBe('2026-09-02')
+  // Q2's start stops after V1's end; the last end stops at the year's end
+  expect(moveEdge(terms, 2, 'startDate', '2026-11-05', year)).toBe('2026-11-10')
+  expect(moveEdge(terms, 2, 'endDate', '2027-07-01', year)).toBe('2027-05-25')
+  // the order of the list does not matter, the dates do
+  const shuffled = [terms[2], terms[0], terms[1]]
+  expect(moveEdge(shuffled, 1, 'endDate', '2026-12-01', year)).toBe(
+    '2026-11-02'
+  )
 })

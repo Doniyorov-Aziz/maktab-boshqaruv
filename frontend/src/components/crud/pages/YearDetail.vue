@@ -17,7 +17,56 @@
         jurnaldagi «shu chorak» ko'rsatkichlari shu sanalardan olinadi.
       </p>
       <div v-if="loading" class="skel yd__skel" />
-      <div v-else class="yd__terms" data-terms>
+      <!-- the year as a bar: drag a term's edge (or focus it and use ← →) to move its date -->
+      <div
+        v-else-if="terms.length"
+        ref="barEl"
+        class="yd__bar"
+        :class="{ 'yd__bar--dragging': drag }"
+        data-terms-bar
+      >
+        <div
+          v-for="(t, k) in terms"
+          :key="k"
+          class="yd__seg"
+          :class="`yd__seg--${t.kind.toLowerCase()}`"
+          :style="segStyle(t)"
+          :data-seg="k"
+        >
+          <span class="yd__seg-name">{{ t.name }}</span>
+          <template v-if="canEdit && t.startDate && t.endDate">
+            <button
+              type="button"
+              class="yd__handle yd__handle--start"
+              :aria-label="`${t.name}: boshlanishi ${formatDay(t.startDate)} (← → bir kun)`"
+              data-handle="start"
+              @pointerdown.prevent="startDrag($event, k, 'startDate')"
+              @keydown="nudge($event, k, 'startDate')"
+            />
+            <button
+              type="button"
+              class="yd__handle yd__handle--end"
+              :aria-label="`${t.name}: tugashi ${formatDay(t.endDate)} (← → bir kun)`"
+              data-handle="end"
+              @pointerdown.prevent="startDrag($event, k, 'endDate')"
+              @keydown="nudge($event, k, 'endDate')"
+            />
+          </template>
+          <q-tooltip
+            >{{ t.name }}: {{ formatDay(t.startDate) }} —
+            {{ formatDay(t.endDate) }}</q-tooltip
+          >
+        </div>
+      </div>
+      <div v-if="terms.length && !loading" class="yd__bar-ends tnum">
+        <span>{{ formatDay(row.startDate) }}</span>
+        <span v-if="drag" class="yd__drag-note" data-drag-note
+          >{{ terms[drag.k].name }}:
+          {{ formatDay(terms[drag.k][drag.edge]) }}</span
+        >
+        <span>{{ formatDay(row.endDate) }}</span>
+      </div>
+      <div v-if="!loading" class="yd__terms" data-terms>
         <div
           v-for="(t, k) in terms"
           :key="k"
@@ -46,11 +95,13 @@
             v-model="t.startDate"
             label="Boshlanish"
             :readonly="!canEdit"
+            class="yd__start"
           />
           <AppDateInput
             v-model="t.endDate"
             label="Tugash"
             :readonly="!canEdit"
+            class="yd__end"
           />
           <AppButton
             v-if="canEdit"
@@ -70,6 +121,7 @@
           "
         />
       </div>
+      <!-- nothing to change until the year's terms are in (a late answer would wipe the edits) -->
       <div v-if="canEdit" class="yd__add">
         <AppButton
           variant="secondary"
@@ -77,6 +129,7 @@
           icon="add"
           label="Chorak"
           data-add-quarter
+          :disable="loading"
           @click="add('QUARTER')"
         />
         <AppButton
@@ -84,6 +137,7 @@
           size="sm"
           icon="add"
           label="Ta'til"
+          :disable="loading"
           @click="add('VACATION')"
         />
         <AppButton
@@ -92,6 +146,7 @@
           icon="auto_fix_high"
           label="Odatiy taqvim"
           data-usual-terms
+          :disable="loading"
           @click="usual"
         />
       </div>
@@ -102,6 +157,7 @@
           label="Choraklarni saqlash"
           :loading="saving"
           data-save-terms
+          :disable="loading"
           @click="save"
         />
       </div>
@@ -123,6 +179,7 @@ import AppDateInput from '@/components/app/AppDateInput.vue'
 import IconTile from '@/components/app/IconTile.vue'
 import EmptyState from '@/components/pages/EmptyState.vue'
 import { formatDay } from '../crud'
+import { along, daysBetween, isoPlus, moveEdge } from './years'
 
 const props = defineProps({
   row: { type: Object, required: true },
@@ -188,6 +245,50 @@ function usual() {
   ].filter(
     x => x.startDate >= props.row.startDate && x.endDate <= props.row.endDate
   )
+}
+
+// ---- dragging an edge on the bar
+const barEl = ref(null)
+const drag = ref(null)
+
+function segStyle(t) {
+  if (!t.startDate || !t.endDate) return { display: 'none' }
+  const left = along(props.row.startDate, props.row.endDate, t.startDate)
+  const right = along(props.row.startDate, props.row.endDate, t.endDate)
+  return { left: `${left}%`, width: `${Math.max(right - left, 0.8)}%` }
+}
+
+/** The date under the pointer: the bar spans the year, one day per step. */
+function dateAt(clientX) {
+  const box = barEl.value.getBoundingClientRect()
+  const f = Math.max(0, Math.min(1, (clientX - box.left) / box.width))
+  return isoPlus(
+    props.row.startDate,
+    Math.round(f * daysBetween(props.row.startDate, props.row.endDate))
+  )
+}
+
+function setEdge(k, edge, iso) {
+  terms.value[k][edge] = moveEdge(terms.value, k, edge, iso, props.row)
+}
+
+function startDrag(e, k, edge) {
+  drag.value = { k, edge }
+  const move = ev => setEdge(k, edge, dateAt(ev.clientX))
+  const up = () => {
+    drag.value = null
+    window.removeEventListener('pointermove', move)
+    window.removeEventListener('pointerup', up)
+  }
+  window.addEventListener('pointermove', move)
+  window.addEventListener('pointerup', up)
+}
+
+function nudge(e, k, edge) {
+  const step = { ArrowLeft: -1, ArrowRight: 1 }[e.key]
+  if (!step) return
+  e.preventDefault()
+  setEdge(k, edge, isoPlus(terms.value[k][edge], e.shiftKey ? step * 7 : step))
 }
 
 async function save() {
@@ -258,6 +359,105 @@ h4 {
   border-radius: var(--radius-md);
 }
 
+.yd__bar {
+  position: relative;
+  height: var(--space-8);
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--ring-track);
+  touch-action: none;
+  user-select: none;
+}
+
+.yd__bar--dragging {
+  cursor: ew-resize;
+}
+
+.yd__seg {
+  position: absolute;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.yd__seg--quarter {
+  background: color-mix(in srgb, var(--c-primary) 65%, var(--card-bg));
+  color: white;
+}
+
+.yd__seg--vacation {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--st-late) 45%, transparent) 0 var(--space-1),
+    color-mix(in srgb, var(--st-late) 25%, transparent) var(--space-1)
+      var(--space-2)
+  );
+  color: var(--text-primary);
+}
+
+.yd__seg-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 var(--space-2);
+}
+
+.yd__handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--space-2);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--text-primary) 35%, transparent);
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.yd__handle--start {
+  left: 0;
+}
+
+.yd__handle--end {
+  right: 0;
+}
+
+.yd__seg:hover .yd__handle,
+.yd__handle:focus-visible,
+.yd__bar--dragging .yd__handle {
+  opacity: 1;
+}
+
+.yd__handle:focus-visible {
+  outline: var(--border-focus);
+}
+
+@media (hover: none) {
+  .yd__handle {
+    opacity: 1;
+  }
+}
+
+.yd__bar-ends {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  color: var(--brand-text-muted);
+  font-size: var(--text-xs);
+}
+
+.yd__drag-note {
+  color: var(--c-primary);
+  font-weight: 700;
+}
+
 .yd__terms {
   display: flex;
   flex-direction: column;
@@ -265,16 +465,39 @@ h4 {
 }
 
 .yd__term {
+  /* two floors: name and kind, then the two dates — every field wide enough to read */
   display: grid;
-  grid-template-columns:
-    minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.1fr)
-    minmax(0, 1.1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name kind del'
+    'start end del';
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2);
   border-left: var(--row-stripe) solid var(--c-primary);
   border-radius: var(--radius-md);
   background: var(--surface-2);
+}
+
+.yd__name {
+  grid-area: name;
+}
+
+.yd__kind {
+  grid-area: kind;
+}
+
+.yd__start {
+  grid-area: start;
+}
+
+.yd__end {
+  grid-area: end;
+}
+
+.yd__term > .app-btn,
+.yd__term > :deep(.q-btn) {
+  grid-area: del;
 }
 
 .yd__term--vacation {
@@ -297,11 +520,5 @@ h4 {
   margin-top: var(--space-2);
   color: var(--st-absent);
   font-size: var(--text-sm);
-}
-
-@media (max-width: 599px) {
-  .yd__term {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
 }
 </style>

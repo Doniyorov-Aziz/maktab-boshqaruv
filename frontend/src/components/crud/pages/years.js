@@ -48,3 +48,40 @@ export function termOn(terms, today) {
     (terms || []).find(t => t.startDate <= today && today <= t.endDate) || null
   )
 }
+
+/** Whole days from `a` to `b` (both YYYY-MM-DD). */
+export function daysBetween(a, b) {
+  return Math.round((day(b) - day(a)) / 86400000)
+}
+
+/** The date `n` days after `iso` (n may be negative). */
+export function isoPlus(iso, n) {
+  return new Date(day(iso) + n * 86400000).toISOString().slice(0, 10)
+}
+
+/**
+ * Where one edge of term `k` may go when it is dragged to `iso`: inside the year, not before the
+ * previous term's end (+1 day) nor after the next one's start (−1 day), never past its own other
+ * edge. Returns the date it lands on.
+ */
+export function moveEdge(terms, k, edge, iso, year) {
+  const order = terms
+    .map((_, i) => i)
+    .sort((a, b) =>
+      String(terms[a].startDate).localeCompare(String(terms[b].startDate))
+    )
+  const pos = order.indexOf(k)
+  const prev = pos > 0 ? terms[order[pos - 1]] : null
+  const next = pos < order.length - 1 ? terms[order[pos + 1]] : null
+  const t = terms[k]
+  const [lo, hi] =
+    edge === 'startDate'
+      ? [prev?.endDate ? isoPlus(prev.endDate, 1) : year.startDate, t.endDate]
+      : [
+          t.startDate,
+          next?.startDate ? isoPlus(next.startDate, -1) : year.endDate
+        ]
+  if (iso < lo) return lo
+  if (iso > hi) return hi
+  return iso
+}

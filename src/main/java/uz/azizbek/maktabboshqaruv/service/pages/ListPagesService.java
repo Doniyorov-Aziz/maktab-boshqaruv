@@ -55,8 +55,13 @@ public class ListPagesService {
     public record ClassRow(long classId, String name, int lessons, Double quality, Double average, int grades) {
     }
 
-    public record SubjectExtra(List<ListStatsService.Person> teachers, List<ClassRow> classes,
-                               Map<Integer, Integer> distribution, String window, Double quality, Double qualityPrev) {
+    /** One class of a teacher in this subject and its lessons a week. */
+    public record ClassHours(long classId, String name, int lessons) {
+    }
+
+    public record SubjectExtra(List<ListStatsService.Person> teachers, Map<Long, List<ClassHours>> byTeacher,
+                               List<ClassRow> classes, Map<Integer, Integer> distribution, String window,
+                               Double quality, Double qualityPrev) {
     }
 
     public record Term(Long id, String name, String kind, LocalDate startDate, LocalDate endDate) {
@@ -158,9 +163,7 @@ public class ListPagesService {
         for (LocalDate d = from; !d.isAfter(today); d = d.plusDays(1)) {
             if (isSchool.test(d)) days.add(new DayDot(d, worst.getOrDefault(d, "NONE")));
         }
-        HomeDashboardService.RiskRow risk = cache.get(schoolId, "risk:2000:false",
-                () -> home.riskStudents(schoolId, null, 2000, false)).data().rows().stream()
-                .filter(r -> r.studentId() == studentId).findFirst().orElse(null);
+        HomeDashboardService.RiskRow risk = stats.allRisk(schoolId).get(studentId);
         return new StudentExtra(risk == null ? null : risk.score(), risk == null ? null : risk.absentDays(),
                 risk == null ? null : risk.avgBefore(), risk == null ? null : risk.avgNow(),
                 risk == null ? null : risk.twos(), risk == null ? null : risk.parts(),
@@ -281,6 +284,17 @@ public class ListPagesService {
                     i(r.get("lessons")), DashboardMetrics.pct(l(r.get("good")), n),
                     r.get("a") == null ? null : Math.round(((Number) r.get("a")).doubleValue() * 100) / 100.0, (int) n));
         }
+        // who teaches it in which class, hours a week each
+        Map<Long, List<ClassHours>> byTeacher = new LinkedHashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("""
+                select ls.employee_id, c.id, c.grade_number, c.section_letter, count(*) as n
+                  from lesson_slot ls join school_class c on c.id = ls.class_id
+                 where ls.subject_id = :sub
+                 group by ls.employee_id, c.id, c.grade_number, c.section_letter
+                 order by c.grade_number, c.section_letter""", q)) {
+            byTeacher.computeIfAbsent(l(r.get("employee_id")), k -> new ArrayList<>())
+                    .add(new ClassHours(l(r.get("id")), r.get("grade_number") + "-" + r.get("section_letter"), i(r.get("n"))));
+        }
         Map<Integer, Integer> dist = new LinkedHashMap<>();
         for (int v = 5; v >= 2; v--) dist.put(v, 0);
         for (Map<String, Object> r : jdbc.queryForList("""
@@ -289,7 +303,7 @@ public class ListPagesService {
             int v = i(r.get("score"));
             if (dist.containsKey(v)) dist.put(v, i(r.get("n")));
         }
-        return new SubjectExtra(st == null ? List.of() : st.teachers(), rows, dist, w.label(),
+        return new SubjectExtra(st == null ? List.of() : st.teachers(), byTeacher, rows, dist, w.label(),
                 st == null ? null : st.qualityNow(), st == null ? null : st.qualityPrev());
     }
 

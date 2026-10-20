@@ -599,8 +599,15 @@ export const modules = [
         },
         {
           label: 'Xavf',
-          value: row.risk ?? 'past',
-          color: row.risk == null ? 'var(--st-present)' : 'var(--st-late)'
+          value: row.risk ?? '—',
+          color:
+            row.risk == null
+              ? null
+              : row.risk >= 70
+                ? 'var(--st-absent)'
+                : row.risk >= 40
+                  ? 'var(--st-late)'
+                  : 'var(--st-present)'
         }
       ]
     },

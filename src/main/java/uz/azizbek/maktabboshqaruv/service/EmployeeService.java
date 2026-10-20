@@ -51,6 +51,9 @@ public class EmployeeService {
     @Autowired
     private ListStatsService listStats;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager em;
+
     public Page<EmployeeResponseDto> getAllEmployees(Long schoolId, Pageable pageable) {
         return getAllEmployees(schoolId, null, null, null, pageable);
     }
@@ -85,14 +88,8 @@ public class EmployeeService {
         Pageable sorted = PageSort.map(pageable, SORTABLE);
         Page<Employee> page = employeeRepository.search(schoolId, positionId, status, PageSort.like(q), classTeacher, sorted);
         List<EmployeeResponseDto> rows = withTeaching(page.getContent());
-        Map<Long, ListStatsService.EmployeeStats> stats = listStats.employees(schoolId,
-                rows.stream().map(EmployeeResponseDto::getId).toList());
-        for (EmployeeResponseDto dto : rows) {
-            ListStatsService.EmployeeStats st = stats.get(dto.getId());
-            if (st == null) continue;
-            dto.setWeeklyLessons(st.weeklyLessons());
-            dto.setJournal7(st.journal7());
-        }
+        Map<Long, Double> journal = listStats.journal7(schoolId);
+        for (EmployeeResponseDto dto : rows) dto.setJournal7(journal.get(dto.getId()));
         return new PageImpl<>(rows, sorted, page.getTotalElements());
     }
 
@@ -176,19 +173,37 @@ public class EmployeeService {
         employeeRepository.deleteById(id);
     }
 
+    /**
+     * What the employees teach (subjects, classes, lessons a week) and which classes they lead, in
+     * ONE statement for the whole page (through Hibernate, so its statistics count it).
+     */
+    @SuppressWarnings("unchecked")
     private List<EmployeeResponseDto> withTeaching(List<Employee> employees) {
         if (employees.isEmpty()) return List.of();
-        List<Long> ids = employees.stream().map(Employee::getId).toList();
+        String ids = "{" + String.join(",", employees.stream().map(e -> String.valueOf(e.getId())).toList()) + "}";
         Map<Long, TreeSet<String>> subjects = new HashMap<>();
         Map<Long, TreeSet<String>> classes = new HashMap<>();
-        for (Object[] r : lessonSlotRepository.teachingOf(ids)) {
-            Long eid = (Long) r[0];
-            subjects.computeIfAbsent(eid, k -> new TreeSet<>()).add((String) r[1]);
-            classes.computeIfAbsent(eid, k -> new TreeSet<>(CLASS_ORDER)).add(r[2] + "-" + r[3]);
-        }
         Map<Long, TreeSet<String>> leads = new HashMap<>();
-        for (Object[] r : schoolClassRepository.ledBy(ids)) {
-            leads.computeIfAbsent((Long) r[0], k -> new TreeSet<>(CLASS_ORDER)).add(r[1] + "-" + r[2]);
+        Map<Long, Integer> weekly = new HashMap<>();
+        List<Object[]> found = em.createNativeQuery("""
+                        select 'T' as kind, ls.employee_id, s.name, c.grade_number, c.section_letter, count(*) as n
+                          from lesson_slot ls join subject s on s.id = ls.subject_id join school_class c on c.id = ls.class_id
+                         where ls.employee_id = any(cast(:ids as bigint[]))
+                         group by ls.employee_id, s.name, c.grade_number, c.section_letter
+                        union all
+                        select 'L', c.class_teacher_id, null, c.grade_number, c.section_letter, 0
+                          from school_class c where c.class_teacher_id = any(cast(:ids as bigint[]))""")
+                .setParameter("ids", ids).getResultList();
+        for (Object[] r : found) {
+            long eid = ((Number) r[1]).longValue();
+            String cls = r[3] + "-" + r[4];
+            if ("L".equals(String.valueOf(r[0]))) {
+                leads.computeIfAbsent(eid, k -> new TreeSet<>(CLASS_ORDER)).add(cls);
+                continue;
+            }
+            subjects.computeIfAbsent(eid, k -> new TreeSet<>()).add((String) r[2]);
+            classes.computeIfAbsent(eid, k -> new TreeSet<>(CLASS_ORDER)).add(cls);
+            weekly.merge(eid, ((Number) r[5]).intValue(), Integer::sum);
         }
         List<EmployeeResponseDto> rows = new ArrayList<>();
         for (Employee e : employees) {
@@ -197,6 +212,7 @@ public class EmployeeService {
             dto.setClasses(join(classes.get(e.getId())));
             dto.setClassTeacherOf(join(leads.get(e.getId())));
             dto.setClassTeacher(leads.containsKey(e.getId()));
+            dto.setWeeklyLessons(weekly.getOrDefault(e.getId(), 0));
             rows.add(dto);
         }
         return rows;

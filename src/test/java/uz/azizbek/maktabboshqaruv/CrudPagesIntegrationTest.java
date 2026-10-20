@@ -244,6 +244,10 @@ class CrudPagesIntegrationTest {
         assertEquals(2, sub.classes().size());
         assertEquals(TestSchool.STARTS.length, sub.classes().get(0).lessons());
         assertEquals(1, sub.teachers().size());
+        // the teacher's classes in this subject, hours a week each
+        var mine = sub.byTeacher().get(school.teacher.getId());
+        assertEquals(2, mine.size());
+        assertEquals(TestSchool.STARTS.length, mine.get(0).lessons());
         assertEquals(4, pages.studentsHero(sid).size());
         assertEquals(4, pages.employeesHero(sid).size());
     }

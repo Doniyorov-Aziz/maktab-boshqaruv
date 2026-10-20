@@ -53,13 +53,30 @@
         <div v-if="!extra.teachers.length" class="sd__muted">
           Jadvalda bu fan hali yo'q.
         </div>
-        <div v-for="t in extra.teachers" :key="t.id" class="sd__row">
-          <AvatarInitials :name="t.name" :id="t.id" size="sm" />
-          <span class="sd__who">{{ t.name }}</span>
-          <span class="sd__bar"
-            ><i :style="{ width: `${(t.lessons / maxLessons) * 100}%` }"
-          /></span>
-          <b class="tnum">{{ t.lessons }} soat</b>
+        <div
+          v-for="t in extra.teachers"
+          :key="t.id"
+          class="sd__teacher"
+          :data-teacher-row="t.id"
+        >
+          <div class="sd__row">
+            <AvatarInitials :name="t.name" :id="t.id" size="sm" />
+            <span class="sd__who">{{ t.name }}</span>
+            <span class="sd__bar"
+              ><i :style="{ width: `${(t.lessons / maxLessons) * 100}%` }"
+            /></span>
+            <b class="tnum">{{ t.lessons }} soat</b>
+          </div>
+          <!-- in which classes, hours a week each -->
+          <div v-if="extra.byTeacher?.[t.id]?.length" class="sd__classes">
+            <span
+              v-for="c in extra.byTeacher[t.id]"
+              :key="c.classId"
+              class="sd__class-chip tnum"
+              :data-teacher-class="c.name"
+              >{{ c.name }} · {{ c.lessons }} soat</span
+            >
+          </div>
         </div>
       </section>
 
@@ -225,6 +242,31 @@ h4 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 600;
+}
+
+.sd__teacher {
+  padding: var(--space-1) 0;
+  border-bottom: var(--hairline) solid var(--dash-edge);
+}
+
+.sd__teacher:last-child {
+  border-bottom: 0;
+}
+
+.sd__classes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: 0 0 var(--space-1) calc(var(--space-7) + var(--space-1));
+}
+
+.sd__class-chip {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--brand-text-muted);
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
