@@ -5,438 +5,483 @@
     :color="module.color"
     :title="module.title"
   >
-    <template v-slot:subtitle>
-      <div
-        v-if="module.schoolScoped && schoolStore.activeSchoolName"
-        class="ellipsis"
-      >
-        {{ schoolStore.activeSchoolName }}
-      </div>
-      <q-skeleton v-if="loading" type="text" width="90px" />
-      <div v-else>Jami {{ pagination.rowsNumber }} ta yozuv</div>
+    <template #subtitle>
+      <span class="crud-sub" data-crud-subtitle>
+        <template v-if="module.schoolScoped && schoolStore.activeSchoolName"
+          >{{ schoolStore.activeSchoolName }} ·
+        </template>
+        <q-skeleton
+          v-if="loading && !loaded"
+          type="text"
+          width="60px"
+          class="crud-sub__skel"
+        />
+        <template v-else>{{ total }} ta</template>
+      </span>
     </template>
-    <template v-slot:actions>
+    <template #actions>
       <AppInput
-        v-model="searchQuery"
+        ref="searchEl"
+        v-model="search"
         clearable
-        debounce="250"
-        placeholder="Qidirish..."
-        class="search-input"
-        @update:model-value="onSearchChange"
+        debounce="300"
+        placeholder="Qidirish…"
+        class="crud-search"
+        aria-label="Qidirish"
+        data-crud-search
+        @update:model-value="onSearch"
       >
-        <template v-slot:prepend>
-          <q-icon name="search" />
+        <template #prepend><q-icon name="search" /></template>
+        <template #append>
+          <kbd v-if="!search" class="crud-kbd" title="Qidiruvga o'tish">/</kbd>
         </template>
       </AppInput>
       <AppButton
-        variant="ghost"
+        variant="secondary"
         icon="file_download"
-        label="Excel"
-        color="grey-7"
-        @click="exportCsv"
-      />
+        label="Eksport"
+        data-export
+      >
+        <q-menu anchor="bottom right" self="top right" auto-close>
+          <q-list dense class="crud-menu">
+            <q-item clickable data-export-xlsx @click="exportAll('xlsx')">
+              <q-item-section avatar
+                ><q-icon name="table_view"
+              /></q-item-section>
+              <q-item-section>Excel (.xlsx)</q-item-section>
+            </q-item>
+            <q-item clickable data-export-pdf @click="exportAll('pdf')">
+              <q-item-section avatar
+                ><q-icon name="picture_as_pdf"
+              /></q-item-section>
+              <q-item-section>PDF</q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
+      </AppButton>
       <AppButton
         v-if="canCreate"
         icon="add"
         label="Yangi qo'shish"
-        @click="openCreateDialog"
+        data-create
+        @click="openCreate"
       />
     </template>
 
     <q-banner
       v-if="module.schoolScoped && !schoolStore.activeSchoolId"
-      class="bg-orange-1 text-orange-9 rounded-borders q-mb-md"
+      class="crud-banner rounded-borders"
       dense
     >
-      <template v-slot:avatar>
-        <q-icon name="info" color="warning" />
-      </template>
+      <template #avatar><q-icon name="info" /></template>
       Ma'lumotlarni ko'rish uchun avval maktab tanlang
     </q-banner>
 
-    <template v-else>
-      <div
-        v-if="module.filters?.length || module.toggles?.length"
-        class="row items-center q-gutter-sm q-mb-md"
+    <div v-else class="crud">
+      <!-- 1.2 hero numbers (from the module's hero config) -->
+      <div v-if="module.hero && hero" class="crud-hero" data-crud-hero>
+        <KpiCard
+          v-for="(k, i) in module.hero.cards"
+          :key="k.key"
+          compact
+          :kpi-key="k.key"
+          :label="k.label"
+          :icon="k.icon"
+          :color="k.color"
+          :value="k.value(hero)"
+          :format="k.format"
+          :empty-value="k.value(hero) == null"
+          :delta="k.delta?.(hero) ?? null"
+          :spark="k.spark?.(hero) || []"
+          :style="{ '--i': i }"
+        />
+      </div>
+
+      <!-- 1.3 filters, 1.4 view, density, columns -->
+      <section
+        v-if="hasFilters || canCards || view === 'table'"
+        class="crud-bar"
+        :class="hasFilters || canCards ? 'dash-card' : 'crud-bar--plain'"
+        data-crud-bar
       >
-        <AppSelect
-          v-for="f in module.filters || []"
-          :key="f.key"
-          v-model="activeFilters[f.key]"
-          :options="filterOptionsFor(f)"
-          option-value="value"
-          option-label="label"
-          emit-value
-          map-options
-          clearable
-          :label="f.label"
-          :placeholder="f.placeholder"
-          style="min-width: 180px"
-          @update:model-value="onFilterChange"
+        <CrudFilters
+          v-if="hasFilters"
+          class="crud-bar__filters"
+          :filters="module.filters || []"
+          :toggles="module.toggles || []"
+          :values="state.filters"
+          :options="filterOptions"
+          :facets="facets"
+          :classes="classes"
+          @change="onFilter"
+          @clear="clearFilters"
         />
-        <q-toggle
-          v-for="tg in module.toggles || []"
-          :key="tg.key"
-          v-model="activeFilters[tg.key]"
-          :label="tg.label"
-          :true-value="true"
-          :false-value="null"
-          dense
-          @update:model-value="onFilterChange"
-        />
-      </div>
-
-      <div v-if="module.viewType === 'cards' && loading" class="app-grid">
-        <div v-for="i in 6" :key="i">
-          <q-skeleton type="rect" height="160px" class="rounded-borders" />
-        </div>
-      </div>
-
-      <template v-else-if="module.viewType === 'cards' && displayRows.length">
-        <div class="app-grid">
-          <div v-for="row in displayRows" :key="row.id">
-            <div
-              class="brand-card q-pa-md full-height entity-card"
-              :class="{ 'entity-card--link': cardIsLink }"
-              :tabindex="cardIsLink ? 0 : undefined"
-              @click="onCardClick(row)"
-              @keydown.enter="onCardClick(row)"
+        <div class="crud-bar__tools">
+          <SegTabs
+            v-if="canCards"
+            :model-value="view"
+            label="Ko'rinish"
+            :options="VIEWS"
+            data-view-switch
+            @update:model-value="setView"
+          />
+          <template v-if="view === 'table'">
+            <SegTabs
+              :model-value="density"
+              label="Zichlik"
+              :options="DENSITIES"
+              data-density
+              @update:model-value="setDensity"
+            />
+            <AppButton
+              variant="ghost"
+              size="sm"
+              icon="view_column"
+              aria-label="Ustunlar"
+              data-columns
             >
-              <div class="row items-start justify-between no-wrap">
-                <div
-                  v-if="module.key === 'school-classes'"
-                  class="row items-center q-gutter-sm no-wrap"
-                >
-                  <div class="class-card__name" :style="{ color: module.color }"
-                    >{{ row.gradeNumber }}-{{ row.sectionLetter }}</div
+              <q-tooltip>Ustunlar</q-tooltip>
+              <q-menu anchor="bottom right" self="top right">
+                <q-list dense class="crud-menu" data-columns-menu>
+                  <q-item-label header>Ko'rinadigan ustunlar</q-item-label>
+                  <q-item
+                    v-for="c in allColumns"
+                    :key="c.name"
+                    clickable
+                    :data-column-toggle="c.name"
+                    @click="toggleColumn(c.name)"
                   >
-                </div>
-                <div
-                  v-else
-                  class="row items-center q-gutter-sm no-wrap entity-card__title"
-                >
-                  <IconTile
-                    :icon="module.icon"
-                    size="40"
-                    :color="module.color || ''"
-                  />
-                  <div class="text-weight-bold text-subtitle1 ellipsis">{{
-                    row.name
-                  }}</div>
-                </div>
-                <q-badge
-                  v-if="
-                    module.key === 'schools' &&
-                    row.id === schoolStore.activeSchoolId
-                  "
-                  color="positive"
-                  >Faol</q-badge
-                >
-                <div class="row no-wrap entity-card__actions">
-                  <AppButton
-                    variant="ghost"
-                    size="sm"
-                    v-if="canEdit"
-                    icon="edit"
-                    color="primary"
-                    @click.stop="openEditDialog(row)"
-                    @keydown.enter.stop
-                  />
-                  <AppButton
-                    variant="ghost"
-                    size="sm"
-                    v-if="canDelete"
-                    icon="delete_outline"
-                    color="negative"
-                    @click.stop="confirmDelete(row)"
-                    @keydown.enter.stop
-                  />
-                </div>
-              </div>
-
-              <template v-if="module.key === 'schools'">
-                <div class="text-caption muted-text q-mt-xs ellipsis">{{
-                  row.address
-                }}</div>
-                <div class="row q-mt-md q-col-gutter-sm text-center">
-                  <div class="col-4">
-                    <div class="text-h6 text-weight-bold">{{
-                      row.studentCount ?? 0
-                    }}</div>
-                    <div class="text-caption muted-text">O'quvchilar</div>
-                  </div>
-                  <div class="col-4">
-                    <div class="text-h6 text-weight-bold">{{
-                      row.teacherCount ?? 0
-                    }}</div>
-                    <div class="text-caption muted-text">O'qituvchilar</div>
-                  </div>
-                  <div class="col-4">
-                    <div class="text-h6 text-weight-bold">{{
-                      row.classCount ?? 0
-                    }}</div>
-                    <div class="text-caption muted-text">Sinflar</div>
-                  </div>
-                </div>
-                <div class="row items-center q-mt-md text-caption text-primary">
-                  <q-icon name="login" size="16px" class="q-mr-xs" />
-                  {{
-                    row.id === schoolStore.activeSchoolId
-                      ? 'Joriy maktab — bosing, bosh sahifa ochiladi'
-                      : "Bosing — shu maktabga o'tish"
-                  }}
-                </div>
-              </template>
-
-              <template v-else-if="module.key === 'school-classes'">
-                <div class="text-caption muted-text q-mt-xs ellipsis">
-                  <q-icon name="person" size="14px" />
-                  {{ row.classTeacherName || 'Sinf rahbari tayinlanmagan' }}
-                </div>
-                <div class="row q-mt-md q-col-gutter-sm text-center">
-                  <div class="col-6">
-                    <div class="text-h6 text-weight-bold">{{
-                      row.studentCount ?? 0
-                    }}</div>
-                    <div class="text-caption muted-text">O'quvchi</div>
-                  </div>
-                  <div class="col-6">
-                    <div class="text-h6 text-weight-bold">{{
-                      row.maxStudents ?? '—'
-                    }}</div>
-                    <div class="text-caption muted-text">Maks.</div>
-                  </div>
-                </div>
-                <div class="text-caption muted-text q-mt-sm ellipsis">{{
-                  row.academicYearTitle
-                }}</div>
-              </template>
-
-              <template v-else-if="module.key === 'buildings'">
-                <div class="text-caption muted-text q-mt-xs">{{
-                  row.schoolName
-                }}</div>
-                <div class="row q-mt-md q-col-gutter-sm text-center">
-                  <div class="col-4">
-                    <div class="text-h6 text-weight-bold">{{
-                      row.floorCount ?? 1
-                    }}</div>
-                    <div class="text-caption muted-text">Qavat</div>
-                  </div>
-                  <div class="col-4">
-                    <div class="text-h6 text-weight-bold">{{
-                      row.roomCount ?? 0
-                    }}</div>
-                    <div class="text-caption muted-text">Xona</div>
-                  </div>
-                  <div class="col-4">
-                    <div class="text-h6 text-weight-bold"
-                      >{{ row.occupiedPercentage ?? 0 }}%</div
-                    >
-                    <div class="text-caption muted-text">Band</div>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </div>
+                    <q-item-section avatar>
+                      <q-icon
+                        :name="
+                          shown.includes(c.name)
+                            ? 'check_box'
+                            : 'check_box_outline_blank'
+                        "
+                        :color="shown.includes(c.name) ? 'primary' : undefined"
+                      />
+                    </q-item-section>
+                    <q-item-section>{{ c.label }}</q-item-section>
+                  </q-item>
+                  <q-separator />
+                  <q-item clickable @click="resetColumns">
+                    <q-item-section avatar
+                      ><q-icon name="restart_alt"
+                    /></q-item-section>
+                    <q-item-section>Asl holiga</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </AppButton>
+          </template>
         </div>
+      </section>
 
-        <div
-          v-if="!searchQuery && !filtersActive"
-          class="row items-center justify-end q-mt-md q-gutter-sm"
-        >
-          <div class="text-caption muted-text">{{ cardPageLabel }}</div>
-          <AppButton
-            variant="ghost"
-            icon="chevron_left"
-            :disable="pagination.page <= 1"
-            @click="changeCardPage(-1)"
-          />
-          <AppButton
-            variant="ghost"
-            icon="chevron_right"
-            :disable="
-              pagination.page * pagination.rowsPerPage >= pagination.rowsNumber
-            "
-            @click="changeCardPage(1)"
-          />
-        </div>
-      </template>
+      <!-- 1.9 states -->
+      <section v-if="error" class="dash-card crud-state" data-crud-error>
+        <EmptyState
+          icon="error_outline"
+          title="Ma'lumotni yuklab bo'lmadi"
+          :text="error"
+          action="Qayta urinish"
+          action-icon="refresh"
+          @action="fetchRows"
+        />
+      </section>
 
-      <div
-        v-else-if="module.viewType === 'cards'"
-        class="brand-card q-pa-xl column flex-center muted-text"
+      <section
+        v-else-if="loading && !loaded"
+        class="dash-card crud-skel"
+        data-crud-skeleton
       >
-        <q-icon name="inbox" size="48px" class="q-mb-sm" />
-        <div class="text-subtitle2">{{
-          searchQuery ? 'Hech narsa topilmadi' : "Hozircha ma'lumot yo'q"
-        }}</div>
+        <div v-if="view === 'cards'" class="crud-skel__cards">
+          <div v-for="i in 6" :key="i" class="skel crud-skel__card" />
+        </div>
+        <template v-else>
+          <div class="skel crud-skel__head" />
+          <div v-for="i in 8" :key="i" class="skel crud-skel__row" />
+        </template>
+      </section>
+
+      <section
+        v-else-if="!rows.length"
+        class="dash-card crud-state"
+        data-crud-empty
+      >
+        <EmptyState
+          v-if="searchOrFilter"
+          icon="filter_alt_off"
+          title="Hech narsa topilmadi"
+          text="Qidiruv yoki filtr bo'yicha natija yo'q."
+          action="Filtrni tozalash"
+          action-icon="close"
+          data-empty="filtered"
+          @action="clearAll"
+        />
+        <EmptyState
+          v-else
+          :icon="module.icon"
+          :title="`${module.title}: hozircha yozuv yo'q`"
+          :text="
+            canCreate ? 'Birinchisini qo\'shing — shu yerda ko\'rinadi.' : ''
+          "
+          :action="canCreate ? 'Qo\'shish' : ''"
+          action-icon="add"
+          data-empty="none"
+          @action="openCreate"
+        />
+      </section>
+
+      <template v-else>
+        <!-- 1.6 cards -->
+        <CrudCards
+          v-if="view === 'cards'"
+          :rows="rows"
+          :card="module.cards"
+          :icon="module.icon"
+          :color="module.color"
+          :can-edit="canEdit && !module.readOnlyCards"
+          :can-delete="canDelete && !module.readOnlyCards"
+          :soft-delete="!!module.softDelete"
+          @open="openRow"
+          @edit="openEdit"
+          @delete="confirmDelete"
+        />
+        <!-- 1.5 table -->
+        <section v-else class="dash-card crud-table-card">
+          <CrudTable
+            :columns="tableColumns"
+            :rows="rows"
+            :loading="loading"
+            selectable
+            :selected="selected"
+            :sort-by="state.sortBy"
+            :descending="state.descending"
+            :density="density"
+            :can-edit="canEdit"
+            :can-delete="canDelete"
+            :soft-delete="!!module.softDelete"
+            :extra-actions="extraActions"
+            :today="today"
+            :label="module.title"
+            :title-of="titleOf"
+            @sort="onSort"
+            @row="openRow"
+            @edit="openEdit"
+            @delete="confirmDelete"
+            @action="onAction"
+            @select="onSelect"
+            @select-all="onSelectAll"
+            @profile="goToProfile"
+          />
+        </section>
+
+        <!-- pager -->
+        <nav class="crud-pager" aria-label="Sahifalar" data-crud-pager>
+          <span class="crud-pager__size">
+            Sahifada
+            <AppSelect
+              :model-value="state.size"
+              :options="PAGE_SIZES"
+              dense
+              options-dense
+              class="crud-pager__select"
+              aria-label="Sahifadagi qatorlar"
+              data-page-size
+              @update:model-value="setSize"
+            />
+          </span>
+          <span class="crud-pager__range tnum" data-page-range>{{
+            range
+          }}</span>
+          <AppButton
+            variant="ghost"
+            size="sm"
+            icon="first_page"
+            aria-label="Birinchi sahifa"
+            :disable="state.page <= 1"
+            @click="setPage(1)"
+          />
+          <AppButton
+            variant="ghost"
+            size="sm"
+            icon="chevron_left"
+            aria-label="Oldingi sahifa"
+            :disable="state.page <= 1"
+            data-page-prev
+            @click="setPage(state.page - 1)"
+          />
+          <span class="crud-pager__page tnum"
+            >{{ state.page }} / {{ pages }}</span
+          >
+          <AppButton
+            variant="ghost"
+            size="sm"
+            icon="chevron_right"
+            aria-label="Keyingi sahifa"
+            :disable="state.page >= pages"
+            data-page-next
+            @click="setPage(state.page + 1)"
+          />
+          <AppButton
+            variant="ghost"
+            size="sm"
+            icon="last_page"
+            aria-label="Oxirgi sahifa"
+            :disable="state.page >= pages"
+            @click="setPage(pages)"
+          />
+        </nav>
+      </template>
+    </div>
+
+    <!-- bulk actions -->
+    <transition name="crud-bulk">
+      <div
+        v-if="selected.size"
+        class="crud-bulk"
+        role="toolbar"
+        aria-label="Tanlanganlar"
+        data-bulk-bar
+      >
+        <b class="tnum">{{ selected.size }} ta tanlandi</b>
         <AppButton
           variant="secondary"
-          v-if="canCreate && !searchQuery"
-          icon="add"
-          label="Yangi qo'shish"
-          class="q-mt-md"
-          @click="openCreateDialog"
+          size="sm"
+          icon="table_view"
+          label="Excel"
+          data-bulk-xlsx
+          @click="exportSelected('xlsx')"
+        />
+        <AppButton
+          variant="secondary"
+          size="sm"
+          icon="picture_as_pdf"
+          label="PDF"
+          @click="exportSelected('pdf')"
+        />
+        <AppButton
+          v-for="a in module.bulkActions || []"
+          :key="a.key"
+          variant="secondary"
+          size="sm"
+          :icon="a.icon"
+          :label="a.label"
+          @click="a.run({ ids: [...selected], api, reload: fetchRows, $q })"
+        />
+        <AppButton
+          v-if="canDelete"
+          variant="danger"
+          size="sm"
+          :icon="module.softDelete ? 'block' : 'delete_outline'"
+          :label="module.softDelete ? 'Nofaol qilish' : 'O\'chirish'"
+          data-bulk-delete
+          @click="deleteSelected"
+        />
+        <AppButton
+          variant="ghost"
+          size="sm"
+          icon="close"
+          aria-label="Tanlovni bekor qilish"
+          data-bulk-clear
+          @click="selected.clear()"
         />
       </div>
+    </transition>
 
-      <!-- first load: skeleton rows instead of an empty table flashing "Hozircha ma'lumot yo'q" -->
-      <div
-        v-else-if="loading && !rows.length"
-        class="brand-card q-pa-md column q-gutter-sm"
-      >
-        <q-skeleton type="text" width="40%" height="28px" />
-        <q-skeleton
-          v-for="i in pagination.rowsPerPage"
-          :key="i"
-          type="rect"
-          height="34px"
-        />
-      </div>
-
-      <div v-else class="brand-card overflow-hidden">
-        <q-table
-          :rows="displayRows"
-          :columns="tableColumns"
-          row-key="id"
-          :loading="loading"
-          v-model:pagination="pagination"
-          @request="onRequest"
-          binary-state-sort
-          flat
-          class="brand-table sticky-table"
-          :class="{ 'row-clickable': !!module.rowLink }"
-          :rows-per-page-options="[10, 20, 50]"
-          @row-click="onRowClick"
-        >
-          <template v-slot:loading>
-            <q-inner-loading showing color="primary" />
-          </template>
-
-          <template v-slot:no-data>
-            <div class="full-width column flex-center q-py-xl muted-text">
-              <q-icon name="inbox" size="48px" class="q-mb-sm" />
-              <div class="text-subtitle2">{{
-                searchQuery ? 'Hech narsa topilmadi' : "Hozircha ma'lumot yo'q"
-              }}</div>
-              <div class="text-caption q-mb-md">{{
-                searchQuery
-                  ? "Boshqa kalit so'z bilan qidirib ko'ring"
-                  : "Boshlash uchun birinchi yozuvni qo'shing"
-              }}</div>
-              <AppButton
-                variant="secondary"
-                v-if="canCreate && !searchQuery"
-                icon="add"
-                label="Yangi qo'shish"
-                @click="openCreateDialog"
-              />
-            </div>
-          </template>
-
-          <template
-            v-for="col in linkColumns"
-            :key="'body-cell-' + col.name"
-            v-slot:[`body-cell-${col.name}`]="props"
+    <!-- 1.5 / 1.7: one panel for reading and editing a record -->
+    <SideDrawer
+      :model-value="panel.open"
+      persistent
+      :wide="panel.mode !== 'view'"
+      :title="panelTitle"
+      :subtitle="panel.mode === 'view' ? '' : module.title"
+      :icon="
+        panel.mode === 'create'
+          ? 'add'
+          : panel.mode === 'edit'
+            ? 'edit'
+            : module.icon
+      "
+      :color="panel.mode === 'view' ? module.color : 'var(--c-primary)'"
+      @update:model-value="v => !v && closePanel()"
+    >
+      <CrudDetail
+        v-if="panel.mode === 'view' && panel.row"
+        :module="module"
+        :row="panel.row"
+        :options="fieldOptions"
+        :today="today"
+        @profile="goToProfile"
+      />
+      <CrudForm
+        v-else-if="panel.mode !== 'view'"
+        ref="formEl"
+        form-id="crud-form"
+        :fields="formFields"
+        :model="formModel"
+        :options-for="optionsFor"
+        :editing="panel.mode === 'edit'"
+        :error="formError"
+        :school-name="
+          module.fields.some(f => f.autoSchool)
+            ? schoolStore.activeSchoolName || ''
+            : ''
+        "
+        @submit="onSave"
+        @parent-change="clearOrphanChildren"
+      />
+      <template #footer>
+        <template v-if="panel.mode === 'view'">
+          <AppButton
+            v-if="module.profileLink && panel.row"
+            variant="ghost"
+            icon="open_in_new"
+            label="Profil"
+            data-open-profile
+            @click="goToProfile(module.profileLink, panel.row)"
+          />
+          <q-space />
+          <AppButton
+            v-if="canDelete && panel.row?.active !== false"
+            variant="ghost"
+            color="negative"
+            :icon="module.softDelete ? 'block' : 'delete_outline'"
+            :label="module.softDelete ? 'Nofaol qilish' : 'O\'chirish'"
+            @click="confirmDelete(panel.row)"
+          />
+          <AppButton
+            v-if="canEdit"
+            icon="edit"
+            label="Tahrirlash"
+            data-detail-edit
+            @click="openEdit(panel.row)"
+          />
+        </template>
+        <template v-else>
+          <span v-if="dirty" class="crud-dirty" data-dirty
+            >● Saqlanmagan o'zgarishlar</span
           >
-            <q-td :props="props">
-              <span
-                class="link-cell"
-                @click.stop="goToProfile(col.link, props.row)"
-                >{{ props.value }}</span
-              >
-            </q-td>
-          </template>
-
-          <template
-            v-if="firstNonLinkColumn"
-            v-slot:[`body-cell-${firstNonLinkColumn}`]="props"
-          >
-            <q-td :props="props" class="text-weight-bold">{{
-              props.value
-            }}</q-td>
-          </template>
-
-          <template
-            v-for="col in badgeColumns"
-            :key="'badge-' + col.name"
-            v-slot:[`body-cell-${col.name}`]="props"
-          >
-            <q-td :props="props">
-              <q-badge
-                :style="{
-                  background: col.badgeColors[props.value] || '#64748b'
-                }"
-                class="q-px-sm q-py-2xs"
-                >{{ col.badgeLabels?.[props.value] || props.value }}</q-badge
-              >
-              <div
-                v-if="col.badgeHint && col.badgeHint(props.row)"
-                class="text-caption muted-text badge-hint"
-                >{{ col.badgeHint(props.row) }}</div
-              >
-            </q-td>
-          </template>
-
-          <template
-            v-if="module.key === 'rooms'"
-            v-slot:body-cell-currentStatus="props"
-          >
-            <q-td :props="props">
-              <span
-                class="link-cell"
-                @click.stop="openRoomOccupancy(props.row)"
-                >{{ props.value }}</span
-              >
-            </q-td>
-          </template>
-
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props" class="row-actions">
-              <AppButton
-                variant="ghost"
-                size="sm"
-                v-if="
-                  canEdit &&
-                  module.key === 'subjects' &&
-                  props.row.active === false
-                "
-                icon="restore"
-                color="positive"
-                :loading="busyRowId === props.row.id"
-                @click.stop="reactivate(props.row)"
-              >
-                <q-tooltip>Qayta faollashtirish</q-tooltip>
-              </AppButton>
-              <AppButton
-                variant="ghost"
-                size="sm"
-                v-if="canEdit"
-                icon="edit"
-                color="primary"
-                @click.stop="openEditDialog(props.row)"
-              >
-                <q-tooltip>Tahrirlash</q-tooltip>
-              </AppButton>
-              <AppButton
-                variant="ghost"
-                size="sm"
-                v-if="canDelete && props.row.active !== false"
-                :icon="module.softDelete ? 'block' : 'delete_outline'"
-                color="negative"
-                :loading="busyRowId === props.row.id"
-                @click.stop="confirmDelete(props.row)"
-              >
-                <q-tooltip>{{
-                  module.softDelete ? 'Nofaol qilish' : "O'chirish"
-                }}</q-tooltip>
-              </AppButton>
-            </q-td>
-          </template>
-        </q-table>
-      </div>
-    </template>
+          <q-space />
+          <AppButton
+            variant="ghost"
+            label="Bekor qilish"
+            color="grey-7"
+            data-form-cancel
+            @click="closePanel"
+          />
+          <!-- outside the <form> (the footer stays put), tied to it by id -->
+          <AppButton
+            type="submit"
+            form="crud-form"
+            label="Saqlash"
+            class="q-px-md"
+            :loading="saving"
+            data-form-save
+          />
+        </template>
+      </template>
+    </SideDrawer>
 
     <q-dialog v-model="roomOccupancyOpen">
       <q-card class="app-dialog app-dialog--sm">
@@ -453,7 +498,7 @@
           </div>
           <div
             v-else-if="!roomOccupancySlots.length"
-            class="text-body2 muted-text q-py-md text-center"
+            class="text-body2 crud-muted q-py-md text-center"
           >
             Bugun bu xonada dars yo'q
           </div>
@@ -483,119 +528,48 @@
         </q-card-section>
       </q-card>
     </q-dialog>
-
-    <SideDrawer
-      v-model="dialogOpen"
-      persistent
-      :title="isEditing ? 'Tahrirlash' : `Yangi qo'shish`"
-      :subtitle="module.title"
-      :icon="isEditing ? 'edit' : 'add'"
-      :color="isEditing ? 'var(--q-primary)' : 'var(--q-positive)'"
-    >
-      <q-form
-        id="crud-form"
-        class="q-gutter-md q-pt-md"
-        data-crud-form
-        @submit.prevent="onSave"
-      >
-        <q-banner
-          v-if="module.fields.some(f => f.autoSchool)"
-          class="bg-blue-1 text-primary rounded-borders"
-          dense
-        >
-          <template v-slot:avatar>
-            <q-icon name="school" color="primary" />
-          </template>
-          Maktab: {{ schoolStore.activeSchoolName || '—' }}
-        </q-banner>
-        <template v-for="field in formFields" :key="field.key">
-          <AppSelect
-            v-if="!field.autoSchool && field.type === 'select'"
-            v-model="formModel[field.key]"
-            :label="field.label"
-            :multiple="!!field.multiple"
-            :use-chips="!!field.multiple"
-            :options="optionsFor(field)"
-            @update:model-value="clearOrphanChildren(field)"
-            option-value="value"
-            option-label="label"
-            emit-value
-            map-options
-            :hint="field.hint"
-            :rules="fieldRules(field)"
-          />
-          <AppInput
-            v-else-if="!field.autoSchool && field.type === 'textarea'"
-            v-model="formModel[field.key]"
-            :label="field.label"
-            type="textarea"
-            autogrow
-            :rules="fieldRules(field)"
-          />
-          <AppDateInput
-            v-else-if="!field.autoSchool && field.type === 'date'"
-            v-model="formModel[field.key]"
-            :label="field.label"
-            :rules="fieldRules(field)"
-          />
-          <AppInput
-            v-else-if="!field.autoSchool"
-            v-model="formModel[field.key]"
-            :label="field.label"
-            :type="inputType(field)"
-            :hint="field.hint"
-            :rules="fieldRules(field)"
-          />
-        </template>
-
-        <q-banner
-          v-if="formError"
-          class="bg-red-1 text-negative rounded-borders"
-          dense
-        >
-          <template v-slot:avatar>
-            <q-icon name="error_outline" color="negative" />
-          </template>
-          {{ formError }}
-        </q-banner>
-      </q-form>
-
-      <template #footer>
-        <q-space />
-        <AppButton
-          variant="ghost"
-          label="Bekor qilish"
-          color="grey-7"
-          v-close-popup
-        />
-        <!-- outside the <form> (the footer stays put), tied to it by id -->
-        <AppButton
-          type="submit"
-          form="crud-form"
-          label="Saqlash"
-          class="q-px-md"
-          :loading="saving"
-        />
-      </template>
-    </SideDrawer>
   </page-layout>
 </template>
 
 <script setup>
-import IconTile from '@/components/app/IconTile.vue'
-import AppButton from '@/components/app/AppButton.vue'
-import AppInput from '@/components/app/AppInput.vue'
-import AppSelect from '@/components/app/AppSelect.vue'
-import AppDateInput from '@/components/app/AppDateInput.vue'
-import { ref, reactive, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+// Every list page of the app (config/modules.js decides what each one shows): a header with the
+// count, search ("/" jumps into it), Excel / PDF export and "Yangi qo'shish"; optional hero
+// numbers; filters as chips with their numbers and the class picker; table or cards; a table with
+// typed cells, sort, density, column choice, check boxes and a bulk bar, and a pager (25 a page by
+// default). A row opens the record in the side panel, and the same panel edits it (a wide form in
+// sections). View, search, filters, sort and page live in the URL; density and columns in this
+// browser. The server pages, searches and filters where the module says so (serverSearch);
+// otherwise the whole list is read once and searched here.
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
 import { getModule } from '@/config/modules'
 import PageLayout from '@/components/PageLayout.vue'
+import AppButton from '@/components/app/AppButton.vue'
+import AppInput from '@/components/app/AppInput.vue'
+import AppSelect from '@/components/app/AppSelect.vue'
 import SideDrawer from '@/components/dashboard/SideDrawer.vue'
+import SegTabs from '@/components/dashboard/SegTabs.vue'
+import KpiCard from '@/components/dashboard/KpiCard.vue'
+import EmptyState from '@/components/pages/EmptyState.vue'
+import CrudFilters from '@/components/crud/CrudFilters.vue'
+import CrudTable from '@/components/crud/CrudTable.vue'
+import CrudCards from '@/components/crud/CrudCards.vue'
+import CrudDetail from '@/components/crud/CrudDetail.vue'
+import CrudForm from '@/components/crud/CrudForm.vue'
+import {
+  PAGE_SIZES,
+  cellText,
+  rangeLabel,
+  readQuery,
+  writeQuery,
+  todayIso,
+  visibleColumnNames,
+  maskPhone
+} from '@/components/crud/crud'
 
 const route = useRoute()
 const router = useRouter()
@@ -603,304 +577,818 @@ const $q = useQuasar()
 const authStore = useAuthStore()
 const schoolStore = useSchoolStore()
 
+const VIEWS = [
+  { label: 'Jadval', value: 'table' },
+  { label: 'Kartochkalar', value: 'cards' }
+]
+const DENSITIES = [
+  { label: 'Qulay', value: 'comfortable' },
+  { label: 'Ixcham', value: 'compact' }
+]
+
 const module = computed(() => getModule(route.params.moduleKey))
+const today = todayIso()
 
-const rows = ref([])
-const loading = ref(false)
-const pagination = ref({
-  sortBy: 'id',
-  descending: false,
-  page: 1,
-  rowsPerPage: 10,
-  rowsNumber: 0
-})
-
-const searchQuery = ref('')
-const searchCache = ref(null)
-const searchLoading = ref(false)
-const activeFilters = reactive({})
-const filterOptionsCache = reactive({})
-
-const visibleColumns = computed(() =>
-  module.value.columns.filter(c => c.name !== 'id')
-)
-
-const tableColumns = computed(() => [
-  ...visibleColumns.value,
-  { name: 'actions', label: '', field: 'actions', align: 'right' }
+// ------------------------------------------------------------------ page state (URL)
+const filterKeys = computed(() => [
+  ...(module.value?.filters || []).map(f => f.key),
+  ...(module.value?.toggles || []).map(t => t.key)
 ])
-
-const firstNonLinkColumn = computed(() => {
-  const first = visibleColumns.value[0]
-  return first && !first.link ? first.name : null
+// a phone opens on cards where the module has them (a wide table is hard to read there)
+const defaults = computed(() => ({
+  view:
+    module.value?.viewType === 'cards' ||
+    (module.value?.cards && $q.screen.lt.sm)
+      ? 'cards'
+      : 'table',
+  sort: module.value?.defaultSort
+    ? `${module.value.defaultSort},${module.value.defaultDescending ? 'desc' : 'asc'}`
+    : '',
+  size: 25
+}))
+const state = reactive({
+  view: 'table',
+  q: '',
+  page: 1,
+  size: 25,
+  sortBy: null,
+  descending: false,
+  filters: {}
 })
+const search = ref('')
+const canCards = computed(() => !!module.value?.cards)
+const view = computed(() => (canCards.value ? state.view : 'table'))
 
-const linkColumns = computed(() => module.value.columns.filter(c => c.link))
-const badgeColumns = computed(() =>
-  module.value.columns.filter(c => c.badgeColors)
+function syncUrl() {
+  const keep = {}
+  for (const k of ['create', 'edit'])
+    if (route.query[k] != null) keep[k] = route.query[k]
+  const q = { ...writeQuery(state, defaults.value), ...keep }
+  if (JSON.stringify(q) !== JSON.stringify(route.query))
+    router.replace({ query: q })
+}
+
+function readUrl() {
+  const s = readQuery(route.query, filterKeys.value, defaults.value)
+  Object.assign(state, s)
+  search.value = s.q
+}
+
+// ------------------------------------------------------------------ rows
+const rows = ref([])
+const total = ref(0)
+const loading = ref(false)
+const loaded = ref(false)
+const error = ref('')
+const allCache = ref(null) // the whole list, for modules searched in the browser
+let requestNo = 0
+
+const serverSide = computed(() => !!module.value?.serverSearch)
+const searchOrFilter = computed(
+  () =>
+    !!state.q || Object.values(state.filters).some(v => v != null && v !== '')
 )
+const pages = computed(() => Math.max(1, Math.ceil(total.value / state.size)))
+const range = computed(() => rangeLabel(state.page, state.size, total.value))
 
-const filtersActive = computed(() =>
-  Object.values(activeFilters).some(v => v != null && v !== '')
-)
+function baseParams() {
+  const params = {}
+  if (module.value.schoolScoped) params.schoolId = schoolStore.activeSchoolId
+  if (module.value.schoolParam) params.schoolId = schoolStore.activeSchoolId
+  for (const [k, v] of Object.entries(state.filters))
+    if (v != null && v !== '') params[k] = v
+  return params
+}
 
-const displayRows = computed(() => {
-  if (!searchQuery.value) return rows.value
-  const q = searchQuery.value.toLowerCase()
-  const source = searchCache.value || []
-  return source.filter(
+function localSearch(list) {
+  const q = state.q.toLowerCase().trim()
+  if (!q) return list
+  return list.filter(
     row =>
       (module.value.searchText &&
         module.value.searchText(row).toLowerCase().includes(q)) ||
       module.value.columns.some(col => {
-        if (typeof col.field !== 'string') return false
-        const v = row[col.field]
-        return v != null && String(v).toLowerCase().includes(q)
+        const v = cellText(col, row, today)
+        return v && v.toLowerCase().includes(q)
       })
   )
-})
-
-function filterOptionsFor(f) {
-  if (f.options) return f.options
-  return filterOptionsCache[f.key] || []
-}
-
-async function loadFilterOptionsFor(f) {
-  if (!f.optionsEndpoint || filterOptionsCache[f.key]) return
-  try {
-    const params = { size: 1000 }
-    if (f.schoolScoped) params.schoolId = schoolStore.activeSchoolId
-    const response = await api.get(f.optionsEndpoint, { params })
-    const options = response.data.content.map(item => ({
-      value: item[f.optionValue],
-      label:
-        typeof f.optionLabel === 'function'
-          ? f.optionLabel(item)
-          : item[f.optionLabel]
-    }))
-    // "2-A" before "10-A"
-    if (f.sortOptions)
-      options.sort((a, b) =>
-        String(a.label).localeCompare(String(b.label), undefined, {
-          numeric: true
-        })
-      )
-    filterOptionsCache[f.key] = options
-  } catch {
-    filterOptionsCache[f.key] = []
-  }
-}
-
-function onFilterChange() {
-  pagination.value.page = 1
-  fetchRows()
-  if (searchQuery.value) {
-    searchCache.value = null
-    fetchAllForSearch()
-  }
-}
-
-const cardPageLabel = computed(() => {
-  const { page, rowsPerPage, rowsNumber } = pagination.value
-  if (!rowsNumber) return ''
-  const start = (page - 1) * rowsPerPage + 1
-  const end = Math.min(page * rowsPerPage, rowsNumber)
-  return `${start}-${end} / ${rowsNumber}`
-})
-
-function changeCardPage(dir) {
-  pagination.value.page += dir
-  fetchRows()
-}
-
-const canCreate = computed(() =>
-  module.value.adminOnly ? authStore.isAdmin : authStore.isEditor
-)
-const canEdit = canCreate
-const canDelete = computed(() => authStore.isAdmin)
-
-function filterParams() {
-  const params = {}
-  if (module.value.schoolScoped) {
-    params.schoolId = schoolStore.activeSchoolId
-  }
-  for (const [key, val] of Object.entries(activeFilters)) {
-    if (val != null && val !== '') params[key] = val
-  }
-  return params
 }
 
 async function fetchRows() {
   if (!module.value) return
   if (module.value.schoolScoped && !schoolStore.activeSchoolId) {
     rows.value = []
-    pagination.value.rowsNumber = 0
+    total.value = 0
     return
   }
+  const no = ++requestNo
   loading.value = true
+  error.value = ''
   try {
-    const { page, rowsPerPage, sortBy, descending } = pagination.value
-    const params = {
-      ...filterParams(),
-      page: page - 1,
-      size: rowsPerPage
+    if (serverSide.value || !state.q) {
+      const params = { ...baseParams(), page: state.page - 1, size: state.size }
+      if (serverSide.value && state.q) params.q = state.q
+      if (state.sortBy)
+        params.sort = `${state.sortBy},${state.descending ? 'desc' : 'asc'}`
+      const res = await api.get(module.value.endpoint, { params })
+      if (no !== requestNo) return
+      rows.value = res.data.content
+      total.value = res.data.totalElements
+    } else {
+      if (!allCache.value) allCache.value = await fetchAll()
+      if (no !== requestNo) return
+      const found = localSearch(allCache.value)
+      total.value = found.length
+      rows.value = found.slice(
+        (state.page - 1) * state.size,
+        state.page * state.size
+      )
     }
-    if (sortBy) {
-      params.sort = `${sortBy},${descending ? 'desc' : 'asc'}`
+    // a page past the end (a filter shrank the list): go to the last one
+    if (!rows.value.length && total.value && state.page > 1) {
+      state.page = Math.max(1, Math.ceil(total.value / state.size))
+      syncUrl()
+      return fetchRows()
     }
-    const response = await api.get(module.value.endpoint, { params })
-    rows.value = response.data.content
-    pagination.value.rowsNumber = response.data.totalElements
-  } catch (error) {
-    $q.notify({ type: 'negative', message: extractError(error) })
+    loaded.value = true
+  } catch (e) {
+    if (no === requestNo) error.value = extractError(e)
   } finally {
-    loading.value = false
+    if (no === requestNo) loading.value = false
   }
 }
 
-async function fetchAllForSearch() {
-  if (module.value.schoolScoped && !schoolStore.activeSchoolId) return
-  searchLoading.value = true
+/** Every row of the current filters (and search, server side) — for search here and the export. */
+async function fetchAll() {
+  const params = { ...baseParams(), page: 0, size: 5000 }
+  if (serverSide.value && state.q) params.q = state.q
+  if (state.sortBy)
+    params.sort = `${state.sortBy},${state.descending ? 'desc' : 'asc'}`
+  const res = await api.get(module.value.endpoint, { params })
+  return res.data.content
+}
+
+// ------------------------------------------------------------------ filters, facets, classes
+const filterOptions = reactive({})
+const facets = ref({})
+const classes = ref([])
+const hero = ref(null)
+const hasFilters = computed(
+  () => !!(module.value?.filters?.length || module.value?.toggles?.length)
+)
+
+async function loadFilterData() {
+  const m = module.value
+  for (const f of m.filters || []) {
+    if (f.picker === 'class') {
+      try {
+        const res = await api.get('/api/school-classes', {
+          params: {
+            schoolId: schoolStore.activeSchoolId,
+            size: 500,
+            sort: 'gradeNumber,asc'
+          }
+        })
+        classes.value = res.data.content
+      } catch {
+        classes.value = []
+      }
+      continue
+    }
+    if (f.options || !f.optionsEndpoint) continue
+    try {
+      const params = { size: 1000 }
+      if (f.schoolScoped) params.schoolId = schoolStore.activeSchoolId
+      const res = await api.get(f.optionsEndpoint, { params })
+      const items = Array.isArray(res.data) ? res.data : res.data.content
+      const opts = items.map(item => ({
+        value: String(item[f.optionValue]),
+        label:
+          typeof f.optionLabel === 'function'
+            ? f.optionLabel(item)
+            : item[f.optionLabel]
+      }))
+      if (f.sortOptions)
+        opts.sort((a, b) =>
+          String(a.label).localeCompare(String(b.label), undefined, {
+            numeric: true
+          })
+        )
+      filterOptions[f.key] = opts
+    } catch {
+      filterOptions[f.key] = []
+    }
+  }
+  await loadFacets()
+}
+
+async function loadFacets() {
+  if (!module.value.facetsEndpoint) return
   try {
-    const params = { ...filterParams(), page: 0, size: 3000 }
-    const response = await api.get(module.value.endpoint, { params })
-    searchCache.value = response.data.content
+    const res = await api.get(module.value.facetsEndpoint, {
+      params: { schoolId: schoolStore.activeSchoolId }
+    })
+    facets.value = res.data || {}
   } catch {
-    searchCache.value = []
-  } finally {
-    searchLoading.value = false
+    facets.value = {}
   }
 }
 
-function onSearchChange(val) {
-  if (val && !searchCache.value) {
-    fetchAllForSearch()
+async function loadHero() {
+  const h = module.value.hero
+  if (!h) return
+  try {
+    const res = await api.get(h.endpoint, {
+      params: { schoolId: schoolStore.activeSchoolId }
+    })
+    hero.value = res.data
+  } catch {
+    hero.value = null
   }
 }
 
-function onRequest(requestProp) {
-  pagination.value = requestProp.pagination
+function onFilter({ key, value }) {
+  state.filters = { ...state.filters, [key]: value }
+  if (value == null) delete state.filters[key]
+  state.page = 1
+  reload()
+}
+
+function clearFilters() {
+  state.filters = {}
+  state.page = 1
+  reload()
+}
+
+function clearAll() {
+  search.value = ''
+  state.q = ''
+  clearFilters()
+}
+
+function onSearch(v) {
+  state.q = (v || '').trim()
+  state.page = 1
+  reload()
+}
+
+// the whole list read for a search here holds for one set of filters and one sort
+let cacheKey = ''
+function reload() {
+  selected.clear()
+  const key = JSON.stringify([state.filters, state.sortBy, state.descending])
+  if (serverSide.value || key !== cacheKey) allCache.value = null
+  cacheKey = key
+  syncUrl()
   fetchRows()
 }
 
-function onRowClick(evt, row) {
-  if (!module.value.rowLink) return
-  if (module.value.key === 'schools') {
-    switchToSchool(row)
-    return
+function onSort(key) {
+  if (state.sortBy === key) state.descending = !state.descending
+  else {
+    state.sortBy = key
+    state.descending = false
   }
-  router.push(`/profiles/${module.value.rowLink}/${row.id}`)
+  state.page = 1
+  reload()
 }
 
-const cardIsLink = computed(() =>
-  ['schools', 'school-classes'].includes(module.value.key)
+function setPage(p) {
+  state.page = Math.min(Math.max(1, p), pages.value)
+  syncUrl()
+  fetchRows()
+}
+
+function setSize(s) {
+  state.size = Number(s)
+  state.page = 1
+  syncUrl()
+  fetchRows()
+}
+
+function setView(v) {
+  state.view = v
+  syncUrl()
+}
+
+// ------------------------------------------------------------------ columns and density (this browser)
+const storageKey = k => `crud.${k}.${module.value.key}`
+const readStore = (k, d) => {
+  try {
+    const v = localStorage.getItem(storageKey(k))
+    return v == null ? d : JSON.parse(v)
+  } catch {
+    return d
+  }
+}
+const writeStore = (k, v) => {
+  try {
+    localStorage.setItem(storageKey(k), JSON.stringify(v))
+  } catch {
+    // private mode: the choice lasts for this visit only
+  }
+}
+const density = ref('comfortable')
+const shown = ref([])
+const allColumns = computed(() =>
+  module.value.columns.filter(c => c.name !== 'id' && !c.detailOnly)
+)
+const tableColumns = computed(() =>
+  allColumns.value.filter(c => shown.value.includes(c.name))
 )
 
-function onCardClick(row) {
-  if (module.value.key === 'schools') switchToSchool(row)
-  else if (module.value.key === 'school-classes')
-    router.push(`/profiles/class/${row.id}`)
+function setDensity(v) {
+  density.value = v
+  writeStore('density', v)
 }
 
-function switchToSchool(row) {
-  schoolStore.setActiveSchool(row.id, row.name)
-  router.push('/')
+function toggleColumn(name) {
+  const next = shown.value.includes(name)
+    ? shown.value.filter(n => n !== name)
+    : [...shown.value, name]
+  if (!next.length) return // at least one column stays
+  // keep the module's order
+  shown.value = allColumns.value.map(c => c.name).filter(n => next.includes(n))
+  writeStore('columns', shown.value)
 }
 
-function goToProfile(link, row) {
-  const id = row[link.idField]
-  if (id != null) {
-    router.push(`/profiles/${link.type}/${id}`)
+function resetColumns() {
+  try {
+    localStorage.removeItem(storageKey('columns'))
+  } catch {
+    // nothing stored
   }
+  shown.value = visibleColumnNames(allColumns.value, null)
 }
 
-async function exportCsv() {
-  if (searchQuery.value) {
-    doExportCsv(displayRows.value)
-    return
-  }
-  if (!searchCache.value) {
-    $q.notify({
-      type: 'info',
-      message: 'Eksport uchun tayyorlanmoqda...',
-      timeout: 800
-    })
-    await fetchAllForSearch()
-  }
-  doExportCsv(searchCache.value || rows.value)
+// ------------------------------------------------------------------ selection and bulk
+const selected = reactive(new Set())
+let lastIndex = -1
+
+function onSelect({ row, on, shift }) {
+  const i = rows.value.indexOf(row)
+  if (shift && lastIndex >= 0) {
+    const [a, b] = [Math.min(i, lastIndex), Math.max(i, lastIndex)]
+    for (const r of rows.value.slice(a, b + 1)) mark(r.id, on)
+  } else mark(row.id, on)
+  lastIndex = i
 }
 
-function doExportCsv(source) {
-  const cols = module.value.columns
-  const header = cols.map(c => c.label).join(',')
-  const lines = source.map(row =>
-    cols
-      .map(c => {
-        const v = typeof c.field === 'string' ? row[c.field] : ''
-        const s = v == null ? '' : String(v).replace(/"/g, '""')
-        return `"${s}"`
+function mark(id, on) {
+  if (on) selected.add(id)
+  else selected.delete(id)
+}
+
+function onSelectAll(on) {
+  for (const r of rows.value) mark(r.id, on)
+}
+
+async function deleteSelected() {
+  const ids = [...selected]
+  const soft = module.value.softDelete
+  $q.dialog({
+    title: soft ? 'Nofaol qilish' : "O'chirish",
+    message: `${ids.length} ta yozuv ${soft ? 'nofaol qilinadi' : "o'chiriladi"}. ${soft ? '' : "Ortga qaytarib bo'lmaydi."}`,
+    cancel: {
+      flat: true,
+      label: 'Bekor qilish',
+      color: 'grey-7',
+      noCaps: true
+    },
+    ok: {
+      label: soft ? 'Nofaol qilish' : "O'chirish",
+      color: 'negative',
+      unelevated: true,
+      noCaps: true
+    },
+    persistent: true
+  }).onOk(async () => {
+    const failed = []
+    for (const id of ids) {
+      try {
+        await api.delete(`${module.value.endpoint}/${id}`)
+        selected.delete(id)
+      } catch (e) {
+        failed.push(extractError(e))
+      }
+    }
+    if (failed.length)
+      $q.notify({
+        type: 'warning',
+        message: `${ids.length - failed.length} ta bajarildi, ${failed.length} tasi yo'q: ${failed[0]}`,
+        timeout: 6000
       })
-      .join(',')
-  )
-  const csv = [header, ...lines].join('\n')
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
+    else
+      $q.notify({
+        type: 'positive',
+        message: `${ids.length} ta bajarildi`,
+        icon: 'check_circle'
+      })
+    afterChange()
+  })
+}
+
+// ------------------------------------------------------------------ export
+async function download(rowsToExport, format) {
+  const cols = view.value === 'table' ? tableColumns.value : allColumns.value
+  const body = {
+    title: module.value.title,
+    subtitle: [
+      schoolStore.activeSchoolName,
+      `${rowsToExport.length} ta`,
+      today.split('-').reverse().join('.')
+    ]
+      .filter(Boolean)
+      .join(' · '),
+    columns: cols.map(c => ({
+      label: c.label,
+      type: c.type === 'phone' ? 'phone' : 'text'
+    })),
+    rows: rowsToExport.map(r => cols.map(c => cellText(c, r, today)))
+  }
+  const res = await api.post('/api/export/table', body, {
+    params: { format },
+    responseType: 'blob'
+  })
+  const url = URL.createObjectURL(res.data)
   const a = document.createElement('a')
   a.href = url
-  a.download = `${module.value.key}.csv`
+  a.download = `${module.value.key}-${today}.${format}`
   document.body.appendChild(a)
   a.click()
-  document.body.removeChild(a)
+  a.remove()
   URL.revokeObjectURL(url)
 }
 
-watch(
-  () => route.params.moduleKey,
-  async () => {
-    pagination.value = {
-      sortBy: module.value?.defaultSort || 'id',
-      descending: !!module.value?.defaultDescending,
-      page: 1,
-      rowsPerPage: module.value?.viewType === 'cards' ? 12 : 10,
-      rowsNumber: 0
-    }
-    searchQuery.value = ''
-    searchCache.value = null
-    Object.keys(activeFilters).forEach(k => delete activeFilters[k])
-    Object.keys(filterOptionsCache).forEach(k => delete filterOptionsCache[k])
-    if (module.value?.filters) {
-      module.value.filters.forEach(loadFilterOptionsFor)
-    }
-    await fetchRows()
-    if (route.query.create === '1' && canCreate.value) {
-      router.replace({ query: {} })
-      openCreateDialog()
-    }
-    // ?edit=<id> opens that record's form (e.g. "Biriktirish" from the journal's class panel)
-    if (route.query.edit && canEdit.value) {
-      const id = Number(route.query.edit)
-      router.replace({ query: {} })
-      try {
-        const res = await api.get(`${module.value.endpoint}/${id}`)
-        openEditDialog(res.data)
-      } catch {
-        // the record is gone or not ours — just show the list
-      }
-    }
-  },
-  { immediate: true }
+async function exportAll(format) {
+  try {
+    $q.notify({
+      type: 'info',
+      message: 'Eksport tayyorlanmoqda…',
+      timeout: 900
+    })
+    const all =
+      serverSide.value || !state.q
+        ? await fetchAll()
+        : localSearch(allCache.value || (await fetchAll()))
+    await download(all, format)
+  } catch (e) {
+    $q.notify({ type: 'negative', message: extractError(e) })
+  }
+}
+
+async function exportSelected(format) {
+  try {
+    const ids = new Set(selected)
+    let list = rows.value.filter(r => ids.has(r.id))
+    if (list.length < ids.size)
+      list = (await fetchAll()).filter(r => ids.has(r.id))
+    await download(list, format)
+  } catch (e) {
+    $q.notify({ type: 'negative', message: extractError(e) })
+  }
+}
+
+// ------------------------------------------------------------------ permissions
+const canCreate = computed(() =>
+  module.value.adminOnly ? authStore.isAdmin : authStore.isEditor
+)
+const canEdit = canCreate
+const canDelete = computed(() => authStore.isAdmin)
+
+// ------------------------------------------------------------------ the side panel
+const panel = reactive({ open: false, mode: 'view', row: null })
+const formEl = ref(null)
+const formModel = reactive({})
+const formError = ref('')
+const saving = ref(false)
+const fieldOptions = reactive({})
+let snapshot = ''
+
+const titleOf = row =>
+  module.value.titleOf?.(row) ??
+  String(
+    row.fullName ??
+      row.name ??
+      row.title ??
+      row.roomNumber ??
+      row.username ??
+      row.id
+  )
+const panelTitle = computed(() => {
+  if (panel.mode === 'create') return "Yangi qo'shish"
+  if (panel.mode === 'edit')
+    return `Tahrirlash${panel.row ? ' — ' + titleOf(panel.row) : ''}`
+  // reading: the record's name is big in the panel itself; the header names the list
+  return module.value.title
+})
+const formFields = computed(() =>
+  module.value.fields.filter(
+    f => !f.autoSchool && (!f.showIf || f.showIf(formModel))
+  )
+)
+const dirty = computed(
+  () => panel.mode !== 'view' && JSON.stringify(formModel) !== snapshot
 )
 
-watch(
-  () => schoolStore.activeSchoolId,
-  () => {
-    if (!module.value?.schoolScoped) return
-    pagination.value.page = 1
-    searchCache.value = null
-    fetchRows()
-    if (searchQuery.value) fetchAllForSearch()
+function openRow(row) {
+  if (module.value.key === 'schools') {
+    schoolStore.setActiveSchool(row.id, row.name)
+    router.push('/')
+    return
   }
-)
+  if (module.value.rowLink) {
+    router.push(`/profiles/${module.value.rowLink}/${row.id}`)
+    return
+  }
+  panel.row = row
+  panel.mode = 'view'
+  panel.open = true
+  loadFieldOptions()
+}
+
+async function openCreate() {
+  formError.value = ''
+  Object.keys(formModel).forEach(k => delete formModel[k])
+  for (const f of module.value.fields) {
+    if (f.autoSchool) formModel[f.key] = schoolStore.activeSchoolId
+    else if (f.type === 'phone') formModel[f.key] = '+998'
+  }
+  await loadFieldOptions()
+  snapshot = JSON.stringify(formModel)
+  panel.row = null
+  panel.mode = 'create'
+  panel.open = true
+}
+
+async function openEdit(row) {
+  formError.value = ''
+  await loadFieldOptions()
+  Object.keys(formModel).forEach(k => delete formModel[k])
+  for (const f of module.value.fields) {
+    if (f.type === 'password') formModel[f.key] = ''
+    else if (f.type === 'phone')
+      formModel[f.key] = row[f.key] ? maskPhone(row[f.key]) : '+998'
+    else formModel[f.key] = row[f.key]
+  }
+  snapshot = JSON.stringify(formModel)
+  panel.row = row
+  panel.mode = 'edit'
+  panel.open = true
+}
+
+function closePanel() {
+  if (!dirty.value) {
+    panel.open = false
+    return
+  }
+  $q.dialog({
+    title: "Saqlanmagan o'zgarishlar",
+    message: 'Kiritganlaringiz saqlanmaydi. Chiqasizmi?',
+    cancel: { flat: true, label: 'Qolish', color: 'grey-7', noCaps: true },
+    ok: { label: 'Chiqish', color: 'negative', unelevated: true, noCaps: true },
+    persistent: true
+  }).onOk(() => {
+    snapshot = JSON.stringify(formModel)
+    panel.open = false
+  })
+}
+
+// a select with parentKey (tuman → hudud) offers only the options of the chosen parent
+function optionsFor(field) {
+  const all = fieldOptions[field.key] || []
+  if (!field.parentKey) return all
+  const parent = formModel[field.parentKey]
+  return parent == null ? [] : all.filter(o => o.parent === parent)
+}
+
+// choosing another hudud drops a tuman that is not in it
+function clearOrphanChildren(parentField) {
+  for (const child of module.value.fields) {
+    if (child.parentKey !== parentField.key) continue
+    const value = formModel[child.key]
+    if (value != null && !optionsFor(child).some(o => o.value === value))
+      formModel[child.key] = null
+  }
+}
+
+async function loadFieldOptions() {
+  for (const field of module.value.fields) {
+    if (field.autoSchool || field.type !== 'select' || fieldOptions[field.key])
+      continue
+    if (field.options) {
+      fieldOptions[field.key] = field.options.map(o =>
+        typeof o === 'object' ? o : { label: o, value: o }
+      )
+      continue
+    }
+    if (!field.optionsEndpoint) continue
+    try {
+      const params = { size: 1000 }
+      if (field.schoolScoped) params.schoolId = schoolStore.activeSchoolId
+      const response = await api.get(field.optionsEndpoint, { params })
+      // paged lists come as { content }, reference lists (regions, districts) as a plain array
+      const items = Array.isArray(response.data)
+        ? response.data
+        : response.data.content
+      fieldOptions[field.key] = items.map(item => ({
+        value: item[field.optionValue],
+        label:
+          typeof field.optionLabel === 'function'
+            ? field.optionLabel(item)
+            : item[field.optionLabel],
+        parent: field.parentKey ? item[field.parentValue] : undefined
+      }))
+    } catch {
+      fieldOptions[field.key] = []
+    }
+  }
+}
+
+async function onSave() {
+  if (saving.value) return // Enter + click must not create two rows
+  saving.value = true
+  formError.value = ''
+  try {
+    const payload = { ...formModel }
+    for (const f of module.value.fields) {
+      if (f.showIf && !f.showIf(formModel)) payload[f.key] = null
+      // a phone is stored as +998901234567 (the shown spaces are for people)
+      if (f.type === 'phone') {
+        const d = String(payload[f.key] || '').replace(/\D/g, '')
+        payload[f.key] = d.length > 3 ? `+${d}` : null
+      }
+    }
+    if (
+      module.value.key === 'users' &&
+      panel.mode === 'edit' &&
+      !payload.password
+    )
+      delete payload.password
+    let saved
+    if (panel.mode === 'edit')
+      saved = await api.put(`${module.value.endpoint}/${panel.row.id}`, payload)
+    else saved = await api.post(module.value.endpoint, payload)
+    snapshot = JSON.stringify(formModel)
+    $q.notify({
+      type: 'positive',
+      message: 'Muvaffaqiyatli saqlandi',
+      icon: 'check_circle'
+    })
+    if (module.value.key === 'schools') await schoolStore.fetchSchools(api)
+    // after an edit the panel shows the saved record
+    if (
+      panel.mode === 'edit' &&
+      saved?.data &&
+      typeof saved.data === 'object'
+    ) {
+      panel.row = { ...panel.row, ...saved.data }
+      panel.mode = 'view'
+    } else panel.open = false
+    afterChange()
+  } catch (e) {
+    formError.value = extractError(e)
+  } finally {
+    saving.value = false
+  }
+}
+
+function afterChange() {
+  allCache.value = null
+  fetchRows()
+  loadFacets()
+}
+
+// ------------------------------------------------------------------ delete (1.8)
+const busyRowId = ref(null)
+
+function confirmDelete(row) {
+  const m = module.value
+  const soft = m.softDelete
+  const impact = m.deleteImpact?.(row) || null
+  if (impact?.blocked) {
+    $q.dialog({
+      title: "O'chirib bo'lmaydi",
+      message: impact.message,
+      ok: {
+        label: 'Tushunarli',
+        color: 'primary',
+        unelevated: true,
+        noCaps: true
+      }
+    })
+    return
+  }
+  const deactivate =
+    m.deactivate && m.deactivate.applies(row) ? m.deactivate : null
+  const message = [
+    impact?.message,
+    soft
+      ? "Nofaol bo'ladi: yangi baho va jadvalda tanlanmaydi, eski yozuvlarda nomi saqlanadi. Keyin qayta faollashtirish mumkin."
+      : "Haqiqatan ham o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
+    deactivate
+      ? `O'chirish o'rniga «${deactivate.label}» — ma'lumot saqlanib qoladi.`
+      : ''
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+  const dlg = $q.dialog({
+    title: `${soft ? 'Nofaol qilish' : "O'chirish"}: ${titleOf(row)}`,
+    message,
+    style: 'white-space: pre-line',
+    options: deactivate
+      ? {
+          type: 'radio',
+          model: 'deactivate',
+          items: [
+            { label: deactivate.label, value: 'deactivate' },
+            { label: "Butunlay o'chirish", value: 'delete' }
+          ]
+        }
+      : undefined,
+    cancel: {
+      flat: true,
+      label: 'Bekor qilish',
+      color: 'grey-7',
+      noCaps: true
+    },
+    ok: {
+      label: soft ? 'Nofaol qilish' : 'Davom etish',
+      color: 'negative',
+      unelevated: true,
+      noCaps: true
+    },
+    persistent: true
+  })
+  dlg.onOk(async choice => {
+    if (busyRowId.value === row.id) return // a second click while the first is on its way
+    busyRowId.value = row.id
+    try {
+      if (deactivate && choice === 'deactivate') {
+        await api.put(`${m.endpoint}/${row.id}`, deactivate.payload(row))
+        $q.notify({
+          type: 'positive',
+          message: `${deactivate.label} — saqlandi`,
+          icon: 'check_circle'
+        })
+      } else {
+        await api.delete(`${m.endpoint}/${row.id}`)
+        $q.notify({
+          type: 'positive',
+          message: soft ? 'Nofaol qilindi' : "Muvaffaqiyatli o'chirildi",
+          icon: 'check_circle'
+        })
+      }
+      if (m.key === 'schools') await schoolStore.fetchSchools(api)
+      selected.delete(row.id)
+      if (panel.row?.id === row.id) panel.open = false
+      afterChange()
+    } catch (e) {
+      // 409: the backend says why (e.g. "Bu lavozimda 12 ta xodim bor")
+      $q.dialog({
+        title: e.response?.status === 409 ? "O'chirib bo'lmaydi" : 'Xatolik',
+        message: extractError(e),
+        ok: {
+          label: 'Tushunarli',
+          color: 'primary',
+          unelevated: true,
+          noCaps: true
+        }
+      })
+    } finally {
+      busyRowId.value = null
+    }
+  })
+}
+
+// ------------------------------------------------------------------ module row actions
+function extraActions(row) {
+  const out = []
+  if (module.value.key === 'subjects' && row.active === false && canEdit.value)
+    out.push({ key: 'restore', label: 'Qayta faollashtirish', icon: 'restore' })
+  if (module.value.key === 'rooms')
+    out.push({ key: 'occupancy', label: 'Bugungi jadval', icon: 'schedule' })
+  for (const a of module.value.rowActions || [])
+    if (!a.show || a.show(row)) out.push(a)
+  return out
+}
+
+async function onAction({ key, row }) {
+  if (key === 'delete') return confirmDelete(row)
+  if (key === 'occupancy') return openRoomOccupancy(row)
+  if (key === 'restore') {
+    try {
+      await api.put(`${module.value.endpoint}/${row.id}/activate`)
+      $q.notify({ type: 'positive', message: 'Qayta faollashtirildi' })
+      afterChange()
+    } catch (e) {
+      $q.notify({ type: 'negative', message: extractError(e) })
+    }
+    return
+  }
+  const own = (module.value.rowActions || []).find(a => a.key === key)
+  if (own) own.run({ row, api, router, reload: afterChange, $q })
+}
 
 const roomOccupancyOpen = ref(false)
 const roomOccupancyRoom = ref(null)
@@ -921,330 +1409,325 @@ async function openRoomOccupancy(row) {
   }
 }
 
-const dialogOpen = ref(false)
-const isEditing = ref(false)
-const editingId = ref(null)
-const formModel = reactive({})
-const formError = ref('')
-const saving = ref(false)
-const fieldOptions = reactive({})
+function goToProfile(link, row) {
+  const id = row[link.idField]
+  if (id != null) router.push(`/profiles/${link.type}/${id}`)
+}
 
-// a field with showIf(form) is shown (and validated, and sent) only when it applies
-const formFields = computed(() =>
-  module.value.fields.filter(f => !f.showIf || f.showIf(formModel))
+function extractError(e) {
+  const d = e?.response?.data
+  if (typeof d === 'string' && d) return d
+  if (d && typeof d === 'object' && d.message) return d.message
+  return e?.message || 'Xatolik yuz berdi'
+}
+
+// ------------------------------------------------------------------ lifecycle
+async function enterModule() {
+  if (!module.value) return
+  panel.open = false
+  selected.clear()
+  rows.value = []
+  total.value = 0
+  loaded.value = false
+  allCache.value = null
+  facets.value = {}
+  hero.value = null
+  classes.value = []
+  Object.keys(filterOptions).forEach(k => delete filterOptions[k])
+  Object.keys(fieldOptions).forEach(k => delete fieldOptions[k])
+  readUrl()
+  cacheKey = JSON.stringify([state.filters, state.sortBy, state.descending])
+  density.value = readStore('density', 'comfortable')
+  shown.value = visibleColumnNames(allColumns.value, readStore('columns', null))
+  if (!module.value.schoolScoped || schoolStore.activeSchoolId) {
+    loadFilterData()
+    loadHero()
+  }
+  await fetchRows()
+  if (route.query.create === '1' && canCreate.value) {
+    router.replace({ query: writeQuery(state, defaults.value) })
+    openCreate()
+  }
+  // ?edit=<id> opens that record's form (e.g. "Biriktirish" from the journal's class panel)
+  if (route.query.edit && canEdit.value) {
+    const id = Number(route.query.edit)
+    router.replace({ query: writeQuery(state, defaults.value) })
+    try {
+      const res = await api.get(`${module.value.endpoint}/${id}`)
+      openEdit(res.data)
+    } catch {
+      // the record is gone or not ours — just show the list
+    }
+  }
+}
+
+watch(() => route.params.moduleKey, enterModule, { immediate: true })
+
+// back / forward in the browser: take the state from the URL again
+watch(
+  () => route.query,
+  q => {
+    if (!module.value || route.params.moduleKey !== module.value.key) return
+    const now = JSON.stringify(writeQuery(state, defaults.value))
+    const next = JSON.stringify(
+      writeQuery(readQuery(q, filterKeys.value, defaults.value), defaults.value)
+    )
+    if (now === next) return
+    readUrl()
+    allCache.value = null
+    fetchRows()
+  }
 )
 
-function inputType(field) {
-  if (field.type === 'password') return 'password'
-  if (field.type === 'number') return 'number'
-  if (field.type === 'date') return 'date'
-  if (field.type === 'time') return 'time'
-  return 'text'
-}
-
-function fieldRules(field) {
-  const rules = []
-  const isRequired =
-    field.required && !(isEditing.value && field.requiredOnCreateOnly)
-  if (isRequired) {
-    rules.push(
-      val =>
-        (val !== null && val !== undefined && val !== '') || 'Majburiy maydon'
-    )
+watch(
+  () => schoolStore.activeSchoolId,
+  () => {
+    if (!module.value?.schoolScoped) return
+    state.page = 1
+    state.filters = {}
+    syncUrl()
+    enterModule()
   }
-  return rules
+)
+
+// "/" puts the cursor into the search (not while typing somewhere)
+const searchEl = ref(null)
+function onKey(e) {
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return
+  const t = e.target
+  if (
+    t &&
+    (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))
+  )
+    return
+  if (panel.open) return
+  e.preventDefault()
+  searchEl.value?.focus()
 }
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
-// a select with parentKey (e.g. tuman → hudud) offers only the options of the chosen parent
-function optionsFor(field) {
-  const all = fieldOptions[field.key] || []
-  if (!field.parentKey) return all
-  const parent = formModel[field.parentKey]
-  return parent == null ? [] : all.filter(o => o.parent === parent)
-}
-
-// choosing another hudud drops a tuman that is not in it
-function clearOrphanChildren(parentField) {
-  for (const child of module.value.fields) {
-    if (child.parentKey !== parentField.key) continue
-    const value = formModel[child.key]
-    if (value != null && !optionsFor(child).some(o => o.value === value)) {
-      formModel[child.key] = null
-    }
-  }
-}
-
-async function loadFieldOptions() {
-  for (const field of module.value.fields) {
-    if (field.autoSchool || field.type !== 'select') continue
-
-    if (field.options) {
-      fieldOptions[field.key] = field.options.map(o =>
-        typeof o === 'object' ? o : { label: o, value: o }
-      )
-      continue
-    }
-
-    if (field.optionsEndpoint) {
-      try {
-        const params = { size: 1000 }
-        if (field.schoolScoped) {
-          params.schoolId = schoolStore.activeSchoolId
-        }
-        const response = await api.get(field.optionsEndpoint, { params })
-        // paged lists come as { content }, reference lists (regions, districts) as a plain array
-        const items = Array.isArray(response.data)
-          ? response.data
-          : response.data.content
-        fieldOptions[field.key] = items.map(item => ({
-          value: item[field.optionValue],
-          label:
-            typeof field.optionLabel === 'function'
-              ? field.optionLabel(item)
-              : item[field.optionLabel],
-          parent: field.parentKey ? item[field.parentValue] : undefined
-        }))
-      } catch {
-        fieldOptions[field.key] = []
-      }
-    }
-  }
-}
-
-async function openCreateDialog() {
-  isEditing.value = false
-  editingId.value = null
-  formError.value = ''
-  Object.keys(formModel).forEach(k => delete formModel[k])
-  module.value.fields.forEach(field => {
-    if (field.autoSchool) {
-      formModel[field.key] = schoolStore.activeSchoolId
-    }
-  })
-  await loadFieldOptions()
-  dialogOpen.value = true
-}
-
-async function openEditDialog(row) {
-  isEditing.value = true
-  editingId.value = row.id
-  formError.value = ''
-  await loadFieldOptions()
-  module.value.fields.forEach(field => {
-    formModel[field.key] = field.type === 'password' ? '' : row[field.key]
-  })
-  dialogOpen.value = true
-}
-
-async function onSave() {
-  if (saving.value) return // Enter + click must not create two rows
-  saving.value = true
-  formError.value = ''
-  try {
-    const payload = { ...formModel }
-    for (const f of module.value.fields) {
-      if (f.showIf && !f.showIf(formModel)) payload[f.key] = null
-    }
-    if (module.value.key === 'users' && isEditing.value && !payload.password) {
-      delete payload.password
-    }
-
-    if (isEditing.value) {
-      await api.put(`${module.value.endpoint}/${editingId.value}`, payload)
-    } else {
-      await api.post(module.value.endpoint, payload)
-    }
-
-    dialogOpen.value = false
-    $q.notify({
-      type: 'positive',
-      message: 'Muvaffaqiyatli saqlandi',
-      icon: 'check_circle'
-    })
-    if (module.value.key === 'schools') {
-      await schoolStore.fetchSchools(api)
-    }
-    searchCache.value = null
-    fetchRows()
-  } catch (error) {
-    formError.value = extractError(error)
-  } finally {
-    saving.value = false
-  }
-}
-
-const busyRowId = ref(null)
-
-async function reactivate(row) {
-  busyRowId.value = row.id
-  try {
-    await api.put(`${module.value.endpoint}/${row.id}/activate`)
-    $q.notify({ type: 'positive', message: 'Qayta faollashtirildi' })
-    searchCache.value = null
-    fetchRows()
-  } catch (error) {
-    $q.notify({ type: 'negative', message: extractError(error) })
-  } finally {
-    busyRowId.value = null
-  }
-}
-
-function confirmDelete(row) {
-  const soft = module.value.softDelete
-  $q.dialog({
-    title: soft ? 'Nofaol qilish' : "O'chirish",
-    message: soft
-      ? "Fan nofaol bo'ladi: yangi baho va jadvalda tanlanmaydi, eski baholarda nomi saqlanadi. Keyin qayta faollashtirish mumkin."
-      : "Haqiqatan ham o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
-    cancel: {
-      flat: true,
-      label: 'Bekor qilish',
-      color: 'grey-7',
-      noCaps: true
-    },
-    ok: {
-      label: soft ? 'Nofaol qilish' : "O'chirish",
-      color: 'negative',
-      unelevated: true,
-      noCaps: true
-    },
-    persistent: true
-  }).onOk(async () => {
-    if (busyRowId.value === row.id) return // a second click while the first is on its way
-    busyRowId.value = row.id
-    try {
-      await api.delete(`${module.value.endpoint}/${row.id}`)
-      $q.notify({
-        type: 'positive',
-        message: soft ? 'Nofaol qilindi' : "Muvaffaqiyatli o'chirildi",
-        icon: 'check_circle'
-      })
-      if (module.value.key === 'schools') {
-        await schoolStore.fetchSchools(api)
-      }
-      searchCache.value = null
-      fetchRows()
-    } catch (error) {
-      $q.notify({ type: 'negative', message: extractError(error) })
-    } finally {
-      busyRowId.value = null
-    }
-  })
-}
-
-function extractError(error) {
-  return error.response?.data || 'Xatolik yuz berdi'
-}
+// leaving the page with an unsaved form asks first
+onBeforeRouteLeave(() => {
+  if (!dirty.value || !panel.open) return true
+  return window.confirm("Saqlanmagan o'zgarishlar bor. Sahifadan chiqasizmi?")
+})
 </script>
 
 <style scoped>
-/* a long name is cut, never pushes the edit / delete buttons out of the card */
-.entity-card__title {
+.crud {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-bottom: var(--space-8);
+}
+
+.crud-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.crud-sub__skel {
+  display: inline-block;
+}
+
+.crud-search {
+  width: var(--field-w-sm);
+}
+
+.crud-kbd {
+  display: inline-block;
+  min-width: var(--space-5);
+  padding: 0 var(--space-1);
+  border: var(--hairline) solid var(--brand-border);
+  border-radius: var(--radius-sm);
+  color: var(--brand-text-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.crud-menu {
+  min-width: calc(var(--space-8) * 4);
+}
+
+.crud-banner {
+  background: color-mix(in srgb, var(--gr-3) 14%, transparent);
+  color: var(--text-primary);
+}
+
+.crud-muted {
+  color: var(--brand-text-muted);
+}
+
+.crud-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-4);
+}
+
+.crud-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.crud-bar:hover {
+  transform: none;
+}
+
+.crud-bar--plain {
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.crud-bar__filters {
   flex: 1 1 0;
   min-width: 0;
 }
 
-.entity-card__actions {
-  flex-shrink: 0;
+.crud-bar__tools {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
 }
 
-.muted-text {
+.crud-table-card {
+  overflow: hidden;
+}
+
+.crud-table-card:hover {
+  transform: none;
+}
+
+.crud-state:hover,
+.crud-skel:hover {
+  transform: none;
+}
+
+.crud-skel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.crud-skel__head {
+  height: var(--control-h);
+}
+
+.crud-skel__row {
+  height: var(--crud-row-h);
+}
+
+.crud-skel__cards {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(var(--crud-card-min), 100%), 1fr)
+  );
+  gap: var(--space-4);
+}
+
+.crud-skel__card {
+  height: calc(var(--crud-row-h) * 3);
+  border-radius: var(--radius-lg);
+}
+
+.crud-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1) var(--space-2);
   color: var(--brand-text-muted);
+  font-size: var(--text-sm);
 }
 
-.search-input {
-  width: var(--field-w-sm);
+.crud-pager__size {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: auto;
 }
 
-.link-cell {
-  color: var(--q-primary);
-  cursor: pointer;
+.crud-pager__select {
+  width: calc(var(--space-8) * 1.75);
+}
+
+.crud-pager__range,
+.crud-pager__page {
+  color: var(--text-primary);
   font-weight: 600;
 }
 
-.link-cell:hover {
-  text-decoration: underline;
+.tnum {
+  font-variant-numeric: tabular-nums;
 }
 
-:deep(.row-clickable tbody tr) {
-  cursor: pointer;
-}
-
-:deep(.row-clickable tbody tr:hover) {
-  background: rgba(79, 70, 229, 0.06);
-}
-
-/* edit/delete are always visible; the column sticks to the right edge even when
-   the table scrolls sideways, and the header row sticks to the top */
-.row-actions {
-  white-space: nowrap;
-}
-
-:deep(.sticky-table .q-table__middle) {
-  max-height: calc(100vh - 260px);
-}
-
-:deep(.sticky-table thead tr th) {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+.crud-bulk {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  z-index: 2000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(100vw - var(--space-6));
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  border: var(--hairline) solid var(--dash-edge);
+  border-radius: var(--radius-lg);
   background: var(--card-bg);
+  box-shadow: var(--dash-shadow-hover);
+  transform: translateX(-50%);
 }
 
-:deep(.sticky-table tbody td:last-child),
-:deep(.sticky-table thead th:last-child) {
-  position: sticky;
-  right: 0;
-  background: var(--card-bg);
-  box-shadow: -8px 0 10px -10px rgba(15, 23, 42, 0.35);
-}
-
-:deep(.sticky-table thead th:last-child) {
-  z-index: 3;
-}
-
-:deep(.sticky-table tbody tr:hover td:last-child) {
-  background: color-mix(in srgb, var(--card-bg) 94%, #4f46e5);
-}
-
-/* school / class cards: the whole card opens it */
-.entity-card--link {
-  cursor: pointer;
-}
-
-.entity-card--link:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--q-primary) 45%, var(--brand-border));
-}
-
-.class-card__name {
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.badge-hint {
-  margin-top: 2px;
-  white-space: nowrap;
-}
-
-.entity-card {
+.crud-bulk-enter-active,
+.crud-bulk-leave-active {
   transition:
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
 }
 
-.entity-card:hover {
-  box-shadow: var(--shadow-card-hover);
+.crud-bulk-enter-from,
+.crud-bulk-leave-to {
+  opacity: 0;
+  transform: translate(-50%, var(--space-3));
+}
+
+.crud-dirty {
+  color: var(--st-late);
+  font-size: var(--text-xs);
+  font-weight: 600;
 }
 
 .occupancy-slot--current {
-  background: rgba(34, 197, 94, 0.08);
+  background: color-mix(in srgb, var(--st-present) 8%, transparent);
   border-radius: var(--radius-sm);
 }
 
 @media (max-width: 599px) {
-  .search-input {
+  .crud-search {
+    width: 100%;
+  }
+
+  .crud-bar {
+    flex-wrap: wrap;
+  }
+
+  .crud-bar__tools {
+    margin-left: 0;
+  }
+
+  .crud-pager__size {
     width: 100%;
   }
 }

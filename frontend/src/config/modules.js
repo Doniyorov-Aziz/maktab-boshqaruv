@@ -93,6 +93,24 @@ export const modules = [
     endpoint: '/api/schools',
     schoolScoped: false,
     viewType: 'cards',
+    cards: {
+      title: row => row.name,
+      subtitle: row => row.address,
+      badge: row =>
+        String(row.id) === localStorage.getItem('activeSchoolId')
+          ? { label: 'Joriy', color: 'var(--st-present)' }
+          : null,
+      stats: row => [
+        { label: "O'quvchilar", value: row.studentCount ?? 0 },
+        { label: "O'qituvchilar", value: row.teacherCount ?? 0 },
+        { label: 'Sinflar', value: row.classCount ?? 0 }
+      ],
+      footer: row =>
+        String(row.id) === localStorage.getItem('activeSchoolId')
+          ? 'Joriy maktab — bosing, bosh sahifa ochiladi'
+          : "Bosing — shu maktabga o'tish",
+      footerIcon: 'login'
+    },
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -118,6 +136,15 @@ export const modules = [
     endpoint: '/api/buildings',
     schoolScoped: true,
     viewType: 'cards',
+    cards: {
+      title: row => row.name,
+      subtitle: row => row.schoolName,
+      stats: row => [
+        { label: 'Qavat', value: row.floorCount ?? 1 },
+        { label: 'Xona', value: row.roomCount ?? 0 },
+        { label: 'Band', value: `${row.occupiedPercentage ?? 0}%` }
+      ]
+    },
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -260,6 +287,8 @@ export const modules = [
     group: "O'quv jarayoni",
     endpoint: '/api/academic-years',
     schoolScoped: true,
+    serverSearch: true,
+    titleOf: row => row.title,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -273,15 +302,17 @@ export const modules = [
         name: 'startDate',
         label: 'Boshlanish',
         field: 'startDate',
-        align: 'left',
-        format: dateFormat
+        type: 'date',
+        sortable: true,
+        align: 'left'
       },
       {
         name: 'endDate',
         label: 'Tugash',
         field: 'endDate',
-        align: 'left',
-        format: dateFormat
+        type: 'date',
+        sortable: true,
+        align: 'left'
       },
       {
         name: 'schoolName',
@@ -291,7 +322,13 @@ export const modules = [
       }
     ],
     fields: [
-      { key: 'title', label: 'Sarlavha', type: 'text', required: true },
+      {
+        key: 'title',
+        label: 'Sarlavha',
+        type: 'text',
+        required: true,
+        full: true
+      },
       {
         key: 'startDate',
         label: 'Boshlanish sanasi',
@@ -315,6 +352,19 @@ export const modules = [
     rowLink: 'class',
     viewType: 'cards',
     defaultSort: 'gradeNumber',
+    titleOf: row => `${row.gradeNumber}-${row.sectionLetter}`,
+    cards: {
+      avatar: false,
+      icon: () => 'groups',
+      title: row => `${row.gradeNumber}-${row.sectionLetter} sinf`,
+      subtitle: row => row.classTeacherName || 'Sinf rahbari tayinlanmagan',
+      stats: row => [
+        { label: "O'quvchi", value: row.studentCount ?? 0 },
+        { label: 'Maks.', value: row.maxStudents ?? '—' }
+      ],
+      footer: row => row.academicYearTitle,
+      footerIcon: 'event'
+    },
     // "5-a", "5 A", teacher's name — the search box filters the cards as you type
     searchText: row =>
       `${row.gradeNumber}-${row.sectionLetter} ${row.gradeNumber} ${row.sectionLetter} ${row.classTeacherName || ''}`,
@@ -396,16 +446,22 @@ export const modules = [
     group: 'Odamlar',
     endpoint: '/api/students',
     schoolScoped: true,
+    serverSearch: true,
+    facetsEndpoint: '/api/students/facets',
+    profileLink: { type: 'student', idField: 'id' },
+    titleOf: row => row.fullName,
+    detailSubtitle: row => `${row.className} sinf`,
+    cards: {
+      avatar: true,
+      title: row => row.fullName,
+      subtitle: row => `${row.className} sinf · ${dateFormat(row.birthDate)}`,
+      text: row => guardianLabel(row.guardianName, row.guardianRelation)
+    },
     filters: [
       {
         key: 'schoolClassId',
         label: 'Sinf',
-        placeholder: 'Barcha sinflar',
-        optionsEndpoint: '/api/school-classes',
-        optionValue: 'id',
-        optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`,
-        schoolScoped: true,
-        sortOptions: true
+        picker: 'class'
       }
     ],
     columns: [
@@ -414,6 +470,7 @@ export const modules = [
         name: 'fullName',
         label: "To'liq ism",
         field: 'fullName',
+        type: 'person',
         sortable: true,
         align: 'left',
         link: { type: 'student', idField: 'id' }
@@ -422,10 +479,18 @@ export const modules = [
         name: 'birthDate',
         label: "Tug'ilgan sana",
         field: 'birthDate',
-        align: 'left',
-        format: dateFormat
+        type: 'date',
+        sortable: true,
+        align: 'left'
       },
-      { name: 'className', label: 'Sinf', field: 'className', align: 'left' },
+      {
+        name: 'className',
+        label: 'Sinf',
+        field: 'className',
+        type: 'chip',
+        sortable: true,
+        align: 'left'
+      },
       {
         name: 'guardianName',
         label: 'Ota-ona',
@@ -440,13 +505,26 @@ export const modules = [
       }
     ],
     fields: [
-      { key: 'firstName', label: 'Ism', type: 'text', required: true },
-      { key: 'lastName', label: 'Familiya', type: 'text', required: true },
+      {
+        key: 'firstName',
+        label: 'Ism',
+        type: 'text',
+        required: true,
+        section: "O'quvchi"
+      },
+      {
+        key: 'lastName',
+        label: 'Familiya',
+        type: 'text',
+        required: true,
+        section: "O'quvchi"
+      },
       {
         key: 'birthDate',
         label: "Tug'ilgan sana",
         type: 'date',
-        required: true
+        required: true,
+        section: "O'quvchi"
       },
       {
         key: 'schoolClassId',
@@ -456,44 +534,63 @@ export const modules = [
         schoolScoped: true,
         optionsEndpoint: '/api/school-classes',
         optionValue: 'id',
-        optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`
+        optionLabel: item => `${item.gradeNumber}-${item.sectionLetter}`,
+        section: "O'quvchi"
       },
       {
         key: 'guardianName',
         label: 'Ota-ona F.I.Sh.',
         type: 'text',
-        required: false
+        required: false,
+        section: 'Ota-ona',
+        full: true
       },
       {
         key: 'guardianRelation',
         label: "Kim bo'ladi",
         type: 'select',
         required: false,
-        options: guardianRelationOptions
+        options: guardianRelationOptions,
+        section: 'Ota-ona'
       },
       {
         key: 'guardianPhone',
         label: 'Ota-ona telefoni',
-        type: 'text',
-        required: false
+        type: 'phone',
+        required: false,
+        section: 'Ota-ona'
       },
       // tug'ilgan joyi: hudud → tuman (only the tuman is stored; the hudud filters the list)
-      ...placeFields('birth', "Tug'ilgan joyi"),
+      ...placeFields('birth', "Tug'ilgan joyi").map(f => ({
+        ...f,
+        section: "Tug'ilgan joyi"
+      })),
       // yashash joyi va uy manzili
-      ...placeFields('residence', 'Yashash joyi'),
-      { key: 'mahalla', label: 'Mahalla', type: 'text', required: false },
+      ...placeFields('residence', 'Yashash joyi').map(f => ({
+        ...f,
+        section: 'Yashash manzili'
+      })),
+      {
+        key: 'mahalla',
+        label: 'Mahalla',
+        type: 'text',
+        required: false,
+        section: 'Yashash manzili'
+      },
       {
         key: 'street',
         label: "Ko'cha (massiv, kvartal)",
         type: 'text',
-        required: false
+        required: false,
+        section: 'Yashash manzili'
       },
       {
         key: 'housingType',
         label: 'Uy turi',
         type: 'select',
         required: false,
-        options: housingTypeOptions
+        options: housingTypeOptions,
+        section: 'Yashash manzili'
       },
       {
         // ko'p qavatli uy yoki hovli raqami
@@ -501,14 +598,16 @@ export const modules = [
         label: 'Uy raqami',
         type: 'text',
         required: true,
-        showIf: form => !!form.housingType
+        showIf: form => !!form.housingType,
+        section: 'Yashash manzili'
       },
       {
         key: 'apartmentNumber',
         label: 'Xonadon raqami',
         type: 'text',
         required: true,
-        showIf: form => form.housingType === 'KVARTIRA'
+        showIf: form => form.housingType === 'KVARTIRA',
+        section: 'Yashash manzili'
       }
     ]
   },
@@ -520,8 +619,10 @@ export const modules = [
     group: "O'quv jarayoni",
     endpoint: '/api/subjects',
     schoolScoped: true,
+    serverSearch: true,
     // "O'chirish" only retires a subject: old grades keep its name
     softDelete: true,
+    titleOf: row => row.name,
     toggles: [{ key: 'includeInactive', label: "Nofaollarni ko'rsatish" }],
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
@@ -536,6 +637,7 @@ export const modules = [
         name: 'active',
         label: 'Holat',
         field: row => (row.active === false ? 'INACTIVE' : 'ACTIVE'),
+        type: 'badge',
         align: 'left',
         badgeColors: { ACTIVE: '#10b981', INACTIVE: '#94a3b8' },
         badgeLabels: { ACTIVE: 'Faol', INACTIVE: 'Nofaol' }
@@ -562,6 +664,16 @@ export const modules = [
     group: 'Odamlar',
     endpoint: '/api/positions',
     schoolScoped: false,
+    serverSearch: true,
+    titleOf: row => row.title,
+    // employeeCount (all schools) comes with the list: a position with people cannot go
+    deleteImpact: row =>
+      row.employeeCount > 0
+        ? {
+            blocked: true,
+            message: `Bu lavozimda ${row.employeeCount} ta xodim bor — o'chirib bo'lmaydi. Avval ularni boshqa lavozimga o'tkazing.`
+          }
+        : null,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -582,6 +694,39 @@ export const modules = [
     group: 'Odamlar',
     endpoint: '/api/employees',
     schoolScoped: true,
+    serverSearch: true,
+    facetsEndpoint: '/api/employees/facets',
+    profileLink: { type: 'teacher', idField: 'id' },
+    titleOf: row => row.fullName,
+    detailSubtitle: row => row.positionTitle,
+    cards: {
+      avatar: true,
+      title: row => row.fullName,
+      subtitle: row => row.positionTitle,
+      badge: row =>
+        row.status && row.status !== 'ACTIVE'
+          ? {
+              label: employeeStatusLabels[row.status],
+              color: employeeStatusColors[row.status]
+            }
+          : null,
+      text: row => [row.subjects, row.classes].filter(Boolean).join(' · ')
+    },
+    // instead of deleting someone, mark them as gone (their lessons and grades keep the name)
+    deactivate: {
+      label: 'Ishdan ketgan deb belgilash',
+      applies: row => row.status !== 'DISMISSED',
+      payload: row => ({
+        firstName: row.firstName,
+        lastName: row.lastName,
+        phone: row.phone,
+        positionId: row.positionId,
+        schoolId: row.schoolId,
+        status: 'DISMISSED',
+        leaveFrom: null,
+        leaveTo: null
+      })
+    },
     filters: [
       {
         key: 'positionId',
@@ -605,6 +750,7 @@ export const modules = [
         name: 'fullName',
         label: "To'liq ism",
         field: 'fullName',
+        type: 'person',
         sortable: true,
         align: 'left',
         link: { type: 'teacher', idField: 'id' }
@@ -613,6 +759,8 @@ export const modules = [
         name: 'status',
         label: 'Holat',
         field: 'status',
+        type: 'badge',
+        sortable: true,
         align: 'left',
         badgeColors: employeeStatusColors,
         badgeLabels: employeeStatusLabels,
@@ -625,40 +773,65 @@ export const modules = [
         name: 'positionTitle',
         label: 'Lavozim',
         field: 'positionTitle',
+        sortable: true,
         align: 'left',
-        // long titles wrap instead of pushing the table wider than the screen
-        style: 'max-width: 210px; white-space: normal',
-        headerStyle: 'max-width: 210px'
+        // long titles are cut (the whole one in the panel), never push the table wider
+        width: '220px'
       },
       {
         name: 'subjects',
         label: 'Fanlar',
         field: 'subjects',
-        align: 'left',
-        format: v => v || '—',
-        style: 'max-width: 240px; white-space: normal',
-        headerStyle: 'max-width: 240px'
+        type: 'subjects',
+        align: 'left'
       },
       {
         name: 'classes',
         label: 'Sinflar',
         field: 'classes',
-        align: 'left',
-        format: v => v || '—'
+        type: 'list',
+        listLabel: 'sinf',
+        align: 'left'
       },
       {
         name: 'classTeacherOf',
         label: 'Sinf rahbari',
         field: 'classTeacherOf',
-        align: 'left',
-        format: v => v || '—'
+        type: 'list',
+        listLabel: 'sinf',
+        align: 'left'
       },
-      { name: 'phone', label: 'Telefon', field: 'phone', align: 'left' }
+      {
+        name: 'phone',
+        label: 'Telefon',
+        field: 'phone',
+        type: 'phone',
+        sortable: true,
+        align: 'left'
+      }
     ],
     fields: [
-      { key: 'firstName', label: 'Ism', type: 'text', required: true },
-      { key: 'lastName', label: 'Familiya', type: 'text', required: true },
-      { key: 'phone', label: 'Telefon', type: 'text', required: true },
+      {
+        key: 'firstName',
+        label: 'Ism',
+        type: 'text',
+        required: true,
+        section: 'Xodim'
+      },
+      {
+        key: 'lastName',
+        label: 'Familiya',
+        type: 'text',
+        required: true,
+        section: 'Xodim'
+      },
+      {
+        key: 'phone',
+        label: 'Telefon',
+        type: 'phone',
+        required: true,
+        section: 'Xodim'
+      },
       {
         key: 'positionId',
         label: 'Lavozim',
@@ -666,13 +839,16 @@ export const modules = [
         required: true,
         optionsEndpoint: '/api/positions',
         optionValue: 'id',
-        optionLabel: 'title'
+        optionLabel: 'title',
+        section: 'Xodim'
       },
       {
         key: 'status',
         label: 'Holat',
         type: 'select',
         required: false,
+        section: 'Holat',
+        full: true,
         hint: "Ta'tilda yoki ishdan ketgan xodim tizimga kira olmaydi",
         options: Object.entries(employeeStatusLabels).map(([value, label]) => ({
           value,
@@ -684,6 +860,7 @@ export const modules = [
         label: "Ta'til boshlanishi (ixtiyoriy)",
         type: 'date',
         required: false,
+        section: 'Holat',
         showIf: form => form.status === 'ON_LEAVE'
       },
       {
@@ -691,6 +868,7 @@ export const modules = [
         label: "Ta'til tugashi (ixtiyoriy) — keyin avtomatik «Ishda»",
         type: 'date',
         required: false,
+        section: 'Holat',
         showIf: form => form.status === 'ON_LEAVE'
       },
       { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
@@ -1058,6 +1236,13 @@ export const modules = [
     ]
   }
 ]
+
+// older configs: a column with badgeColors is a badge
+for (const m of modules) {
+  for (const c of m.columns) {
+    if (c.badgeColors && !c.type) c.type = 'badge'
+  }
+}
 
 export function getModule(key) {
   return modules.find(m => m.key === key)

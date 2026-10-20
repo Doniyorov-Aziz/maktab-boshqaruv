@@ -37,3 +37,48 @@ for (const [name, path] of Object.entries(PAGES)) {
     })
   }
 }
+
+// the record in the side panel and the wide form (light and dark)
+for (const dark of [false, true]) {
+  const theme = dark ? 'dark' : 'light'
+  test(`${KIND} detail and form ${theme}`, async ({ browser }) => {
+    test.skip(KIND === 'before', 'the old page has no record panel')
+    const context = await mockContext(
+      browser,
+      { width: 1920, height: 1080 },
+      { dark }
+    )
+    const page = await context.newPage()
+    await open(page, '/app/employees')
+    await page.locator('tbody tr').nth(9).click()
+    await page.waitForSelector('[data-crud-detail]')
+    await page.waitForTimeout(400)
+    await page.screenshot({
+      path: join(DIR, `${KIND}-crud-detail-${theme}.png`)
+    })
+    await page.locator('[data-detail-edit]').click()
+    await page.waitForSelector('[data-crud-form]')
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: join(DIR, `${KIND}-crud-form-${theme}.png`) })
+    await context.close()
+  })
+}
+
+test(`${KIND} cards and bulk bar`, async ({ browser }) => {
+  test.skip(KIND === 'before', 'the old page has neither')
+  const context = await mockContext(
+    browser,
+    { width: 1920, height: 1080 },
+    { dark: true }
+  )
+  const page = await context.newPage()
+  await open(page, '/app/employees?view=cards')
+  await page.screenshot({ path: join(DIR, `${KIND}-crud-cards-dark.png`) })
+  await open(page, '/app/students')
+  const boxes = page.locator('tbody [data-check]')
+  await boxes.nth(1).check()
+  await boxes.nth(4).click({ modifiers: ['Shift'] })
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: join(DIR, `${KIND}-crud-bulk-dark.png`) })
+  await context.close()
+})

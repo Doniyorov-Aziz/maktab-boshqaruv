@@ -13,6 +13,7 @@
     <!-- a <div>: Quasar gives pointer events back only to the dialog's direct <div> children -->
     <div
       class="side-drawer"
+      :class="{ 'side-drawer--wide': wide }"
       role="dialog"
       aria-modal="true"
       :aria-label="title"
@@ -82,7 +83,9 @@ defineProps({
   icon: { type: String, default: '' },
   color: { type: String, default: 'var(--chart-primary)' },
   // a form: neither a click outside nor Esc closes it, only the cross or its buttons
-  persistent: { type: Boolean, default: false }
+  persistent: { type: Boolean, default: false },
+  // a form with two columns: 560 px instead of 440
+  wide: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:modelValue'])
 const $q = useQuasar()
@@ -110,6 +113,10 @@ defineExpose({ body })
   color: var(--text-primary);
   border-left: 1px solid var(--dash-edge);
   box-shadow: var(--dash-shadow-hover);
+}
+
+.side-drawer--wide {
+  width: min(var(--side-panel-w-wide), 100vw);
 }
 
 .side-drawer__head {

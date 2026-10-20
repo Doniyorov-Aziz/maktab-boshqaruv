@@ -295,6 +295,9 @@ body {
   --scrollbar-thumb: rgba(100, 116, 139, 0.45);
   --scrollbar-thumb-hover: rgba(100, 116, 139, 0.7);
   --scrollbar-w: 8px;
+  // list rows: a very light zebra and the hovered row (opaque: the sticky column sits on them)
+  --crud-zebra: color-mix(in srgb, var(--card-bg) 98%, #0f172a);
+  --crud-row-hover: color-mix(in srgb, var(--card-bg) 94%, #6d28d9);
 }
 
 body.body--dark {
@@ -323,6 +326,8 @@ body.body--dark {
   --avatar-3: #0f766e;
   --avatar-4: #be185d;
   --avatar-5: #b45309;
+  --crud-zebra: color-mix(in srgb, var(--card-bg) 97%, #ffffff);
+  --crud-row-hover: color-mix(in srgb, var(--card-bg) 90%, #8b5cf6);
 }
 
 // wide screens: a bigger health ring (declared after the home page tokens above)
@@ -439,6 +444,13 @@ body.body--dark {
   --gb-grade-btn: 56px;
   // what sits above and below the table on a desktop (header, controls, panel, page gaps)
   --gb-chrome-h: 480px;
+  // the list pages (CrudPage): row heights, the actions column, the card grid, the form panel
+  --crud-row-h: 52px;
+  --crud-row-h-compact: 36px;
+  --crud-actions-w: 88px;
+  --crud-card-min: 280px;
+  --crud-table-max-h: calc(100vh - 300px);
+  --side-panel-w-wide: 560px;
 }
 
 // short screens (1366×768 laptops): lower timetable rows so the whole week still fits

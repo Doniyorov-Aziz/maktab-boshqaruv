@@ -39,7 +39,9 @@ export function hhmm(time) {
 /** '+998901234567' → '+998 90 123 45 67' (other formats are shown as they are) */
 export function formatPhone(phone) {
   if (!phone) return ''
-  const digits = String(phone).replace(/\D/g, '')
+  let digits = String(phone).replace(/\D/g, '')
+  // "90 111 22 33" typed without the country code (the backend's PhoneFormat does the same)
+  if (digits.length === 9) digits = '998' + digits
   if (digits.length === 12 && digits.startsWith('998')) {
     return `+998 ${digits.slice(3, 5)} ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10)}`
   }

@@ -9,9 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The sort a list page asks for, made safe for the query: a column the page shows ("fullName",
- * "className") becomes the entity's own fields (lastName + firstName, the class's grade + letter),
- * and a column that is not a field (a computed number) is dropped instead of failing with 500.
+ * The sort a list page asks for, in the entity's terms: a column the page shows ("fullName",
+ * "className") becomes the entity's own fields (lastName + firstName, the class's grade + letter).
+ * Anything else is passed on as it came, so an unknown property still gets the usual
+ * 400 "Saralash ..." answer (GlobalExceptionHandler) instead of being silently ignored.
  */
 public final class PageSort {
 
@@ -24,7 +25,10 @@ public final class PageSort {
         List<Sort.Order> orders = new ArrayList<>();
         for (Sort.Order o : pageable.getSort()) {
             List<String> to = sortable.get(o.getProperty());
-            if (to == null) continue;
+            if (to == null) {
+                orders.add(o);
+                continue;
+            }
             for (String property : to) orders.add(new Sort.Order(o.getDirection(), property));
         }
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),

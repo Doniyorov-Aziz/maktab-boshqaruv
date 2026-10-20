@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * The list pages' backend: 521 students in one school come in at most 3 SQL statements (counted by
  * Hibernate's statistics) with their 30-day numbers; another school's rows never mix in (lists,
  * search, filter counts, position counts); a position with employees cannot be deleted (409); a
- * sort by a shown column works and an unknown one is dropped; the export writes real files.
+ * sort by a shown column works and an unknown one is refused; the export writes real files.
  */
 @SpringBootTest(properties = {
         "telegram.mock=true",
@@ -202,12 +202,13 @@ class CrudListIntegrationTest {
     }
 
     @Test
-    void sortByAShownColumn_works_andAnUnknownOne_isDropped() {
+    void sortByAShownColumn_works_andAnUnknownOne_isRefused() {
         long a = big.id();
         List<StudentResponseDto> byName = studentService.getAllStudents(a, null, null,
                 PageRequest.of(0, 600, Sort.by(Sort.Direction.DESC, "fullName"))).getContent();
         assertEquals("Test2", byName.get(0).getLastName());
-        assertDoesNotThrow(() -> studentService.getAllStudents(a, null, null,
+        // a computed number is not sortable on the server: refused like any unknown property (400)
+        assertThrows(RuntimeException.class, () -> studentService.getAllStudents(a, null, null,
                 PageRequest.of(0, 10, Sort.by("attendance30"))));
         assertDoesNotThrow(() -> employeeService.getAllEmployees(a, null, null, "o'qit", PageRequest.of(0, 10, Sort.by("positionTitle"))));
         assertEquals(1, employeeService.getAllEmployees(a, null, null, "o'qit", PageRequest.of(0, 10)).getTotalElements());

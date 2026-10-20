@@ -5,6 +5,17 @@
       <span v-if="!compact" class="cp-label">Sinf:</span>
       <div class="cp-list" role="group" aria-label="Parallel">
         <button
+          v-if="allowAll"
+          type="button"
+          class="cp-grade cp-all"
+          :class="{ 'cp-grade--on': modelValue == null }"
+          :aria-pressed="modelValue == null"
+          data-class-all
+          @click="pickAll"
+        >
+          Barchasi
+        </button>
+        <button
           v-for="g in GRADES"
           :key="g"
           type="button"
@@ -96,7 +107,9 @@ const props = defineProps({
   classes: { type: Array, default: () => [] },
   modelValue: { type: Number, default: null },
   compact: { type: Boolean, default: false },
-  states: { type: Object, default: () => ({}) }
+  states: { type: Object, default: () => ({}) },
+  // a filter: a "Barchasi" button first (no class chosen = every class)
+  allowAll: { type: Boolean, default: false }
 })
 const emit = defineEmits(['update:modelValue', 'update:grade'])
 
@@ -139,6 +152,12 @@ function stateTitle(id) {
   return STATE_TITLE[props.states[id]] || ''
 }
 
+function pickAll() {
+  grade.value = null
+  emit('update:grade', null)
+  if (props.modelValue != null) emit('update:modelValue', null)
+}
+
 function pickGrade(g) {
   grade.value = g
   emit('update:grade', g)
@@ -151,6 +170,7 @@ function pickGrade(g) {
 watch(
   () => [props.modelValue, props.classes],
   () => {
+    if (props.allowAll && props.modelValue == null) grade.value = null
     const current = props.classes.find(c => c.id === props.modelValue)
     if (current && current.gradeNumber !== grade.value) {
       grade.value = current.gradeNumber
@@ -236,6 +256,10 @@ watch(
 
 .cp-grade {
   padding: 0 var(--space-2);
+}
+
+.cp-grade.cp-all {
+  padding: 0 var(--space-3);
 }
 
 .cp-grade:hover:not(:disabled),

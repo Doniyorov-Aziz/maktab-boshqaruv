@@ -22,7 +22,8 @@ const token = role =>
 
 // what "q" looks in, per list
 const SEARCH = {
-  '/api/students': r => `${r.firstName} ${r.lastName} ${r.lastName} ${r.firstName}`,
+  '/api/students': r =>
+    `${r.firstName} ${r.lastName} ${r.lastName} ${r.firstName}`,
   '/api/employees': r =>
     `${r.firstName} ${r.lastName} ${r.lastName} ${r.firstName} ${r.phone || ''}`,
   '/api/subjects': r => r.name,
@@ -139,7 +140,8 @@ export async function mockContext(
       return route.fulfill({ status: 204, body: '' })
     const f = fixtures()
     const found = f[url.pathname]
-    if (found?.content) return reply(200, serveList(url.pathname, found.content, url.search))
+    if (found?.content)
+      return reply(200, serveList(url.pathname, found.content, url.search))
     if (found !== undefined) return reply(200, found)
     // one record: /api/students/12
     const m = /^(\/api\/[a-z-]+)\/(\d+)$/.exec(url.pathname)
