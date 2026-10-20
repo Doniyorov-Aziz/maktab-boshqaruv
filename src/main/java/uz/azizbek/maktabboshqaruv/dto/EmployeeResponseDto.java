@@ -140,4 +140,24 @@ public class EmployeeResponseDto {
     public void setSchoolName(String schoolName) {
         this.schoolName = schoolName;
     }
+
+    // list page numbers (ListStatsService); null where not computed
+    private Integer weeklyLessons;
+    private Double journal7;
+
+    public Integer getWeeklyLessons() {
+        return weeklyLessons;
+    }
+
+    public void setWeeklyLessons(Integer weeklyLessons) {
+        this.weeklyLessons = weeklyLessons;
+    }
+
+    public Double getJournal7() {
+        return journal7;
+    }
+
+    public void setJournal7(Double journal7) {
+        this.journal7 = journal7;
+    }
 }

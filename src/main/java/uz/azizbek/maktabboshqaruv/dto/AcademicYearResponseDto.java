@@ -58,4 +58,24 @@ public class AcademicYearResponseDto {
     public void setSchoolName(String schoolName) {
         this.schoolName = schoolName;
     }
+
+    // list page numbers (ListStatsService); null where not computed
+    private Integer classCount;
+    private Integer studentCount;
+
+    public Integer getClassCount() {
+        return classCount;
+    }
+
+    public void setClassCount(Integer classCount) {
+        this.classCount = classCount;
+    }
+
+    public Integer getStudentCount() {
+        return studentCount;
+    }
+
+    public void setStudentCount(Integer studentCount) {
+        this.studentCount = studentCount;
+    }
 }

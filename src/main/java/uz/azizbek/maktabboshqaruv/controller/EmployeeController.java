@@ -18,13 +18,25 @@ public class EmployeeController {
     @Autowired
     private EmployeeService employeeService;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.pages.ListStatsService listStats;
+
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
     public Page<EmployeeResponseDto> getAllEmployees(@RequestParam Long schoolId,
                                                      @RequestParam(required = false) Long positionId,
                                                      @RequestParam(required = false) uz.azizbek.maktabboshqaruv.entity.EmployeeStatus status,
+                                                     @RequestParam(required = false) String q,
                                                      Pageable pageable) {
-        return employeeService.getAllEmployees(schoolId, positionId, status, pageable);
+        return employeeService.getAllEmployees(schoolId, positionId, status, q, pageable);
+    }
+
+    /** The filter chips' numbers: employees per status and per position. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/facets")
+    public java.util.Map<String, java.util.List<uz.azizbek.maktabboshqaruv.service.pages.ListStatsService.Facet>> facets(
+            @RequestParam Long schoolId) {
+        return listStats.employeeFacets(schoolId);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

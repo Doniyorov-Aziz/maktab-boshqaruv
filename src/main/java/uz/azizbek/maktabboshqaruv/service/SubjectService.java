@@ -15,6 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import uz.azizbek.maktabboshqaruv.service.pages.ListStatsService;
+import uz.azizbek.maktabboshqaruv.util.PageSort;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Subjects are never deleted. "O'chirish" makes a subject inactive; renaming a subject
@@ -27,6 +32,9 @@ public class SubjectService {
 
     @Autowired
     private SubjectRepository subjectRepository;
+
+    @Autowired
+    private ListStatsService listStats;
 
     @Autowired
     private BotCache botCache;
@@ -42,11 +50,25 @@ public class SubjectService {
 
     /** Active subjects (what pickers offer); with includeInactive — every subject of the school. */
     public Page<SubjectResponseDto> getAllSubjects(Long schoolId, boolean includeInactive, Pageable pageable) {
-        Page<Subject> page = includeInactive
-                ? subjectRepository.findBySchoolId(schoolId, pageable)
-                : subjectRepository.findActiveBySchoolId(schoolId, pageable);
-        return page.map(this::toResponseDto);
+        return getAllSubjects(schoolId, includeInactive, null, pageable);
     }
+
+    /** One page of subjects with teachers, classes and lessons a week (one grouped query for the school). */
+    public Page<SubjectResponseDto> getAllSubjects(Long schoolId, boolean includeInactive, String q, Pageable pageable) {
+        Page<SubjectResponseDto> page = subjectRepository.search(schoolId, includeInactive, PageSort.like(q),
+                PageSort.map(pageable, SORTABLE)).map(this::toResponseDto);
+        Map<Long, ListStatsService.SubjectStats> stats = listStats.subjects(schoolId);
+        for (SubjectResponseDto dto : page.getContent()) {
+            ListStatsService.SubjectStats st = stats.get(dto.getId());
+            dto.setTeacherCount(st == null ? 0 : st.teachers());
+            dto.setClassCount(st == null ? 0 : st.classes());
+            dto.setWeeklyLessons(st == null ? 0 : st.weeklyLessons());
+        }
+        return page;
+    }
+
+    private static final Map<String, List<String>> SORTABLE = Map.of(
+            "id", List.of("id"), "name", List.of("name"), "active", List.of("active", "name"));
 
     public Page<SubjectResponseDto> getAllSubjects(Long schoolId, Pageable pageable) {
         return getAllSubjects(schoolId, false, pageable);

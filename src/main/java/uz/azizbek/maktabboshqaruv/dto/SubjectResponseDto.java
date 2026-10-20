@@ -57,4 +57,33 @@ public class SubjectResponseDto {
     public void setActive(boolean active) {
         this.active = active;
     }
+
+    // list page numbers (ListStatsService); null where not computed
+    private Integer teacherCount;
+    private Integer classCount;
+    private Integer weeklyLessons;
+
+    public Integer getTeacherCount() {
+        return teacherCount;
+    }
+
+    public void setTeacherCount(Integer teacherCount) {
+        this.teacherCount = teacherCount;
+    }
+
+    public Integer getClassCount() {
+        return classCount;
+    }
+
+    public void setClassCount(Integer classCount) {
+        this.classCount = classCount;
+    }
+
+    public Integer getWeeklyLessons() {
+        return weeklyLessons;
+    }
+
+    public void setWeeklyLessons(Integer weeklyLessons) {
+        this.weeklyLessons = weeklyLessons;
+    }
 }

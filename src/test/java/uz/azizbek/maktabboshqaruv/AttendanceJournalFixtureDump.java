@@ -97,7 +97,7 @@ class AttendanceJournalFixtureDump {
 
         out.put("/api/school-classes", page(classes.getAllSchoolClasses(SCHOOL,
                 PageRequest.of(0, 300, Sort.by("gradeNumber")))));
-        out.put("/api/subjects", page(subjects.getAllSubjects(SCHOOL, false, PageRequest.of(0, 500, Sort.by("name")))));
+        out.put("/api/subjects", page(subjects.getAllSubjects(SCHOOL, false, null, PageRequest.of(0, 500, Sort.by("name")))));
         out.put("/api/attendance/today-lessons", attendance.getTodayLessons(SCHOOL, null));
 
         // the class's whole week (the old page lists every weekday) and a roster per lesson of the class

@@ -15,9 +15,24 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             "select s.schoolClass.id, count(s) from Student s where s.schoolClass.id in :classIds group by s.schoolClass.id")
     List<Object[]> countByClassIds(@org.springframework.data.repository.query.Param("classIds") java.util.Collection<Long> classIds);
 
-    /** Students list: optional class filter and a first/last name search (either order). */
-    @org.springframework.data.jpa.repository.Query("""
-            select s from Student s where s.schoolClass.academicYear.school.id = :schoolId
+    /**
+     * Students list: optional class filter and a first/last name search (either order). The class
+     * (with its year, school and teacher — eager in SchoolClass) and both places (tuman and its
+     * hudud) come in the same statement — no query per row or per class.
+     */
+    @org.springframework.data.jpa.repository.Query(value = """
+            select s from Student s join fetch s.schoolClass c
+              join fetch c.academicYear y join fetch y.school
+              left join fetch c.classTeacher ct left join fetch ct.position left join fetch ct.school
+              left join fetch s.birthDistrict bd left join fetch bd.region
+              left join fetch s.residenceDistrict rd left join fetch rd.region
+             where c.academicYear.school.id = :schoolId
+              and (:classId is null or c.id = :classId)
+              and (:q is null
+                   or lower(concat(s.firstName, ' ', s.lastName)) like :q
+                   or lower(concat(s.lastName, ' ', s.firstName)) like :q)
+            """, countQuery = """
+            select count(s) from Student s where s.schoolClass.academicYear.school.id = :schoolId
               and (:classId is null or s.schoolClass.id = :classId)
               and (:q is null
                    or lower(concat(s.firstName, ' ', s.lastName)) like :q

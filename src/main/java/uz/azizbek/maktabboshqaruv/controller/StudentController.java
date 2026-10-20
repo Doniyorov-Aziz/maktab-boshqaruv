@@ -18,6 +18,9 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.pages.ListStatsService listStats;
+
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
     public Page<StudentResponseDto> getAllStudents(@RequestParam Long schoolId,
@@ -25,6 +28,14 @@ public class StudentController {
                                                    @RequestParam(required = false) String q,
                                                    Pageable pageable) {
         return studentService.getAllStudents(schoolId, schoolClassId, q, pageable);
+    }
+
+    /** The filter chips' numbers: students per class and per Telegram link. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/facets")
+    public java.util.Map<String, java.util.List<uz.azizbek.maktabboshqaruv.service.pages.ListStatsService.Facet>> facets(
+            @RequestParam Long schoolId) {
+        return listStats.studentFacets(schoolId);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

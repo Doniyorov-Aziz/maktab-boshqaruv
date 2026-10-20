@@ -10,6 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import uz.azizbek.maktabboshqaruv.service.pages.ListStatsService;
+import uz.azizbek.maktabboshqaruv.util.PageSort;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class PositionService {
@@ -17,10 +22,29 @@ public class PositionService {
     @Autowired
     private PositionRepository positionRepository;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.repository.EmployeeRepository employeeRepository;
+
+    @Autowired
+    private ListStatsService listStats;
+
     public Page<PositionResponseDto> getAllPositions(Pageable pageable) {
-        return positionRepository.findAll(pageable)
-                .map(this::toResponseDto);
+        return getAllPositions(null, null, pageable);
     }
+
+    /**
+     * Positions with a title search and how many employees each has: in the given school, or in
+     * all schools when schoolId is null (positions are shared by the schools).
+     */
+    public Page<PositionResponseDto> getAllPositions(Long schoolId, String q, Pageable pageable) {
+        Page<PositionResponseDto> page = positionRepository.search(PageSort.like(q),
+                PageSort.map(pageable, SORTABLE)).map(this::toResponseDto);
+        Map<Long, Integer> counts = listStats.positionEmployees(schoolId);
+        for (PositionResponseDto dto : page.getContent()) dto.setEmployeeCount(counts.getOrDefault(dto.getId(), 0));
+        return page;
+    }
+
+    private static final Map<String, List<String>> SORTABLE = Map.of("id", List.of("id"), "title", List.of("title"));
 
     public PositionResponseDto getPositionById(Long id) {
         Position position = positionRepository.findById(id)
@@ -60,6 +84,12 @@ public class PositionService {
     public void deletePosition(Long id) {
         if (!positionRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday position topilmadi: " + id);
+        }
+        // employees keep their position: one that still has them cannot go (409, with how many)
+        long employees = employeeRepository.countByPositionId(id);
+        if (employees > 0) {
+            throw new IllegalStateException("Bu lavozimda " + employees + " ta xodim bor — o'chirib bo'lmaydi. "
+                    + "Avval xodimlarni boshqa lavozimga o'tkazing.");
         }
         positionRepository.deleteById(id);
     }

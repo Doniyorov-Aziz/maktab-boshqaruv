@@ -20,8 +20,10 @@ public class AcademicYearController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<AcademicYearResponseDto> getAllAcademicYears(@RequestParam Long schoolId, Pageable pageable) {
-        return academicYearService.getAllAcademicYears(schoolId, pageable);
+    public Page<AcademicYearResponseDto> getAllAcademicYears(@RequestParam Long schoolId,
+                                                             @RequestParam(required = false) String q,
+                                                             Pageable pageable) {
+        return academicYearService.getAllAcademicYears(schoolId, q, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

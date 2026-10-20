@@ -18,12 +18,24 @@ public class SubjectController {
     @Autowired
     private SubjectService subjectService;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.pages.ListStatsService listStats;
+
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
     public Page<SubjectResponseDto> getAllSubjects(@RequestParam Long schoolId,
                                                    @RequestParam(defaultValue = "false") boolean includeInactive,
+                                                   @RequestParam(required = false) String q,
                                                    Pageable pageable) {
-        return subjectService.getAllSubjects(schoolId, includeInactive, pageable);
+        return subjectService.getAllSubjects(schoolId, includeInactive, q, pageable);
+    }
+
+    /** The tab counts: active and retired subjects. */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/facets")
+    public java.util.Map<String, java.util.List<uz.azizbek.maktabboshqaruv.service.pages.ListStatsService.Facet>> facets(
+            @RequestParam Long schoolId) {
+        return listStats.subjectFacets(schoolId);
     }
 
     /** "Qayta faollashtirish". */

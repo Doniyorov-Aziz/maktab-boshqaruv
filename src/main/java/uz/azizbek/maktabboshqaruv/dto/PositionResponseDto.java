@@ -20,5 +20,15 @@ public class PositionResponseDto {
     public void setTitle(String title) {
         this.title = title;
     }
-}
 
+    // list page numbers (ListStatsService); null where not computed
+    private Integer employeeCount;
+
+    public Integer getEmployeeCount() {
+        return employeeCount;
+    }
+
+    public void setEmployeeCount(Integer employeeCount) {
+        this.employeeCount = employeeCount;
+    }
+}

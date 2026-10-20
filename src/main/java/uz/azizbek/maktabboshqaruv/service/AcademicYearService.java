@@ -13,6 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import uz.azizbek.maktabboshqaruv.service.pages.ListStatsService;
+import uz.azizbek.maktabboshqaruv.util.PageSort;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class AcademicYearService {
@@ -23,10 +28,28 @@ public class AcademicYearService {
     @Autowired
     private SchoolRepository schoolRepository;
 
+    @Autowired
+    private ListStatsService listStats;
+
     public Page<AcademicYearResponseDto> getAllAcademicYears(Long schoolId, Pageable pageable) {
-        return academicYearRepository.findBySchoolId(schoolId, pageable)
-                .map(this::toResponseDto);
+        return getAllAcademicYears(schoolId, null, pageable);
     }
+
+    /** School years with a title search and their classes and students (one grouped query). */
+    public Page<AcademicYearResponseDto> getAllAcademicYears(Long schoolId, String q, Pageable pageable) {
+        Page<AcademicYearResponseDto> page = academicYearRepository.search(schoolId, PageSort.like(q),
+                PageSort.map(pageable, SORTABLE)).map(this::toResponseDto);
+        Map<Long, ListStatsService.YearStats> stats = listStats.years(schoolId);
+        for (AcademicYearResponseDto dto : page.getContent()) {
+            ListStatsService.YearStats st = stats.get(dto.getId());
+            dto.setClassCount(st == null ? 0 : st.classes());
+            dto.setStudentCount(st == null ? 0 : st.students());
+        }
+        return page;
+    }
+
+    private static final Map<String, List<String>> SORTABLE = Map.of(
+            "id", List.of("id"), "title", List.of("title"), "startDate", List.of("startDate"), "endDate", List.of("endDate"));
 
     public AcademicYearResponseDto getAcademicYearById(Long id) {
         AcademicYear academicYear = academicYearRepository.findById(id)

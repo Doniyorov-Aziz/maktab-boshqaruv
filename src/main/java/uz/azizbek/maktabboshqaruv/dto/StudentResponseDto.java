@@ -214,4 +214,51 @@ public class StudentResponseDto {
     public void setFullAddress(String fullAddress) {
         this.fullAddress = fullAddress;
     }
+
+    // list page numbers (ListStatsService); null where not computed
+    private Double attendance30;
+    private Double average30;
+    private Double averagePrev;
+    private Integer risk;
+    private Boolean telegram;
+
+    public Double getAttendance30() {
+        return attendance30;
+    }
+
+    public void setAttendance30(Double attendance30) {
+        this.attendance30 = attendance30;
+    }
+
+    public Double getAverage30() {
+        return average30;
+    }
+
+    public void setAverage30(Double average30) {
+        this.average30 = average30;
+    }
+
+    public Double getAveragePrev() {
+        return averagePrev;
+    }
+
+    public void setAveragePrev(Double averagePrev) {
+        this.averagePrev = averagePrev;
+    }
+
+    public Integer getRisk() {
+        return risk;
+    }
+
+    public void setRisk(Integer risk) {
+        this.risk = risk;
+    }
+
+    public Boolean getTelegram() {
+        return telegram;
+    }
+
+    public void setTelegram(Boolean telegram) {
+        this.telegram = telegram;
+    }
 }

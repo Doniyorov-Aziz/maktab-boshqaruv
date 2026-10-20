@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import uz.azizbek.maktabboshqaruv.service.pages.ListStatsService;
+import uz.azizbek.maktabboshqaruv.util.PageSort;
 
 @Service
 public class EmployeeService {
@@ -46,16 +48,46 @@ public class EmployeeService {
     @Autowired
     private AccountStatusService accountStatusService;
 
+    @Autowired
+    private ListStatsService listStats;
+
     public Page<EmployeeResponseDto> getAllEmployees(Long schoolId, Pageable pageable) {
-        return getAllEmployees(schoolId, null, null, pageable);
+        return getAllEmployees(schoolId, null, null, null, pageable);
     }
 
-    /** One page of employees with what they teach: 3 queries per page, whatever its size. */
     public Page<EmployeeResponseDto> getAllEmployees(Long schoolId, Long positionId, EmployeeStatus status,
                                                      Pageable pageable) {
-        Page<Employee> page = employeeRepository.search(schoolId, positionId, status, pageable);
+        return getAllEmployees(schoolId, positionId, status, null, pageable);
+    }
+
+    /** What the list may sort by: its columns → the entity's fields. */
+    private static final Map<String, List<String>> SORTABLE = Map.of(
+            "id", List.of("id"),
+            "fullName", List.of("lastName", "firstName"),
+            "lastName", List.of("lastName", "firstName"),
+            "positionTitle", List.of("position.title", "lastName"),
+            "status", List.of("status", "lastName"),
+            "phone", List.of("phone"));
+
+    /**
+     * One page of employees with what they teach and their numbers: the page (position and school
+     * fetched with it), its count, what they teach, which classes they lead, lessons a week — 5
+     * queries per page whatever its size; journal completeness comes from the cache.
+     */
+    public Page<EmployeeResponseDto> getAllEmployees(Long schoolId, Long positionId, EmployeeStatus status, String q,
+                                                     Pageable pageable) {
+        Pageable sorted = PageSort.map(pageable, SORTABLE);
+        Page<Employee> page = employeeRepository.search(schoolId, positionId, status, PageSort.like(q), sorted);
         List<EmployeeResponseDto> rows = withTeaching(page.getContent());
-        return new PageImpl<>(rows, pageable, page.getTotalElements());
+        Map<Long, ListStatsService.EmployeeStats> stats = listStats.employees(schoolId,
+                rows.stream().map(EmployeeResponseDto::getId).toList());
+        for (EmployeeResponseDto dto : rows) {
+            ListStatsService.EmployeeStats st = stats.get(dto.getId());
+            if (st == null) continue;
+            dto.setWeeklyLessons(st.weeklyLessons());
+            dto.setJournal7(st.journal7());
+        }
+        return new PageImpl<>(rows, sorted, page.getTotalElements());
     }
 
     public EmployeeResponseDto getEmployeeById(Long id) {

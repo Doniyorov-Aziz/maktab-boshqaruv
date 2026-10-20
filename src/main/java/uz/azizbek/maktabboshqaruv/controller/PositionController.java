@@ -20,8 +20,10 @@ public class PositionController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
-    public Page<PositionResponseDto> getAllPositions(Pageable pageable) {
-        return positionService.getAllPositions(pageable);
+    public Page<PositionResponseDto> getAllPositions(@RequestParam(required = false) Long schoolId,
+                                                     @RequestParam(required = false) String q,
+                                                     Pageable pageable) {
+        return positionService.getAllPositions(schoolId, q, pageable);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")

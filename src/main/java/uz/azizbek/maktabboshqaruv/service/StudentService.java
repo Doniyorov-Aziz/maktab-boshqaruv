@@ -15,6 +15,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import uz.azizbek.maktabboshqaruv.service.pages.ListStatsService;
+import uz.azizbek.maktabboshqaruv.util.PageSort;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class StudentService {
@@ -34,16 +39,43 @@ public class StudentService {
     @Autowired
     private DistrictService districtService;
 
+    @Autowired
+    private ListStatsService listStats;
+
     @Transactional(readOnly = true)
     public Page<StudentResponseDto> getAllStudents(Long schoolId, Pageable pageable) {
         return getAllStudents(schoolId, null, null, pageable);
     }
 
+    /** What the list may sort by: its columns → the entity's fields. */
+    private static final Map<String, List<String>> SORTABLE = Map.of(
+            "id", List.of("id"),
+            "fullName", List.of("lastName", "firstName"),
+            "lastName", List.of("lastName", "firstName"),
+            "firstName", List.of("firstName", "lastName"),
+            "birthDate", List.of("birthDate"),
+            "className", List.of("schoolClass.gradeNumber", "schoolClass.sectionLetter", "lastName"));
+
+    /**
+     * One page of students with their 30-day numbers: the page (class and places fetched with it),
+     * its count, and one statement for every row's attendance, grades and Telegram — 3 in all.
+     */
     @Transactional(readOnly = true)
     public Page<StudentResponseDto> getAllStudents(Long schoolId, Long schoolClassId, String q, Pageable pageable) {
-        String like = q == null || q.isBlank() ? null : "%" + q.trim().toLowerCase().replaceAll("\\s+", " ") + "%";
-        return studentRepository.search(schoolId, schoolClassId, like, pageable)
-                .map(this::toResponseDto);
+        Page<StudentResponseDto> page = studentRepository.search(schoolId, schoolClassId, PageSort.like(q),
+                PageSort.map(pageable, SORTABLE)).map(this::toResponseDto);
+        Map<Long, ListStatsService.StudentStats> stats = listStats.students(schoolId,
+                page.getContent().stream().map(StudentResponseDto::getId).toList());
+        for (StudentResponseDto dto : page.getContent()) {
+            ListStatsService.StudentStats st = stats.get(dto.getId());
+            if (st == null) continue;
+            dto.setAttendance30(st.attendance30());
+            dto.setAverage30(st.average30());
+            dto.setAveragePrev(st.averagePrev());
+            dto.setRisk(st.risk());
+            dto.setTelegram(st.telegram());
+        }
+        return page;
     }
 
     @Transactional(readOnly = true)
