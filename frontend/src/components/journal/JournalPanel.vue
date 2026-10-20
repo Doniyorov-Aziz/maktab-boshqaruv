@@ -60,26 +60,25 @@
     </div>
 
     <div class="jp__kpis">
-      <div v-for="k in kpis" :key="k.key" class="jp__kpi" :data-kpi="k.key">
-        <span class="jp__kpi-label">{{ k.label }}</span>
-        <span class="jp__kpi-row">
-          <b class="jp__kpi-value dash-num" :style="{ color: k.color }">{{
-            k.text
-          }}</b>
-          <DeltaPill
-            :value="k.delta"
-            :percent="k.percent"
-            :digits="k.digits"
-            :title="k.deltaTitle"
-          />
-        </span>
-        <Sparkline
-          :values="k.spark"
-          :color="k.color"
-          :label="`${k.label}: oy davomida`"
-          class="jp__spark"
-        />
-      </div>
+      <KpiCard
+        v-for="k in kpis"
+        :key="k.key"
+        mini
+        :kpi-key="k.key"
+        :label="k.label"
+        icon="insights"
+        :color="k.color"
+        :value-color="k.color"
+        :value="k.value"
+        :format="k.format"
+        :empty-value="k.value == null"
+        :delta="k.delta"
+        :delta-percent="k.percent"
+        :delta-digits="k.digits"
+        :delta-title="k.deltaTitle"
+        :spark="k.spark"
+        :spark-label="`${k.label}: oy davomida`"
+      />
     </div>
   </section>
 </template>
@@ -92,8 +91,7 @@
 import { computed } from 'vue'
 import { useQuasar, copyToClipboard } from 'quasar'
 import AvatarInitials from '@/components/pages/AvatarInitials.vue'
-import DeltaPill from '@/components/dashboard/DeltaPill.vue'
-import Sparkline from '@/components/dashboard/Sparkline.vue'
+import KpiCard from '@/components/dashboard/KpiCard.vue'
 import AppButton from '@/components/app/AppButton.vue'
 import { formatPhone, lessonState, hhmm } from '@/utils/tashkent'
 import { avgColor } from './journal'
@@ -171,7 +169,8 @@ const kpis = computed(() => {
     {
       key: 'average',
       label: "O'rtacha",
-      text: c.average == null ? '—' : c.average.toFixed(2),
+      value: c.average,
+      format: v => v.toFixed(2),
       color: avgColor(c.average),
       delta: p?.count ? delta(c.average, p.average) : null,
       digits: 2,
@@ -182,7 +181,8 @@ const kpis = computed(() => {
     {
       key: 'mastery',
       label: "O'zlashtirish",
-      text: c.mastery == null ? '—' : `${Math.round(c.mastery)}%`,
+      value: c.mastery,
+      format: v => `${Math.round(v)}%`,
       color: 'var(--chart-primary)',
       delta: p?.count ? delta(c.mastery, p.mastery) : null,
       digits: 1,
@@ -193,7 +193,8 @@ const kpis = computed(() => {
     {
       key: 'quality',
       label: 'Sifat',
-      text: c.quality == null ? '—' : `${Math.round(c.quality)}%`,
+      value: c.quality,
+      format: v => `${Math.round(v)}%`,
       color: 'var(--gr-4)',
       delta: p?.count ? delta(c.quality, p.quality) : null,
       digits: 1,
@@ -204,7 +205,8 @@ const kpis = computed(() => {
     {
       key: 'count',
       label: 'Baholar',
-      text: String(c.count),
+      value: c.count,
+      format: v => String(Math.round(v)),
       color: 'var(--st-excused)',
       delta: p?.count ? c.count - p.count : null,
       digits: 0,
@@ -331,37 +333,6 @@ async function copy(phone) {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-3);
-}
-
-.jp__kpi {
-  display: flex;
-  flex-direction: column;
-  gap: var(--hairline);
-  min-width: 0;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-}
-
-.jp__kpi-label {
-  font-size: var(--text-xs);
-  color: var(--brand-text-muted);
-  white-space: nowrap;
-}
-
-.jp__kpi-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.jp__kpi-value {
-  font-size: var(--text-lg);
-  font-variant-numeric: tabular-nums;
-}
-
-.jp__spark {
-  --spark-h: var(--space-5);
 }
 
 @media (max-width: 1023px) {

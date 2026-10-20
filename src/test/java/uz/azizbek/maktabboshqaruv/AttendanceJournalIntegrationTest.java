@@ -173,4 +173,19 @@ class AttendanceJournalIntegrationTest extends AttendanceAutomationTestBase {
         byte[] pdf = journalPage.pdf(classId, subjectId, YearMonth.from(MONDAY));
         assertEquals("%PDF", new String(pdf, 0, 4));
     }
+
+    @Test
+    void homework_isAGradeTypeTheDatabaseTakes() {
+        // the old CHECK (type in CURRENT, EXAM, QUARTERLY) is dropped at startup
+        assertEquals(0, jdbc.queryForObject(
+                "select count(*) from pg_constraint where conname = 'grade_type_check'", Integer.class));
+        long subjectId = school.subject.getId();
+        long sid = student(0, 3).getId();
+        jdbc.update("insert into grade (student_id, subject_id, grade_date, score, type, created_date) values (?, ?, ?, 4, 'HOMEWORK', now())",
+                sid, subjectId, Date.valueOf(MONDAY));
+
+        JournalPageService.StudentCard card = journalPage.student(sid, subjectId, false);
+        assertEquals(1, card.grades().size());
+        assertEquals("HOMEWORK", String.valueOf(card.grades().get(0).type()));
+    }
 }

@@ -30,6 +30,7 @@
             <q-icon name="event" />
             {{ shortDayLabel(date) }}
             <q-popup-proxy
+              ref="datePop"
               cover
               transition-show="scale"
               transition-hide="scale"
@@ -110,7 +111,10 @@
         icon="event_busy"
         title="Bu kuni dars yo'q"
         :text="`${selectedClassName} sinfining ${day.weekday.toLowerCase()} kungi jadvalida dars yo'q.`"
+        action="Boshqa kunni tanlash"
+        action-icon="event"
         data-empty="lessons"
+        @action="datePop?.show()"
       />
 
       <template v-else-if="lessonId">
@@ -319,6 +323,7 @@ const date = ref(openingDay(now.value.date))
 const classes = ref([])
 const classId = ref(null)
 const day = ref(null)
+const datePop = ref(null)
 const lessonId = ref(null)
 const roster = ref(null)
 const loadingDay = ref(false)

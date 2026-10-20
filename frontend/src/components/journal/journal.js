@@ -13,9 +13,12 @@ export const GRADE_COLOR = {
 export const TYPES = [
   { value: 'CURRENT', label: 'Joriy' },
   { value: 'EXAM', label: 'Nazorat' },
+  { value: 'HOMEWORK', label: 'Uy vazifasi' },
   { value: 'QUARTERLY', label: 'Chorak' }
 ]
 export const TYPE_LABEL = Object.fromEntries(TYPES.map(t => [t.value, t.label]))
+/** A test or a term grade (shown with a ring); homework has its own dashed mark. */
+export const isTest = type => type === 'EXAM' || type === 'QUARTERLY'
 
 const round = (v, d = 2) => Math.round(v * 10 ** d) / 10 ** d
 

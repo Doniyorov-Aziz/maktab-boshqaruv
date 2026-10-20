@@ -14,6 +14,8 @@
       :aria-label="label"
       @click="onClick"
       @keydown="onKeydown"
+      @pointerdown="onDragStart"
+      @pointerover="onDragOver"
     >
       <thead>
         <tr>
@@ -31,6 +33,7 @@
             :title="dayTitle(d)"
             :aria-label="dayTitle(d)"
           >
+            <span v-if="d.date === nowDate" class="gb__dtoday">Bugun</span>
             <span class="gb__dnum">{{ Number(d.date.slice(8)) }}</span>
             <span class="gb__dwd">{{ d.weekday }}</span>
             <span v-if="d.hasLesson && !d.isFuture" class="gb__dlesson" />
@@ -98,7 +101,8 @@
                 :class="[
                   `gb__chip--${g.value}`,
                   {
-                    'gb__chip--exam': g.type !== 'CURRENT',
+                    'gb__chip--exam': isTest(g.type),
+                    'gb__chip--hw': g.type === 'HOMEWORK',
                     'gb__chip--demo': g.source === 'DEMO_SIM'
                   }
                 ]"
@@ -207,6 +211,7 @@ import {
   blockedReason,
   nextRow,
   rectCells,
+  isTest,
   TYPE_LABEL
 } from './journal'
 
@@ -332,7 +337,10 @@ onMounted(() => {
   hoverStyle = document.createElement('style')
   document.head.appendChild(hoverStyle)
 })
-onBeforeUnmount(() => hoverStyle?.remove())
+onBeforeUnmount(() => {
+  hoverStyle?.remove()
+  window.removeEventListener('pointerup', onDragEnd)
+})
 watch(hoverCss, css => {
   if (hoverStyle) hoverStyle.textContent = css
 })
@@ -381,7 +389,42 @@ function targets(r, c) {
   return [{ r, c }]
 }
 
+// dragging the mouse over cells selects the rectangle, as in a spreadsheet
+let drag = null
+let dragged = false
+function cellOf(e) {
+  const td = e.target.closest?.('td[data-row]')
+  return td ? { r: Number(td.dataset.row), c: Number(td.dataset.col) } : null
+}
+function onDragStart(e) {
+  if (e.pointerType !== 'mouse' || e.button !== 0) return
+  if (e.shiftKey || e.ctrlKey || e.metaKey) return
+  drag = cellOf(e)
+  dragged = false
+  if (drag) window.addEventListener('pointerup', onDragEnd, { once: true })
+}
+function onDragOver(e) {
+  if (!drag || !(e.buttons & 1)) return
+  const to = cellOf(e)
+  if (!to || (to.r === drag.r && to.c === drag.c && !dragged)) return
+  e.preventDefault()
+  dragged = true
+  anchor = drag
+  selectRect(to)
+  cur.r = to.r
+  cur.c = to.c
+}
+function onDragEnd() {
+  drag = null
+  if (!dragged) return
+  focusCell(cur.r, cur.c, { scroll: false })
+  // the click (if any) comes right after pointerup; a drag ending outside the table has none
+  setTimeout(() => (dragged = false))
+}
+
 function onClick(e) {
+  // the click that ends a drag keeps the block instead of opening a cell
+  if (dragged) return
   const th = e.target.closest('th[data-col]')
   if (th) {
     emit('column', Number(th.dataset.col))
@@ -538,7 +581,7 @@ thead th {
 }
 
 .gb__day {
-  position: relative;
+  /* sticky (from thead th) is positioned too: the lesson dot still sits inside */
   width: var(--gb-day-w);
   min-width: var(--gb-day-w);
   cursor: pointer;
@@ -575,6 +618,15 @@ thead th {
 thead .gb--today {
   background: var(--c-primary);
   color: white;
+}
+
+.gb__dtoday {
+  display: block;
+  font-size: calc(var(--text-xs) * 0.75);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 thead .gb--today .gb__dnum {
@@ -700,6 +752,7 @@ tfoot .gb__name {
   height: var(--gb-row-h);
   cursor: cell;
   outline: none;
+  user-select: none;
 }
 
 .gb--readonly .gb__cell {
@@ -789,6 +842,12 @@ thead .gb--future {
 /* a test / term grade: a ring in its colour */
 .gb__chip--exam {
   box-shadow: inset 0 0 0 2px var(--g);
+}
+
+/* homework: a dashed ring */
+.gb__chip--hw {
+  outline: var(--hairline) dashed var(--g);
+  outline-offset: calc(var(--hairline) * -3);
 }
 
 /* put there by the demo: a small purple dot */

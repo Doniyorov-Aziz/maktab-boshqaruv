@@ -22,8 +22,11 @@
       </circle>
     </svg>
     <figcaption class="ring__center">
-      <div class="ring__value">{{ center }}</div>
-      <div v-if="caption" class="ring__caption">{{ caption }}</div>
+      <!-- a page may put its own centre (e.g. a counting-up number) -->
+      <slot>
+        <div class="ring__value">{{ center }}</div>
+        <div v-if="caption" class="ring__caption">{{ caption }}</div>
+      </slot>
     </figcaption>
   </figure>
 </template>

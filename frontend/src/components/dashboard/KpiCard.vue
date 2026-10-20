@@ -3,7 +3,11 @@
     :is="to ? 'router-link' : 'div'"
     :to="to || undefined"
     class="kpi dash-card"
-    :class="{ 'kpi--link': !!to || clickable, 'kpi--compact': compact }"
+    :class="{
+      'kpi--link': !!to || clickable,
+      'kpi--compact': compact,
+      'kpi--mini': mini
+    }"
     :data-kpi="kpiKey"
     :aria-busy="loading"
     :role="clickable && !to ? 'button' : undefined"
@@ -22,6 +26,7 @@
     <template v-else>
       <div class="kpi__head">
         <IconTile
+          v-if="!mini"
           :icon="icon"
           size="32"
           :color="`color-mix(in srgb, ${color} 14%, transparent)`"
@@ -37,21 +42,25 @@
           :title="deltaTitle"
         />
       </div>
-      <div class="kpi__value" :class="{ 'kpi__value--empty': emptyValue }">
+      <div
+        class="kpi__value"
+        :class="{ 'kpi__value--empty': emptyValue }"
+        :style="valueColor ? { color: valueColor } : null"
+      >
         <span v-if="emptyValue" class="kpi__empty">{{ emptyText }}</span>
         <CountUp v-else :value="value" :format="format" />
       </div>
-      <div class="kpi__note">
+      <div v-if="!mini" class="kpi__note">
         <slot name="note">{{ note }}</slot>
       </div>
       <Sparkline
         class="kpi__spark"
-        :large="!compact"
+        :large="!compact && !mini"
         :values="spark || []"
         :color="color"
         :min="sparkMin"
         :max="sparkMax"
-        :label="`${label}: oxirgi 14 ish kuni`"
+        :label="sparkLabel || `${label}: oxirgi 14 ish kuni`"
       />
     </template>
   </component>
@@ -89,7 +98,11 @@ defineProps({
   // a card that opens something on the page (a list in a side panel) rather than a link
   clickable: { type: Boolean, default: false },
   // a lower card (smaller number and sparkline) for pages that need the room below
-  compact: { type: Boolean, default: false }
+  compact: { type: Boolean, default: false },
+  // the smallest: no icon and no note, a tile inside another card (journal panel)
+  mini: { type: Boolean, default: false },
+  sparkLabel: { type: String, default: '' },
+  valueColor: { type: String, default: '' }
 })
 const emit = defineEmits(['click'])
 </script>
@@ -171,6 +184,40 @@ const emit = defineEmits(['click'])
 
 .kpi--compact .kpi__note {
   min-height: 0;
+}
+
+.kpi--mini {
+  gap: var(--hairline);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+.kpi--mini::before {
+  display: none;
+}
+
+.kpi--mini:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.kpi--mini .kpi__name {
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.kpi--mini .kpi__value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  margin-top: 0;
+  line-height: 1.2;
+}
+
+.kpi--mini .kpi__spark {
+  --spark-h: var(--space-5);
 }
 
 .kpi__skel-icon {

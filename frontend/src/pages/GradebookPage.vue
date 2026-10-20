@@ -149,7 +149,10 @@
               >
               <span class="gbp__lg gbp__lg--exam">N</span
               ><small>nazorat / chorak</small>
-              <span class="gbp__lg-dot" /><small>demo</small>
+              <span class="gbp__lg gbp__lg--hw">U</span
+              ><small>uy vazifasi</small> <span class="gbp__lg-dot" /><small
+                >demo</small
+              >
             </div>
             <span v-if="canGrade" class="gbp__keys gt-sm">
               <kbd>2</kbd>–<kbd>5</kbd> baho va pastga · <kbd>Enter</kbd> oyna ·
@@ -1026,6 +1029,12 @@ onBeforeUnmount(() => {
   --g: var(--brand-text-muted);
   margin-left: var(--space-2);
   box-shadow: inset 0 0 0 2px var(--g);
+}
+
+.gbp__lg--hw {
+  --g: var(--brand-text-muted);
+  outline: var(--hairline) dashed var(--g);
+  outline-offset: calc(var(--hairline) * -3);
 }
 
 .gbp__lg-dot {

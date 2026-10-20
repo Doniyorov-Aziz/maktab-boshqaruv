@@ -156,6 +156,51 @@ test.describe('attendance', () => {
     await context.close()
   })
 
+  test('autosaved marks are still there after a reload', async ({
+    browser
+  }) => {
+    const { context, page } = await attendance(browser)
+    await page.locator('[data-roster-list]').focus()
+    await page.keyboard.press('2')
+    await expect(page.locator('[data-savebar]')).toContainText('Saqlandi', {
+      timeout: 4000
+    })
+    await page.reload({ waitUntil: 'networkidle' })
+    await expect(page.locator('[data-roster-row]').first()).toHaveAttribute(
+      'data-row-status',
+      'ABSENT'
+    )
+    await expect(page.locator('[data-roster-row]').nth(1)).not.toHaveAttribute(
+      'data-row-status',
+      'ABSENT'
+    )
+    expect(page.errors).toEqual([])
+    await context.close()
+  })
+
+  test('a day without lessons offers "Boshqa kunni tanlash"', async ({
+    browser
+  }) => {
+    const context = await mockContext(browser, WIDE)
+    const f = fixtures()
+    const day =
+      f[`/api/pages/attendance/day?classId=${f.classA}&date=${f.today}`]
+    context.overrides['GET /api/pages/attendance/day'] = {
+      body: { ...day, lessons: [] }
+    }
+    await context.addInitScript(
+      id => localStorage.setItem('attendance.classId', String(id)),
+      f.classA
+    )
+    const page = await watched(context)
+    await open(page, '/attendance')
+    const empty = page.locator('[data-empty="lessons"]')
+    await expect(empty).toBeVisible()
+    await empty.getByRole('button', { name: 'Boshqa kunni tanlash' }).click()
+    await expect(page.locator('.q-date')).toBeVisible()
+    await context.close()
+  })
+
   test('Shift-click selects a range; one key marks all of it', async ({
     browser
   }) => {
@@ -319,6 +364,60 @@ test.describe('journal', () => {
     await context.close()
   })
 
+  test('class picker: only the chosen class is filled', async ({ browser }) => {
+    const { context, page } = await journal(browser)
+    const bg = el => el.evaluate(e => getComputedStyle(e).backgroundColor)
+    const on = page.locator(
+      '[data-class-picker] [data-class][aria-pressed="true"]'
+    )
+    await expect(on).toHaveCount(1)
+    expect(await bg(on)).not.toBe('rgba(0, 0, 0, 0)')
+    const off = page.locator(
+      '[data-class-picker] [data-class][aria-pressed="false"]'
+    )
+    for (let i = 0; i < (await off.count()); i++)
+      expect(await bg(off.nth(i))).toBe('rgba(0, 0, 0, 0)')
+    await context.close()
+  })
+
+  test('the column of today says "Bugun"', async ({ browser }) => {
+    const { context, page } = await journal(browser)
+    await expect(page.locator('thead .gb--today .gb__dtoday')).toHaveText(
+      'Bugun'
+    )
+    await expect(page.locator('thead .gb__dtoday')).toHaveCount(1)
+    await context.close()
+  })
+
+  test('dragging over cells selects a block that takes one grade', async ({
+    browser
+  }) => {
+    const { context, page } = await journal(browser)
+    const ci = await page.locator('thead .gb--today').getAttribute('data-col')
+    const from = await page
+      .locator(`td[data-row="5"][data-col="${ci}"]`)
+      .boundingBox()
+    const to = await page
+      .locator(`td[data-row="7"][data-col="${ci}"]`)
+      .boundingBox()
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+      steps: 8
+    })
+    await page.mouse.up()
+    await expect(page.locator('.gb__cell--sel')).toHaveCount(3)
+    await expect(page.locator('[data-grade-popover]')).toHaveCount(0)
+    const before = gradePosts(context).length
+    await page.keyboard.press('4')
+    await expect.poll(() => gradePosts(context).length).toBe(before + 3)
+    const rows = gradePosts(context)
+      .slice(before)
+      .map(r => JSON.parse(r.body).score)
+    expect(rows).toEqual([4, 4, 4])
+    await context.close()
+  })
+
   test('Sunday and future cells say why and send nothing', async ({
     browser
   }) => {
@@ -362,6 +461,40 @@ test.describe('journal', () => {
     await expect(
       page.locator(`td[data-row="2"][data-col="${ci}"] .gb__chip--exam`)
     ).toBeVisible()
+    await context.close()
+  })
+
+  test('a homework grade is sent as HOMEWORK and marked with a dashed ring', async ({
+    browser
+  }) => {
+    const { context, page } = await journal(browser)
+    const ci = await page.locator('thead .gb--today').getAttribute('data-col')
+    // an empty cell of today: a new grade is a POST
+    const cell = page
+      .locator(`td[data-col="${ci}"]:not(:has([data-grade]))`)
+      .first()
+    const ri = await cell.getAttribute('data-row')
+    await cell.click()
+    const pop = page.locator('[data-grade-popover]')
+    await expect(pop.getByRole('tab')).toHaveText([
+      'Joriy',
+      'Nazorat',
+      'Uy vazifasi',
+      'Chorak'
+    ])
+    const box = await pop.boundingBox()
+    expect(box.x + box.width).toBeLessThanOrEqual(WIDE.width)
+    await pop.getByRole('tab', { name: 'Uy vazifasi' }).click()
+    await pop.locator('[data-pick="5"]').click()
+    expect(JSON.parse(gradePosts(context).at(-1).body)).toMatchObject({
+      score: 5,
+      type: 'HOMEWORK'
+    })
+    const chip = page.locator(
+      `td[data-row="${ri}"][data-col="${ci}"] .gb__chip--hw`
+    )
+    await expect(chip).toBeVisible()
+    await expect(chip).not.toHaveClass(/gb__chip--exam/)
     await context.close()
   })
 
@@ -420,7 +553,7 @@ test.describe('journal', () => {
     await context.close()
   })
 
-  test('heat mode, sticky name and stats columns, export menu', async ({
+  test('heat mode, sticky header, name and stats columns, export menu', async ({
     browser
   }) => {
     const { context, page } = await journal(browser, LAPTOP)
@@ -431,6 +564,15 @@ test.describe('journal', () => {
     await page.locator('[data-gradebook]').evaluate(e => (e.scrollLeft = 0))
     await page.locator('[data-gradebook]').evaluate(e => (e.scrollLeft = 400))
     expect((await name.boundingBox()).x).toBe(x0)
+    // the header row stays on top while the table scrolls down
+    const head = page.locator('thead .gb__day').first()
+    const y0 = (await head.boundingBox()).y
+    await page.locator('[data-gradebook]').evaluate(e => (e.scrollTop = 300))
+    expect(
+      await page.locator('[data-gradebook]').evaluate(e => e.scrollTop)
+    ).toBeGreaterThan(0)
+    expect((await head.boundingBox()).y).toBe(y0)
+    await page.locator('[data-gradebook]').evaluate(e => (e.scrollTop = 0))
     const avg = page.locator('tbody .gb__r3').first()
     const ax = (await avg.boundingBox()).x
     await page.locator('[data-gradebook]').evaluate(e => (e.scrollLeft = 0))

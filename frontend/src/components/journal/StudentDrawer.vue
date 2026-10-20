@@ -14,17 +14,17 @@
       <div class="sd__kpis">
         <div class="sd__kpi" data-kpi="average">
           <span>O'rtacha (yil)</span>
-          <b :style="{ color: avgColor(card.average) }">{{
-            card.average == null ? '—' : card.average.toFixed(2)
-          }}</b>
+          <b :style="{ color: avgColor(card.average) }"
+            ><CountUp :value="card.average" :format="v => v.toFixed(2)"
+          /></b>
         </div>
         <div class="sd__kpi" data-kpi="attendance">
           <span>Davomat (30 kun)</span>
-          <b :style="{ color: attColor }">{{
-            card.attendance30 == null
-              ? '—'
-              : `${Math.round(card.attendance30)}%`
-          }}</b>
+          <b :style="{ color: attColor }"
+            ><CountUp
+              :value="card.attendance30"
+              :format="v => `${Math.round(v)}%`"
+          /></b>
         </div>
         <div class="sd__kpi" data-kpi="risk">
           <span>Xavf</span>
@@ -37,16 +37,15 @@
 
       <section class="sd__block">
         <h4>O'rtacha baho — oxirgi 30 kun</h4>
-        <Sparkline
-          v-if="trendValues.length > 1"
-          :values="trendValues"
-          :min="2"
-          :max="5"
-          :color="avgColor(card.average)"
-          large
-          label="30 kunlik o'rtacha"
+        <div
+          v-if="trendValues.filter(v => v != null).length > 1"
+          class="sd__chart"
+          role="img"
+          aria-label="30 kunlik o'rtacha baho chizig'i"
           data-student-trend
-        />
+        >
+          <Line :key="themeKey" :data="chartData" :options="chartOptions" />
+        </div>
         <p v-else class="sd__muted">Chiziq uchun baholar kam.</p>
       </section>
 
@@ -61,7 +60,10 @@
             v-for="(g, i) in m.grades"
             :key="i"
             class="sd__chip"
-            :class="{ 'sd__chip--exam': g.type !== 'CURRENT' }"
+            :class="{
+              'sd__chip--exam': isTest(g.type),
+              'sd__chip--hw': g.type === 'HOMEWORK'
+            }"
             :style="{ '--g': GRADE_COLOR[g.value] }"
             :title="`${g.date.slice(8)}.${g.date.slice(5, 7)} · ${TYPE_LABEL[g.type] || ''}${g.comment ? ` · ${g.comment}` : ''}`"
             >{{ g.value }}</span
@@ -119,10 +121,21 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import SideDrawer from '@/components/dashboard/SideDrawer.vue'
-import Sparkline from '@/components/dashboard/Sparkline.vue'
+import CountUp from '@/components/dashboard/CountUp.vue'
+import { Line } from 'vue-chartjs'
+import {
+  Chart,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Filler,
+  Tooltip
+} from 'chart.js'
+import { useChartTheme, alpha, token } from '@/charts/chartTheme'
 import AppButton from '@/components/app/AppButton.vue'
 import AvatarInitials from '@/components/pages/AvatarInitials.vue'
-import { GRADE_COLOR, TYPE_LABEL, avgColor, MONTHS } from './journal'
+import { GRADE_COLOR, TYPE_LABEL, avgColor, isTest, MONTHS } from './journal'
 import { guardianLabel } from '@/utils/guardian'
 import { formatPhone } from '@/utils/tashkent'
 
@@ -136,9 +149,75 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 const router = useRouter()
 
-const trendValues = computed(() =>
-  (props.card?.trend || []).map(p => p.average)
+Chart.register(
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Filler,
+  Tooltip
 )
+const { themeKey } = useChartTheme()
+
+const trend = computed(() => props.card?.trend || [])
+const trendValues = computed(() => trend.value.map(p => p.average))
+// the line takes the colour of the year's average (canvas needs the token's value)
+const lineColor = computed(() => {
+  const name =
+    /var\((--[\w-]+)\)/.exec(avgColor(props.card?.average))?.[1] ||
+    '--chart-primary'
+  // themeKey changes when light / dark flips: the token is read again then
+  return themeKey.value >= 0 ? token(name) : ''
+})
+const chartData = computed(() => ({
+  labels: trend.value.map(p => `${p.date.slice(8)}.${p.date.slice(5, 7)}`),
+  datasets: [
+    {
+      label: "O'rtacha",
+      data: trendValues.value,
+      borderColor: lineColor.value,
+      backgroundColor: ctx => {
+        const area = ctx.chart.chartArea
+        if (!area) return alpha(lineColor.value, 0.12)
+        const g = ctx.chart.ctx.createLinearGradient(
+          0,
+          area.top,
+          0,
+          area.bottom
+        )
+        g.addColorStop(0, alpha(lineColor.value, 0.28))
+        g.addColorStop(1, alpha(lineColor.value, 0))
+        return g
+      },
+      fill: true,
+      borderWidth: 2,
+      cubicInterpolationMode: 'monotone',
+      spanGaps: true,
+      pointRadius: 0,
+      pointHoverRadius: 4
+    }
+  ]
+}))
+const chartOptions = {
+  animations: { colors: false },
+  layout: { padding: { top: 4, right: 4, left: 0, bottom: 0 } },
+  interaction: { mode: 'index', intersect: false },
+  scales: {
+    x: {
+      grid: { display: false },
+      ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }
+    },
+    y: { min: 2, max: 5, ticks: { stepSize: 1 } }
+  },
+  plugins: {
+    tooltip: {
+      callbacks: {
+        label: item =>
+          item.raw == null ? "Baho yo'q" : `O'rtacha: ${item.raw.toFixed(2)}`
+      }
+    }
+  }
+}
 const months = computed(() => {
   const by = {}
   for (const g of props.card?.grades || [])
@@ -243,6 +322,11 @@ const riskColor = computed(() => {
   box-shadow: inset 0 0 0 2px var(--g);
 }
 
+.sd__chip--hw {
+  outline: var(--hairline) dashed var(--g);
+  outline-offset: calc(var(--hairline) * -3);
+}
+
 .sd__guardian {
   display: flex;
   align-items: center;
@@ -264,6 +348,11 @@ const riskColor = computed(() => {
 .sd__skel-kpis {
   height: calc(var(--control-h) * 2);
   border-radius: var(--radius-md);
+}
+
+.sd__chart {
+  position: relative;
+  height: calc(var(--control-h) * 3.5);
 }
 
 .sd__skel-chart {

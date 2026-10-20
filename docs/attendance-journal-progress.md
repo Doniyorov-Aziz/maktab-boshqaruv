@@ -53,6 +53,21 @@ Sessiya uzilsa — ❌ bandlardan davom eting. **Backend testlari faqat `DB_URL=
 - ✅ `./gradlew build` (test bazasi bilan): BUILD SUCCESSFUL, 306 test, 0 xato, 2 o'tkazilgan (fixture dumplar — faqat `AJ_FIXTURES` bilan).
 - ✅ «Keyin» rasmlari `docs/images/attendance-journal/after-*.png` (11 ta), har biri ko'rib chiqildi. Topilgan va tuzatilgan: popoverlar (0, 1216) da ochilardi — element reaktiv proxy bo'lib qolgandi va menyu nishonsiz yaratilardi (`markRaw` + nishon bilan mount); jadval pastki qatori ekrandan chiqib ketardi (`--gb-chrome-h`); «−0.0» delta (bir xonagacha yaxlitlash); telefonda xulosa kartochkasi siqilgan edi (ustma-ust); telefonda hozirgi dars ko'rinmasdi (avtomatik surish); Shift+strelka blokining boshi (0,0) dan olinardi.
 
+## 2026-10-20 — qayta tekshiruvda topilgan kamchiliklar (hammasi tuzatildi)
+Vazifa band-ma-band kod va testlar bilan solishtirildi; 19-oktabrda ✅ deb belgilangan, lekin to'liq bo'lmagan joylar:
+- ✅ 2.7 «Bu kuni dars yo'q» holatida **«Boshqa kunni tanlash»** tugmasi (kalendarni ochadi). Test bor.
+- ✅ 3.3 Bugungi ustun sarlavhasida **«Bugun»** yorlig'i (sarlavha balandligi 44 → 54px, `--gb-head-h`). Test bor.
+- ✅ 3.3 **Sana sarlavhalari vertikal scrollda qotmasdi**: `.gb__day { position: relative }` `thead th { position: sticky }` ni bekor qilardi. Tuzatildi, sticky sarlavha testi qo'shildi.
+- ✅ 3.4 Baho turi **«Uy vazifasi»** (`GradeType.HOMEWORK`): popover va «Butun sinfga baho» panelida, jadvalda va o'quvchi panelida uzuq halqa, izohda «U». Bot va webapp tarjimalari (uz/ru/cy). Eski bazalardagi `grade_type_check` cheklovi ishga tushishda olib tashlanadi (`TelegramSchemaMigration`) — **jonli bazada u hali bor, deploydan keyin o'chadi**. Backend testi (`homework_isAGradeTypeTheDatabaseTakes`) va brauzer testi bor.
+- ✅ 3.4 Sichqoncha bilan **sudrab** bir nechta katakni tanlash (sudrab tugagach oyna ochilmaydi). Test bor.
+- ✅ Komponentlarni qayta ishlatish: davomat halqasi endi `RingChart` (holatlar bo'laklari, markazida CountUp — `RingChart` ga markaz sloti qo'shildi); jurnal paneli KPI lari `KpiCard` (yangi `mini` varianti, count-up bilan); o'quvchi panelidagi 30 kunlik chiziq Chart.js + `chartTheme.js` (o'qlar, tooltip, dark/light); o'quvchi paneli raqamlari ham count-up.
+- ✅ Playwright: «avtosaqlash va sahifa yangilangach saqlangan», jurnalda «faqat tanlangan sinf to'ldirilgan» testlari qo'shildi.
+- ❌ Haqiqiy backend bilan UI testlari hali ham ishga tushirilmagan (`UI_PASS` yo'q) — testlar test bazasidan olingan fixturelar bilan.
+
+Tekshiruv (2026-10-20): `npm run lint`, `lint:check`, `build` toza; Playwright `aj-logic` + `aj` + `pages-v2-logic` **51/51**; `aj-shots` 11/11 (rasmlar yangilandi); `./gradlew build` test bazasida — **307 test, 0 xato**, 2 o'tkazilgan.
+
+O'zgargan fayllar (20-oktabr): `entity/GradeType.java`, `config/TelegramSchemaMigration.java`, `bot/i18n/messages_{uz,ru,cy}.properties`, `AttendanceJournalIntegrationTest.java`; `components/dashboard/{KpiCard,RingChart}.vue`, `components/attendance/AttendanceSummary.vue`, `components/journal/{GradeTable,JournalPanel,StudentDrawer}.vue`, `journal.js`, `pages/{AttendancePage,GradebookPage}.vue`, `css/tokens.scss`, `webapp/i18n.js`, `tests/ui/aj.spec.js`.
+
 ## Klaviatura
 | Sahifa | Tugma | Ish |
 |---|---|---|
@@ -66,7 +81,7 @@ Sessiya uzilsa — ❌ bandlardan davom eting. **Backend testlari faqat `DB_URL=
 | | 2 / 3 / 4 / 5 | baho va pastga (blok bo'lsa — hammasiga) |
 | | Enter / Space | baho oynasi (unda 2–5, Esc) |
 | | Delete / Backspace | oxirgi bahoni o'chirish (5 s bekor qilish) |
-| | Shift+strelka, Shift-bosish | blok; Ctrl-bosish — bittalab; Esc — bekor |
+| | Shift+strelka, Shift-bosish, sichqoncha bilan sudrash | blok; Ctrl-bosish — bittalab; Esc — bekor |
 | | ustun sarlavhasi | butun sinfga baho |
 
 ## O'zgargan fayllar

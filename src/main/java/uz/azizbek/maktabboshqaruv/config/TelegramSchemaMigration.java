@@ -31,7 +31,9 @@ public class TelegramSchemaMigration implements CommandLineRunner {
             new String[]{"broadcast", "broadcast_audience_check"},
             // pages v2: Faollar zali / Boshqa rooms, "Maktab tadbiri" events
             new String[]{"room", "room_type_check"},
-            new String[]{"calendar_event", "calendar_event_type_check"}
+            new String[]{"calendar_event", "calendar_event_type_check"},
+            // journal v2: "Uy vazifasi" grades
+            new String[]{"grade", "grade_type_check"}
     );
 
     @Autowired

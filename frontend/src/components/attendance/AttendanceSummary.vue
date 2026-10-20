@@ -1,17 +1,13 @@
 <template>
   <section class="as dash-card" data-attendance-summary>
-    <MultiRing
-      :main="{ key: 'present', label: 'Keldi', value: rate, color: ringColor }"
-      size="mid"
-      class="as__ring"
-    >
+    <RingChart :parts="parts" mid class="as__ring">
       <CountUp
         class="as__rate dash-num"
         :value="rate"
         :format="v => `${Math.round(v)}%`"
       />
       <small>keldi</small>
-    </MultiRing>
+    </RingChart>
 
     <div class="as__mid">
       <div class="as__lesson">
@@ -95,7 +91,7 @@
 // home page's rule), the four counters, how many are marked, whether parents will be told,
 // and the quick actions.
 import { computed } from 'vue'
-import MultiRing from '@/components/dashboard/MultiRing.vue'
+import RingChart from '@/components/dashboard/RingChart.vue'
 import CountUp from '@/components/dashboard/CountUp.vue'
 import AppButton from '@/components/app/AppButton.vue'
 import AppInput from '@/components/app/AppInput.vue'
@@ -116,15 +112,21 @@ const props = defineProps({
 const emit = defineEmits(['all-present', 'confirm-auto', 'update:query'])
 
 const rate = computed(() => presentRate(props.c))
-const ringColor = computed(() => {
-  const r = rate.value
-  if (r === null) return 'var(--st-unmarked)'
-  return r >= 95
-    ? 'var(--st-present)'
-    : r >= 85
-      ? 'var(--gr-3)'
-      : 'var(--st-absent)'
-})
+// the ring is the lesson itself: every status as its part, the not-yet-marked in grey
+const parts = computed(() => [
+  ...STATUSES.map(st => ({
+    key: st.value,
+    label: st.label,
+    value: props.c[st.value],
+    color: st.color
+  })),
+  {
+    key: 'UNMARKED',
+    label: 'Belgilanmagan',
+    value: Math.max(props.c.total - props.c.marked, 0),
+    color: 'var(--st-unmarked)'
+  }
+])
 </script>
 
 <style scoped>
