@@ -79,7 +79,7 @@
 
     <div v-else class="crud">
       <!-- 1.2 hero numbers (from the module's hero config) -->
-      <div v-if="module.hero && hero" class="crud-hero" data-crud-hero>
+      <div v-if="module.hero" class="crud-hero" data-crud-hero>
         <KpiCard
           v-for="(k, i) in module.hero.cards"
           :key="k.key"
@@ -88,22 +88,46 @@
           :label="k.label"
           :icon="k.icon"
           :color="k.color"
-          :value="k.value(hero)"
+          :loading="!hero"
+          :value="heroOf(k.key)?.value ?? undefined"
           :format="k.format"
-          :empty-value="k.value(hero) == null"
-          :delta="k.delta?.(hero) ?? null"
-          :spark="k.spark?.(hero) || []"
+          :empty-value="!!hero && heroOf(k.key)?.value == null"
+          :delta="heroOf(k.key)?.delta ?? null"
+          :delta-percent="!!k.deltaPercent"
+          :spark="heroOf(k.key)?.spark || []"
+          :spark-min="k.sparkMin ?? null"
+          :spark-max="k.sparkMax ?? null"
+          :note="heroOf(k.key)?.note || ''"
+          :clickable="!!k.filter"
           :style="{ '--i': i }"
+          @click="k.filter && applyFilters(k.filter)"
         />
       </div>
 
       <!-- 1.3 filters, 1.4 view, density, columns -->
       <section
-        v-if="hasFilters || canCards || view === 'table'"
+        v-if="
+          !module.viewComponent && (hasFilters || canCards || view === 'table')
+        "
         class="crud-bar"
-        :class="hasFilters || canCards ? 'dash-card' : 'crud-bar--plain'"
+        :class="
+          hasFilters || canCards || module.tabs
+            ? 'dash-card'
+            : 'crud-bar--plain'
+        "
         data-crud-bar
       >
+        <SegTabs
+          v-if="module.tabs"
+          :model-value="tabValue"
+          :label="module.tabs.label || ''"
+          :options="tabOptions"
+          class="crud-bar__tabs"
+          data-crud-tabs
+          @update:model-value="
+            v => onFilter({ key: module.tabs.key, value: v })
+          "
+        />
         <CrudFilters
           v-if="hasFilters"
           class="crud-bar__filters"
@@ -177,8 +201,23 @@
         </div>
       </section>
 
+      <component
+        :is="module.viewComponent"
+        v-if="module.viewComponent"
+        ref="viewEl"
+        :module="module"
+        :school-id="schoolStore.activeSchoolId"
+        :can-edit="canEdit"
+        :can-delete="canDelete"
+        :today="today"
+        @open="openRow"
+        @edit="openEdit"
+        @delete="confirmDelete"
+        @create="openCreate"
+      />
+
       <!-- 1.9 states -->
-      <section v-if="error" class="dash-card crud-state" data-crud-error>
+      <section v-else-if="error" class="dash-card crud-state" data-crud-error>
         <EmptyState
           icon="error_outline"
           title="Ma'lumotni yuklab bo'lmadi"
@@ -243,7 +282,7 @@
           :can-edit="canEdit && !module.readOnlyCards"
           :can-delete="canDelete && !module.readOnlyCards"
           :soft-delete="!!module.softDelete"
-          @open="openRow"
+          @open="openCard"
           @edit="openEdit"
           @delete="confirmDelete"
         />
@@ -367,7 +406,7 @@
           size="sm"
           :icon="a.icon"
           :label="a.label"
-          @click="a.run({ ids: [...selected], api, reload: fetchRows, $q })"
+          @click="runBulk(a)"
         />
         <AppButton
           v-if="canDelete"
@@ -393,7 +432,7 @@
     <SideDrawer
       :model-value="panel.open"
       persistent
-      :wide="panel.mode !== 'view'"
+      :wide="panel.mode !== 'view' || !!module.detailWide"
       :title="panelTitle"
       :subtitle="panel.mode === 'view' ? '' : module.title"
       :icon="
@@ -406,8 +445,19 @@
       :color="panel.mode === 'view' ? module.color : 'var(--c-primary)'"
       @update:model-value="v => !v && closePanel()"
     >
+      <component
+        :is="module.detailComponent"
+        v-if="panel.mode === 'view' && panel.row && module.detailComponent"
+        :row="panel.row"
+        :module="module"
+        :today="today"
+        :can-edit="canEdit"
+        @profile="goToProfile"
+        @edit="openEdit"
+        @reload="afterChange"
+      />
       <CrudDetail
-        v-if="panel.mode === 'view' && panel.row"
+        v-else-if="panel.mode === 'view' && panel.row"
         :module="module"
         :row="panel.row"
         :options="fieldOptions"
@@ -429,7 +479,7 @@
             : ''
         "
         @submit="onSave"
-        @parent-change="clearOrphanChildren"
+        @parent-change="onFieldChange"
       />
       <template #footer>
         <template v-if="panel.mode === 'view'">
@@ -592,7 +642,8 @@ const today = todayIso()
 // ------------------------------------------------------------------ page state (URL)
 const filterKeys = computed(() => [
   ...(module.value?.filters || []).map(f => f.key),
-  ...(module.value?.toggles || []).map(t => t.key)
+  ...(module.value?.toggles || []).map(t => t.key),
+  ...(module.value?.tabs ? [module.value.tabs.key] : [])
 ])
 // a phone opens on cards where the module has them (a wide table is hard to read there)
 const defaults = computed(() => ({
@@ -657,6 +708,8 @@ function baseParams() {
   if (module.value.schoolParam) params.schoolId = schoolStore.activeSchoolId
   for (const [k, v] of Object.entries(state.filters))
     if (v != null && v !== '') params[k] = v
+  if (module.value.tabs && params[module.value.tabs.key] == null)
+    params[module.value.tabs.key] = module.value.tabs.default
   return params
 }
 
@@ -733,6 +786,29 @@ const filterOptions = reactive({})
 const facets = ref({})
 const classes = ref([])
 const hero = ref(null)
+const heroOf = key => (hero.value || []).find(k => k.key === key)
+const viewEl = ref(null)
+
+// tabs: a filter with a default (Faol), its numbers from the facets
+const tabValue = computed(() =>
+  module.value?.tabs
+    ? state.filters[module.value.tabs.key] || module.value.tabs.default
+    : null
+)
+const tabOptions = computed(() =>
+  (module.value?.tabs?.options || []).map(o => {
+    const f =
+      o.facet && facets.value[o.facet[0]]?.find(x => x.value === o.facet[1])
+    return { value: o.value, label: f ? `${o.label} ${f.count}` : o.label }
+  })
+)
+
+/** A hero card that filters the list (e.g. "Xavf ostida" → only those). */
+function applyFilters(filters) {
+  state.filters = { ...state.filters, ...filters }
+  state.page = 1
+  reload()
+}
 const hasFilters = computed(
   () => !!(module.value?.filters?.length || module.value?.toggles?.length)
 )
@@ -803,7 +879,7 @@ async function loadHero() {
     })
     hero.value = res.data
   } catch {
-    hero.value = null
+    hero.value = []
   }
 }
 
@@ -1091,6 +1167,28 @@ const dirty = computed(
   () => panel.mode !== 'view' && JSON.stringify(formModel) !== snapshot
 )
 
+// a card may lead somewhere else (a position → its employees); otherwise it opens like a row
+function openCard(row) {
+  if (module.value.cardClick) module.value.cardClick(row, router)
+  else openRow(row)
+}
+
+function runBulk(a) {
+  const ids = [...selected]
+  a.run({
+    ids,
+    rows: rows.value.filter(r => selected.has(r.id)),
+    api,
+    router,
+    $q,
+    schoolId: schoolStore.activeSchoolId,
+    reload: () => {
+      selected.clear()
+      afterChange()
+    }
+  })
+}
+
 function openRow(row) {
   if (module.value.key === 'schools') {
     schoolStore.setActiveSchool(row.id, row.name)
@@ -1129,6 +1227,9 @@ async function openEdit(row) {
     if (f.type === 'password') formModel[f.key] = ''
     else if (f.type === 'phone')
       formModel[f.key] = row[f.key] ? maskPhone(row[f.key]) : '+998'
+    // a card from a page view (a year card) may not carry the school: it is this one
+    else if (f.autoSchool)
+      formModel[f.key] = row[f.key] ?? schoolStore.activeSchoolId
     else formModel[f.key] = row[f.key]
   }
   snapshot = JSON.stringify(formModel)
@@ -1160,6 +1261,17 @@ function optionsFor(field) {
   if (!field.parentKey) return all
   const parent = formModel[field.parentKey]
   return parent == null ? [] : all.filter(o => o.parent === parent)
+}
+
+// a select may fill other fields from what was chosen (an employee → the role of their position)
+function onFieldChange(field) {
+  clearOrphanChildren(field)
+  if (field.onSelect) {
+    const opt = (fieldOptions[field.key] || []).find(
+      o => o.value === formModel[field.key]
+    )
+    field.onSelect(formModel, opt?.raw || null)
+  }
 }
 
 // choosing another hudud drops a tuman that is not in it
@@ -1197,7 +1309,8 @@ async function loadFieldOptions() {
           typeof field.optionLabel === 'function'
             ? field.optionLabel(item)
             : item[field.optionLabel],
-        parent: field.parentKey ? item[field.parentValue] : undefined
+        parent: field.parentKey ? item[field.parentValue] : undefined,
+        raw: item
       }))
     } catch {
       fieldOptions[field.key] = []
@@ -1257,6 +1370,8 @@ function afterChange() {
   allCache.value = null
   fetchRows()
   loadFacets()
+  loadHero()
+  viewEl.value?.reload?.()
 }
 
 // ------------------------------------------------------------------ delete (1.8)
@@ -1585,6 +1700,10 @@ onBeforeRouteLeave(() => {
   padding: 0;
 }
 
+.crud-bar__tabs {
+  flex: none;
+}
+
 .crud-bar__filters {
   flex: 1 1 0;
   min-width: 0;
@@ -1729,6 +1848,12 @@ onBeforeRouteLeave(() => {
 
   .crud-pager__size {
     width: 100%;
+  }
+
+  /* two numbers a row on a phone, not four tall cards */
+  .crud-hero {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
   }
 }
 </style>

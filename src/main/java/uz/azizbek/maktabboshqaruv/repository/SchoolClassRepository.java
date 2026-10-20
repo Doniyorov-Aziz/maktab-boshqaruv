@@ -18,7 +18,8 @@ public interface SchoolClassRepository extends JpaRepository<SchoolClass, Long> 
             "where c.classTeacher.id in :employeeIds")
     List<Object[]> ledBy(@org.springframework.data.repository.query.Param("employeeIds") java.util.Collection<Long> employeeIds);
     long countByAcademicYearSchoolId(Long schoolId);
-    java.util.Optional<SchoolClass> findByClassTeacherId(Long classTeacherId);
+    /** Every class a teacher leads (one may lead several — never a single-result query). */
+    List<SchoolClass> findByClassTeacherIdOrderByGradeNumberAscSectionLetterAsc(Long classTeacherId);
 
     /** Every class an employee leads (a teacher may lead more than one). */
     @org.springframework.data.jpa.repository.Query("select c.id from SchoolClass c where c.classTeacher.id = :employeeId")

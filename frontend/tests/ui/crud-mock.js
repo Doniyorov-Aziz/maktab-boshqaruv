@@ -44,10 +44,26 @@ export function serveList(path, all, search) {
   const text = (q.get('q') || '').trim().toLowerCase().replace(/\s+/g, ' ')
   if (text && SEARCH[path])
     rows = rows.filter(r => SEARCH[path](r).toLowerCase().includes(text))
-  if (path === '/api/subjects' && q.get('includeInactive') !== 'true')
-    rows = rows.filter(r => r.active !== false)
+  if (path === '/api/subjects') {
+    const st = q.get('status')
+    if (st === 'INACTIVE') rows = rows.filter(r => r.active === false)
+    else if (st === 'ACTIVE' || q.get('includeInactive') !== 'true')
+      rows = rows.filter(r => r.active !== false)
+  }
   for (const [k, v] of q) {
     if (NOT_FILTERS.has(k) || k === 'includeInactive' || v === '') continue
+    if (k === 'status' && path === '/api/subjects') continue
+    if (k === 'birthday') {
+      const md = String(fixtures().today).slice(5, 10)
+      rows = rows.filter(
+        r => v !== 'true' || String(r.birthDate).slice(5, 10) === md
+      )
+      continue
+    }
+    if (k === 'classTeacher') {
+      rows = rows.filter(r => v !== 'true' || !!r.classTeacher)
+      continue
+    }
     if (k === 'status' && path === '/api/employees') {
       rows = rows.filter(r => (r.status || 'ACTIVE') === v)
       continue
@@ -96,7 +112,13 @@ export function serveList(path, all, search) {
 export async function mockContext(
   browser,
   viewport,
-  { dark = false, role = 'ADMIN', reducedMotion = 'reduce', storage = {} } = {}
+  {
+    dark = false,
+    role = 'ADMIN',
+    reducedMotion = 'reduce',
+    storage = {},
+    currentYear = false
+  } = {}
 ) {
   const context = await browser.newContext({
     viewport,
@@ -117,6 +139,11 @@ export async function mockContext(
   )
   context.requests = []
   context.overrides = {}
+  // the test database has no school year around today: a synthetic one (the usual calendar)
+  if (currentYear)
+    context.overrides['GET /api/pages/lists/years'] = {
+      body: [syntheticYear(), ...(fixtures()['/api/pages/lists/years'] || [])]
+    }
   await context.route('**/api/**', async route => {
     const req = route.request()
     const url = new URL(req.url())
@@ -135,7 +162,20 @@ export async function mockContext(
       })
     const o = context.overrides[`${method} ${url.pathname}`]
     if (o) return reply(o.status || 200, o.body)
-    if (method !== 'GET') return reply(200, {})
+    if (method !== 'GET') {
+      const body = req.postData()
+      // the terms come back as saved; a move says how many moved
+      if (method === 'PUT' && url.pathname.endsWith('/terms'))
+        return reply(200, JSON.parse(body || '[]'))
+      if (url.pathname === '/api/pages/lists/students/move') {
+        const b = JSON.parse(body || '{}')
+        return reply(200, {
+          moved: (b.studentIds || []).length,
+          className: '1-B'
+        })
+      }
+      return reply(200, {})
+    }
     if (url.pathname === '/api/me/current-lesson')
       return route.fulfill({ status: 204, body: '' })
     const f = fixtures()
@@ -166,4 +206,44 @@ export async function mockContext(
 export async function open(page, path) {
   await page.goto(BASE + '/#' + path, { waitUntil: 'networkidle' })
   await page.waitForTimeout(400)
+}
+
+/** A current year around the fixtures' day, as the backend would answer (usual calendar). */
+export function syntheticYear() {
+  const today = fixtures().today
+  const y0 =
+    Number(today.slice(0, 4)) - (Number(today.slice(5, 7)) >= 8 ? 0 : 1)
+  const y1 = y0 + 1
+  const t = (name, kind, a, b) => ({
+    id: null,
+    name,
+    kind,
+    startDate: a,
+    endDate: b
+  })
+  return {
+    id: 999001,
+    title: `${y0}–${y1}`,
+    startDate: `${y0}-09-02`,
+    endDate: `${y1}-05-25`,
+    current: true,
+    status: 'CURRENT',
+    workDays: 200,
+    passedDays: 42,
+    leftDays: 158,
+    progress: 21,
+    classes: 22,
+    students: 511,
+    attendance: 96.2,
+    quality: 68.4,
+    terms: [
+      t('1-chorak', 'QUARTER', `${y0}-09-02`, `${y0}-11-02`),
+      t("Kuzgi ta'til", 'VACATION', `${y0}-11-03`, `${y0}-11-09`),
+      t('2-chorak', 'QUARTER', `${y0}-11-10`, `${y0}-12-28`),
+      t("Qishki ta'til", 'VACATION', `${y0}-12-29`, `${y1}-01-11`),
+      t('3-chorak', 'QUARTER', `${y1}-01-12`, `${y1}-03-20`),
+      t("Bahorgi ta'til", 'VACATION', `${y1}-03-21`, `${y1}-03-29`),
+      t('4-chorak', 'QUARTER', `${y1}-03-30`, `${y1}-05-25`)
+    ]
+  }
 }

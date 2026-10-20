@@ -34,6 +34,44 @@
     text
   }}</span>
 
+  <span v-else-if="col.type === 'contact' && value" class="cc-person__text">
+    <span class="cc-contact__name">{{ value }}</span>
+    <span v-if="contactPhone" class="cc-phone">
+      <a
+        :href="`tel:${String(contactPhone).replace(/[^\d+]/g, '')}`"
+        class="cc-link cc-person__sub tnum"
+        data-phone
+        @click.stop
+        >{{ formatPhone(contactPhone) }}</a
+      >
+    </span>
+  </span>
+
+  <span
+    v-else-if="col.type === 'risk' && value != null"
+    class="cc-risk"
+    :style="{ '--c': riskColor, '--p': Math.min(100, value) }"
+    :title="`Xavf balli ${value} / 100`"
+    :data-risk="value"
+  >
+    <i class="cc-risk__ring" /><b class="tnum">{{ value }}</b>
+  </span>
+
+  <span
+    v-else-if="col.type === 'load' && value"
+    class="cc-pct"
+    :style="{ '--c': loadColor }"
+    :title="`${value} soat / hafta (norma ${col.norm || 18})`"
+  >
+    <span class="cc-pct__bar"
+      ><i
+        :style="{
+          width: `${Math.min(100, (value / (col.norm || 18)) * 100)}%`
+        }"
+    /></span>
+    <b class="tnum">{{ text }}</b>
+  </span>
+
   <span v-else-if="col.type === 'phone' && value" class="cc-phone">
     <a
       :href="`tel:${String(value).replace(/[^\d+]/g, '')}`"
@@ -200,6 +238,7 @@ import Sparkline from '@/components/dashboard/Sparkline.vue'
 import { avgColor } from '@/components/journal/journal'
 import { subjectColor } from '@/utils/subjectColor'
 import { cellText, listItems, rawValue } from './crud'
+import { formatPhone } from '@/utils/tashkent'
 
 const props = defineProps({
   col: { type: Object, required: true },
@@ -226,6 +265,24 @@ const profileHref = computed(() =>
     ? `#/profiles/${props.col.link.type}/${props.row[props.col.link.idField]}`
     : undefined
 )
+const contactPhone = computed(() =>
+  props.col.phoneField ? props.row[props.col.phoneField] : null
+)
+// 40+ is the risk list; 70+ high
+const riskColor = computed(() =>
+  value.value >= 70
+    ? 'var(--st-absent)'
+    : value.value >= 40
+      ? 'var(--st-late)'
+      : 'var(--st-present)'
+)
+// over the norm (amber), well under it (muted), around it (brand)
+const loadColor = computed(() => {
+  const norm = props.col.norm || 18
+  if (value.value > norm * 1.15) return 'var(--st-late)'
+  if (value.value < norm * 0.5) return 'var(--st-unmarked)'
+  return 'var(--chart-primary)'
+})
 const pctColor = computed(() => {
   const v = value.value
   const [good, warn] = props.col.thresholds || []
@@ -488,6 +545,32 @@ async function copy() {
 .cc-avatars__more {
   margin-left: var(--space-1);
   color: var(--brand-text-muted);
+}
+
+.cc-contact__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cc-risk {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.cc-risk__ring {
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius-pill);
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--ring-track) 0);
+  -webkit-mask: radial-gradient(circle, transparent 42%, var(--card-bg) 44%);
+  mask: radial-gradient(circle, transparent 42%, var(--card-bg) 44%);
+}
+
+.cc-risk b {
+  color: var(--c);
+  font-size: var(--text-xs);
 }
 
 .cc-bool {

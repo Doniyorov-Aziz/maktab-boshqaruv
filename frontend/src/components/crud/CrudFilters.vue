@@ -137,7 +137,7 @@ function toggle(key, value) {
 
 /* a long row of chips scrolls sideways instead of wrapping into many lines */
 .cf-row[data-filter] {
-  flex: 1 1 100%;
+  flex: 0 1 auto;
 }
 
 .cf-row--picker {

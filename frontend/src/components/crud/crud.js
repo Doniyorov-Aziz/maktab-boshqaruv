@@ -68,6 +68,14 @@ export function cellText(col, row, today = todayIso()) {
       return listItems(v).join(', ')
     case 'bool':
       return v == null ? '' : v ? 'Ha' : "Yo'q"
+    case 'load':
+      return v ? `${v} soat` : ''
+    case 'risk':
+      return v == null ? '' : String(v)
+    case 'contact': {
+      const ph = col.phoneField ? row?.[col.phoneField] : null
+      return [v, ph ? formatPhone(ph) : ''].filter(Boolean).join(' · ')
+    }
     default:
       if (col.format) return col.format(v, row) ?? ''
       return v == null ? '' : String(v)

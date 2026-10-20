@@ -16,6 +16,16 @@ import {
   initials
 } from '../../src/components/crud/crud.js'
 import { formatPhone } from '../../src/utils/tashkent.js'
+import {
+  along,
+  segment,
+  progressLine,
+  termOn
+} from '../../src/components/crud/pages/years.js'
+import {
+  suggestSubjectIcon,
+  positionLook
+} from '../../src/utils/subjectIcon.js'
 
 test('a phone reads "+998 90 111 22 33" however it was typed', () => {
   for (const typed of [
@@ -134,4 +144,48 @@ test('columns shown: the module default, or what this browser chose', () => {
   expect(visibleColumnNames(cols, ['b', 'gone'])).toEqual(['b'])
   expect(visibleColumnNames(cols, ['gone'])).toEqual(['a', 'c'])
   expect(initials('Ali Valiyev')).toBe('AV')
+})
+
+test('a school year: where a day sits on its bar, the line under it, the term of today', () => {
+  const y = {
+    startDate: '2026-09-02',
+    endDate: '2027-05-25',
+    status: 'CURRENT',
+    progress: 21.4,
+    leftDays: 158,
+    workDays: 200
+  }
+  expect(along(y.startDate, y.endDate, '2026-09-02')).toBe(0)
+  expect(along(y.startDate, y.endDate, '2027-05-25')).toBe(100)
+  expect(along(y.startDate, y.endDate, '2030-01-01')).toBe(100)
+  const s = segment(y, { startDate: '2026-11-03', endDate: '2026-11-09' })
+  expect(s.left).toBeGreaterThan(20)
+  expect(s.width).toBeGreaterThan(0.5)
+  expect(progressLine(y, '2026-10-20')).toBe("21% o'tdi · 158 ish kuni qoldi")
+  expect(progressLine({ ...y, status: 'FINISHED' }, '2027-06-01')).toBe(
+    'Yakunlangan · 200 ish kuni'
+  )
+  expect(progressLine({ ...y, status: 'PLANNED' }, '2026-08-31')).toBe(
+    'Boshlanishiga 2 kun · 200 ish kuni'
+  )
+  const terms = [
+    { name: '1-chorak', startDate: '2026-09-02', endDate: '2026-11-02' },
+    { name: "Kuzgi ta'til", startDate: '2026-11-03', endDate: '2026-11-09' }
+  ]
+  expect(termOn(terms, '2026-10-20').name).toBe('1-chorak')
+  expect(termOn(terms, '2026-11-05').name).toBe("Kuzgi ta'til")
+  expect(termOn(terms, '2026-12-01')).toBe(null)
+})
+
+test('icons: a subject from its name, a position from its title', () => {
+  expect(suggestSubjectIcon('Matematika')).toBe('calculate')
+  expect(suggestSubjectIcon('Fizika')).toBe('science')
+  expect(suggestSubjectIcon('Ona tili')).toBe('menu_book')
+  expect(suggestSubjectIcon('Ingliz tili')).toBe('translate')
+  expect(suggestSubjectIcon('Noma’lum fan')).toBe('menu_book')
+  expect(positionLook('Direktor').icon).toBe('admin_panel_settings')
+  expect(positionLook("O'quv ishlari bo'yicha direktor o'rinbosari").icon).toBe(
+    'supervisor_account'
+  )
+  expect(positionLook('Qorovul').icon).toBe('security')
 })

@@ -70,6 +70,12 @@ class CrudFixtureDump {
     PositionController positions;
     @Autowired
     EmployeeController employees;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.service.pages.ListPagesService lists;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.service.AcademicYearService yearService;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.controller.ProfileController profiles;
 
     static Map<String, Object> page(Page<?> p) {
         Map<String, Object> m = new LinkedHashMap<>();
@@ -116,6 +122,28 @@ class CrudFixtureDump {
         if ((f = optional(students, "facets", SCHOOL)) != null) out.put("/api/students/facets", f);
         if ((f = optional(employees, "facets", SCHOOL)) != null) out.put("/api/employees/facets", f);
         if ((f = optional(subjects, "facets", SCHOOL)) != null) out.put("/api/subjects/facets", f);
+
+        // part 2: heroes, year cards and terms, the side panels' extras and the profiles they read
+        out.put("/api/pages/lists/students/hero", lists.studentsHero(SCHOOL));
+        out.put("/api/pages/lists/employees/hero", lists.employeesHero(SCHOOL));
+        var yearCards = lists.years(SCHOOL);
+        out.put("/api/pages/lists/years", yearCards);
+        out.put("/api/academic-years/next", yearService.nextTemplate(SCHOOL));
+        for (var y : yearCards) out.put("/api/academic-years/" + y.id() + "/terms", yearService.terms(y.id()));
+        var studentRows = students.getAllStudents(SCHOOL, null, null, false, null, false, PageRequest.of(0, 40, Sort.by("id"))).getContent();
+        for (var st : studentRows) {
+            out.put("/api/pages/lists/students/" + st.getId() + "/extra", lists.studentExtra(st.getId()));
+            out.put("/api/profiles/students/" + st.getId(), profiles.getStudentProfile(st.getId()));
+        }
+        for (var e : employees.getAllEmployees(SCHOOL, null, null, null, false, ALL).getContent()) {
+            out.put("/api/pages/lists/employees/" + e.getId() + "/extra", lists.employeeExtra(e.getId()));
+            out.put("/api/profiles/teachers/" + e.getId(), profiles.getTeacherProfile(e.getId()));
+        }
+        for (var sub : subjects.getAllSubjects(SCHOOL, true, null, null, ALL).getContent()) {
+            if (sub.getTeacherCount() != null && sub.getTeacherCount() > 0) {
+                out.put("/api/pages/lists/subjects/" + sub.getId() + "/extra", lists.subjectExtra(sub.getId()));
+            }
+        }
 
         Path file = Path.of(System.getenv("CRUD_FIXTURES"));
         Files.createDirectories(file.getParent());

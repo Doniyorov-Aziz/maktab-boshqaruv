@@ -1,7 +1,23 @@
 <template>
   <div class="ccards" data-crud-cards>
+    <!-- a module may draw its own card (subjects, positions, employees) -->
+    <template v-if="card.component">
+      <component
+        :is="card.component"
+        v-for="(row, i) in rows"
+        :key="row.id ?? i"
+        :row="row"
+        :can-edit="canEdit"
+        :can-delete="canDelete"
+        :style="{ '--i': Math.min(i, 12) }"
+        :data-card-id="row.id"
+        @open="emit('open', row)"
+        @edit="emit('edit', row)"
+        @delete="emit('delete', row)"
+      />
+    </template>
     <article
-      v-for="(row, i) in rows"
+      v-for="(row, i) in card.component ? [] : rows"
       :key="row.id ?? i"
       class="ccard dash-card"
       :class="{

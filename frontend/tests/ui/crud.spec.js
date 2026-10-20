@@ -173,7 +173,7 @@ test('a failed list says so and can try again', async ({ browser }) => {
   await expect(page.locator('[data-crud-error]')).toContainText('Server xatosi')
   delete context.overrides['GET /api/positions']
   await page.getByRole('button', { name: 'Qayta urinish' }).click()
-  await expect(page.locator('tbody tr').first()).toBeVisible()
+  await expect(page.locator('[data-card-id]').first()).toBeVisible()
   await context.close()
 })
 
@@ -199,9 +199,9 @@ test('class picker filter: a class → only its students, the number matches the
     `/ ${facet.count}`
   )
   for (const t of await page
-    .locator('tbody tr td:nth-child(4)')
+    .locator('tbody .cc-person .cc-person__sub')
     .allTextContents())
-    expect(t.trim()).toBe(`${cls.gradeNumber}-${cls.sectionLetter}`)
+    expect(t.trim()).toContain(`${cls.gradeNumber}-${cls.sectionLetter} sinf`)
   // "Barchasi" clears it
   await page.locator('[data-class-all]').click()
   await expect
@@ -284,7 +284,7 @@ test('a row opens the record in the panel, which scrolls to its end', async ({
   const first = fixtures()['/api/students'].content[0]
   await page.locator('tbody tr').first().click()
   const panel = page.locator('[data-side-panel]')
-  await expect(panel.locator('[data-crud-detail]')).toBeVisible()
+  await expect(panel.locator('[data-student-detail]')).toBeVisible()
   await expect(panel.locator('[data-detail="fullAddress"]')).toBeVisible()
   const body = panel.locator('[data-drawer-body]')
   await body.evaluate(e => (e.scrollTop = e.scrollHeight))
@@ -293,9 +293,9 @@ test('a row opens the record in the panel, which scrolls to its end', async ({
   )
   expect(atEnd).toBe(true)
   await expect(
-    panel.locator('[data-crud-detail] section').last()
+    panel.locator('[data-student-detail] section').last()
   ).toBeInViewport()
-  await expect(panel.locator('[data-crud-detail] h2')).toHaveText(
+  await expect(panel.locator('[data-student-detail] h2')).toHaveText(
     first.fullName
   )
   await expect(panel.locator('h3')).toHaveText("O'quvchilar")
@@ -360,7 +360,7 @@ test('a position with employees cannot be deleted: the dialog says how many', as
     p => p.employeeCount > 0
   )
   await page
-    .locator(`tr[data-row-id="${pos.id}"] [data-action="delete"]`)
+    .locator(`[data-position-card="${pos.id}"] [data-action="delete"]`)
     .click()
   await expect(page.locator('.q-dialog').last()).toContainText(
     `${pos.employeeCount} ta xodim bor`
@@ -379,7 +379,7 @@ test("the server's 409 is shown as it is", async ({ browser }) => {
     body: 'Bu fanda baholar bor'
   }
   const page = await context.newPage()
-  await open(page, '/app/subjects')
+  await open(page, '/app/subjects?view=table')
   const id = fixtures()['/api/subjects'].content.find(
     s => s.active !== false
   ).id
@@ -471,7 +471,7 @@ test('VIEWER: no create, no edit, no delete', async ({ browser }) => {
   await expect(page.locator('[data-action="edit"]')).toHaveCount(0)
   await expect(page.locator('[data-action="delete"]')).toHaveCount(0)
   await page.locator('tbody tr').first().click()
-  await expect(page.locator('[data-crud-detail]')).toBeVisible()
+  await expect(page.locator('[data-employee-detail]')).toBeVisible()
   await expect(page.locator('[data-detail-edit]')).toHaveCount(0)
   await context.close()
 })
@@ -487,7 +487,7 @@ test('other modules still work: schools and classes as cards, rooms with its own
   await open(page, '/app/school-classes')
   await expect(page.locator('[data-card-id]').first()).toContainText('sinf')
   await open(page, '/app/academic-years')
-  await expect(page.locator('tbody tr').first()).toBeVisible()
+  await expect(page.locator('[data-year-id]').first()).toBeVisible()
   expect(page.errors).toEqual([])
   await context.close()
 })

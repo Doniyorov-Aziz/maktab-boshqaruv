@@ -144,8 +144,12 @@ public class ProfileService {
                 .sorted(Comparator.comparing(LessonSlot::getStartTime))
                 .map(this::toTimetableEntryDto).collect(Collectors.toList()));
 
-        schoolClassRepository.findByClassTeacherId(employeeId).ifPresent(sc ->
-                dto.setHomeroomClassName(sc.getGradeNumber() + "-" + sc.getSectionLetter()));
+        // a teacher may lead several classes: "5-A, 6-B" (a single-result query failed with 500 then)
+        List<SchoolClass> led = schoolClassRepository.findByClassTeacherIdOrderByGradeNumberAscSectionLetterAsc(employeeId);
+        if (!led.isEmpty()) {
+            dto.setHomeroomClassName(led.stream().map(sc -> sc.getGradeNumber() + "-" + sc.getSectionLetter())
+                    .collect(Collectors.joining(", ")));
+        }
 
         return dto;
     }

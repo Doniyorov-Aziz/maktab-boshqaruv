@@ -38,7 +38,8 @@ public class TelegramParentsService {
     }
 
     /** One linked parent for the "choose parents" list of a broadcast. */
-    public record Choice(Long linkId, String parentName, String username, String studentName, String className) {
+    public record Choice(Long linkId, String parentName, String username, String studentName, String className,
+                         Long studentId) {
     }
 
     private final StudentRepository students;
@@ -96,7 +97,7 @@ public class TelegramParentsService {
         for (ParentTelegramLink l : links.findActiveWithStudent(schoolId, classId, like, PageRequest.of(0, 200))) {
             Student s = l.getStudent();
             result.add(new Choice(l.getId(), l.getFirstName(), l.getTelegramUsername(),
-                    s.getLastName() + " " + s.getFirstName(), ParentDataService.className(s.getSchoolClass())));
+                    s.getLastName() + " " + s.getFirstName(), ParentDataService.className(s.getSchoolClass()), s.getId()));
         }
         return result;
     }

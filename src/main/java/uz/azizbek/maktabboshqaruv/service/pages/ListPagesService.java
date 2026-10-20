@@ -115,13 +115,19 @@ public class ListPagesService {
         Map<LocalDate, HomeDashboardService.DayRate> rates = days.isEmpty() ? Map.of()
                 : home.dailyRates(schoolId, days.get(0), days.get(days.size() - 1));
         List<Double> run = days.stream().map(d -> rates.get(d) == null ? null : rates.get(d).rate()).toList();
-        Double now = run.isEmpty() ? null : run.get(run.size() - 1);
-        Double before = run.size() < 2 ? null : run.get(run.size() - 2);
+        // today before the first mark: the last school day that has marks, and the note says which
+        int k = run.size() - 1;
+        while (k >= 0 && run.get(k) == null) k--;
+        Double now = k < 0 ? null : run.get(k);
+        Double before = null;
+        for (int j = k - 1; j >= 0 && before == null; j--) before = run.get(j);
+        String todayNote = k == run.size() - 1 ? "bugun keldi"
+                : k < 0 ? "hali belgilanmagan" : "oxirgi ish kuni, " + days.get(k).getDayOfMonth() + "." + String.format("%02d", days.get(k).getMonthValue());
         int atRisk = stats.riskScores(schoolId).size();
         HomeDashboardService.ParentsTelegram tg = cache.get(schoolId, "lists:telegram", () -> home.parentsTelegram(schoolId)).data();
         return List.of(
                 new Kpi("students", total == null ? 0.0 : total, null, List.of(), "maktabda"),
-                new Kpi("today", now, now == null || before == null ? null : round1(now - before), run, "bugun keldi"),
+                new Kpi("today", now, now == null || before == null ? null : round1(now - before), run, todayNote),
                 new Kpi("risk", (double) atRisk, null, List.of(), "xavf balli 40 dan"),
                 new Kpi("telegram", tg.linkedPct(), null, List.of(), tg.linked() + " / " + tg.students() + " ota-ona"));
     }

@@ -1,8 +1,94 @@
 import { formatDate } from '@/utils/date'
-import { guardianLabel, guardianRelationOptions } from '@/utils/guardian'
+import { guardianRelationOptions } from '@/utils/guardian'
+import { markRaw } from 'vue'
 import { SUBJECT_COLOR_OPTIONS } from '@/utils/subjectColor'
+import { SUBJECT_ICONS, suggestSubjectIcon } from '@/utils/subjectIcon'
+import { api } from '@/boot/axios'
+import YearsView from '@/components/crud/pages/YearsView.vue'
+import YearDetail from '@/components/crud/pages/YearDetail.vue'
+import SubjectCard from '@/components/crud/pages/SubjectCard.vue'
+import SubjectDetail from '@/components/crud/pages/SubjectDetail.vue'
+import StudentDetail from '@/components/crud/pages/StudentDetail.vue'
+import PositionCard from '@/components/crud/pages/PositionCard.vue'
+import EmployeeCard from '@/components/crud/pages/EmployeeCard.vue'
+import EmployeeDetail from '@/components/crud/pages/EmployeeDetail.vue'
 
 const dateFormat = val => (val ? formatDate(val) : '')
+
+const MONTHS_SHORT = [
+  'yan',
+  'fev',
+  'mar',
+  'apr',
+  'may',
+  'iyun',
+  'iyul',
+  'avg',
+  'sen',
+  'okt',
+  'noy',
+  'dek'
+]
+/** '2026-10-20' → '20-okt' */
+const shortDay = iso => {
+  const [, m, d] = String(iso).split('-').map(Number)
+  return `${d}-${MONTHS_SHORT[m - 1]}`
+}
+
+/** "7 yosh" from a birth date (today in this browser). */
+function ageText(birth) {
+  if (!birth) return ''
+  const [y, m, d] = String(birth).split('-').map(Number)
+  const t = new Date()
+  let age = t.getFullYear() - y
+  if (t.getMonth() + 1 < m || (t.getMonth() + 1 === m && t.getDate() < d)) age--
+  return `${age} yosh`
+}
+
+/** "Boshqa sinfga ko'chirish": a class to choose, then the checked students move there. */
+async function moveStudents({ ids, $q, schoolId, reload }) {
+  const res = await api.get('/api/school-classes', {
+    params: { schoolId, size: 500, sort: 'gradeNumber,asc' }
+  })
+  const items = res.data.content
+    .map(c => ({ label: `${c.gradeNumber}-${c.sectionLetter}`, value: c.id }))
+    .sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { numeric: true })
+    )
+  $q.dialog({
+    title: "Boshqa sinfga ko'chirish",
+    message: `${ids.length} ta o'quvchi qaysi sinfga o'tadi?`,
+    options: { type: 'radio', model: null, items },
+    cancel: {
+      flat: true,
+      label: 'Bekor qilish',
+      color: 'grey-7',
+      noCaps: true
+    },
+    ok: {
+      label: "Ko'chirish",
+      color: 'primary',
+      unelevated: true,
+      noCaps: true
+    },
+    persistent: true
+  }).onOk(async classId => {
+    if (!classId) return
+    try {
+      const r = await api.post('/api/pages/lists/students/move', {
+        studentIds: ids,
+        schoolClassId: classId
+      })
+      $q.notify({
+        type: 'positive',
+        message: `${r.data.moved} ta o'quvchi ${r.data.className} sinfiga ko'chirildi`
+      })
+      reload()
+    } catch (e) {
+      $q.notify({ type: 'negative', message: e.response?.data || 'Xatolik' })
+    }
+  })
+}
 
 const weekdayOptions = [
   'Dushanba',
@@ -289,6 +375,10 @@ export const modules = [
     schoolScoped: true,
     serverSearch: true,
     titleOf: row => row.title,
+    // year cards (status, terms bar, "Bugun", numbers) instead of a table; terms in the panel
+    viewComponent: markRaw(YearsView),
+    detailComponent: markRaw(YearDetail),
+    detailWide: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -303,7 +393,6 @@ export const modules = [
         label: 'Boshlanish',
         field: 'startDate',
         type: 'date',
-        sortable: true,
         align: 'left'
       },
       {
@@ -311,14 +400,14 @@ export const modules = [
         label: 'Tugash',
         field: 'endDate',
         type: 'date',
-        sortable: true,
         align: 'left'
       },
       {
-        name: 'schoolName',
-        label: 'Maktab',
-        field: 'schoolName',
-        align: 'left'
+        name: 'studentCount',
+        label: "O'quvchilar",
+        field: 'studentCount',
+        type: 'number',
+        align: 'right'
       }
     ],
     fields: [
@@ -450,30 +539,170 @@ export const modules = [
     facetsEndpoint: '/api/students/facets',
     profileLink: { type: 'student', idField: 'id' },
     titleOf: row => row.fullName,
-    detailSubtitle: row => `${row.className} sinf`,
+    detailComponent: markRaw(StudentDetail),
+    hero: {
+      endpoint: '/api/pages/lists/students/hero',
+      cards: [
+        {
+          key: 'students',
+          label: "Jami o'quvchilar",
+          icon: 'face',
+          color: 'var(--chart-primary)'
+        },
+        {
+          key: 'today',
+          label: 'Bugungi davomat',
+          icon: 'how_to_reg',
+          color: 'var(--st-present)',
+          format: v => `${Math.round(v)}%`,
+          deltaPercent: true,
+          sparkMin: 0,
+          sparkMax: 100
+        },
+        {
+          key: 'risk',
+          label: 'Xavf ostida',
+          icon: 'warning_amber',
+          color: 'var(--st-late)',
+          filter: { atRisk: 'true' }
+        },
+        {
+          key: 'telegram',
+          label: 'Ota-ona Telegramda',
+          icon: 'send',
+          color: 'var(--st-excused)',
+          format: v => `${Math.round(v)}%`
+        }
+      ]
+    },
     cards: {
       avatar: true,
       title: row => row.fullName,
       subtitle: row => `${row.className} sinf · ${dateFormat(row.birthDate)}`,
-      text: row => guardianLabel(row.guardianName, row.guardianRelation)
+      stats: row => [
+        {
+          label: 'Davomat',
+          value:
+            row.attendance30 == null ? '—' : `${Math.round(row.attendance30)}%`,
+          color:
+            row.attendance30 == null
+              ? null
+              : row.attendance30 >= 95
+                ? 'var(--st-present)'
+                : row.attendance30 >= 85
+                  ? 'var(--gr-3)'
+                  : 'var(--st-absent)'
+        },
+        {
+          label: "O'rtacha",
+          value: row.average30 == null ? '—' : row.average30.toFixed(2)
+        },
+        {
+          label: 'Xavf',
+          value: row.risk ?? 'past',
+          color: row.risk == null ? 'var(--st-present)' : 'var(--st-late)'
+        }
+      ]
     },
     filters: [
+      { key: 'schoolClassId', label: 'Sinf', picker: 'class' },
       {
-        key: 'schoolClassId',
-        label: 'Sinf',
-        picker: 'class'
+        key: 'atRisk',
+        label: 'Holat',
+        options: [{ value: 'true', label: 'Xavf ostida' }]
+      },
+      {
+        key: 'telegram',
+        label: 'Telegram',
+        options: [
+          { value: 'true', label: '✓ Ulangan' },
+          { value: 'false', label: '✗ Ulanmagan' }
+        ]
+      },
+      {
+        key: 'birthday',
+        label: "Tug'ilgan kun",
+        options: [{ value: 'true', label: '🎂 Bugun' }]
+      }
+    ],
+    bulkActions: [
+      {
+        key: 'move',
+        label: 'Boshqa sinfga',
+        icon: 'drive_file_move',
+        run: moveStudents
+      },
+      {
+        key: 'message',
+        label: 'Ota-onalarga xabar',
+        icon: 'send',
+        run: ({ ids, router }) =>
+          router.push({
+            path: '/broadcasts',
+            query: { students: ids.join(',') }
+          })
       }
     ],
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
         name: 'fullName',
-        label: "To'liq ism",
+        label: "O'quvchi",
         field: 'fullName',
         type: 'person',
         sortable: true,
         align: 'left',
+        sub: row =>
+          [row.className && `${row.className} sinf`, ageText(row.birthDate)]
+            .filter(Boolean)
+            .join(' · '),
         link: { type: 'student', idField: 'id' }
+      },
+      {
+        name: 'guardianName',
+        label: 'Ota-ona',
+        field: 'guardianName',
+        type: 'contact',
+        phoneField: 'guardianPhone',
+        align: 'left',
+        width: '220px'
+      },
+      {
+        name: 'attendance30',
+        label: 'Davomat (30 kun)',
+        field: 'attendance30',
+        type: 'percent',
+        thresholds: [95, 85],
+        align: 'left'
+      },
+      {
+        name: 'average30',
+        label: "O'rtacha baho",
+        field: 'average30',
+        type: 'grade',
+        trend: row =>
+          row.average30 == null ||
+          row.averagePrev == null ||
+          Math.abs(row.average30 - row.averagePrev) < 0.15
+            ? null
+            : row.average30 > row.averagePrev
+              ? 'up'
+              : 'down',
+        align: 'left'
+      },
+      {
+        name: 'risk',
+        label: 'Xavf',
+        field: 'risk',
+        type: 'risk',
+        align: 'left'
+      },
+      {
+        name: 'telegram',
+        label: 'Telegram',
+        field: 'telegram',
+        type: 'bool',
+        align: 'center'
       },
       {
         name: 'birthDate',
@@ -481,6 +710,7 @@ export const modules = [
         field: 'birthDate',
         type: 'date',
         sortable: true,
+        hidden: true,
         align: 'left'
       },
       {
@@ -489,18 +719,15 @@ export const modules = [
         field: 'className',
         type: 'chip',
         sortable: true,
+        hidden: true,
         align: 'left'
       },
-      {
-        name: 'guardianName',
-        label: 'Ota-ona',
-        field: row => guardianLabel(row.guardianName, row.guardianRelation),
-        align: 'left'
-      },
+      // the address only in the side panel, never in the table
       {
         name: 'fullAddress',
         label: 'Yashash manzili',
         field: row => row.fullAddress || '—',
+        detailOnly: true,
         align: 'left'
       }
     ],
@@ -620,10 +847,22 @@ export const modules = [
     endpoint: '/api/subjects',
     schoolScoped: true,
     serverSearch: true,
+    facetsEndpoint: '/api/subjects/facets',
     // "O'chirish" only retires a subject: old grades keep its name
     softDelete: true,
     titleOf: row => row.name,
-    toggles: [{ key: 'includeInactive', label: "Nofaollarni ko'rsatish" }],
+    viewType: 'cards',
+    cards: { component: markRaw(SubjectCard), title: row => row.name },
+    detailComponent: markRaw(SubjectDetail),
+    tabs: {
+      key: 'status',
+      label: 'Holat',
+      default: 'ACTIVE',
+      options: [
+        { value: 'ACTIVE', label: 'Faol', facet: ['active', 'true'] },
+        { value: 'INACTIVE', label: 'Nofaol', facet: ['active', 'false'] }
+      ]
+    },
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
@@ -631,6 +870,42 @@ export const modules = [
         label: 'Nomi',
         field: 'name',
         sortable: true,
+        align: 'left'
+      },
+      {
+        name: 'teachers',
+        label: "O'qituvchilar",
+        field: row => row.teachers || [],
+        type: 'avatars',
+        align: 'left'
+      },
+      {
+        name: 'weeklyLessons',
+        label: 'Soat / hafta',
+        field: 'weeklyLessons',
+        type: 'number',
+        align: 'right'
+      },
+      {
+        name: 'classCount',
+        label: 'Sinflar',
+        field: 'classCount',
+        type: 'number',
+        align: 'right'
+      },
+      {
+        name: 'qualityNow',
+        label: 'Sifat (chorak)',
+        field: 'qualityNow',
+        type: 'percent',
+        thresholds: [60, 40],
+        align: 'left'
+      },
+      {
+        name: 'averageSpark',
+        label: "O'rtacha, 30 kun",
+        field: 'averageSpark',
+        type: 'spark',
         align: 'left'
       },
       {
@@ -648,10 +923,18 @@ export const modules = [
       {
         key: 'color',
         label: 'Rangi (jadval, taqvim, sinflar)',
-        type: 'select',
+        type: 'color',
         required: false,
-        options: SUBJECT_COLOR_OPTIONS,
+        palette: SUBJECT_COLOR_OPTIONS.filter(o => o.value),
         hint: 'Avtomatik — fan raqamidan 12 rangdan biri'
+      },
+      {
+        key: 'icon',
+        label: 'Ikonka',
+        type: 'icon',
+        required: false,
+        icons: SUBJECT_ICONS,
+        suggest: form => suggestSubjectIcon(form.name)
       },
       { key: 'schoolId', label: 'Maktab', autoSchool: true, required: true }
     ]
@@ -666,6 +949,14 @@ export const modules = [
     schoolScoped: false,
     serverSearch: true,
     titleOf: row => row.title,
+    viewType: 'cards',
+    cards: { component: markRaw(PositionCard), title: row => row.title },
+    // a card opens Xodimlar with this position chosen
+    cardClick: (row, router) =>
+      router.push({
+        path: '/app/employees',
+        query: { positionId: String(row.id) }
+      }),
     // employeeCount (all schools) comes with the list: a position with people cannot go
     deleteImpact: row =>
       row.employeeCount > 0
@@ -682,9 +973,60 @@ export const modules = [
         field: 'title',
         sortable: true,
         align: 'left'
+      },
+      {
+        name: 'description',
+        label: 'Tavsif',
+        field: 'description',
+        align: 'left',
+        width: '320px'
+      },
+      {
+        name: 'employees',
+        label: 'Xodimlar',
+        field: row => row.employees || [],
+        type: 'avatars',
+        align: 'left'
+      },
+      {
+        name: 'employeeCount',
+        label: 'Soni',
+        field: 'employeeCount',
+        type: 'number',
+        align: 'right'
+      },
+      {
+        name: 'defaultRole',
+        label: 'Rol (taklif)',
+        field: 'defaultRole',
+        type: 'badge',
+        badgeColors: { ADMIN: '#dc2626', EDITOR: '#6d28d9', VIEWER: '#64748b' },
+        badgeLabels: { ADMIN: 'ADMIN', EDITOR: 'EDITOR', VIEWER: 'VIEWER' },
+        align: 'left'
       }
     ],
-    fields: [{ key: 'title', label: 'Nomi', type: 'text', required: true }]
+    fields: [
+      { key: 'title', label: 'Nomi', type: 'text', required: true, full: true },
+      {
+        key: 'description',
+        label: 'Tavsif',
+        type: 'textarea',
+        required: false
+      },
+      {
+        key: 'defaultRole',
+        label: 'Tizimdagi rol (yangi foydalanuvchiga taklif)',
+        type: 'select',
+        required: false,
+        full: true,
+        options: [
+          { value: 'ADMIN', label: 'ADMIN — hammasi' },
+          { value: 'EDITOR', label: "EDITOR — davomat, baho, ma'lumot" },
+          { value: 'VIEWER', label: "VIEWER — faqat ko'rish" }
+        ],
+        hint: 'Foydalanuvchi yaratilganda shu lavozimdagi xodimga taklif qilinadi'
+      }
+    ]
   },
   {
     key: 'employees',
@@ -698,20 +1040,40 @@ export const modules = [
     facetsEndpoint: '/api/employees/facets',
     profileLink: { type: 'teacher', idField: 'id' },
     titleOf: row => row.fullName,
-    detailSubtitle: row => row.positionTitle,
-    cards: {
-      avatar: true,
-      title: row => row.fullName,
-      subtitle: row => row.positionTitle,
-      badge: row =>
-        row.status && row.status !== 'ACTIVE'
-          ? {
-              label: employeeStatusLabels[row.status],
-              color: employeeStatusColors[row.status]
-            }
-          : null,
-      text: row => [row.subjects, row.classes].filter(Boolean).join(' · ')
+    detailComponent: markRaw(EmployeeDetail),
+    hero: {
+      endpoint: '/api/pages/lists/employees/hero',
+      cards: [
+        {
+          key: 'employees',
+          label: 'Jami xodimlar',
+          icon: 'work',
+          color: 'var(--chart-primary)'
+        },
+        {
+          key: 'active',
+          label: 'Ishda',
+          icon: 'how_to_reg',
+          color: 'var(--st-present)',
+          filter: { status: 'ACTIVE' }
+        },
+        {
+          key: 'load',
+          label: "O'rtacha yuklama",
+          icon: 'schedule',
+          color: 'var(--st-excused)',
+          format: v => `${v.toFixed(1)} soat`
+        },
+        {
+          key: 'journal',
+          label: "Jurnal to'liqligi",
+          icon: 'fact_check',
+          color: 'var(--ring-journal)',
+          format: v => `${Math.round(v)}%`
+        }
+      ]
     },
+    cards: { component: markRaw(EmployeeCard), title: row => row.fullName },
     // instead of deleting someone, mark them as gone (their lessons and grades keep the name)
     deactivate: {
       label: 'Ishdan ketgan deb belgilash',
@@ -742,17 +1104,23 @@ export const modules = [
           value,
           label
         }))
+      },
+      {
+        key: 'classTeacher',
+        label: 'Rahbarlik',
+        options: [{ value: 'true', label: 'Sinf rahbarlari' }]
       }
     ],
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },
       {
         name: 'fullName',
-        label: "To'liq ism",
+        label: 'Xodim',
         field: 'fullName',
         type: 'person',
         sortable: true,
         align: 'left',
+        sub: row => row.positionTitle,
         link: { type: 'teacher', idField: 'id' }
       },
       {
@@ -765,8 +1133,8 @@ export const modules = [
         badgeColors: employeeStatusColors,
         badgeLabels: employeeStatusLabels,
         badgeHint: row =>
-          row.status === 'ON_LEAVE' && (row.leaveFrom || row.leaveTo)
-            ? `${dateFormat(row.leaveFrom) || '…'} – ${dateFormat(row.leaveTo) || '…'}`
+          row.status === 'ON_LEAVE' && row.leaveTo
+            ? `${shortDay(row.leaveTo)} gacha`
             : ''
       },
       {
@@ -774,8 +1142,8 @@ export const modules = [
         label: 'Lavozim',
         field: 'positionTitle',
         sortable: true,
+        hidden: true,
         align: 'left',
-        // long titles are cut (the whole one in the panel), never push the table wider
         width: '220px'
       },
       {
@@ -799,6 +1167,22 @@ export const modules = [
         field: 'classTeacherOf',
         type: 'list',
         listLabel: 'sinf',
+        align: 'left'
+      },
+      {
+        name: 'weeklyLessons',
+        label: 'Yuklama',
+        field: 'weeklyLessons',
+        type: 'load',
+        norm: 18,
+        align: 'left'
+      },
+      {
+        name: 'journal7',
+        label: 'Jurnal',
+        field: 'journal7',
+        type: 'percent',
+        thresholds: [80, 50],
         align: 'left'
       },
       {
@@ -1231,7 +1615,12 @@ export const modules = [
         schoolScoped: true,
         optionsEndpoint: '/api/employees',
         optionValue: 'id',
-        optionLabel: 'fullName'
+        optionLabel: 'fullName',
+        // the position's default role is offered when nothing was chosen yet
+        onSelect: (form, employee) => {
+          if (!form.role && employee?.positionDefaultRole)
+            form.role = employee.positionDefaultRole
+        }
       }
     ]
   }

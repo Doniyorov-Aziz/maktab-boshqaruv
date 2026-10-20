@@ -1,7 +1,7 @@
-# CRUD sahifalari v2 — 1-qism: umumiy CrudPage + backend asoslari
+# CRUD sahifalari v2 — 1-qism (umumiy CrudPage + backend) va 2-qism (5 sahifa)
 
 Branch: `feature/crud-v2` (worktree `.claude/worktrees/crud-v2`, `main` 7971c5f dan). **Push qilinmagan.**
-Bu qismda faqat vazifaning **0, 1 va 7-bo'limlari**. 2–6 bo'limlar — keyingi qism (pastda).
+1-qism: vazifaning **0, 1 va 7-bo'limlari**. 2-qism: **2–6 bo'limlar** (pastda, «2-qism»).
 Sessiya uzilsa — ❌ bandlardan davom eting. **Backend testlari faqat `DB_URL=jdbc:postgresql://localhost:5432/maktab_tg_test` bilan.**
 
 ## Reja
@@ -74,10 +74,53 @@ Backend: `service/pages/ListStatsService.java`, `service/pages/TableExportServic
 
 Frontend: `pages/CrudPage.vue` (qayta yozildi); `components/crud/*` (yangi); `ClassPicker.vue` (`allow-all`), `SideDrawer.vue` (`wide`), `config/modules.js`, `css/tokens.scss`, `utils/tashkent.js`; testlar `tests/ui/crud-mock.js`, `crud-logic.spec.js`, `crud.spec.js`, `crud-shots.spec.js`.
 
-## Keyingi qism (hali QILINMAGAN — 2–6 bo'limlar)
-- **2. O'quv yillari** — yil kartochkalari (holat, choraklar/ta'tillar progress, «Bugun» markeri, statistikalar), Quarter entity, «Joriy yil», «Keyingi yilni yaratish», kesishma 409, bitta joriy yil (+ testlar).
-- **3. Fanlar** — kartochkalar (Subject.icon, o'qituvchilar, soat, sifat + DeltaPill, sparkline), Faol | Nofaol tablar, drawer, rang/ikonka tanlash.
-- **4. O'quvchilar** — hero KPI, chiplar (xavf, Telegram, tug'ilgan kun), yangi ustunlar, **manzil jadvaldan olib tashlanadi**, boy panel, ommaviy ko'chirish/xabar. Backend maydonlari (`attendance30`, `average30`, `averagePrev`, `risk`, `telegram`) va facet lar **tayyor**.
-- **5. Lavozimlar** — kartochkalar (ikonka, rang, xodimlar + avatar stack, `Position.defaultRole`), kartochka → Xodimlar filtrlangan. 409 va `employeeCount` **tayyor**.
-- **6. Xodimlar** — hero KPI, «Sinf rahbarlari» chipi, yuklama bar, jurnal to'liqligi, kartochka, boy panel. `weeklyLessons`, `journal7`, facet lar **tayyor**.
-- Shu bo'limlarning Playwright tekshiruvlari va qo'shimcha rasmlar (student-drawer, employee-drawer, subject-cards, academic-years).
+## 2-qism (2–6 bo'limlar) — 2026-10-20
+
+### 2. O'quv yillari
+- ✅ Jadval o'rniga **yil kartochkalari** (yangisi tepada, `YearsView`): nom, holat (Joriy — brend rangida glow / Davom etmoqda / Yakunlangan / Rejalashtirilgan), sanalar; choraklar va ta'tillar **sanasi bo'yicha segmentli bar** (ta'til chiziqli), o'tgan qism, joriy yilda **«Bugun» markeri**, «21% o'tdi · 158 ish kuni qoldi», «Hozir: 1-chorak»; ish kunlari, o'quvchilar va sinflar, davomat %, sifat % (o'tganlar uchun «yakuniy»).
+- ✅ Choraklar va ta'tillar — yangi `AcademicTerm` entity (nom, tur QUARTER/VACATION, sanalar, yil); panelda tahrir (`YearDetail`), «Odatiy taqvim», bir martada saqlash.
+- ✅ «Joriy yil qilib belgilash» (`AcademicYear.current`, maktabda bitta), «Keyingi yilni yaratish» (oxirgi yil sanalari va choraklari +1 yil; yil bo'lmasa odatiy taqvim; dialogda o'zgartirish mumkin).
+- ✅ Backend: yillar kesishsa **409**; chorak yil tashqarisida yoki ustma-ust bo'lsa **409** (hech narsa saqlanmaydi). Ish kunlari — yakshanba va bayram/ta'til tadbirlarisiz.
+- ℹ️ Vaqt chizig'ida sudrab o'zgartirish (ixtiyoriy) qilinmadi — sanalar panelda o'zgartiriladi.
+
+### 3. Fanlar
+- ✅ Default **kartochkalar** (`SubjectCard`): fan rangidagi ikonka (`Subject.icon`, bo'lmasa nomdan taklif: Matematika → calculate, Fizika → science, Ona tili → menu_book …), nom, soat/hafta, sinflar, o'qituvchilar avatar stack, **shu chorak sifati + DeltaPill**, **30 kunlik o'rtacha sparkline**; nofaol — xira + «Nofaol».
+- ✅ **Faol | Nofaol** tablar (sonlari bilan) eski toggle o'rniga (`?status=ACTIVE|INACTIVE`, URL da).
+- ✅ Panel (`SubjectDetail`): baholar taqsimoti 5/4/3/2, sifat va oldingi davr, o'qituvchilar va yuklama, sinflar bo'yicha soat va sifat.
+- ✅ Formada **12 rangli palitra** va **ikonka tanlash** (taklif qilingani punktir bilan).
+- ℹ️ «Chorak» — joriy yilning `AcademicTerm` choraklaridan; ular kiritilmagan bo'lsa oxirgi 60 kun va undan oldingi 60 kun.
+
+### 4. O'quvchilar
+- ✅ **Hero KPI**: jami, bugungi davomat (14 kunlik sparkline; bugun hali belgilanmagan bo'lsa — oxirgi ish kuni, izohda sanasi), xavf ostidagilar (bosilsa filtr), Telegramdagi ota-onalar %. ⚠️ O'g'il/qiz nisbati yo'q — jins maydoni yo'q.
+- ✅ Filtrlar: ClassPicker («Barchasi») + chiplar **Xavf ostida · Telegram ✓/✗ · 🎂 Bugun** (sonlari bilan, server tomonda).
+- ✅ Ustunlar: avatar + ism (ostida «1-A sinf · 7 yosh») · ota-ona (ism, ostida bosiladigan telefon) · davomat % (30 kun, bar) · o'rtacha baho (pill + trend) · xavf (kichik halqa) · Telegram ✓/✗. **Manzil jadvalda ham, ustun menyusida ham yo'q** — faqat panelda.
+- ✅ Kartochkalar: avatar, ism, sinf, 3 ko'rsatkich.
+- ✅ Panel (`StudentDetail`): sinf, yosh, Telegram; 3 KPI; **30 kunlik davomat nuqtalari**; **xavf sabablari**; fanlar bo'yicha o'rtacha; ota-ona va telefon; tug'ilgan sana, joy, manzil; xulq yozuvlari; [Ota-onaga xabar] [Profil].
+- ✅ Ommaviy: **boshqa sinfga ko'chirish** (boshqa maktabga — 409), Excel/PDF, **ota-onalarga xabar** (Xabarlar sahifasi `?students=…` bilan ochiladi va Telegramga ulangan ota-onalarni o'zi belgilaydi).
+
+### 5. Lavozimlar
+- ✅ **Kartochkalar** (`PositionCard`): nomga mos ikonka va rang, nom, tavsif (`Position.description` — yangi), xodimlar soni + avatar stack, **rol chipi** (`Position.defaultRole` — yangi; Foydalanuvchilar formasida xodim tanlanganda shu rol taklif qilinadi).
+- ✅ Kartochka bosilsa → **Xodimlar shu lavozim filtri bilan**. Xodimi bor lavozimni o'chirish — 409.
+
+### 6. Xodimlar
+- ✅ **Hero KPI**: jami, ishda (izohda ta'tildagilar), o'qituvchilarning o'rtacha haftalik yuklamasi, jurnal to'liqligi % (7 ish kuni).
+- ✅ Chiplar: lavozimlar (soni), holat, **«Sinf rahbarlari»**.
+- ✅ Ustunlar: avatar + ism (ostida lavozim) · holat (ta'tilda — «20-okt gacha») · fanlar (max 3 + «+N») · sinflar («18 ta sinf» + popover) · sinf rahbari · **yuklama** (soat + normaga (18) nisbatan bar; dars bermasa «—») · jurnal % · telefon.
+- ✅ Kartochkalar (`EmployeeCard`): avatar, ism, lavozim, fanlar, **yuklama halqasi**, telefon, rahbarlik.
+- ✅ Panel (`EmployeeDetail`): kontakt (qo'ng'iroq, nusxa), holat va ta'til sanalari, **jurnal to'liqligi dinamikasi** (10 ish kuni), **yuklama issiqlik xaritasi** (kunlar × darslar), **bu haftalik dars jadvali**, fanlar va sinflar, [Jadvalni ko'rish] [Tahrirlash].
+
+### Backend (2-qism)
+- Yangi: `AcademicTerm`, `AcademicYear.current`, `Subject.icon`, `Position.description` / `defaultRole`; `ListPagesService` + `ListPagesController` (`/api/pages/lists/students/hero`, `/students/{id}/extra`, `/students/move`, `/employees/hero`, `/employees/{id}/extra`, `/subjects/{id}/extra`, `/years`); `/api/academic-years/{id}/current`, `/{id}/terms` (GET/PUT), `/next` (GET/POST).
+- Filtrlar: o'quvchilar `atRisk`, `telegram`, `birthday`; xodimlar `classTeacher`; fanlar `status`.
+- **Topilgan va tuzatilgan mavjud xato:** o'qituvchi bir nechta sinfga rahbar bo'lsa `/api/profiles/teachers/{id}` 500 qaytarardi — endi «5-A, 6-B».
+- Ota-onalar tanlovi (`/api/telegram/parents/choices`) ga `studentId` qo'shildi.
+- Testlar: `CrudPagesIntegrationTest` (5 test) — yillar kesishmasi 409, bitta joriy yil, choraklar 409 va eski holat saqlanadi, keyingi yil; o'quvchi chiplari, ko'chirish (boshqa maktabga emas), sinf rahbarlari, Faol/Nofaol, lavozim roli (noma'lum → 400), xodim issiqlik xaritasi, fan sinflari, hero lar.
+
+### Tekshiruv (2-qism)
+- ✅ `./gradlew build` (test bazasi): **320 test, 0 xato**.
+- ✅ `npm run lint`, `lint:check`, `build` — xatosiz.
+- ✅ Playwright: `crud-logic` 9/9, `crud.spec` 26/26, **`crud-pages.spec` 12/12**, `crud-shots` 18/18; regressiya `aj` + `pages-v2` **94/94**.
+- ✅ Rasmlar ko'rib chiqildi va tuzatildi: fan ikonkalari kichik edi, avatarlar yopishardi, filtr qatorlari bir qatorga sig'masdi, lavozim nomi kesilardi, dars bermaydigan xodimda «0 soat», telefonda hero 4 qator, 13 sinf rahbari uzun qator, bugun davomat bo'lmaganda «—».
+- ℹ️ Test bazasida bugungi sanani o'z ichiga olgan o'quv yili yo'q — «Bugun» markeri testi va rasmi uchun mock **sun'iy joriy yil** qo'shadi (`crud-mock.js#syntheticYear`).
+- ❌ Haqiqiy backend bilan UI testi — `UI_PASS` yo'q.
+- ℹ️ Foydalanuvchilar formasidagi rol taklifi brauzerda tekshirilmadi (fixture da foydalanuvchilar yo'q).

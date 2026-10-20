@@ -553,6 +553,7 @@ import AppInput from '@/components/app/AppInput.vue'
 import AppSelect from '@/components/app/AppSelect.vue'
 import AppDateInput from '@/components/app/AppDateInput.vue'
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
@@ -814,6 +815,27 @@ async function loadChoices() {
 watch(audience, a => {
   if (a === 'PARENTS' && !choices.value.length) loadChoices()
 })
+
+// ?students=12,15 (O'quvchilar → "Ota-onaga xabar"): those students' parents in Telegram, chosen
+const route = useRoute()
+const fromStudents = String(route.query.students || '')
+  .split(',')
+  .map(Number)
+  .filter(Boolean)
+if (fromStudents.length) {
+  audience.value = 'PARENTS'
+  loadChoices().then(() => {
+    linkIds.value = choices.value
+      .filter(c => fromStudents.includes(c.studentId))
+      .map(c => c.linkId)
+    $q.notify({
+      type: linkIds.value.length ? 'info' : 'warning',
+      message: linkIds.value.length
+        ? `${linkIds.value.length} ta ota-ona tanlandi (Telegramga ulanganlar)`
+        : "Tanlangan o'quvchilarning ota-onalari Telegramga ulanmagan"
+    })
+  })
+}
 
 // ------------------------------------------------------------------- history
 const history = ref([])
