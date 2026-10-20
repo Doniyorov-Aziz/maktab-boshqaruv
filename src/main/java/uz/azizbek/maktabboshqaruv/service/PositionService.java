@@ -40,7 +40,11 @@ public class PositionService {
         Page<PositionResponseDto> page = positionRepository.search(PageSort.like(q),
                 PageSort.map(pageable, SORTABLE)).map(this::toResponseDto);
         Map<Long, Integer> counts = listStats.positionEmployees(schoolId);
-        for (PositionResponseDto dto : page.getContent()) dto.setEmployeeCount(counts.getOrDefault(dto.getId(), 0));
+        Map<Long, List<ListStatsService.Person>> people = listStats.positionPeople(schoolId, 5);
+        for (PositionResponseDto dto : page.getContent()) {
+            dto.setEmployeeCount(counts.getOrDefault(dto.getId(), 0));
+            dto.setEmployees(people.getOrDefault(dto.getId(), List.of()));
+        }
         return page;
     }
 
@@ -60,6 +64,7 @@ public class PositionService {
 
         Position position = new Position();
         position.setTitle(request.getTitle());
+        applyDetails(position, request);
 
         Position saved = positionRepository.save(position);
         return toResponseDto(saved);
@@ -75,6 +80,7 @@ public class PositionService {
         }
 
         position.setTitle(request.getTitle());
+        applyDetails(position, request);
 
         Position updated = positionRepository.save(position);
         return toResponseDto(updated);
@@ -94,10 +100,28 @@ public class PositionService {
         positionRepository.deleteById(id);
     }
 
+    private static void applyDetails(Position position, PositionRequestDto request) {
+        String d = request.getDescription();
+        position.setDescription(d == null || d.isBlank() ? null : d.strip());
+        String role = request.getDefaultRole();
+        if (role == null || role.isBlank()) {
+            position.setDefaultRole(null);
+            return;
+        }
+        try {
+            position.setDefaultRole(uz.azizbek.maktabboshqaruv.entity.Role.valueOf(role.strip().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Noma'lum rol: " + role + " (ADMIN, EDITOR yoki VIEWER)");
+        }
+    }
+
     private PositionResponseDto toResponseDto(Position position) {
         PositionResponseDto dto = new PositionResponseDto();
         dto.setId(position.getId());
         dto.setTitle(position.getTitle());
+        dto.setDescription(position.getDescription());
+        dto.setDefaultRole(position.getDefaultRole() == null ? null : position.getDefaultRole().name());
         return dto;
     }
 }

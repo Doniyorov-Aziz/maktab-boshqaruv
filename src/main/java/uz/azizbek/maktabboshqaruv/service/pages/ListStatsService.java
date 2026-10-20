@@ -39,7 +39,16 @@ public class ListStatsService {
     public record EmployeeStats(int weeklyLessons, Double journal7) {
     }
 
-    public record SubjectStats(int teachers, int classes, int weeklyLessons) {
+    /** A person on a card: avatar and name (and lessons a week where it matters). */
+    public record Person(long id, String name, Integer lessons) {
+    }
+
+    public record SubjectStats(int teacherCount, int classes, int weeklyLessons, List<Person> teachers,
+                               Double qualityNow, Double qualityPrev, List<Double> averageSpark) {
+    }
+
+    /** The quarter going on (or the last 60 days) and the one before it. */
+    public record Window(LocalDate from, LocalDate to, LocalDate prevFrom, LocalDate prevTo, String label) {
     }
 
     public record YearStats(int classes, int students) {
@@ -146,6 +155,14 @@ public class ListStatsService {
         out.put("schoolClassId", classes);
         out.put("telegram", List.of(new Facet("true", "Telegramda", l(t.get("yes"))),
                 new Facet("false", "Telegramda emas", l(t.get("no")))));
+        out.put("atRisk", List.of(new Facet("true", "Xavf ostida", riskScores(schoolId).size())));
+        LocalDate today = LocalDate.now(clock);
+        Long born = jdbc.queryForObject("""
+                select count(*) from students st join school_class c on c.id = st.class_id
+                  join academic_year y on y.id = c.academic_year_id
+                 where y.school_id = :s and extract(month from st.birth_date) = :m and extract(day from st.birth_date) = :d""",
+                p(schoolId).addValue("m", today.getMonthValue()).addValue("d", today.getDayOfMonth()), Long.class);
+        out.put("birthday", List.of(new Facet("true", "Bugun tug'ilgan kun", born == null ? 0 : born)));
         return out;
     }
 
@@ -190,23 +207,107 @@ public class ListStatsService {
         Map<String, List<Facet>> out = new LinkedHashMap<>();
         out.put("status", statuses);
         out.put("positionId", positions);
+        Long leads = jdbc.queryForObject("""
+                select count(distinct c.class_teacher_id) from school_class c join academic_year y on y.id = c.academic_year_id
+                 where y.school_id = :s and c.class_teacher_id is not null""", p(schoolId), Long.class);
+        out.put("classTeacher", List.of(new Facet("true", "Sinf rahbarlari", leads == null ? 0 : leads)));
         return out;
     }
 
     // ------------------------------------------------------------------ subjects, positions, years
 
-    /** Teachers, classes and lessons a week of every subject of the school that has lessons. */
+    /**
+     * Every subject of the school: teachers (with their lessons a week), classes, lessons a week,
+     * quality (share of 4 and 5) this quarter and the one before, and the daily average of the last
+     * 30 days — four grouped queries for the whole school, cached 90 s.
+     */
     public Map<Long, SubjectStats> subjects(long schoolId) {
-        Map<Long, SubjectStats> out = new HashMap<>();
+        return cache.get(schoolId, "lists:subjects", () -> computeSubjects(schoolId)).data();
+    }
+
+    private Map<Long, SubjectStats> computeSubjects(long schoolId) {
+        Map<Long, int[]> counts = new HashMap<>();
         for (Map<String, Object> r : jdbc.queryForList("""
                 select ls.subject_id, count(distinct ls.employee_id) as teachers, count(distinct ls.class_id) as classes,
                        count(*) as lessons
                   from lesson_slot ls join school_class c on c.id = ls.class_id
                   join academic_year y on y.id = c.academic_year_id
                  where y.school_id = :s group by ls.subject_id""", p(schoolId))) {
-            out.put(l(r.get("subject_id")), new SubjectStats(i(r.get("teachers")), i(r.get("classes")), i(r.get("lessons"))));
+            counts.put(l(r.get("subject_id")), new int[]{i(r.get("teachers")), i(r.get("classes")), i(r.get("lessons"))});
+        }
+        Map<Long, List<Person>> teachers = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("""
+                select ls.subject_id, e.id, trim(coalesce(e.first_name, '') || ' ' || coalesce(e.last_name, '')) as name,
+                       count(*) as lessons
+                  from lesson_slot ls join employee e on e.id = ls.employee_id
+                  join school_class c on c.id = ls.class_id join academic_year y on y.id = c.academic_year_id
+                 where y.school_id = :s group by ls.subject_id, e.id, e.first_name, e.last_name
+                 order by count(*) desc, name""", p(schoolId))) {
+            teachers.computeIfAbsent(l(r.get("subject_id")), k -> new ArrayList<>())
+                    .add(new Person(l(r.get("id")), (String) r.get("name"), i(r.get("lessons"))));
+        }
+        Window w = window(schoolId);
+        Map<Long, Double[]> quality = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("""
+                select g.subject_id,
+                       count(*) filter (where g.grade_date between :f and :t and g.score >= 4) as good_now,
+                       count(*) filter (where g.grade_date between :f and :t) as all_now,
+                       count(*) filter (where g.grade_date between :pf and :pt and g.score >= 4) as good_prev,
+                       count(*) filter (where g.grade_date between :pf and :pt) as all_prev
+                  from grade g join subject s on s.id = g.subject_id
+                 where s.school_id = :s and g.grade_date between :pf and :t group by g.subject_id""",
+                p(schoolId).addValue("f", Date.valueOf(w.from())).addValue("t", Date.valueOf(w.to()))
+                        .addValue("pf", Date.valueOf(w.prevFrom())).addValue("pt", Date.valueOf(w.prevTo())))) {
+            quality.put(l(r.get("subject_id")), new Double[]{
+                    DashboardMetrics.pct(l(r.get("good_now")), l(r.get("all_now"))),
+                    DashboardMetrics.pct(l(r.get("good_prev")), l(r.get("all_prev")))});
+        }
+        LocalDate today = LocalDate.now(clock);
+        LocalDate from = today.minusDays(29);
+        Map<Long, Double[]> spark = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("""
+                select g.subject_id, g.grade_date, avg(g.score) as a
+                  from grade g join subject s on s.id = g.subject_id
+                 where s.school_id = :s and g.grade_date between :f and :t group by g.subject_id, g.grade_date""",
+                p(schoolId).addValue("f", Date.valueOf(from)).addValue("t", Date.valueOf(today)))) {
+            Double[] days = spark.computeIfAbsent(l(r.get("subject_id")), k -> new Double[30]);
+            int k = (int) java.time.temporal.ChronoUnit.DAYS.between(from, date(r.get("grade_date")));
+            if (k >= 0 && k < 30) days[k] = Math.round(((Number) r.get("a")).doubleValue() * 100) / 100.0;
+        }
+        Set<Long> ids = new HashSet<>(counts.keySet());
+        ids.addAll(quality.keySet());
+        ids.addAll(spark.keySet());
+        Map<Long, SubjectStats> out = new HashMap<>();
+        for (Long id : ids) {
+            int[] c = counts.getOrDefault(id, new int[3]);
+            Double[] q = quality.getOrDefault(id, new Double[2]);
+            Double[] sp = spark.get(id);
+            out.put(id, new SubjectStats(c[0], c[1], c[2], teachers.getOrDefault(id, List.of()), q[0], q[1],
+                    sp == null ? List.of() : java.util.Arrays.asList(sp)));
         }
         return out;
+    }
+
+    /**
+     * The quarter of the school's current year that today falls in (or the last one that ended) and
+     * the quarter before it; without quarters, the last 60 days and the 60 before.
+     */
+    public Window window(long schoolId) {
+        LocalDate today = LocalDate.now(clock);
+        List<Map<String, Object>> quarters = jdbc.queryForList("""
+                select t.name, t.start_date, t.end_date from academic_term t
+                  join academic_year y on y.id = t.academic_year_id
+                 where y.school_id = :s and t.kind = 'QUARTER' and t.start_date <= :t
+                 order by t.start_date desc limit 2""", p(schoolId).addValue("t", Date.valueOf(today)));
+        if (quarters.isEmpty()) {
+            return new Window(today.minusDays(59), today, today.minusDays(119), today.minusDays(60), "60 kun");
+        }
+        LocalDate f = date(quarters.get(0).get("start_date"));
+        LocalDate t = date(quarters.get(0).get("end_date"));
+        if (t.isAfter(today)) t = today;
+        LocalDate pf = quarters.size() > 1 ? date(quarters.get(1).get("start_date")) : f.minusDays(60);
+        LocalDate pt = quarters.size() > 1 ? date(quarters.get(1).get("end_date")) : f.minusDays(1);
+        return new Window(f, t, pf, pt, (String) quarters.get(0).get("name"));
     }
 
     /** Active and retired subjects of the school (the tab counts). */
@@ -240,6 +341,21 @@ public class ListStatsService {
                   left join students st on st.class_id = c.id
                  where y.school_id = :s group by y.id""", p(schoolId))) {
             out.put(l(r.get("id")), new YearStats(i(r.get("classes")), i(r.get("students"))));
+        }
+        return out;
+    }
+
+    /** positionId → its first employees (by name) for the card's avatars; one school or all. */
+    public Map<Long, List<Person>> positionPeople(Long schoolId, int perPosition) {
+        Map<Long, List<Person>> out = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("""
+                select position_id, id, name from (
+                  select e.position_id, e.id, trim(coalesce(e.first_name, '') || ' ' || coalesce(e.last_name, '')) as name,
+                         row_number() over (partition by e.position_id order by e.last_name, e.first_name) as n
+                    from employee e where cast(:s as bigint) is null or e.school_id = :s) x
+                 where n <= :k""", new MapSqlParameterSource("s", schoolId).addValue("k", perPosition))) {
+            out.computeIfAbsent(l(r.get("position_id")), k -> new ArrayList<>())
+                    .add(new Person(l(r.get("id")), (String) r.get("name"), null));
         }
         return out;
     }

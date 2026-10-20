@@ -62,6 +62,15 @@ public class AcademicYearResponseDto {
     // list page numbers (ListStatsService); null where not computed
     private Integer classCount;
     private Integer studentCount;
+    private boolean current;
+
+    public boolean isCurrent() {
+        return current;
+    }
+
+    public void setCurrent(boolean current) {
+        this.current = current;
+    }
 
     public Integer getClassCount() {
         return classCount;

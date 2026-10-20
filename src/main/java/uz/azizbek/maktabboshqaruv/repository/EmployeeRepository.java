@@ -22,6 +22,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
                    or lower(concat(e.firstName, ' ', e.lastName)) like :q
                    or lower(concat(e.lastName, ' ', e.firstName)) like :q
                    or e.phone like :q)
+              and (:classTeacher = false or exists (select 1 from SchoolClass sc where sc.classTeacher = e))
             """, countQuery = """
             select count(e) from Employee e where e.school.id = :schoolId
               and (:positionId is null or e.position.id = :positionId)
@@ -31,11 +32,13 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
                    or lower(concat(e.firstName, ' ', e.lastName)) like :q
                    or lower(concat(e.lastName, ' ', e.firstName)) like :q
                    or e.phone like :q)
+              and (:classTeacher = false or exists (select 1 from SchoolClass sc where sc.classTeacher = e))
             """)
     Page<Employee> search(@org.springframework.data.repository.query.Param("schoolId") Long schoolId,
                           @org.springframework.data.repository.query.Param("positionId") Long positionId,
                           @org.springframework.data.repository.query.Param("status") uz.azizbek.maktabboshqaruv.entity.EmployeeStatus status,
                           @org.springframework.data.repository.query.Param("q") String q,
+                          @org.springframework.data.repository.query.Param("classTeacher") boolean classTeacher,
                           Pageable pageable);
     boolean existsByPhone(String phone);
     long countByPositionId(Long positionId);

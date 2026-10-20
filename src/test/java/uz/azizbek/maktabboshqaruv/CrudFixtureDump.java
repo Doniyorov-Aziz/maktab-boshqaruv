@@ -108,9 +108,9 @@ class CrudFixtureDump {
         out.put("/api/school-classes", page(classes.getAllSchoolClasses(SCHOOL, PageRequest.of(0, 500, Sort.by("gradeNumber")))));
         out.put("/api/academic-years", page(years.getAllAcademicYears(SCHOOL, null, ALL)));
         out.put("/api/positions", page(positions.getAllPositions(SCHOOL, null, ALL)));
-        out.put("/api/subjects", page(subjects.getAllSubjects(SCHOOL, true, null, ALL)));
-        out.put("/api/students", page(students.getAllStudents(SCHOOL, null, null, ALL)));
-        out.put("/api/employees", page(employees.getAllEmployees(SCHOOL, null, null, null, ALL)));
+        out.put("/api/subjects", page(subjects.getAllSubjects(SCHOOL, true, null, null, ALL)));
+        out.put("/api/students", page(students.getAllStudents(SCHOOL, null, null, false, null, false, ALL)));
+        out.put("/api/employees", page(employees.getAllEmployees(SCHOOL, null, null, null, false, ALL)));
 
         Object f;
         if ((f = optional(students, "facets", SCHOOL)) != null) out.put("/api/students/facets", f);

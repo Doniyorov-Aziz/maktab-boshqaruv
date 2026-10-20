@@ -31,16 +31,31 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
               and (:q is null
                    or lower(concat(s.firstName, ' ', s.lastName)) like :q
                    or lower(concat(s.lastName, ' ', s.firstName)) like :q)
+              and (:riskOnly = false or s.id in :riskIds)
+              and (:telegram is null
+                   or (:telegram = true and exists (select 1 from ParentTelegramLink l where l.student = s and l.active = true))
+                   or (:telegram = false and not exists (select 1 from ParentTelegramLink l where l.student = s and l.active = true)))
+              and (:bMonth is null or (extract(month from s.birthDate) = :bMonth and extract(day from s.birthDate) = :bDay))
             """, countQuery = """
             select count(s) from Student s where s.schoolClass.academicYear.school.id = :schoolId
               and (:classId is null or s.schoolClass.id = :classId)
               and (:q is null
                    or lower(concat(s.firstName, ' ', s.lastName)) like :q
                    or lower(concat(s.lastName, ' ', s.firstName)) like :q)
+              and (:riskOnly = false or s.id in :riskIds)
+              and (:telegram is null
+                   or (:telegram = true and exists (select 1 from ParentTelegramLink l where l.student = s and l.active = true))
+                   or (:telegram = false and not exists (select 1 from ParentTelegramLink l where l.student = s and l.active = true)))
+              and (:bMonth is null or (extract(month from s.birthDate) = :bMonth and extract(day from s.birthDate) = :bDay))
             """)
     Page<Student> search(@org.springframework.data.repository.query.Param("schoolId") Long schoolId,
                          @org.springframework.data.repository.query.Param("classId") Long classId,
                          @org.springframework.data.repository.query.Param("q") String q,
+                         @org.springframework.data.repository.query.Param("riskOnly") boolean riskOnly,
+                         @org.springframework.data.repository.query.Param("riskIds") java.util.Collection<Long> riskIds,
+                         @org.springframework.data.repository.query.Param("telegram") Boolean telegram,
+                         @org.springframework.data.repository.query.Param("bMonth") Integer birthMonth,
+                         @org.springframework.data.repository.query.Param("bDay") Integer birthDay,
                          Pageable pageable);
     long countBySchoolClassAcademicYearSchoolId(Long schoolId);
     List<Student> findBySchoolClassIdOrderByLastNameAscFirstNameAsc(Long schoolClassId);

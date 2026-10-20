@@ -62,7 +62,21 @@ public class StudentService {
      */
     @Transactional(readOnly = true)
     public Page<StudentResponseDto> getAllStudents(Long schoolId, Long schoolClassId, String q, Pageable pageable) {
+        return getAllStudents(schoolId, schoolClassId, q, false, null, false, pageable);
+    }
+
+    /**
+     * The list with its chips: only those at risk (the school's cached risk list, 40+), parents in
+     * Telegram or not, born today. Still 3 statements a page (the risk list is cached).
+     */
+    @Transactional(readOnly = true)
+    public Page<StudentResponseDto> getAllStudents(Long schoolId, Long schoolClassId, String q, boolean atRisk,
+                                                   Boolean telegram, boolean birthday, Pageable pageable) {
+        java.util.Collection<Long> riskIds = atRisk ? listStats.riskScores(schoolId).keySet() : List.of(-1L);
+        if (riskIds.isEmpty()) riskIds = List.of(-1L);
+        java.time.LocalDate today = java.time.LocalDate.now();
         Page<StudentResponseDto> page = studentRepository.search(schoolId, schoolClassId, PageSort.like(q),
+                atRisk, riskIds, telegram, birthday ? today.getMonthValue() : null, birthday ? today.getDayOfMonth() : null,
                 PageSort.map(pageable, SORTABLE)).map(this::toResponseDto);
         Map<Long, ListStatsService.StudentStats> stats = listStats.students(schoolId,
                 page.getContent().stream().map(StudentResponseDto::getId).toList());

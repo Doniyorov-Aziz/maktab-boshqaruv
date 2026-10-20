@@ -30,6 +30,18 @@ public class Subject {
     @Column(length = 9)
     private String color;
 
+    /** A Material icon name ("calculate", "science"); null = suggested from the name on the page. */
+    @Column(length = 40)
+    private String icon;
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
     public String getColor() {
         return color;
     }

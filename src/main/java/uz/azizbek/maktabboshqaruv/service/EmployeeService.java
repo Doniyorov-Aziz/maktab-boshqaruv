@@ -76,8 +76,14 @@ public class EmployeeService {
      */
     public Page<EmployeeResponseDto> getAllEmployees(Long schoolId, Long positionId, EmployeeStatus status, String q,
                                                      Pageable pageable) {
+        return getAllEmployees(schoolId, positionId, status, q, false, pageable);
+    }
+
+    /** classTeacher: only those who lead a class ("Sinf rahbarlari" chip). */
+    public Page<EmployeeResponseDto> getAllEmployees(Long schoolId, Long positionId, EmployeeStatus status, String q,
+                                                     boolean classTeacher, Pageable pageable) {
         Pageable sorted = PageSort.map(pageable, SORTABLE);
-        Page<Employee> page = employeeRepository.search(schoolId, positionId, status, PageSort.like(q), sorted);
+        Page<Employee> page = employeeRepository.search(schoolId, positionId, status, PageSort.like(q), classTeacher, sorted);
         List<EmployeeResponseDto> rows = withTeaching(page.getContent());
         Map<Long, ListStatsService.EmployeeStats> stats = listStats.employees(schoolId,
                 rows.stream().map(EmployeeResponseDto::getId).toList());
@@ -190,6 +196,7 @@ public class EmployeeService {
             dto.setSubjects(join(subjects.get(e.getId())));
             dto.setClasses(join(classes.get(e.getId())));
             dto.setClassTeacherOf(join(leads.get(e.getId())));
+            dto.setClassTeacher(leads.containsKey(e.getId()));
             rows.add(dto);
         }
         return rows;
@@ -213,6 +220,8 @@ public class EmployeeService {
         dto.setPhone(employee.getPhone());
         dto.setPositionId(employee.getPosition().getId());
         dto.setPositionTitle(employee.getPosition().getTitle());
+        dto.setPositionDefaultRole(employee.getPosition().getDefaultRole() == null ? null
+                : employee.getPosition().getDefaultRole().name());
         dto.setStatus(employee.getStatus().name());
         dto.setLeaveFrom(employee.getLeaveFrom());
         dto.setLeaveTo(employee.getLeaveTo());

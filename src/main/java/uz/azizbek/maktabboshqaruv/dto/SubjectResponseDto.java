@@ -86,4 +86,53 @@ public class SubjectResponseDto {
     public void setWeeklyLessons(Integer weeklyLessons) {
         this.weeklyLessons = weeklyLessons;
     }
+
+    /** Material icon name; null = the page suggests one from the name. */
+    private String icon;
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
+    /** Who teaches it ([{ id, name, lessons }]), quality this quarter and the one before, 30-day average run. */
+    private java.util.List<uz.azizbek.maktabboshqaruv.service.pages.ListStatsService.Person> teachers;
+    private Double qualityNow;
+    private Double qualityPrev;
+    private java.util.List<Double> averageSpark;
+
+    public java.util.List<uz.azizbek.maktabboshqaruv.service.pages.ListStatsService.Person> getTeachers() {
+        return teachers;
+    }
+
+    public void setTeachers(java.util.List<uz.azizbek.maktabboshqaruv.service.pages.ListStatsService.Person> teachers) {
+        this.teachers = teachers;
+    }
+
+    public Double getQualityNow() {
+        return qualityNow;
+    }
+
+    public void setQualityNow(Double qualityNow) {
+        this.qualityNow = qualityNow;
+    }
+
+    public Double getQualityPrev() {
+        return qualityPrev;
+    }
+
+    public void setQualityPrev(Double qualityPrev) {
+        this.qualityPrev = qualityPrev;
+    }
+
+    public java.util.List<Double> getAverageSpark() {
+        return averageSpark;
+    }
+
+    public void setAverageSpark(java.util.List<Double> averageSpark) {
+        this.averageSpark = averageSpark;
+    }
 }

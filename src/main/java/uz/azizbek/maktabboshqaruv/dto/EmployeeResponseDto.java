@@ -160,4 +160,25 @@ public class EmployeeResponseDto {
     public void setJournal7(Double journal7) {
         this.journal7 = journal7;
     }
+
+    /** The role a new user of this employee is offered (from the position). */
+    private String positionDefaultRole;
+    /** Classes this employee leads, with ids (the list page's "Sinf rahbari" chip links to them). */
+    private boolean classTeacher;
+
+    public String getPositionDefaultRole() {
+        return positionDefaultRole;
+    }
+
+    public void setPositionDefaultRole(String positionDefaultRole) {
+        this.positionDefaultRole = positionDefaultRole;
+    }
+
+    public boolean isClassTeacher() {
+        return classTeacher;
+    }
+
+    public void setClassTeacher(boolean classTeacher) {
+        this.classTeacher = classTeacher;
+    }
 }

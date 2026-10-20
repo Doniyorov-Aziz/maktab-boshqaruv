@@ -53,16 +53,32 @@ public class SubjectService {
         return getAllSubjects(schoolId, includeInactive, null, pageable);
     }
 
-    /** One page of subjects with teachers, classes and lessons a week (one grouped query for the school). */
     public Page<SubjectResponseDto> getAllSubjects(Long schoolId, boolean includeInactive, String q, Pageable pageable) {
-        Page<SubjectResponseDto> page = subjectRepository.search(schoolId, includeInactive, PageSort.like(q),
+        return getAllSubjects(schoolId, includeInactive, null, q, pageable);
+    }
+
+    /**
+     * One page of subjects with teachers, classes, lessons a week, quality and its run (a few grouped
+     * queries for the whole school). status: ACTIVE / INACTIVE (the page's tabs), null = includeInactive.
+     */
+    public Page<SubjectResponseDto> getAllSubjects(Long schoolId, boolean includeInactive, String status, String q,
+                                                   Pageable pageable) {
+        boolean onlyInactive = "INACTIVE".equalsIgnoreCase(status);
+        boolean all = onlyInactive || (includeInactive && !"ACTIVE".equalsIgnoreCase(status));
+        Page<SubjectResponseDto> page = subjectRepository.search(schoolId, all, onlyInactive, PageSort.like(q),
                 PageSort.map(pageable, SORTABLE)).map(this::toResponseDto);
         Map<Long, ListStatsService.SubjectStats> stats = listStats.subjects(schoolId);
         for (SubjectResponseDto dto : page.getContent()) {
             ListStatsService.SubjectStats st = stats.get(dto.getId());
-            dto.setTeacherCount(st == null ? 0 : st.teachers());
+            dto.setTeacherCount(st == null ? 0 : st.teacherCount());
             dto.setClassCount(st == null ? 0 : st.classes());
             dto.setWeeklyLessons(st == null ? 0 : st.weeklyLessons());
+            if (st != null) {
+                dto.setTeachers(st.teachers());
+                dto.setQualityNow(st.qualityNow());
+                dto.setQualityPrev(st.qualityPrev());
+                dto.setAverageSpark(st.averageSpark());
+            }
         }
         return page;
     }
@@ -100,6 +116,7 @@ public class SubjectService {
         subject.setSchool(school);
         subject.setName(request.getName());
         subject.setColor(blankToNull(request.getColor()));
+        subject.setIcon(iconOf(request));
         subject.setActive(true);
         return toResponseDto(subjectRepository.save(subject));
     }
@@ -112,9 +129,13 @@ public class SubjectService {
 
         boolean renamed = !request.getName().equals(subject.getName());
         String color = blankToNull(request.getColor());
+        String icon = iconOf(request);
         if (!renamed) {
-            if (java.util.Objects.equals(color, subject.getColor())) return toResponseDto(subject);
+            if (java.util.Objects.equals(color, subject.getColor()) && java.util.Objects.equals(icon, subject.getIcon())) {
+                return toResponseDto(subject);
+            }
             subject.setColor(color);
+            subject.setIcon(icon);
             return toResponseDto(subjectRepository.save(subject));
         }
         botCache.evictAllClasses(); // the bot's cached timetables show subject names
@@ -127,6 +148,7 @@ public class SubjectService {
             subject.setSchool(school);
             subject.setName(request.getName());
             subject.setColor(color);
+            subject.setIcon(icon);
             return toResponseDto(subjectRepository.save(subject));
         }
 
@@ -135,6 +157,7 @@ public class SubjectService {
         renamedSubject.setSchool(school);
         renamedSubject.setName(request.getName());
         renamedSubject.setColor(color);
+        renamedSubject.setIcon(icon);
         renamedSubject.setActive(true);
         renamedSubject = subjectRepository.save(renamedSubject);
         lessonSlotRepository.moveSubject(id, renamedSubject.getId());
@@ -173,11 +196,18 @@ public class SubjectService {
         dto.setName(subject.getName());
         dto.setActive(subject.isActive());
         dto.setColor(subject.getColor());
+        dto.setIcon(subject.getIcon());
         if (subject.getSchool() != null) {
             dto.setSchoolId(subject.getSchool().getId());
             dto.setSchoolName(subject.getSchool().getName());
         }
         return dto;
+    }
+
+    /** A Material icon name: letters, digits and "_" only (it ends up in a class name). */
+    private static String iconOf(SubjectRequestDto r) {
+        String icon = r.getIcon() == null ? null : r.getIcon().strip();
+        return icon == null || !icon.matches("[a-z0-9_]{1,40}") ? null : icon;
     }
 
     private static String blankToNull(String s) {

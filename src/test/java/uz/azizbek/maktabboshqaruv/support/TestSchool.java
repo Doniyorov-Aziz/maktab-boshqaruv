@@ -133,6 +133,7 @@ public class TestSchool {
         jdbc.update("delete from lesson_slot where class_id in (" + classes + ")");
         jdbc.update("delete from students where class_id in (" + classes + ")");
         jdbc.update("delete from school_class where academic_year_id in (select id from academic_year where school_id = ?)", s);
+        jdbc.update("delete from academic_term where academic_year_id in (select id from academic_year where school_id = ?)", s);
         jdbc.update("delete from academic_year where school_id = ?", s);
         jdbc.update("delete from calendar_event where school_id = ?", s); // events may name a room
         jdbc.update("delete from room where building_id in (select id from building where school_id = ?)", s);

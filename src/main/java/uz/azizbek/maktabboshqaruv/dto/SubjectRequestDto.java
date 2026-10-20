@@ -38,4 +38,15 @@ public class SubjectRequestDto {
     public void setName(String name) {
         this.name = name;
     }
+
+    /** Material icon name; null = the page suggests one from the name. */
+    private String icon;
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
 }

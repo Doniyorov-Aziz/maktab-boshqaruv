@@ -25,9 +25,10 @@ public class SubjectController {
     @GetMapping
     public Page<SubjectResponseDto> getAllSubjects(@RequestParam Long schoolId,
                                                    @RequestParam(defaultValue = "false") boolean includeInactive,
+                                                   @RequestParam(required = false) String status,
                                                    @RequestParam(required = false) String q,
                                                    Pageable pageable) {
-        return subjectService.getAllSubjects(schoolId, includeInactive, q, pageable);
+        return subjectService.getAllSubjects(schoolId, includeInactive, status, q, pageable);
     }
 
     /** The tab counts: active and retired subjects. */

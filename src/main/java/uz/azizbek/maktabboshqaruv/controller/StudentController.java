@@ -26,8 +26,11 @@ public class StudentController {
     public Page<StudentResponseDto> getAllStudents(@RequestParam Long schoolId,
                                                    @RequestParam(required = false) Long schoolClassId,
                                                    @RequestParam(required = false) String q,
+                                                   @RequestParam(defaultValue = "false") boolean atRisk,
+                                                   @RequestParam(required = false) Boolean telegram,
+                                                   @RequestParam(defaultValue = "false") boolean birthday,
                                                    Pageable pageable) {
-        return studentService.getAllStudents(schoolId, schoolClassId, q, pageable);
+        return studentService.getAllStudents(schoolId, schoolClassId, q, atRisk, telegram, birthday, pageable);
     }
 
     /** The filter chips' numbers: students per class and per Telegram link. */

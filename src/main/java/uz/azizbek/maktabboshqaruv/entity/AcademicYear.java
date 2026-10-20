@@ -22,6 +22,18 @@ public class AcademicYear {
     @Column(nullable = false)
     private LocalDate endDate;
 
+    /** The school's current year ("Joriy yil"): at most one per school, set on the O'quv yillari page. */
+    @Column(name = "is_current")
+    private Boolean current;
+
+    public boolean isCurrent() {
+        return Boolean.TRUE.equals(current);
+    }
+
+    public void setCurrent(boolean current) {
+        this.current = current;
+    }
+
     public Long getId() {
         return id;
     }

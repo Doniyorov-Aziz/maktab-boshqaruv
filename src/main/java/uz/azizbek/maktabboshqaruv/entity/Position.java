@@ -16,6 +16,33 @@ public class Position {
     @Column(nullable = false , unique = true)
     private String title;
 
+    @Column(length = 500)
+    private String description;
+
+    /**
+     * The system role a new user of an employee in this position is offered (Foydalanuvchilar form);
+     * a suggestion only, the admin decides.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "default_role", length = 16)
+    private Role defaultRole;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Role getDefaultRole() {
+        return defaultRole;
+    }
+
+    public void setDefaultRole(Role defaultRole) {
+        this.defaultRole = defaultRole;
+    }
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdDate;

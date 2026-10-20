@@ -27,8 +27,9 @@ public class EmployeeController {
                                                      @RequestParam(required = false) Long positionId,
                                                      @RequestParam(required = false) uz.azizbek.maktabboshqaruv.entity.EmployeeStatus status,
                                                      @RequestParam(required = false) String q,
+                                                     @RequestParam(defaultValue = "false") boolean classTeacher,
                                                      Pageable pageable) {
-        return employeeService.getAllEmployees(schoolId, positionId, status, q, pageable);
+        return employeeService.getAllEmployees(schoolId, positionId, status, q, classTeacher, pageable);
     }
 
     /** The filter chips' numbers: employees per status and per position. */

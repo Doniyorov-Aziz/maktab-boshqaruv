@@ -24,10 +24,12 @@ public interface SubjectRepository extends JpaRepository<Subject, Long> {
     @org.springframework.data.jpa.repository.Query("""
             select s from Subject s where s.school.id = :schoolId
               and (:includeInactive = true or s.active is null or s.active = true)
+              and (:onlyInactive = false or s.active = false)
               and (:q is null or lower(s.name) like :q)
             """)
     Page<Subject> search(@org.springframework.data.repository.query.Param("schoolId") Long schoolId,
                          @org.springframework.data.repository.query.Param("includeInactive") boolean includeInactive,
+                         @org.springframework.data.repository.query.Param("onlyInactive") boolean onlyInactive,
                          @org.springframework.data.repository.query.Param("q") String q,
                          Pageable pageable);
 

@@ -18,6 +18,37 @@ public class AcademicYearController {
     @Autowired
     private AcademicYearService academicYearService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    @PostMapping("/{id}/current")
+    public AcademicYearResponseDto makeCurrent(@PathVariable Long id) {
+        return academicYearService.makeCurrent(id);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/{id}/terms")
+    public java.util.List<AcademicYearService.Term> terms(@PathVariable Long id) {
+        return academicYearService.terms(id);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    @PutMapping("/{id}/terms")
+    public java.util.List<AcademicYearService.Term> saveTerms(@PathVariable Long id,
+                                                              @RequestBody java.util.List<AcademicYearService.Term> terms) {
+        return academicYearService.saveTerms(id, terms);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/next")
+    public AcademicYearService.NextYear nextTemplate(@RequestParam Long schoolId) {
+        return academicYearService.nextTemplate(schoolId);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR')")
+    @PostMapping("/next")
+    public AcademicYearResponseDto createNext(@RequestParam Long schoolId, @RequestBody AcademicYearService.NextYear next) {
+        return academicYearService.createNext(schoolId, next);
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
     @GetMapping
     public Page<AcademicYearResponseDto> getAllAcademicYears(@RequestParam Long schoolId,
