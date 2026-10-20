@@ -42,15 +42,35 @@ public class BuildingService {
     @Autowired
     private LessonSlotRepository lessonSlotRepository;
 
+    @Autowired
+    private BuildingStatsService buildingStats;
+
     public Page<BuildingResponseDto> getAllBuildings(Long schoolId, Pageable pageable) {
-        return buildingRepository.findBySchoolId(schoolId, pageable)
+        Page<BuildingResponseDto> page = buildingRepository.findBySchoolId(schoolId, pageable)
                 .map(this::toResponseDto);
+        withStats(page.getContent());
+        return page;
+    }
+
+    /** Weekly occupancy, rooms busy now, floors and room types — one batch for the page. */
+    private void withStats(List<BuildingResponseDto> dtos) {
+        if (buildingStats == null || dtos.isEmpty()) return;
+        Map<Long, BuildingStatsService.Stats> stats = buildingStats.stats(dtos.stream().map(BuildingResponseDto::getId).toList());
+        for (BuildingResponseDto dto : dtos) {
+            BuildingStatsService.Stats st = stats.get(dto.getId());
+            if (st == null) continue;
+            dto.setStats(st);
+            dto.setOccupiedPercentage(st.weeklyOccupancy() == null ? 0.0 : st.weeklyOccupancy());
+            dto.setFloorCount(Math.max(st.floorCount(), 1));
+        }
     }
 
     public BuildingResponseDto getBuildingById(Long id) {
         Building building = buildingRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bunday bino topilmadi: " + id));
-        return toResponseDto(building);
+        BuildingResponseDto dto = toResponseDto(building);
+        withStats(List.of(dto));
+        return dto;
     }
 
     @Transactional
@@ -101,7 +121,8 @@ public class BuildingService {
         dto.setFloorCount(rooms.stream().map(Room::getFloor).filter(f -> f != null)
                 .max(Integer::compareTo).orElse(1));
 
-        if (!rooms.isEmpty()) {
+        // without the stats service (unit tests) — the share of rooms with a lesson right now
+        if (!rooms.isEmpty() && buildingStats == null) {
             LocalDate today = LocalDate.now();
             String weekday = WEEKDAY_NAMES.get(today.getDayOfWeek());
             long occupied = 0;

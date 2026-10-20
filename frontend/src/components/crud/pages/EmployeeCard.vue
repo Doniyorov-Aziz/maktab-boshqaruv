@@ -10,7 +10,12 @@
     <header class="ec__head">
       <AvatarInitials :name="row.fullName" :id="row.id" size="md" gradient />
       <div class="ec__titles">
-        <b class="ec__name">{{ row.fullName }}</b>
+        <b class="ec__name"
+          >{{ row.fullName
+          }}<q-tooltip v-if="String(row.fullName || '').length > 28">{{
+            row.fullName
+          }}</q-tooltip></b
+        >
         <small>{{ row.positionTitle }}</small>
       </div>
       <!-- lessons a week against the norm, as a small ring -->
@@ -128,10 +133,13 @@ function hash(name) {
 }
 
 .ec__name {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   font-size: var(--text-md);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .ec__titles small {

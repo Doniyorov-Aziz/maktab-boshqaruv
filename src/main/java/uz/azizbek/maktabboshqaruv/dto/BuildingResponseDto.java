@@ -9,6 +9,16 @@ public class BuildingResponseDto {
     private Integer floorCount;
     private Long roomCount;
     private Double occupiedPercentage;
+    /** Weekly occupancy, rooms busy now, floors with rooms, room types (BuildingStatsService). */
+    private uz.azizbek.maktabboshqaruv.service.BuildingStatsService.Stats stats;
+
+    public uz.azizbek.maktabboshqaruv.service.BuildingStatsService.Stats getStats() {
+        return stats;
+    }
+
+    public void setStats(uz.azizbek.maktabboshqaruv.service.BuildingStatsService.Stats stats) {
+        this.stats = stats;
+    }
 
     public Long getId() {
         return id;

@@ -21,6 +21,18 @@ public class School {
     @Column(nullable = false)
     private String address;
 
+    /** The card's banner colour (#RRGGBB); none — a colour of the palette picked by the id. */
+    @Column(length = 16)
+    private String color;
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdDate;

@@ -148,6 +148,14 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    // the year of today for the demo schools (2026-2027 on 20.10.2026), only while demo mode is on
+    @org.springframework.beans.factory.annotation.Autowired
+    private CurrentYearSeeder currentYearSeeder;
+    @org.springframework.beans.factory.annotation.Autowired
+    private uz.azizbek.maktabboshqaruv.service.attendance.DemoMode demoMode;
+    @org.springframework.beans.factory.annotation.Autowired
+    private java.time.Clock clock;
+
     private final Random random = new Random(20250928L);
     private int phoneSequence = 930_000_000;
 
@@ -335,6 +343,9 @@ public class DataSeeder implements CommandLineRunner {
         findOrCreateAcademicYear(school, "2024-2025", LocalDate.of(2024, 9, 2), LocalDate.of(2025, 5, 30));
         infra.currentYear = findOrCreateAcademicYear(school, "2025-2026",
                 LocalDate.of(2025, 9, 1), LocalDate.of(2026, 5, 29));
+        if (demoMode != null && demoMode.enabled()) {
+            currentYearSeeder.ensure(school, LocalDate.now(clock)).ifPresent(y -> infra.currentYear = y);
+        }
 
         return infra;
     }

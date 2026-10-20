@@ -33,15 +33,24 @@ public class SchoolService {
     @Autowired
     private SchoolAccessService access;
 
+    @Autowired(required = false)
+    private uz.azizbek.maktabboshqaruv.service.pages.SchoolStatsService schoolStats;
+
     /** A user of one school sees only that school; a user without a school sees all. */
     public Page<SchoolResponseDto> getAllSchools(Pageable pageable) {
         Long own = access.caller().schoolId();
         if (own != null) {
             java.util.List<SchoolResponseDto> one = schoolRepository.findById(own).map(this::toResponseDto).stream().toList();
+            one.forEach(this::withCard);
             return new org.springframework.data.domain.PageImpl<>(one, pageable, one.size());
         }
-        return schoolRepository.findAll(pageable)
-                .map(this::toResponseDto);
+        Page<SchoolResponseDto> page = schoolRepository.findAll(pageable).map(this::toResponseDto);
+        page.getContent().forEach(this::withCard);
+        return page;
+    }
+
+    private void withCard(SchoolResponseDto dto) {
+        if (schoolStats != null) dto.setCard(schoolStats.card(dto.getId()));
     }
 
     public SchoolResponseDto getSchoolById(Long id) {
@@ -56,6 +65,7 @@ public class SchoolService {
         School school = new School();
         school.setName(request.getName());
         school.setAddress(request.getAddress());
+        school.setColor(blankToNull(request.getColor()));
 
         School saved = schoolRepository.save(school);
         return toResponseDto(saved);
@@ -70,6 +80,7 @@ public class SchoolService {
 
         school.setName(request.getName());
         school.setAddress(request.getAddress());
+        school.setColor(blankToNull(request.getColor()));
 
         School updated = schoolRepository.save(school);
         return toResponseDto(updated);
@@ -90,10 +101,15 @@ public class SchoolService {
         dto.setId(school.getId());
         dto.setName(school.getName());
         dto.setAddress(school.getAddress());
+        dto.setColor(school.getColor());
         dto.setStudentCount(studentRepository.countBySchoolClassAcademicYearSchoolId(school.getId()));
         dto.setTeacherCount(employeeRepository.countBySchoolId(school.getId()));
         dto.setClassCount(schoolClassRepository.countByAcademicYearSchoolId(school.getId()));
         return dto;
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.strip();
     }
 
 }

@@ -215,7 +215,7 @@ public class AcademicYearService {
     }
 
     /** Uzbekistan's usual school calendar: 2 September – 25 May, four quarters and three vacations. */
-    static NextYear usualCalendar(int y) {
+    public static NextYear usualCalendar(int y) {
         List<Term> t = List.of(
                 new Term(null, "1-chorak", "QUARTER", LocalDate.of(y, 9, 2), LocalDate.of(y, 11, 2)),
                 new Term(null, "Kuzgi ta'til", "VACATION", LocalDate.of(y, 11, 3), LocalDate.of(y, 11, 9)),

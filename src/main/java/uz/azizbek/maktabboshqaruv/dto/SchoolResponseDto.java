@@ -7,6 +7,25 @@ public class SchoolResponseDto {
     private Long studentCount;
     private Long teacherCount;
     private Long classCount;
+    private String color;
+    /** The card's numbers: teachers, today's attendance, quality, Telegram, director, 30-day run. */
+    private uz.azizbek.maktabboshqaruv.service.pages.SchoolStatsService.SchoolCard card;
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public uz.azizbek.maktabboshqaruv.service.pages.SchoolStatsService.SchoolCard getCard() {
+        return card;
+    }
+
+    public void setCard(uz.azizbek.maktabboshqaruv.service.pages.SchoolStatsService.SchoolCard card) {
+        this.card = card;
+    }
 
     public Long getId() {
         return id;

@@ -195,8 +195,9 @@ test('class picker filter: a class → only its students, the number matches the
   await expect
     .poll(() => lastQuery(context, '/api/students').get('schoolClassId'))
     .toBe(String(cls.id))
-  await expect(page.locator('[data-page-range]')).toContainText(
-    `/ ${facet.count}`
+  // a single page has no pager: the number is in the subtitle
+  await expect(page.locator('[data-crud-subtitle]')).toContainText(
+    `${facet.count} ta`
   )
   for (const t of await page
     .locator('tbody .cc-person .cc-person__sub')
@@ -221,8 +222,9 @@ test('chip filters show their numbers; × tozalash clears them', async ({
   await expect(chip).toContainText(String(pos.count))
   await chip.click()
   await expect(chip).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('[data-page-range]')).toContainText(
-    `/ ${pos.count}`
+  // a single page has no pager: the number is in the subtitle
+  await expect(page.locator('[data-crud-subtitle]')).toContainText(
+    `${pos.count} ta`
   )
   await page.locator('[data-filters-clear]').click()
   await expect(chip).toHaveAttribute('aria-pressed', 'false')

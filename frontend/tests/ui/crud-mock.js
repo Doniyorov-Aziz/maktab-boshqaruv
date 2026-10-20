@@ -140,10 +140,19 @@ export async function mockContext(
   context.requests = []
   context.overrides = {}
   // the test database has no school year around today: a synthetic one (the usual calendar)
-  if (currentYear)
+  if (currentYear) {
     context.overrides['GET /api/pages/lists/years'] = {
       body: [syntheticYear(), ...(fixtures()['/api/pages/lists/years'] || [])]
     }
+    const pageFix = fixtures()['/api/pages/lists/years-page']
+    if (!pageFix?.years?.some(y => y.status === 'CURRENT'))
+      context.overrides['GET /api/pages/lists/years-page'] = {
+        body: {
+          years: [syntheticYear(), ...(pageFix?.years || [])],
+          missing: null
+        }
+      }
+  }
   await context.route('**/api/**', async route => {
     const req = route.request()
     const url = new URL(req.url())
@@ -236,6 +245,12 @@ export function syntheticYear() {
     students: 511,
     attendance: 96.2,
     quality: 68.4,
+    mastery: 97.1,
+    hasData: true,
+    attendanceRun: [95.1, 96.4, 94.8, 96.9, 97.2, 96.2],
+    qualityRun: [64.2, 66.0, 69.1, 67.5, 70.2, 68.4],
+    daysToStart: 0,
+    dayProgress: 18,
     terms: [
       t('1-chorak', 'QUARTER', `${y0}-09-02`, `${y0}-11-02`),
       t("Kuzgi ta'til", 'VACATION', `${y0}-11-03`, `${y0}-11-09`),

@@ -651,7 +651,27 @@ public class HomeDashboardService {
             if (g == null) continue;
             out.add(new Signal(kind, g.level(), g.title(), g.total(), g.items()));
         }
+        Signal year = missingYear(schoolId);
+        if (year != null) out.add(0, year);
         return out;
+    }
+
+    /**
+     * No school year holds today (outside the summer): attendance and grades have no year to belong
+     * to. Shown first, as one row that leads to O'quv yillari where the year is created.
+     */
+    Signal missingYear(long schoolId) {
+        LocalDate today = today();
+        if (today.getMonthValue() >= 6 && today.getMonthValue() <= 8) return null;
+        Long n = jdbc.queryForObject("""
+                select count(*) from academic_year where school_id = :s and :d between start_date and end_date""",
+                p(schoolId).addValue("d", today), Long.class);
+        if (n != null && n > 0) return null;
+        int y = today.getMonthValue() >= 7 ? today.getYear() : today.getYear() - 1;
+        String title = y + "–" + (y + 1);
+        AttentionItem item = new AttentionItem("NO_CURRENT_YEAR", "HIGH", title + " o'quv yili kiritilmagan",
+                "Bugungi sana hech qaysi o'quv yiliga tushmaydi", null, Map.of("title", title));
+        return new Signal("NO_CURRENT_YEAR", "HIGH", "Joriy o'quv yili kiritilmagan", 1, List.of(item));
     }
 
     // ------------------------------------------------------------------ 6.7 subjects

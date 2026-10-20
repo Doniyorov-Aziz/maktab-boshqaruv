@@ -16,7 +16,12 @@
         :text-color="color"
       />
       <div class="sc__titles">
-        <b class="sc__name">{{ row.name }}</b>
+        <b class="sc__name"
+          >{{ row.name
+          }}<q-tooltip v-if="String(row.name || '').length > 28">{{
+            row.name
+          }}</q-tooltip></b
+        >
         <small
           >{{ row.weeklyLessons ?? 0 }} soat / hafta ·
           {{ row.classCount ?? 0 }} sinf</small
@@ -170,10 +175,13 @@ const qualityTone = computed(() => {
 }
 
 .sc__name {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   font-size: var(--text-md);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .sc__titles small,

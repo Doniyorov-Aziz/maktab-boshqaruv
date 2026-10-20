@@ -23,7 +23,9 @@ import {
   termOn,
   moveEdge,
   isoPlus,
-  daysBetween
+  daysBetween,
+  termLine,
+  termProblems
 } from '../../src/components/crud/pages/years.js'
 import {
   suggestSubjectIcon,
@@ -217,4 +219,51 @@ test('dragging a term edge stays inside the year, off its neighbours, before its
   expect(moveEdge(shuffled, 1, 'endDate', '2026-12-01', year)).toBe(
     '2026-11-02'
   )
+})
+
+test("years: the line under the current year's bar, and the terms' checks", () => {
+  const terms = [
+    {
+      name: '1-chorak',
+      kind: 'QUARTER',
+      startDate: '2026-09-02',
+      endDate: '2026-11-02'
+    },
+    {
+      name: "Kuzgi ta'til",
+      kind: 'VACATION',
+      startDate: '2026-11-03',
+      endDate: '2026-11-09'
+    },
+    {
+      name: '2-chorak',
+      kind: 'QUARTER',
+      startDate: '2026-11-10',
+      endDate: '2026-12-28'
+    }
+  ]
+  expect(termLine(terms, '2026-10-20')).toBe(
+    "1-chorak · 79% o'tdi · kuzgi ta'tilgacha 14 kun"
+  )
+  expect(termLine(terms, '2026-11-05')).toBe(
+    "Kuzgi ta'til · 2-chorakkacha 5 kun"
+  )
+  expect(termLine(terms, '2026-08-20')).toBe('1-chorak boshlanishiga 13 kun')
+  const year = { startDate: '2026-09-02', endDate: '2027-05-31' }
+  expect(termProblems(terms, year)).toEqual([])
+  const bad = [
+    { ...terms[0], endDate: '2026-11-05' },
+    terms[1],
+    { name: '', kind: 'QUARTER', startDate: '2026-11-10', endDate: null },
+    {
+      name: '9-chorak',
+      kind: 'QUARTER',
+      startDate: '2027-05-20',
+      endDate: '2027-06-10'
+    }
+  ]
+  const p = termProblems(bad, year)
+  expect(p).toContain("«1-chorak» va «Kuzgi ta'til» ustma-ust tushadi")
+  expect(p).toContain("«Nomsiz»: nomi va ikkala sanasi bo'lishi kerak")
+  expect(p).toContain("«9-chorak» o'quv yili ichida bo'lishi kerak")
 })

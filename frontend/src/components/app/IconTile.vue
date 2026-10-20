@@ -10,7 +10,7 @@
 
 <script setup>
 // A coloured square with an icon — page headers, stat cards, list rows.
-// Three sizes only: 32 / 40 / 48 px; radius --radius-sm (48: --radius-md).
+// Four sizes only: 32 / 40 / 48 px, and 64 on a hero card's banner; radius --radius-sm (48: --radius-md, 64: --radius-lg).
 //   <IconTile icon="school" size="48" color="var(--brand-gradient)" />
 //   <IconTile icon="event" size="32" color="rgba(16, 185, 129, 0.12)" text-color="var(--color-success)" />
 import { computed } from 'vue'
@@ -20,7 +20,7 @@ const props = defineProps({
   size: {
     type: [String, Number],
     default: '40',
-    validator: v => ['32', '40', '48'].includes(String(v))
+    validator: v => ['32', '40', '48', '64'].includes(String(v))
   },
   // background: any CSS colour or gradient; default is the brand gradient
   color: { type: String, default: '' },
@@ -57,5 +57,12 @@ const fg = computed(() => props.textColor || 'white')
   height: var(--tile-lg);
   border-radius: var(--radius-md);
   font-size: var(--text-xl);
+}
+
+.icon-tile--64 {
+  width: var(--tile-xl);
+  height: var(--tile-xl);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-2xl);
 }
 </style>

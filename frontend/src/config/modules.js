@@ -12,6 +12,10 @@ import StudentDetail from '@/components/crud/pages/StudentDetail.vue'
 import PositionCard from '@/components/crud/pages/PositionCard.vue'
 import EmployeeCard from '@/components/crud/pages/EmployeeCard.vue'
 import EmployeeDetail from '@/components/crud/pages/EmployeeDetail.vue'
+import SchoolCard from '@/components/crud/pages/SchoolCard.vue'
+import BuildingCard from '@/components/crud/pages/BuildingCard.vue'
+import SchoolsCompare from '@/components/crud/pages/SchoolsCompare.vue'
+import { roomTypeLabels, roomTypeColors } from './roomTypes'
 
 const dateFormat = val => (val ? formatDate(val) : '')
 
@@ -133,24 +137,8 @@ function placeFields(prefix, label) {
   ]
 }
 
-export const roomTypeLabels = {
-  CLASSROOM: 'Sinfxona',
-  LAB: 'Laboratoriya',
-  COMPUTER_LAB: 'Kompyuter xonasi',
-  GYM: 'Sport zali',
-  ASSEMBLY_HALL: 'Faollar zali',
-  LIBRARY: 'Kutubxona',
-  OTHER: 'Boshqa'
-}
-const roomTypeColors = {
-  CLASSROOM: '#4f46e5',
-  LAB: '#f59e0b',
-  COMPUTER_LAB: '#0ea5e9',
-  GYM: '#10b981',
-  ASSEMBLY_HALL: '#db2777',
-  LIBRARY: '#ec4899',
-  OTHER: '#64748b'
-}
+export { roomTypeLabels }
+
 export const roomEquipmentLabels = {
   PROJECTOR: 'Proyektor',
   SMARTBOARD: 'Interaktiv doska',
@@ -180,6 +168,9 @@ export const modules = [
     schoolScoped: false,
     viewType: 'cards',
     cards: {
+      // up to six schools: big cards (banner, director, six numbers, 30-day run); two or more — compared
+      hero: markRaw(SchoolCard),
+      after: markRaw(SchoolsCompare),
       title: row => row.name,
       subtitle: row => row.address,
       badge: row =>
@@ -210,7 +201,15 @@ export const modules = [
     ],
     fields: [
       { key: 'name', label: 'Nomi', type: 'text', required: true },
-      { key: 'address', label: 'Manzil', type: 'text', required: true }
+      { key: 'address', label: 'Manzil', type: 'text', required: true },
+      {
+        key: 'color',
+        label: 'Kartochka rangi',
+        type: 'color',
+        required: false,
+        palette: SUBJECT_COLOR_OPTIONS.filter(o => o.value),
+        hint: 'Avtomatik — maktab raqamidan 12 rangdan biri'
+      }
     ]
   },
   {
@@ -223,12 +222,21 @@ export const modules = [
     schoolScoped: true,
     viewType: 'cards',
     cards: {
+      // up to six buildings: big cards with the building drawn, occupancy, room types
+      hero: markRaw(BuildingCard),
       title: row => row.name,
       subtitle: row => row.schoolName,
       stats: row => [
         { label: 'Qavat', value: row.floorCount ?? 1 },
         { label: 'Xona', value: row.roomCount ?? 0 },
-        { label: 'Band', value: `${row.occupiedPercentage ?? 0}%` }
+        {
+          label: 'Haftalik bandlik',
+          value: `${row.stats?.weeklyOccupancy ?? row.occupiedPercentage ?? 0}%`
+        },
+        {
+          label: 'Hozir band',
+          value: `${row.stats?.busyNow ?? 0} / ${row.stats?.activeRooms ?? row.roomCount ?? 0}`
+        }
       ]
     },
     columns: [
@@ -378,6 +386,12 @@ export const modules = [
     // year cards (status, terms bar, "Bugun", numbers) instead of a table; terms in the panel
     viewComponent: markRaw(YearsView),
     detailComponent: markRaw(YearDetail),
+    // a secondary button in the page header, run by YearsView
+    headerAction: {
+      key: 'openNext',
+      label: 'Keyingi yilni yaratish',
+      icon: 'event_repeat'
+    },
     detailWide: true,
     columns: [
       { name: 'id', label: 'ID', field: 'id', sortable: true, align: 'left' },

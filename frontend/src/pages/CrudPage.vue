@@ -36,6 +36,25 @@
           <kbd v-if="!search" class="crud-kbd" title="Qidiruvga o'tish">/</kbd>
         </template>
       </AppInput>
+      <!-- 1.4 table / cards: in the header, next to the search -->
+      <SegTabs
+        v-if="canCards && !module.viewComponent"
+        :model-value="view"
+        label="Ko'rinish"
+        :options="VIEWS"
+        class="crud-view-switch"
+        data-view-switch
+        @update:model-value="setView"
+      />
+      <!-- a page's own secondary action, run by its view (O'quv yillari: "Keyingi yilni yaratish") -->
+      <AppButton
+        v-if="module.headerAction && canCreate"
+        variant="secondary"
+        :icon="module.headerAction.icon"
+        :label="module.headerAction.label"
+        :data-header-action="module.headerAction.key"
+        @click="viewEl?.[module.headerAction.key]?.()"
+      />
       <AppButton
         variant="secondary"
         icon="file_download"
@@ -104,18 +123,15 @@
         />
       </div>
 
-      <!-- 1.3 filters, 1.4 view, density, columns -->
+      <!-- 1.3 filters, density, columns: no filters and no tabs — no panel, only the table's tools -->
       <section
         v-if="
-          !module.viewComponent && (hasFilters || canCards || view === 'table')
+          !module.viewComponent &&
+          (hasFilters || module.tabs || view === 'table')
         "
         class="crud-bar"
-        :class="
-          hasFilters || canCards || module.tabs
-            ? 'dash-card'
-            : 'crud-bar--plain'
-        "
-        data-crud-bar
+        :class="hasFilters || module.tabs ? 'dash-card' : 'crud-bar--plain'"
+        :data-crud-bar="hasFilters || module.tabs ? 'filters' : 'plain'"
       >
         <SegTabs
           v-if="module.tabs"
@@ -141,14 +157,6 @@
           @clear="clearFilters"
         />
         <div class="crud-bar__tools">
-          <SegTabs
-            v-if="canCards"
-            :model-value="view"
-            label="Ko'rinish"
-            :options="VIEWS"
-            data-view-switch
-            @update:model-value="setView"
-          />
           <template v-if="view === 'table'">
             <SegTabs
               :model-value="density"
@@ -315,8 +323,20 @@
           />
         </section>
 
-        <!-- pager -->
-        <nav class="crud-pager" aria-label="Sahifalar" data-crud-pager>
+        <!-- a module's chart under its list (Maktablar: the schools compared) -->
+        <component
+          :is="module.cards.after"
+          v-if="module.cards?.after"
+          :rows="rows"
+        />
+
+        <!-- pager: only when there is more than one page -->
+        <nav
+          v-if="pages > 1"
+          class="crud-pager"
+          aria-label="Sahifalar"
+          data-crud-pager
+        >
           <span class="crud-pager__size">
             Sahifada
             <AppSelect

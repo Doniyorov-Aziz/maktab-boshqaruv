@@ -67,9 +67,23 @@ public class ListPagesService {
     public record Term(Long id, String name, String kind, LocalDate startDate, LocalDate endDate) {
     }
 
+    /**
+     * A school year as the page draws it. The status comes from the dates (today inside — CURRENT, after
+     * it — FINISHED, before it — PLANNED); the "Joriy" flag only picks one when two years hold today.
+     * Attendance, quality and mastery count every record of the school dated inside the year (none —
+     * {@code hasData} false); the runs are weekly, the last 12 weeks of the year so far.
+     */
     public record YearCard(long id, String title, LocalDate startDate, LocalDate endDate, boolean current, String status,
                            int workDays, int passedDays, int leftDays, Double progress, int classes, int students,
-                           Double attendance, Double quality, List<Term> terms) {
+                           Double attendance, Double quality, List<Term> terms, Double mastery, boolean hasData,
+                           List<Double> attendanceRun, List<Double> qualityRun, int daysToStart, int dayProgress) {
+    }
+
+    /** The year of today is missing: what the page offers to create (the usual calendar of that year). */
+    public record MissingYear(String title, LocalDate startDate, LocalDate endDate, List<Term> terms) {
+    }
+
+    public record YearsPage(List<YearCard> years, MissingYear missing) {
     }
 
     public record MoveResult(int moved, String className) {
@@ -310,41 +324,102 @@ public class ListPagesService {
     // ------------------------------------------------------------------ O'quv yillari
 
     /**
-     * Every year of the school, newest first: status (CURRENT — the flagged one, or the one today is
-     * in when none is flagged; FINISHED; PLANNED; ACTIVE), school days in it, passed and left (for the
-     * current), classes and students, attendance and quality over its days so far, and its terms.
+     * Every year of the school, newest first, and — when no year holds today — the year to create.
+     * Status by date (see {@link YearCard}); school days in it, passed and left; classes and students
+     * (the year's own classes, or for a year whose classes moved on — those with records in its dates);
+     * attendance, quality (4–5) and mastery (3–5) over its dates with weekly runs; and its terms.
      */
+    @Transactional(readOnly = true)
+    public YearsPage yearsPage(long schoolId) {
+        List<YearCard> list = years(schoolId);
+        LocalDate today = today();
+        boolean covered = list.stream().anyMatch(y -> "CURRENT".equals(y.status()));
+        if (covered) return new YearsPage(list, null);
+        int y = today.getMonthValue() >= 7 ? today.getYear() : today.getYear() - 1;
+        var usual = uz.azizbek.maktabboshqaruv.service.AcademicYearService.usualCalendar(y);
+        LocalDate start = usual.startDate();
+        LocalDate end = LocalDate.of(y + 1, 5, 31);
+        // a year that already takes some of those days moves the proposal to start after it
+        for (YearCard c : list) {
+            if (!start.isAfter(c.endDate()) && !end.isBefore(c.startDate())) start = c.endDate().plusDays(1);
+        }
+        LocalDate from = start;
+        List<Term> t = usual.terms().stream().filter(x -> !x.startDate().isBefore(from))
+                .map(x -> new Term(null, x.name(), x.kind(), x.startDate(), x.endDate())).toList();
+        // in summer (June–August) today belongs to no year: nothing is missing, the next one is "Rejalashtirilgan"
+        boolean summer = today.getMonthValue() >= 6 && today.getMonthValue() <= 8;
+        if (summer || !start.isBefore(end)) return new YearsPage(list, null);
+        return new YearsPage(list, new MissingYear(usual.title(), start, end, t));
+    }
+
     @Transactional(readOnly = true)
     public List<YearCard> years(long schoolId) {
         List<AcademicYear> list = years.findBySchoolIdOrderByStartDateDesc(schoolId);
         if (list.isEmpty()) return List.of();
         LocalDate today = today();
-        boolean anyFlagged = list.stream().anyMatch(AcademicYear::isCurrent);
         Map<Long, ListStatsService.YearStats> counts = stats.years(schoolId);
         Map<Long, List<Term>> byYear = new HashMap<>();
         for (AcademicTerm t : terms.findByYears(list.stream().map(AcademicYear::getId).toList())) {
             byYear.computeIfAbsent(t.getAcademicYear().getId(), k -> new ArrayList<>())
                     .add(new Term(t.getId(), t.getName(), t.getKind().name(), t.getStartDate(), t.getEndDate()));
         }
-        Map<Long, double[]> att = new HashMap<>();
+        // every attendance record of the school's classes dated inside the year, whatever year the class is in
+        Map<Long, long[]> att = new HashMap<>();
+        Map<Long, TreeMap<LocalDate, long[]>> attWeeks = new HashMap<>();
         for (Map<String, Object> r : jdbc.queryForList("""
-                select y.id, count(*) filter (where a.status in ('PRESENT', 'LATE')) as came,
+                select y.id, date_trunc('week', a.record_date)::date as wk,
+                       count(*) filter (where a.status in ('PRESENT', 'LATE')) as came,
                        count(*) filter (where a.status in ('PRESENT', 'LATE', 'ABSENT')) as counted
-                  from academic_year y join school_class c on c.academic_year_id = y.id
-                  join lesson_slot ls on ls.class_id = c.id
-                  join attendance a on a.lesson_slot_id = ls.id and a.record_date between y.start_date and y.end_date
-                 where y.school_id = :s group by y.id""", p(schoolId))) {
-            att.put(l(r.get("id")), new double[]{l(r.get("came")), l(r.get("counted"))});
+                  from academic_year y
+                  join attendance a on a.record_date between y.start_date and y.end_date
+                  join lesson_slot ls on ls.id = a.lesson_slot_id
+                  join school_class c on c.id = ls.class_id
+                  join academic_year cy on cy.id = c.academic_year_id and cy.school_id = y.school_id
+                 where y.school_id = :s group by y.id, wk""", p(schoolId))) {
+            long id = l(r.get("id"));
+            long[] v = {l(r.get("came")), l(r.get("counted"))};
+            long[] sum = att.computeIfAbsent(id, k -> new long[2]);
+            sum[0] += v[0];
+            sum[1] += v[1];
+            attWeeks.computeIfAbsent(id, k -> new TreeMap<>()).put(toDate(r.get("wk")), v);
         }
-        Map<Long, double[]> qual = new HashMap<>();
+        Map<Long, long[]> qual = new HashMap<>();
+        Map<Long, TreeMap<LocalDate, long[]>> qualWeeks = new HashMap<>();
         for (Map<String, Object> r : jdbc.queryForList("""
-                select y.id, count(*) filter (where g.score >= 4) as good, count(*) as n
-                  from academic_year y join school_class c on c.academic_year_id = y.id
-                  join students st on st.class_id = c.id
-                  join grade g on g.student_id = st.id and g.grade_date between y.start_date and y.end_date
-                 where y.school_id = :s group by y.id""", p(schoolId))) {
-            qual.put(l(r.get("id")), new double[]{l(r.get("good")), l(r.get("n"))});
+                select y.id, date_trunc('week', g.grade_date)::date as wk,
+                       count(*) filter (where g.score >= 4) as good, count(*) filter (where g.score >= 3) as passed,
+                       count(*) as n
+                  from academic_year y
+                  join grade g on g.grade_date between y.start_date and y.end_date
+                  join students st on st.id = g.student_id
+                  join school_class c on c.id = st.class_id
+                  join academic_year cy on cy.id = c.academic_year_id and cy.school_id = y.school_id
+                 where y.school_id = :s group by y.id, wk""", p(schoolId))) {
+            long id = l(r.get("id"));
+            long[] v = {l(r.get("good")), l(r.get("passed")), l(r.get("n"))};
+            long[] sum = qual.computeIfAbsent(id, k -> new long[3]);
+            for (int k = 0; k < 3; k++) sum[k] += v[k];
+            qualWeeks.computeIfAbsent(id, k -> new TreeMap<>()).put(toDate(r.get("wk")), v);
         }
+        // a year whose classes have moved on: the classes and students its records name
+        Map<Long, int[]> seen = new HashMap<>();
+        for (Map<String, Object> r : jdbc.queryForList("""
+                select y.id, count(distinct ls.class_id) as classes, count(distinct a.student_id) as students
+                  from academic_year y
+                  join attendance a on a.record_date between y.start_date and y.end_date
+                  join lesson_slot ls on ls.id = a.lesson_slot_id
+                  join school_class c on c.id = ls.class_id
+                  join academic_year cy on cy.id = c.academic_year_id and cy.school_id = y.school_id
+                 where y.school_id = :s and not exists (select 1 from school_class oc where oc.academic_year_id = y.id)
+                 group by y.id""", p(schoolId))) {
+            seen.put(l(r.get("id")), new int[]{i(r.get("classes")), i(r.get("students"))});
+        }
+        // the one CURRENT: today inside its dates; of two such (old data), the flagged one, else the later
+        AcademicYear current = list.stream()
+                .filter(y -> !today.isBefore(y.getStartDate()) && !today.isAfter(y.getEndDate()))
+                .min(Comparator.comparing((AcademicYear y) -> !y.isCurrent()).thenComparing(AcademicYear::getStartDate,
+                        Comparator.reverseOrder()))
+                .orElse(null);
         LocalDate from = list.get(list.size() - 1).getStartDate();
         LocalDate to = list.get(0).getEndDate();
         Predicate<LocalDate> isSchool = schoolDays.predicate(schoolId, from, to);
@@ -357,18 +432,40 @@ public class ListPagesService {
                 work++;
                 if (!d.isAfter(today)) passed++;
             }
-            boolean inside = !today.isBefore(y.getStartDate()) && !today.isAfter(y.getEndDate());
-            String status = y.isCurrent() || (!anyFlagged && inside) ? "CURRENT"
+            String status = current != null && current.getId().equals(y.getId()) ? "CURRENT"
                     : today.isAfter(y.getEndDate()) ? "FINISHED" : today.isBefore(y.getStartDate()) ? "PLANNED" : "ACTIVE";
             ListStatsService.YearStats c = counts.get(y.getId());
-            double[] a = att.getOrDefault(y.getId(), new double[2]);
-            double[] q = qual.getOrDefault(y.getId(), new double[2]);
+            int classCount = c == null ? 0 : c.classes();
+            int studentCount = c == null ? 0 : c.students();
+            if (classCount == 0 && seen.containsKey(y.getId())) {
+                classCount = seen.get(y.getId())[0];
+                studentCount = seen.get(y.getId())[1];
+            }
+            long[] a = att.getOrDefault(y.getId(), new long[2]);
+            long[] q = qual.getOrDefault(y.getId(), new long[3]);
+            boolean hasData = a[1] > 0 || q[2] > 0;
+            long days = java.time.temporal.ChronoUnit.DAYS.between(y.getStartDate(), y.getEndDate()) + 1;
+            long gone = Math.max(0, Math.min(days, java.time.temporal.ChronoUnit.DAYS.between(y.getStartDate(), today) + 1));
             out.add(new YearCard(y.getId(), y.getTitle(), y.getStartDate(), y.getEndDate(), y.isCurrent(), status,
                     work, passed, work - passed, work == 0 ? null : round1(passed * 100.0 / work),
-                    c == null ? 0 : c.classes(), c == null ? 0 : c.students(),
-                    DashboardMetrics.pct((long) a[0], (long) a[1]), DashboardMetrics.pct((long) q[0], (long) q[1]),
-                    byYear.getOrDefault(y.getId(), List.of())));
+                    classCount, studentCount,
+                    DashboardMetrics.pct(a[0], a[1]), DashboardMetrics.pct(q[0], q[2]),
+                    byYear.getOrDefault(y.getId(), List.of()), DashboardMetrics.pct(q[1], q[2]), hasData,
+                    run(attWeeks.get(y.getId()), 0, 1), run(qualWeeks.get(y.getId()), 0, 2),
+                    today.isBefore(y.getStartDate()) ? (int) java.time.temporal.ChronoUnit.DAYS.between(today, y.getStartDate()) : 0,
+                    (int) Math.round(gone * 100.0 / days)));
         }
         return out;
+    }
+
+    /** The last 12 weekly rates (a share in %), oldest first. */
+    private static List<Double> run(TreeMap<LocalDate, long[]> weeks, int num, int den) {
+        if (weeks == null) return List.of();
+        List<Double> all = weeks.values().stream().map(v -> DashboardMetrics.pct(v[num], v[den])).toList();
+        return all.subList(Math.max(0, all.size() - 12), all.size());
+    }
+
+    private static LocalDate toDate(Object o) {
+        return o instanceof Date d ? d.toLocalDate() : LocalDate.parse(String.valueOf(o));
     }
 }

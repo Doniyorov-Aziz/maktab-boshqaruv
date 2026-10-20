@@ -38,3 +38,13 @@ export function roomLabel(room) {
   if (!room) return ''
   return /^\d+[a-zA-Z]?$/.test(String(room).trim()) ? `${room}-xona` : room
 }
+
+/** A sparkline's scale around its numbers (a few points of air, inside 0–100). */
+export function sparkRange(values, pad = 4) {
+  const v = (values || []).filter(x => typeof x === 'number')
+  if (!v.length) return { min: 0, max: 100 }
+  return {
+    min: Math.max(0, Math.floor(Math.min(...v) - pad)),
+    max: Math.min(100, Math.ceil(Math.max(...v) + pad))
+  }
+}

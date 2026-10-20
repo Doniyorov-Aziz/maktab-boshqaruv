@@ -17,7 +17,12 @@
         :text-color="look.color"
       />
       <div class="pc__titles">
-        <b class="pc__name">{{ row.title }}</b>
+        <b class="pc__name"
+          >{{ row.title
+          }}<q-tooltip v-if="String(row.title || '').length > 28">{{
+            row.title
+          }}</q-tooltip></b
+        >
         <span
           v-if="row.defaultRole"
           class="pc__role"

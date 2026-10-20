@@ -51,15 +51,20 @@ test.describe("O'quv yillari", () => {
     browser
   }) => {
     const { context, page } = await visit(browser, '/app/academic-years')
-    const y = fixtures()['/api/pages/lists/years'][0]
-    await page.locator(`[data-year-id="${y.id}"] [data-make-current]`).click()
+    // a year that is not the current one: the action is in its "⋯" menu
+    const y = fixtures()['/api/pages/lists/years'].find(
+      x => x.status !== 'CURRENT'
+    )
+    await page.locator(`[data-year-id="${y.id}"] [data-year-menu]`).click()
+    await page.locator('[data-menu-item="current"]').click()
     await expect
       .poll(
         () =>
           sent(context, 'POST', `/api/academic-years/${y.id}/current`).length
       )
       .toBe(1)
-    await page.locator('[data-next-year]').click()
+    // "Keyingi yilni yaratish" is the page header's secondary button
+    await page.locator('[data-header-action="openNext"]').click()
     const dlg = page.locator('[data-next-dialog]')
     await expect(dlg.locator('input').first()).toHaveValue(
       fixtures()['/api/academic-years/next'].title
@@ -289,7 +294,10 @@ test.describe('Xodimlar', () => {
     const leads = fixtures()['/api/employees'].content.filter(
       e => e.classTeacher
     ).length
-    await expect(page.locator('[data-page-range]')).toContainText(`/ ${leads}`)
+    // one page: no pager, the number is in the subtitle
+    await expect(page.locator('[data-crud-subtitle]')).toContainText(
+      `${leads} ta`
+    )
     await expect(page.locator('th[data-col="weeklyLessons"]')).toBeVisible()
     await expect(page.locator('th[data-col="journal7"]')).toBeVisible()
     await context.close()

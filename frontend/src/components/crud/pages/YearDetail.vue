@@ -150,6 +150,16 @@
           @click="usual"
         />
       </div>
+      <!-- the server's rules checked as you type: saving waits until the list is right -->
+      <ul
+        v-if="canEdit && problems.length"
+        class="yd__problems"
+        data-terms-problems
+      >
+        <li v-for="p in problems" :key="p">
+          <q-icon name="error_outline" /> {{ p }}
+        </li>
+      </ul>
       <div v-if="error" class="yd__error" data-terms-error>{{ error }}</div>
       <div v-if="canEdit" class="yd__save">
         <AppButton
@@ -157,7 +167,7 @@
           label="Choraklarni saqlash"
           :loading="saving"
           data-save-terms
-          :disable="loading"
+          :disable="loading || problems.length > 0"
           @click="save"
         />
       </div>
@@ -169,7 +179,7 @@
 // One school year in the side panel: its quarters and vacations, edited as a list and saved at
 // once (PUT /api/academic-years/{id}/terms — 409 when one leaves the year or two overlap, nothing
 // saved then). "Odatiy taqvim" fills Uzbekistan's usual four quarters and three vacations.
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
 import AppButton from '@/components/app/AppButton.vue'
@@ -179,7 +189,15 @@ import AppDateInput from '@/components/app/AppDateInput.vue'
 import IconTile from '@/components/app/IconTile.vue'
 import EmptyState from '@/components/pages/EmptyState.vue'
 import { formatDay } from '../crud'
-import { along, daysBetween, isoPlus, moveEdge } from './years'
+import {
+  along,
+  daysBetween,
+  isoPlus,
+  moveEdge,
+  termProblems,
+  quarterIndex,
+  QUARTER_COLORS
+} from './years'
 
 const props = defineProps({
   row: { type: Object, required: true },
@@ -196,6 +214,7 @@ const terms = ref([])
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
+const problems = computed(() => termProblems(terms.value, props.row))
 
 async function load() {
   loading.value = true
@@ -255,7 +274,12 @@ function segStyle(t) {
   if (!t.startDate || !t.endDate) return { display: 'none' }
   const left = along(props.row.startDate, props.row.endDate, t.startDate)
   const right = along(props.row.startDate, props.row.endDate, t.endDate)
-  return { left: `${left}%`, width: `${Math.max(right - left, 0.8)}%` }
+  const q = quarterIndex(terms.value)[terms.value.indexOf(t)]
+  return {
+    left: `${left}%`,
+    width: `${Math.max(right - left, 0.8)}%`,
+    '--q': q == null ? null : QUARTER_COLORS[q % QUARTER_COLORS.length]
+  }
 }
 
 /** The date under the pointer: the bar spans the year, one day per step. */
@@ -387,7 +411,7 @@ h4 {
 }
 
 .yd__seg--quarter {
-  background: color-mix(in srgb, var(--c-primary) 65%, var(--card-bg));
+  background: var(--q, var(--c-primary));
   color: white;
 }
 
@@ -514,6 +538,19 @@ h4 {
 
 .yd__save {
   justify-content: flex-end;
+}
+
+.yd__problems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--st-absent) 8%, transparent);
+  color: var(--st-absent);
+  font-size: var(--text-sm);
+  list-style: none;
 }
 
 .yd__error {

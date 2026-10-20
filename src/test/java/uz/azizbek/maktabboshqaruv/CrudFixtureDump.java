@@ -76,6 +76,16 @@ class CrudFixtureDump {
     uz.azizbek.maktabboshqaruv.service.AcademicYearService yearService;
     @Autowired
     uz.azizbek.maktabboshqaruv.controller.ProfileController profiles;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.controller.BuildingController buildings;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.controller.ListPagesController listPages;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.controller.RoomController rooms;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.config.CurrentYearSeeder yearSeeder;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.repository.SchoolRepository schoolRepository;
 
     static Map<String, Object> page(Page<?> p) {
         Map<String, Object> m = new LinkedHashMap<>();
@@ -109,6 +119,10 @@ class CrudFixtureDump {
                 "admin", null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("today", LocalDate.now().toString());
+        // the demo seeder's year of today (it runs with demo mode on; this dump runs with it off)
+        for (var school : schoolRepository.findAll()) {
+            if (school.getId() <= 2) yearSeeder.ensure(school, LocalDate.now());
+        }
 
         out.put("/api/schools", page(schools.getAllSchools(ALL)));
         out.put("/api/school-classes", page(classes.getAllSchoolClasses(SCHOOL, PageRequest.of(0, 500, Sort.by("gradeNumber")))));
@@ -128,6 +142,9 @@ class CrudFixtureDump {
         out.put("/api/pages/lists/employees/hero", lists.employeesHero(SCHOOL));
         var yearCards = lists.years(SCHOOL);
         out.put("/api/pages/lists/years", yearCards);
+        out.put("/api/pages/lists/years-page", listPages.yearsPage(SCHOOL));
+        out.put("/api/buildings", page(buildings.getAllBuildings(SCHOOL, ALL)));
+        out.put("/api/rooms", page(rooms.getAllRooms(SCHOOL, null, null, ALL)));
         out.put("/api/academic-years/next", yearService.nextTemplate(SCHOOL));
         for (var y : yearCards) out.put("/api/academic-years/" + y.id() + "/terms", yearService.terms(y.id()));
         var studentRows = students.getAllStudents(SCHOOL, null, null, false, null, false, PageRequest.of(0, 40, Sort.by("id"))).getContent();

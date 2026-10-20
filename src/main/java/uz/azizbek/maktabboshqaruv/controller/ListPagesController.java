@@ -70,4 +70,11 @@ public class ListPagesController {
     public List<ListPagesService.YearCard> years(@RequestParam Long schoolId) {
         return lists.years(schoolId);
     }
+
+    /** The year cards and, when no year holds today, the year to create (its usual calendar). */
+    @PreAuthorize("hasAnyRole('ADMIN', 'EDITOR', 'VIEWER')")
+    @GetMapping("/years-page")
+    public ListPagesService.YearsPage yearsPage(@RequestParam Long schoolId) {
+        return lists.yearsPage(schoolId);
+    }
 }

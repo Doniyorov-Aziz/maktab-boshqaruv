@@ -1,9 +1,14 @@
 <template>
-  <div class="ccards" data-crud-cards>
-    <!-- a module may draw its own card (subjects, positions, employees) -->
-    <template v-if="card.component">
+  <div
+    class="ccards"
+    :class="{ 'ccards--hero': heroCard }"
+    data-crud-cards
+    :data-hero="heroCard ? '' : undefined"
+  >
+    <!-- a module may draw its own card (subjects, positions, employees), and a big one for up to six -->
+    <template v-if="ownCard">
       <component
-        :is="card.component"
+        :is="ownCard"
         v-for="(row, i) in rows"
         :key="row.id ?? i"
         :row="row"
@@ -17,7 +22,7 @@
       />
     </template>
     <article
-      v-for="(row, i) in card.component ? [] : rows"
+      v-for="(row, i) in ownCard ? [] : rows"
       :key="row.id ?? i"
       class="ccard dash-card"
       :class="{
@@ -46,9 +51,12 @@
           :text-color="card.color?.(row) || color"
         />
         <div class="ccard__titles">
-          <b class="ccard__title" :style="card.titleStyle?.(row)">{{
-            card.title(row)
-          }}</b>
+          <b class="ccard__title" :style="card.titleStyle?.(row)"
+            >{{ card.title(row)
+            }}<q-tooltip v-if="String(card.title(row) || '').length > 28">{{
+              card.title(row)
+            }}</q-tooltip></b
+          >
           <small v-if="card.subtitle?.(row)" class="ccard__sub">{{
             card.subtitle(row)
           }}</small>
@@ -105,8 +113,10 @@
 
 <script setup>
 // A list as cards (dashboard style: the faint edge and top light line, a lift on hover) in a grid
-// that fills the width (minmax(280px, 1fr)). The module's `cards` config says what a card shows:
+// that fills the width (minmax(280px, 1fr)); up to six records with a `hero` card — big cards,
+// at least 380px, stretched over the whole row (auto-fit). The module's `cards` config says what a card shows:
 // title / subtitle / avatar or icon / badge / text / up to four numbers / a footer line.
+import { computed } from 'vue'
 import AvatarInitials from '@/components/pages/AvatarInitials.vue'
 import IconTile from '@/components/app/IconTile.vue'
 
@@ -122,6 +132,15 @@ const props = defineProps({
 })
 const emit = defineEmits(['open', 'edit', 'delete'])
 
+// up to six records: the module's big card (Maktablar, Binolar) in a grid that fills the row
+const HERO_MAX = 6
+const heroCard = computed(
+  () => !!props.card.hero && props.rows.length <= HERO_MAX
+)
+const ownCard = computed(() =>
+  heroCard.value ? props.card.hero : props.card.component || null
+)
+
 const stats = row => (props.card.stats ? props.card.stats(row) : []).slice(0, 4)
 </script>
 
@@ -133,6 +152,14 @@ const stats = row => (props.card.stats ? props.card.stats(row) : []).slice(0, 4)
     minmax(min(var(--crud-card-min), 100%), 1fr)
   );
   gap: var(--space-4);
+}
+
+.ccards--hero {
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--crud-hero-min), 100%), 1fr)
+  );
+  gap: var(--space-5);
 }
 
 .ccard {
@@ -171,10 +198,13 @@ const stats = row => (props.card.stats ? props.card.stats(row) : []).slice(0, 4)
 }
 
 .ccard__title {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   font-size: var(--text-md);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .ccard__sub {

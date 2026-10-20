@@ -93,7 +93,8 @@
 </template>
 
 <script setup>
-// 6.6 — five signals, not a long list: lessons without attendance, students absent 3+
+// 6.6 — five signals (and, when no school year holds today, "Joriy o'quv yili kiritilmagan"
+// first, leading to O'quv yillari), not a long list: lessons without attendance, students absent 3+
 // days, appeals unanswered for a day, falling grades, teachers with an incomplete
 // journal. A zero row is faint with a check; a row with a number opens the side panel
 // with the full list and small actions ("Davomat olish", "Ochish").
@@ -108,6 +109,7 @@ defineProps({ readonly: { type: Boolean, default: false } })
 const { data, asOf, loading, error, reload } = useWidget('signals')
 
 const META = {
+  NO_CURRENT_YEAR: { icon: 'event_busy', color: 'var(--st-late)' },
   UNMARKED_LESSON: { icon: 'event_busy', color: 'var(--st-absent)' },
   ABSENT_STREAK: { icon: 'person_off', color: 'var(--st-absent)' },
   APPEAL_OVERDUE: { icon: 'forum', color: 'var(--st-late)' },
@@ -155,6 +157,8 @@ function action(it) {
       return r.employeeId
         ? { label: 'Ochish', to: `/profiles/teacher/${r.employeeId}` }
         : null
+    case 'NO_CURRENT_YEAR':
+      return { label: 'Yaratish', to: '/app/academic-years' }
     default:
       return null
   }

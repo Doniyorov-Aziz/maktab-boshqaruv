@@ -32,6 +32,9 @@
   --tile-sm: 32px;
   --tile-md: 40px;
   --tile-lg: 48px;
+  // the big cards of a short list (Maktablar, Binolar): their banner and its icon
+  --tile-xl: 64px;
+  --hero-banner-h: 96px;
 
   // Page frame. The side padding grows with the screen; the gap between the
   // top bar, the page header and the content stays the same everywhere.
@@ -449,6 +452,8 @@ body.body--dark {
   --crud-row-h-compact: 36px;
   --crud-actions-w: 88px;
   --crud-card-min: 280px;
+  // up to six records: big "hero" cards, at least this wide, filling the row
+  --crud-hero-min: 380px;
   --crud-table-max-h: calc(100vh - 300px);
   --side-panel-w-wide: 560px;
 }
