@@ -388,14 +388,22 @@ const loading = ref(false)
 async function reload() {
   if (!props.schoolId) return
   loading.value = true
+  const params = { schoolId: props.schoolId }
   try {
-    const data = (
-      await api.get('/api/pages/lists/years-page', {
-        params: { schoolId: props.schoolId }
-      })
-    ).data
-    cards.value = data.years || []
-    missing.value = data.missing || null
+    let data
+    try {
+      data = (await api.get('/api/pages/lists/years-page', { params })).data
+    } catch (e) {
+      // a backend without /years-page: the plain list (an array)
+      if (e.response?.status !== 404) throw e
+      data = (await api.get('/api/pages/lists/years', { params })).data
+    }
+    // an array, { years }, or a page { content }
+    const list = Array.isArray(data)
+      ? data
+      : data?.years || data?.content || []
+    cards.value = list.map(withStatus)
+    missing.value = (!Array.isArray(data) && data?.missing) || null
   } catch (e) {
     $q.notify({
       type: 'negative',
@@ -408,6 +416,30 @@ async function reload() {
 onMounted(reload)
 watch(() => props.schoolId, reload)
 defineExpose({ reload, openNext: () => openNext() })
+
+// the status by date: the year holding today is CURRENT (on top), the rest under it
+function withStatus(y) {
+  const t = props.today
+  const status =
+    y.startDate <= t && t <= y.endDate
+      ? 'CURRENT'
+      : t < y.startDate
+        ? 'PLANNED'
+        : 'FINISHED'
+  const total = Math.max(day(y.endDate) - day(y.startDate), 1)
+  return {
+    ...y,
+    status,
+    terms: y.terms || [],
+    daysToStart:
+      y.daysToStart ?? Math.max(Math.round((day(y.startDate) - day(t)) / DAY), 0),
+    dayProgress:
+      y.dayProgress ??
+      Math.min(Math.max(Math.round(((day(t) - day(y.startDate)) / total) * 100), 0), 100)
+  }
+}
+const DAY = 86400000
+const day = s => new Date(`${s}T00:00:00`).getTime()
 
 const current = computed(() => cards.value.filter(y => y.status === 'CURRENT'))
 const planned = computed(() =>
