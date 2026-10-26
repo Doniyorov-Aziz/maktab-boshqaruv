@@ -9,6 +9,19 @@ import { LoadingBar } from 'quasar'
 
 import routes from './routes.js'
 import { useAuthStore, expired } from '@/stores/auth'
+import { api } from '@/boot/axios'
+
+// Is the public demo link on (GUEST_LOGIN_ENABLED)? Asked once per page load.
+let guestDemo = null
+function guestDemoEnabled() {
+  if (!guestDemo) {
+    guestDemo = api
+      .get('/api/auth/guest-enabled', { background: true, timeout: 5000 })
+      .then(res => !!res.data?.enabled)
+      .catch(() => false)
+  }
+  return guestDemo
+}
 
 /*
  * If not building with SSR mode, you can
@@ -36,7 +49,7 @@ export default defineRouter((/* { store, ssrContext } */) => {
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE)
   })
 
-  Router.beforeEach(to => {
+  Router.beforeEach(async to => {
     const authStore = useAuthStore()
     const isLoginRoute = to.path === '/login'
 
@@ -54,7 +67,8 @@ export default defineRouter((/* { store, ssrContext } */) => {
     }
 
     if (!authStore.isAuthenticated && !isLoginRoute) {
-      return '/login'
+      // where the public demo is on, a shared short link (…/#/) opens the demo; staff use #/login
+      return (await guestDemoEnabled()) ? '/demo?ref=direct' : '/login'
     }
     if (authStore.isAuthenticated && isLoginRoute && !authStore.isGuest) {
       return '/'
