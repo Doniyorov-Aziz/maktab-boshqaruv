@@ -109,6 +109,7 @@
               v-if="p.row.status !== 'REVOKED'"
               color="negative"
               label="Bekor qilish"
+              guest="block"
               @click="revoke(p.row)"
             />
           </q-td>

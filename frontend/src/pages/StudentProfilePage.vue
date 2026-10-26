@@ -129,9 +129,10 @@
           </div>
 
           <!-- Link codes let the holder subscribe to this child's data, so the
-               block is only shown to staff who can manage it (ADMIN/EDITOR). -->
+               block is only shown to staff who can manage it (ADMIN/EDITOR), never
+               to the demo visitor. -->
           <telegram-student-card
-            v-if="authStore.isEditor"
+            v-if="authStore.isEditor && !authStore.isGuest"
             :student-id="profile.id"
             class="q-mt-md"
           />

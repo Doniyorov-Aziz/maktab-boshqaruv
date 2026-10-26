@@ -38,6 +38,8 @@ export const loginTexts = {
     forgotText:
       'Parolni tiklash uchun maktab administratoriga murojaat qiling.',
     forgotOk: 'Tushunarli',
+    demo: "👀 Demo sifatida ko'rish",
+    demoOr: 'yoki login va parolsiz tanishing',
     submit: 'Kirish',
     submitting: 'Kirilmoqda...',
     serverDown: "Server bilan bog'lanib bo'lmadi",
@@ -100,6 +102,8 @@ export const loginTexts = {
     forgotTitle: 'Восстановление пароля',
     forgotText: 'Чтобы восстановить пароль, обратитесь к администратору школы.',
     forgotOk: 'Понятно',
+    demo: '👀 Посмотреть демо',
+    demoOr: 'или познакомьтесь без логина и пароля',
     submit: 'Войти',
     submitting: 'Входим...',
     serverDown: 'Не удалось связаться с сервером',

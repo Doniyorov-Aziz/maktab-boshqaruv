@@ -8,7 +8,7 @@ import {
 import { LoadingBar } from 'quasar'
 
 import routes from './routes.js'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore, expired } from '@/stores/auth'
 
 /*
  * If not building with SSR mode, you can
@@ -46,10 +46,24 @@ export default defineRouter((/* { store, ssrContext } */) => {
       return true
     }
 
+    // an expired token (the demo visitor's lasts 8 hours): the demo starts over, staff sign in again
+    if (authStore.token && expired(authStore.token)) {
+      const wasGuest = authStore.isGuest
+      authStore.logout()
+      if (wasGuest && !isLoginRoute) return '/demo'
+    }
+
     if (!authStore.isAuthenticated && !isLoginRoute) {
       return '/login'
     }
-    if (authStore.isAuthenticated && isLoginRoute) {
+    if (authStore.isAuthenticated && isLoginRoute && !authStore.isGuest) {
+      return '/'
+    }
+    // the demo visitor sees these sections in the menu (with a lock) but not their content
+    if (authStore.isGuest && to.meta.guestLocked) {
+      return { path: '/locked', query: { from: to.fullPath } }
+    }
+    if (to.meta.realAdminOnly && !authStore.isRealAdmin) {
       return '/'
     }
     if (to.meta.editorOnly && !authStore.isEditor) {

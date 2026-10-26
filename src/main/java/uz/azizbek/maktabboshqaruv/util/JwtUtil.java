@@ -25,6 +25,11 @@ public class JwtUtil {
     }
 
     public String generateToken(String username, String role, Long employeeId) {
+        return generateToken(username, role, employeeId, expirationMs);
+    }
+
+    /** With its own lifetime (the demo visitor's token lives 8 hours). */
+    public String generateToken(String username, String role, Long employeeId, long ttlMs) {
         var builder = Jwts.builder()
                 .subject(username)
                 .claim("role", role);
@@ -33,7 +38,7 @@ public class JwtUtil {
         }
         return builder
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .expiration(new Date(System.currentTimeMillis() + ttlMs))
                 .signWith(key)
                 .compact();
     }

@@ -182,6 +182,7 @@
 import { computed, ref, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import { guestBlocked } from '@/utils/guest'
 import AppButton from '@/components/app/AppButton.vue'
 import AppInput from '@/components/app/AppInput.vue'
 import AppSelect from '@/components/app/AppSelect.vue'
@@ -297,6 +298,7 @@ function setEdge(k, edge, iso) {
 }
 
 function startDrag(e, k, edge) {
+  if (guestBlocked()) return
   drag.value = { k, edge }
   const move = ev => setEdge(k, edge, dateAt(ev.clientX))
   const up = () => {

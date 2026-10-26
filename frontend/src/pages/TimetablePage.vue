@@ -239,7 +239,7 @@
             :now-minutes="nowMinutes"
             :mode="view"
             :focus-subject="focusSubject"
-            :editable="canEdit && !isPhone"
+            :editable="canEdit && !isPhone && !auth.isGuest"
             :states="todayStates"
             :subs="todaySubs"
             :label="`${currentName} — haftalik jadval`"

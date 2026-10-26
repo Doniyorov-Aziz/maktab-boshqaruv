@@ -1,5 +1,6 @@
 package uz.azizbek.maktabboshqaruv.config;
 
+import uz.azizbek.maktabboshqaruv.entity.Role;
 import uz.azizbek.maktabboshqaruv.service.AccountStatusService;
 import uz.azizbek.maktabboshqaruv.util.JwtUtil;
 import jakarta.servlet.FilterChain;
@@ -7,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +27,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Autowired
     private AccountStatusService accountStatusService;
 
+    @Value("${app.guest.login-enabled:false}")
+    private boolean guestLoginEnabled;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -38,6 +43,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (jwtUtil.isTokenValid(token)) {
                 String username = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
+
+                // a demo visitor's token stops working as soon as the demo is switched off
+                boolean guest = Role.GUEST.name().equals(role);
+                if (guest && !guestLoginEnabled) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
 
                 // a signed token is not enough: the account may have been put on leave since
                 // (cached for a minute, so this is not a database query per request)
@@ -53,7 +65,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(
                                 username,
                                 null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                                // the guest reads everything an ADMIN reads; GuestGuardFilter stops the rest
+                                guest
+                                        ? List.of(new SimpleGrantedAuthority(GuestPolicy.ROLE), new SimpleGrantedAuthority("ROLE_ADMIN"))
+                                        : List.of(new SimpleGrantedAuthority("ROLE_" + role))
                         );
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);

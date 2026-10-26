@@ -203,6 +203,7 @@ import AppInput from '@/components/app/AppInput.vue'
 import { ref, reactive, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import { guestBlocked } from '@/utils/guest'
 import PageLayout from '@/components/PageLayout.vue'
 import { useSchoolStore } from '@/stores/school'
 
@@ -337,6 +338,10 @@ function remove(c) {
 }
 
 function onDragStart(i, event) {
+  if (guestBlocked()) {
+    event.preventDefault()
+    return
+  }
   dragIndex.value = i
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData('text/plain', String(i))

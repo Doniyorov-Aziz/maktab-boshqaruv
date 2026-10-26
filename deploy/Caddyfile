@@ -1,0 +1,28 @@
+# DOMAIN .env dan keladi (masalan maktab-demo.duckdns.org). Caddy sertifikatni o'zi oladi va yangilaydi.
+# DOMAIN=localhost bo'lsa - lokal sinov uchun o'z-o'zidan imzolangan sertifikat.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# murojaat ilovalari va kutubxona PDF lari (Spring chegarasi bilan bir xil)
+	request_body {
+		max_size 210MB
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# X-Frame-Options yo'q: Telegram Web Mini App ni iframe ichida ochadi
+		-Server
+	}
+}

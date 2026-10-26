@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { decodeJwt } from '@/utils/jwt'
 
+// a token whose "exp" has passed (the demo visitor's lasts 8 hours) counts as signed out
+export function expired(token) {
+  const exp = token ? decodeJwt(token)?.exp : null
+  return !!exp && exp * 1000 < Date.now()
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: localStorage.getItem('token') || null,
@@ -12,9 +18,16 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   getters: {
-    isAuthenticated: state => !!state.token,
-    isAdmin: state => state.role === 'ADMIN',
-    isEditor: state => state.role === 'EDITOR' || state.role === 'ADMIN'
+    isAuthenticated: state => !!state.token && !expired(state.token),
+    // the public demo visitor: sees every page an admin sees, changes nothing
+    isGuest: state => state.role === 'GUEST',
+    isAdmin: state => state.role === 'ADMIN' || state.role === 'GUEST',
+    isEditor: state =>
+      state.role === 'EDITOR' ||
+      state.role === 'ADMIN' ||
+      state.role === 'GUEST',
+    // a real administrator (not the demo visitor): visit statistics
+    isRealAdmin: state => state.role === 'ADMIN'
   },
 
   actions: {

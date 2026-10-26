@@ -266,6 +266,7 @@ import {
 } from '@/components/journal/journal'
 import { useSchoolStore } from '@/stores/school'
 import { useAuthStore } from '@/stores/auth'
+import { guestBlocked } from '@/utils/guest'
 import { tashkentNow } from '@/utils/tashkent'
 
 const LAST_CLASS = 'journal.classId'
@@ -690,7 +691,7 @@ async function onOpen({ r, c, el, gradeId }) {
       )
     : null
   if (!grade && blockedReason(d)) return tellBlocked(d)
-  if (!canGrade.value) return
+  if (!canGrade.value || guestBlocked()) return
   // markRaw: the menu measures the real element, not a reactive proxy of it
   pop.value = { r, c, el: markRaw(el), student: s, day: d, grade, absent: null }
   const att = await attendanceOf(d.date)
@@ -796,7 +797,7 @@ const column = reactive({
 async function onColumn(c) {
   const d = journal.value.days[c]
   if (blockedReason(d)) return tellBlocked(d)
-  if (!canGrade.value) return
+  if (!canGrade.value || guestBlocked()) return
   const existing = {}
   for (const s of journal.value.students)
     existing[s.id] = cells.value[s.id + '|' + d.date] || []

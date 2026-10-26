@@ -1,3 +1,9 @@
 /gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+# server files run on Linux: always LF
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+deploy/Caddyfile text eol=lf
+deploy/*.yml text eol=lf

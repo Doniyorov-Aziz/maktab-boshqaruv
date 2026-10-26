@@ -154,7 +154,7 @@
                   }}</q-item-label>
                   <q-item-label caption>
                     <q-badge :color="roleColor" outline>{{
-                      authStore.role
+                      roleLabel
                     }}</q-badge>
                   </q-item-label>
                 </q-item-section>
@@ -200,7 +200,7 @@
             <div class="text-subtitle1 text-weight-bold">{{
               authStore.username
             }}</div>
-            <q-badge :color="roleColor" outline>{{ authStore.role }}</q-badge>
+            <q-badge :color="roleColor" outline>{{ roleLabel }}</q-badge>
           </div>
         </q-card-section>
         <q-separator />
@@ -313,6 +313,13 @@
                 <q-icon :name="item.icon" :style="{ color: item.color }" />
               </q-item-section>
               <q-item-section v-if="!mini">{{ item.title }}</q-item-section>
+              <q-item-section
+                v-if="!mini && isLocked(item)"
+                side
+                data-testid="nav-lock"
+              >
+                <q-icon name="lock" size="16px" class="nav-lock" />
+              </q-item-section>
               <q-item-section v-if="!mini && item.badge" side>
                 <q-badge rounded color="negative">{{ item.badge }}</q-badge>
               </q-item-section>
@@ -333,6 +340,20 @@
     </q-drawer>
 
     <q-page-container>
+      <div
+        v-if="authStore.isGuest"
+        class="guest-banner"
+        role="status"
+        data-testid="guest-banner"
+      >
+        <span
+          >👀 Demo rejimi — barcha bo'limlarni ko'rishingiz mumkin, o'zgartirish
+          o'chirilgan</span
+        >
+        <router-link to="/login" class="guest-banner__link"
+          >Xodim sifatida kirish</router-link
+        >
+      </div>
       <div
         v-if="demoMode"
         class="demo-banner"
@@ -407,6 +428,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
 import { api } from '@/boot/axios'
 import { useSystemInfo } from '@/composables/useSystemInfo'
+import { useDemoVisits } from '@/composables/useDemoVisits'
 
 const router = useRouter()
 const route = useRoute()
@@ -616,6 +638,13 @@ const groupedModules = computed(() => {
               title: 'Maktab sozlamalari',
               icon: 'tune',
               color: '#475569'
+            },
+            {
+              key: 'visits',
+              path: '/visits',
+              title: 'Tashriflar',
+              icon: 'travel_explore',
+              color: '#0d9488'
             }
           ]
         : [])
@@ -691,8 +720,25 @@ const groupedModules = computed(() => {
 const botCounts = ref({ messages: 0, absences: 0 })
 let countsSchool = null
 
+// sections closed to the demo visitor: kept in the menu with a lock (the router shows why)
+const GUEST_LOCKED = new Set([
+  '/parent-messages',
+  '/absence-requests',
+  '/notifications',
+  '/broadcasts',
+  '/visits'
+])
+function isLocked(item) {
+  return authStore.isGuest && GUEST_LOCKED.has(item.path)
+}
+
+// the demo visitor's pages, for the administrator's "Tashriflar"
+if (authStore.isGuest) useDemoVisits(route)
+
 async function loadBotCounts() {
-  if (!schoolStore.activeSchoolId || !authStore.isEditor) return
+  // parents' messages are closed to the demo visitor: no badges either
+  if (!schoolStore.activeSchoolId || !authStore.isEditor || authStore.isGuest)
+    return
   const schoolId = schoolStore.activeSchoolId
   try {
     const params = { schoolId }
@@ -740,6 +786,11 @@ const currentModule = computed(() =>
 
 const userInitial = computed(
   () => authStore.username?.charAt(0).toUpperCase() || '?'
+)
+
+// the demo account is shown as what it is
+const roleLabel = computed(() =>
+  authStore.isGuest ? 'Mehmon' : authStore.role
 )
 
 const roleColor = computed(() => {
@@ -1000,6 +1051,32 @@ function selectResult(r) {
 </script>
 
 <style scoped>
+.guest-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-3);
+  background: color-mix(in srgb, var(--color-info) 12%, var(--card-bg));
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  padding: var(--space-2) var(--page-pad);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-info) 30%, transparent);
+}
+
+.guest-banner__link {
+  color: var(--color-info);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nav-lock {
+  color: var(--brand-text-muted);
+}
+
 .demo-banner {
   background: var(--login-warning-bg);
   color: var(--login-warning-text);

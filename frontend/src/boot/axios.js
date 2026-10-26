@@ -1,10 +1,49 @@
 import axios from 'axios'
-import { LoadingBar } from 'quasar'
+import { LoadingBar, Notify } from 'quasar'
+
+// A relative address ("/" on the server, where Caddy serves the app and /api on one domain)
+// becomes this page's origin, so links built from baseURL (files, calendar feeds) stay absolute.
+function apiBase() {
+  const raw = import.meta.env.QCLI_API_BASE_URL || 'http://localhost:8080'
+  if (raw.startsWith('/'))
+    return window.location.origin + raw.replace(/\/$/, '')
+  return raw
+}
 
 const api = axios.create({
-  baseURL: import.meta.env.QCLI_API_BASE_URL || 'http://localhost:8080',
+  baseURL: apiBase(),
   timeout: 15000
 })
+
+// The public demo visitor (role GUEST) changes nothing: writes never leave the browser (the
+// backend refuses them too). Only signing in/out and the visit ping go through.
+export const GUEST_READ_ONLY = "Demo rejimida o'zgartirish o'chirilgan"
+const GUEST_WRITES = [
+  '/api/auth/guest-login',
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/demo/visit/ping'
+]
+const EXPORT = /\/export([./?]|$)|\.(xlsx|xls|csv|pdf|docx|ics|zip)(\?|$)/i
+
+export function isGuestSession() {
+  try {
+    return localStorage.getItem('role') === 'GUEST'
+  } catch {
+    return false
+  }
+}
+
+function guestBlocked(config) {
+  if (!isGuestSession()) return null
+  const method = (config.method || 'get').toLowerCase()
+  const path = (config.url || '').replace(/^https?:\/\/[^/]+/, '').split('?')[0]
+  if (!['get', 'head', 'options'].includes(method)) {
+    return GUEST_WRITES.includes(path) ? null : GUEST_READ_ONLY
+  }
+  if (EXPORT.test(path)) return "Demo rejimida eksport o'chirilgan"
+  return null
+}
 
 // Normalizes every rejection into a plain, user-facing Uzbek message so
 // callers never have to re-derive "network vs timeout vs server" logic
@@ -58,6 +97,22 @@ export default ({ router }) => {
   })
 
   api.interceptors.request.use(config => {
+    const blocked = guestBlocked(config)
+    if (blocked) {
+      if (!config.background) {
+        Notify.create({
+          message: blocked,
+          icon: 'visibility',
+          color: 'grey-8',
+          group: 'guest-read-only'
+        })
+      }
+      const error = new Error(blocked)
+      error.guestBlocked = true
+      error.config = config
+      error.friendlyMessage = blocked
+      throw error
+    }
     const token = localStorage.getItem('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
@@ -73,6 +128,8 @@ export default ({ router }) => {
     },
     error => {
       barStop(error.config)
+      // stopped in the browser (demo visitor): the message is already set and shown
+      if (error.guestBlocked) return Promise.reject(error)
       error.friendlyMessage = friendlyMessage(error)
       if (error.response?.status === 401) {
         localStorage.removeItem('token')

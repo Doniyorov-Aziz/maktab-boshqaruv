@@ -124,8 +124,12 @@ public class AttendanceAutomationController {
     /** For the yellow banner and the demo buttons: is demo mode on (application.properties only). */
     @GetMapping("/api/system/info")
     public Map<String, Object> info() {
-        return Map.of("demoSimulator", demo.enabled(), "demoDelayMinutes", demo.delayMinutes());
+        return Map.of("demoSimulator", demo.enabled(), "demoDelayMinutes", demo.delayMinutes(), "guestLogin", guestLogin);
     }
+
+    /** The public demo link works (GUEST_LOGIN_ENABLED): the administrator's visit widget shows. */
+    @org.springframework.beans.factory.annotation.Value("${app.guest.login-enabled:false}")
+    private boolean guestLogin;
 
     private void requireDemo() {
         if (!demo.enabled()) {

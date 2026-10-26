@@ -33,6 +33,7 @@
         variant="secondary"
         icon="fact_check"
         label="Dars bo'yicha belgilash"
+        guest="allow"
         @click="router.push('/attendance')"
       />
     </template>

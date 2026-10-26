@@ -209,6 +209,7 @@
                 size="sm"
                 color="negative"
                 label="Bekor qilish"
+                guest="block"
                 @click="revoke(k)"
               />
             </q-item-section>
@@ -320,9 +321,11 @@ import AppInput from '@/components/app/AppInput.vue'
 import IconTile from '@/components/app/IconTile.vue'
 import { api } from '@/boot/axios'
 import { useSchoolStore } from '@/stores/school'
+import { useAuthStore } from '@/stores/auth'
 
 const $q = useQuasar()
 const school = useSchoolStore()
+const auth = useAuthStore()
 const form = ref(null)
 const saving = ref(false)
 const keys = ref([])
@@ -350,7 +353,10 @@ async function load() {
   try {
     const [s, k, info] = await Promise.all([
       api.get('/api/school-settings', { params }),
-      api.get('/api/device-keys', { params }),
+      // device API keys are a secret: closed to the demo visitor
+      auth.isGuest
+        ? Promise.resolve({ data: [] })
+        : api.get('/api/device-keys', { params }),
       api.get('/api/system/info')
     ])
     form.value = s.data

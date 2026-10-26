@@ -1,0 +1,25 @@
+# Docker build konteksti: faqat kod. Sirlar va lokal fayllar hech qachon rasmga tushmaydi.
+.git
+.gradle
+.idea
+.claude
+.run
+build
+storage
+db-backups
+docs
+scripts
+*.log
+**/node_modules
+frontend/dist
+frontend/.quasar
+frontend/.env
+frontend/.env.*
+frontend/tests
+frontend/test-results
+frontend/playwright-report
+# lokal sozlamalar (DB paroli, bot tokeni)
+src/main/resources/application-local.properties
+.env
+deploy/.env
+deploy/backups

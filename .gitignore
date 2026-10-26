@@ -47,3 +47,6 @@ backend-detached.log
 # Ota-onalar murojaatlari fayllari (app.storage.path)
 /storage/
 storage/
+
+# Server DB backups (deploy/backup.sh)
+deploy/backups/

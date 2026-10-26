@@ -72,24 +72,34 @@
             v-if="canEdit"
             type="button"
             class="ccard__btn"
+            :class="{ 'ccard__btn--off': auth.isGuest }"
             aria-label="Tahrirlash"
+            :aria-disabled="auth.isGuest || undefined"
             data-action="edit"
-            @click="emit('edit', row)"
+            @click="act('edit', row)"
           >
             <q-icon name="edit" />
-            <q-tooltip>Tahrirlash</q-tooltip>
+            <q-tooltip>{{
+              auth.isGuest ? GUEST_READ_ONLY : 'Tahrirlash'
+            }}</q-tooltip>
           </button>
           <button
             v-if="canDelete && row.active !== false"
             type="button"
             class="ccard__btn ccard__btn--danger"
             :aria-label="softDelete ? 'Nofaol qilish' : 'O\'chirish'"
+            :class="{ 'ccard__btn--off': auth.isGuest }"
+            :aria-disabled="auth.isGuest || undefined"
             data-action="delete"
-            @click="emit('delete', row)"
+            @click="act('delete', row)"
           >
             <q-icon :name="softDelete ? 'block' : 'delete_outline'" />
             <q-tooltip>{{
-              softDelete ? 'Nofaol qilish' : "O'chirish"
+              auth.isGuest
+                ? GUEST_READ_ONLY
+                : softDelete
+                  ? 'Nofaol qilish'
+                  : "O'chirish"
             }}</q-tooltip>
           </button>
         </span>
@@ -119,6 +129,8 @@
 import { computed } from 'vue'
 import AvatarInitials from '@/components/pages/AvatarInitials.vue'
 import IconTile from '@/components/app/IconTile.vue'
+import { useAuthStore } from '@/stores/auth'
+import { guestBlocked, GUEST_READ_ONLY } from '@/utils/guest'
 
 const props = defineProps({
   rows: { type: Array, required: true },
@@ -131,6 +143,13 @@ const props = defineProps({
   selected: { type: Set, default: () => new Set() }
 })
 const emit = defineEmits(['open', 'edit', 'delete'])
+
+// the demo visitor sees the row buttons, but they only say why nothing happens
+const auth = useAuthStore()
+function act(kind, row) {
+  if (guestBlocked()) return
+  emit(kind, row)
+}
 
 // up to six records: the module's big card (Maktablar, Binolar) in a grid that fills the row
 const HERO_MAX = 6
@@ -241,6 +260,11 @@ const stats = row => (props.card.stats ? props.card.stats(row) : []).slice(0, 4)
   .ccard__actions {
     opacity: 1;
   }
+}
+
+.ccard__btn--off {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .ccard__btn {

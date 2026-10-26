@@ -4,6 +4,12 @@ const routes = [
     component: () => import('@/pages/LoginPage.vue')
   },
   {
+    // the public demo link (#/demo?ref=linkedin): signs in as the read-only "Mehmon"
+    path: '/demo',
+    component: () => import('@/pages/DemoPage.vue'),
+    meta: { public: true }
+  },
+  {
     // Telegram Mini App "Farzandim kundaligi" — public route, authenticated by Telegram initData.
     path: '/webapp',
     component: () => import('@/layouts/WebAppLayout.vue'),
@@ -86,7 +92,18 @@ const routes = [
       {
         path: 'notifications',
         component: () => import('@/pages/NotificationsPage.vue'),
-        meta: { editorOnly: true }
+        meta: { editorOnly: true, guestLocked: true }
+      },
+      {
+        // a section closed to the demo visitor
+        path: 'locked',
+        component: () => import('@/pages/LockedPage.vue')
+      },
+      {
+        // the public demo's visitors: the real administrator only
+        path: 'visits',
+        component: () => import('@/pages/VisitsPage.vue'),
+        meta: { realAdminOnly: true, guestLocked: true }
       },
       {
         path: 'telegram-parents',
@@ -95,17 +112,17 @@ const routes = [
       {
         path: 'parent-messages',
         component: () => import('@/pages/AppealsPage.vue'),
-        meta: { editorOnly: true }
+        meta: { editorOnly: true, guestLocked: true }
       },
       {
         path: 'absence-requests',
         component: () => import('@/pages/AbsenceRequestsPage.vue'),
-        meta: { editorOnly: true }
+        meta: { editorOnly: true, guestLocked: true }
       },
       {
         path: 'broadcasts',
         component: () => import('@/pages/BroadcastPage.vue'),
-        meta: { adminOnly: true }
+        meta: { adminOnly: true, guestLocked: true }
       },
       {
         path: 'bot-stats',

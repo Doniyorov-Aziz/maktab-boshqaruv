@@ -304,6 +304,7 @@ import { hm, minutes, roomLabel } from '@/components/timetable/timetable'
 import { confirmUndoToast } from '@/composables/useUndoToast'
 import { useSchoolStore } from '@/stores/school'
 import { useAuthStore } from '@/stores/auth'
+import { guestBlocked } from '@/utils/guest'
 import { tashkentNow } from '@/utils/tashkent'
 
 const AUTOSAVE_MS = 1500
@@ -612,6 +613,7 @@ const pendingCount = computed(() => Object.keys(dirty).length)
 
 /** The same status for these students; Kechikdi / Sababli keep their minutes / reason. */
 function setStatus(ids, status) {
+  if (guestBlocked()) return
   for (const id of ids) {
     const r = rows.value.find(x => x.studentId === id)
     if (!r || r.status === status) continue
@@ -624,7 +626,7 @@ function setStatus(ids, status) {
 
 /** A click on a status: several selected rows take it together; Kechikdi / Sababli ask for details. */
 function pick(r, status, el) {
-  if (!canEdit.value) return
+  if (!canEdit.value || guestBlocked()) return
   const ids =
     selection.size > 1 && selection.has(r.studentId)
       ? [...selection]

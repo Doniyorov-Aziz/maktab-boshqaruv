@@ -193,7 +193,7 @@
         :events="shown"
         :attendance="attendance"
         :today="today"
-        :editable="canEdit"
+        :editable="canEdit && !auth.isGuest"
         @open="openEvent"
         @day="openDay"
         @create="openCreate"
@@ -205,7 +205,7 @@
         :monday="monday"
         :events="shown"
         :today="today"
-        :editable="canEdit"
+        :editable="canEdit && !auth.isGuest"
         @open="openEvent"
         @day="openDay"
         @create="openCreate"
@@ -214,7 +214,7 @@
         v-else-if="view === 'agenda'"
         :events="shown"
         :today="today"
-        :editable="canEdit"
+        :editable="canEdit && !auth.isGuest"
         @open="openEvent"
         @create="openCreate"
       />
@@ -291,6 +291,7 @@ import { confirmUndoToast } from '@/composables/useUndoToast'
 import { useWidget } from '@/composables/useWidget'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
+import { guestBlocked } from '@/utils/guest'
 import { useSchoolStore } from '@/stores/school'
 import { tashkentNow } from '@/utils/tashkent'
 
@@ -497,7 +498,7 @@ async function openById(id) {
   if (found) openEvent(found)
 }
 function openCreate(date) {
-  if (!canEdit.value) return
+  if (!canEdit.value || guestBlocked()) return
   editing.value = { startDate: date, endDate: date }
   editOpen.value = true
 }

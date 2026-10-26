@@ -353,6 +353,18 @@
                   liveMessage
                 }}</div>
               </q-form>
+
+              <!-- the public demo: read-only, no password (GUEST_LOGIN_ENABLED) -->
+              <div v-if="demoEnabled" class="login__demo">
+                <span class="login__demo-or">{{ t.demoOr }}</span>
+                <AppButton
+                  variant="secondary"
+                  block
+                  :label="t.demo"
+                  to="/demo?ref=login"
+                  data-testid="login-demo"
+                />
+              </div>
             </div>
 
             <ul class="login__trust">
@@ -407,6 +419,7 @@ import {
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from '@/boot/axios'
+import { visitorId } from '@/utils/visitor'
 import { useAuthStore } from '@/stores/auth'
 import { loginTexts, LOGIN_LANG_KEY } from '@/i18n/login'
 import { version } from '../../package.json'
@@ -561,6 +574,17 @@ watch(
   { immediate: true }
 )
 
+// the "Demo sifatida ko'rish" button shows only when the server allows it
+const demoEnabled = ref(false)
+async function checkDemo() {
+  try {
+    const res = await api.get('/api/auth/guest-enabled', { background: true })
+    demoEnabled.value = !!res.data?.enabled
+  } catch {
+    demoEnabled.value = false
+  }
+}
+
 async function checkHealth() {
   checking.value = true
   try {
@@ -577,6 +601,7 @@ async function checkHealth() {
 let parallaxOn = false
 onMounted(() => {
   checkHealth()
+  checkDemo()
   // signed out because the account was blocked while working (see boot/axios.js)
   if (route.query.blocked) {
     errorStatus.value = 403
@@ -908,7 +933,12 @@ async function onSubmit() {
   try {
     const response = await api.post(
       '/api/auth/login',
-      { username: username.value, password: password.value },
+      {
+        username: username.value,
+        password: password.value,
+        // this browser's demo visits are not counted from now on
+        visitorId: visitorId()
+      },
       { responseType: 'text' }
     )
     backendDown.value = false
@@ -1790,6 +1820,22 @@ async function onSubmit() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.login__demo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--brand-border);
+}
+
+.login__demo-or {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--brand-text-muted);
 }
 
 .login__help {

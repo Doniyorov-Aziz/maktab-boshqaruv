@@ -26,12 +26,23 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
 
+    @Autowired
+    private GuestGuardFilter guestGuardFilter;
+
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
     @Bean
     public FilterRegistrationBean<JwtAuthFilter> jwtFilterRegistration(JwtAuthFilter filter) {
         FilterRegistrationBean<JwtAuthFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    // runs inside the security chain only (after the JWT filter), not as a second servlet filter
+    @Bean
+    public FilterRegistrationBean<GuestGuardFilter> guestGuardRegistration(GuestGuardFilter filter) {
+        FilterRegistrationBean<GuestGuardFilter> registration = new FilterRegistrationBean<>(filter);
         registration.setEnabled(false);
         return registration;
     }
@@ -75,7 +86,9 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/attendance/checkin").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                // the public demo visitor: read-only, some sections closed (GuestPolicy)
+                .addFilterAfter(guestGuardFilter, JwtAuthFilter.class);
         return http.build();
     }
 }

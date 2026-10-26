@@ -280,6 +280,7 @@
               size="sm"
               icon="picture_as_pdf"
               aria-label="PDF ni ko'rish"
+              guest="allow"
               @click.stop="viewPdf(p.row)"
             >
               <q-tooltip>PDF ni ko'rish</q-tooltip>

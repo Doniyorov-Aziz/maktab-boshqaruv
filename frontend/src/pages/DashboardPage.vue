@@ -7,6 +7,15 @@
       >
     </template>
     <template v-if="home && home.kind !== 'TEACHER'" #actions>
+      <router-link
+        v-if="visitSummary"
+        to="/visits"
+        class="dash-visits"
+        data-testid="demo-visits-widget"
+      >
+        👀 Demo tashriflari: {{ visitSummary.visitors }} kishi · bugun
+        {{ visitSummary.today }}
+      </router-link>
       <span class="dash-period">
         <span class="dash-period__label">Baholar davri</span>
         <SegTabs v-model="period" :options="PERIODS" label="Baholar davri" />
@@ -115,6 +124,7 @@ import { PERIODS, usePeriod } from '@/components/dashboard/v3/period'
 import { api } from '@/boot/axios'
 import { useAuthStore } from '@/stores/auth'
 import { useSchoolStore } from '@/stores/school'
+import { useSystemInfo } from '@/composables/useSystemInfo'
 
 const authStore = useAuthStore()
 const schoolStore = useSchoolStore()
@@ -143,7 +153,30 @@ watch(
   }
 )
 
-const title = computed(() => `Xush kelibsiz, ${authStore.username}`)
+const title = computed(() =>
+  authStore.isGuest
+    ? 'Xush kelibsiz! Demo rejimi'
+    : `Xush kelibsiz, ${authStore.username}`
+)
+
+// the public demo's visitors, for the real administrator while the demo link works
+const systemInfo = useSystemInfo()
+const visitSummary = ref(null)
+watch(
+  () => systemInfo.value.guestLogin,
+  async on => {
+    if (!on || !authStore.isRealAdmin) return
+    try {
+      const res = await api.get('/api/demo/visits/summary', {
+        background: true
+      })
+      visitSummary.value = res.data
+    } catch {
+      visitSummary.value = null
+    }
+  },
+  { immediate: true }
+)
 const MONTHS = [
   'yanvar',
   'fevral',
@@ -184,6 +217,25 @@ const quarterLabel = (() => {
 </script>
 
 <style scoped>
+.dash-visits {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--brand-border);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dash-visits:hover {
+  border-color: var(--color-info);
+}
+
 .dash {
   position: relative;
   isolation: isolate;

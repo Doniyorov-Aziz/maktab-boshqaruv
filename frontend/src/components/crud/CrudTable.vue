@@ -103,12 +103,16 @@
                 v-if="canEdit"
                 type="button"
                 class="ct__btn"
+                :class="{ 'ct__btn--off': auth.isGuest }"
                 aria-label="Tahrirlash"
+                :aria-disabled="auth.isGuest || undefined"
                 data-action="edit"
-                @click="emit('edit', row)"
+                @click="act('edit', row)"
               >
                 <q-icon name="edit" />
-                <q-tooltip>Tahrirlash</q-tooltip>
+                <q-tooltip>{{
+                  auth.isGuest ? GUEST_READ_ONLY : 'Tahrirlash'
+                }}</q-tooltip>
               </button>
               <button
                 v-if="
@@ -116,12 +120,16 @@
                 "
                 type="button"
                 class="ct__btn ct__btn--danger"
+                :class="{ 'ct__btn--off': auth.isGuest }"
                 :aria-label="deleteLabel"
+                :aria-disabled="auth.isGuest || undefined"
                 data-action="delete"
-                @click="emit('delete', row)"
+                @click="act('delete', row)"
               >
                 <q-icon :name="softDelete ? 'block' : 'delete_outline'" />
-                <q-tooltip>{{ deleteLabel }}</q-tooltip>
+                <q-tooltip>{{
+                  auth.isGuest ? GUEST_READ_ONLY : deleteLabel
+                }}</q-tooltip>
               </button>
               <button
                 v-if="menuItems(row).length"
@@ -165,6 +173,8 @@
 // more (delete then goes into the menu). Comfortable or compact rows.
 import { ref, computed } from 'vue'
 import CrudCell from './CrudCell.vue'
+import { useAuthStore } from '@/stores/auth'
+import { guestBlocked, GUEST_READ_ONLY } from '@/utils/guest'
 
 const props = defineProps({
   columns: { type: Array, required: true },
@@ -184,6 +194,13 @@ const props = defineProps({
   label: { type: String, default: '' },
   titleOf: { type: Function, default: null }
 })
+// the demo visitor sees the row buttons, but they only say why nothing happens
+const auth = useAuthStore()
+function act(kind, row) {
+  if (guestBlocked()) return
+  emit(kind, row)
+}
+
 const emit = defineEmits([
   'sort',
   'row',
@@ -396,6 +413,11 @@ thead .ct__actions {
 .ct__btns {
   display: inline-flex;
   gap: var(--space-1);
+}
+
+.ct__btn--off {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .ct__btn {

@@ -728,8 +728,13 @@ public class DataSeeder implements CommandLineRunner {
 
     // ---------- login accounts ----------
 
+    /** Off on a public server (application-server.properties): these passwords are written right here. */
+    @org.springframework.beans.factory.annotation.Value("${app.seed.demo-users:true}")
+    private boolean seedDemoUsers;
+
     private List<String[]> seedUsers() {
         List<String[]> created = new ArrayList<>();
+        if (!seedDemoUsers) return created;
         created.add(createUserIfAbsent("direktor", "direktor123", Role.EDITOR));
         created.add(createUserIfAbsent("ustoz1", "ustoz123", Role.VIEWER));
         created.add(createUserIfAbsent("ustoz2", "ustoz123", Role.VIEWER));

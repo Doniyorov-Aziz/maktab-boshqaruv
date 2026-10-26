@@ -79,8 +79,23 @@ public class ApiClient {
         return new Response(r.statusCode(), new String(r.body(), java.nio.charset.StandardCharsets.UTF_8), r);
     }
 
+    /** Signs in with a token from elsewhere (e.g. /api/auth/guest-login). */
+    public ApiClient withToken(String token) {
+        this.token = token;
+        return this;
+    }
+
+    private final java.util.Map<String, String> headers = new java.util.LinkedHashMap<>();
+
+    /** Sent with every request from now on (e.g. User-Agent). */
+    public ApiClient header(String name, String value) {
+        headers.put(name, value);
+        return this;
+    }
+
     public Response send(String method, String path, String json) throws Exception {
         HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(base + path));
+        headers.forEach(b::header);
         if (token != null) b.header("Authorization", "Bearer " + token);
         if (json != null) b.header("Content-Type", "application/json");
         b.method(method, json == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(json));
