@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import uz.azizbek.maktabboshqaruv.entity.AttendanceStatus;
+import uz.azizbek.maktabboshqaruv.service.SchoolQuarters;
 import uz.azizbek.maktabboshqaruv.service.dashboard.DashboardCache;
 import uz.azizbek.maktabboshqaruv.service.dashboard.DashboardMetrics;
 import uz.azizbek.maktabboshqaruv.service.dashboard.HomeDashboardService;
@@ -44,6 +45,10 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
     TeacherDashboardService teacherHome;
     @Autowired
     DashboardCache cache;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.service.parent.ParentDataService parentData;
+    @Autowired
+    uz.azizbek.maktabboshqaruv.service.pages.CalendarPageService calendarPage;
 
     private final List<TestSchool> others = new ArrayList<>();
     private final List<String> users = new ArrayList<>();
@@ -128,13 +133,28 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
             jdbc.update(grade, student(0, 0).getId(), school.subject.getId(), Date.valueOf("2031-01-05"), 2);
             jdbc.update(grade, student(0, 1).getId(), school.subject.getId(), Date.valueOf("2031-02-20"), 5);
 
-            HomeDashboardService.Quarter q = home.currentQuarter(school.id());
-            assertEquals(new HomeDashboardService.Quarter(2, LocalDate.of(2031, 1, 12), LocalDate.of(2031, 2, 25)), q);
+            SchoolQuarters.Quarter q = home.currentQuarter(school.id());
+            assertEquals(new SchoolQuarters.Quarter(2, LocalDate.of(2031, 1, 12), LocalDate.of(2031, 2, 25)), q);
             assertEquals(100.0, kpi("quality").value(), "only the grade inside the school's quarter counts");
             assertEquals(2, kpi("quality").extra().get("quarter"));
             HomeDashboardService.Bubble b = home.classMap(school.id()).classes().get(0);
             assertEquals(100.0, b.quality(), "the class map is not blank in the vacation");
             assertEquals(1, b.grades());
+
+            // the parents' bot: the default quarter and the dates of "2-chorak" are the school's
+            var child = student(0, 0);
+            assertEquals(2, parentData.currentQuarter(child));
+            assertArrayEquals(new LocalDate[]{LocalDate.of(2031, 1, 12), LocalDate.of(2031, 2, 25)},
+                    parentData.periodRange(child, "quarter", "2"));
+            assertArrayEquals(new LocalDate[]{LocalDate.of(2030, 11, 10), LocalDate.of(2030, 12, 28)},
+                    parentData.periodRange(child, "quarter", "1"));
+
+            // the calendar's year line: the school's quarters and vacation; today is in the vacation
+            var cal = calendarPage.overview(school.id());
+            assertEquals(List.of("QUARTER 1-chorak 2030-11-10", "QUARTER 2-chorak 2031-01-12", "VACATION Ta'til 2031-02-26"),
+                    cal.segments().stream().map(x -> x.kind() + " " + x.label() + " " + x.from()).toList());
+            assertNull(cal.quarter(), "no quarter runs in the vacation");
+            assertTrue(cal.onVacation());
         } finally {
             jdbc.update("delete from academic_term where academic_year_id = ?", yearId);
         }

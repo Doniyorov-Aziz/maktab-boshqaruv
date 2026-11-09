@@ -43,6 +43,9 @@ public class ParentDataService {
     @Autowired
     private uz.azizbek.maktabboshqaruv.service.BotCache cache;
 
+    @Autowired
+    private uz.azizbek.maktabboshqaruv.service.SchoolQuarters quarters;
+
     public LocalDate today() {
         return LocalDate.now(clock);
     }
@@ -146,11 +149,19 @@ public class ParentDataService {
 
     // ------------------------------------------------------------- attendance
 
-    /** kind: "month" (value "YYYY-MM"), "quarter" (value "1".."4") or "year". */
-    public LocalDate[] periodRange(String kind, String value) {
+    /** The child's quarter "now": its school's own quarters (O'quv yillari), in a vacation the last one. */
+    public int currentQuarter(Student s) {
+        return quarters.currentOfYear(s.getSchoolClass().getAcademicYear().getId(), today()).number();
+    }
+
+    /** kind: "month" (value "YYYY-MM"), "quarter" (value "1".."4", the school's own quarter dates) or "year". */
+    public LocalDate[] periodRange(Student s, String kind, String value) {
         LocalDate today = today();
         return switch (kind) {
-            case "quarter" -> ParentStats.quarterRange(today, Integer.parseInt(value));
+            case "quarter" -> {
+                var q = quarters.nth(s.getSchoolClass().getAcademicYear().getId(), Integer.parseInt(value), today);
+                yield new LocalDate[]{q.from(), q.to()};
+            }
             case "year" -> ParentStats.schoolYearRange(today);
             default -> {
                 YearMonth ym = value == null ? YearMonth.from(today) : YearMonth.parse(value);
@@ -160,7 +171,7 @@ public class ParentDataService {
     }
 
     public AttendanceSummary attendance(Student s, String kind, String value, String periodLabel) {
-        LocalDate[] range = periodRange(kind, value);
+        LocalDate[] range = periodRange(s, kind, value);
         List<Attendance> records = attendanceRepository
                 .findByStudentIdAndRecordDateBetweenOrderByRecordDate(s.getId(), range[0], range[1]);
         ParentStats.Counts counts = ParentStats.count(records.stream().map(Attendance::getStatus).toList());

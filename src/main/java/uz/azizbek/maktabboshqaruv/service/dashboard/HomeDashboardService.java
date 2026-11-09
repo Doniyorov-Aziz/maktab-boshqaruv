@@ -4,10 +4,10 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uz.azizbek.maktabboshqaruv.service.SchoolQuarters;
 import uz.azizbek.maktabboshqaruv.service.attendance.AttendanceSettingsService;
 import uz.azizbek.maktabboshqaruv.service.attendance.DemoMode;
 import uz.azizbek.maktabboshqaruv.service.attendance.SchoolDays;
-import uz.azizbek.maktabboshqaruv.service.parent.ParentStats;
 
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -128,11 +128,14 @@ public class HomeDashboardService {
     private final Clock clock;
     private final DemoMode demo;
     private final uz.azizbek.maktabboshqaruv.service.library.LibraryPermissions libraryPermissions;
+    private final SchoolQuarters quarters;
 
     public HomeDashboardService(NamedParameterJdbcTemplate jdbc, SchoolDays schoolDays,
                                 AttendanceSettingsService settings, Clock clock, DemoMode demo,
-                                uz.azizbek.maktabboshqaruv.service.library.LibraryPermissions libraryPermissions) {
+                                uz.azizbek.maktabboshqaruv.service.library.LibraryPermissions libraryPermissions,
+                                SchoolQuarters quarters) {
         this.libraryPermissions = libraryPermissions;
+        this.quarters = quarters;
         this.jdbc = jdbc;
         this.schoolDays = schoolDays;
         this.settings = settings;
@@ -216,36 +219,10 @@ public class HomeDashboardService {
         };
     }
 
-    /** A quarter: its number in the school year (1..4) and its dates. */
-    public record Quarter(int number, LocalDate from, LocalDate to) {
+    /** The school's quarter "now" (its own terms; in a vacation the last one) — see {@link SchoolQuarters#current}. */
+    public SchoolQuarters.Quarter currentQuarter(long schoolId) {
+        return quarters.current(schoolId, today());
     }
-
-    /**
-     * The school's quarter "now", from its own terms (O'quv yillari): the QUARTER that today falls in, or, in a
-     * vacation or the summer, the last one that ended (up to {@value #QUARTER_LOOKBACK_DAYS} days back), so the
-     * "shu chorak" numbers do not go blank between quarters. A school without terms gets the calendar quarter.
-     */
-    public Quarter currentQuarter(long schoolId) {
-        LocalDate today = today();
-        List<Map<String, Object>> rows = jdbc.queryForList("""
-                select q.start_date, q.end_date,
-                       (select count(*) from academic_term o where o.academic_year_id = q.academic_year_id
-                           and o.kind = 'QUARTER' and o.start_date <= q.start_date) as n
-                  from academic_term q join academic_year y on y.id = q.academic_year_id
-                 where y.school_id = :s and q.kind = 'QUARTER' and q.start_date <= :d and q.end_date >= :back
-                 order by q.start_date desc limit 1""",
-                p(schoolId).addValue("d", today).addValue("back", today.minusDays(QUARTER_LOOKBACK_DAYS)));
-        if (!rows.isEmpty()) {
-            Map<String, Object> r = rows.get(0);
-            return new Quarter(Math.min(4, i(r.get("n"))), ((Date) r.get("start_date")).toLocalDate(),
-                    ((Date) r.get("end_date")).toLocalDate());
-        }
-        int n = ParentStats.quarterOf(today);
-        LocalDate[] range = ParentStats.quarterRange(today, n);
-        return new Quarter(n, range[0], range[1]);
-    }
-
-    private static final int QUARTER_LOOKBACK_DAYS = 100;
 
     /** Classes with lessons today (none on a Sunday or a holiday). */
     private Set<Long> classesWithLessonsToday(long schoolId) {
@@ -294,7 +271,7 @@ public class HomeDashboardService {
                 spark.stream().map(dt -> { var r = att.get(dt); return r == null ? null : (double) i(r.get("absent")); }).toList(), e2));
 
         // grades: the period for the value, last 7 vs previous 7 school days for the change
-        Quarter quarter = currentQuarter(schoolId);
+        SchoolQuarters.Quarter quarter = currentQuarter(schoolId);
         LocalDate start = period == null || "quarter".equals(period) ? quarter.from() : periodStart(schoolId, period);
         Map<LocalDate, long[]> grades = dailyGrades(schoolId, start.isBefore(days.get(0)) ? start : days.get(0), today);
         long[] q = sum(grades, dt -> !dt.isBefore(start) && !dt.isAfter(today));

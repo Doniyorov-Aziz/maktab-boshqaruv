@@ -15,6 +15,7 @@ import uz.azizbek.maktabboshqaruv.repository.CalendarEventRepository;
 import uz.azizbek.maktabboshqaruv.repository.CalendarFeedTokenRepository;
 import uz.azizbek.maktabboshqaruv.repository.SchoolRepository;
 import uz.azizbek.maktabboshqaruv.service.CalendarEventService;
+import uz.azizbek.maktabboshqaruv.service.SchoolQuarters;
 import uz.azizbek.maktabboshqaruv.service.attendance.SchoolDays;
 import uz.azizbek.maktabboshqaruv.service.dashboard.HomeDashboardService;
 import uz.azizbek.maktabboshqaruv.service.parent.ParentStats;
@@ -73,10 +74,13 @@ public class CalendarPageService {
     private final HomeDashboardService home;
     private final SchoolDays schoolDays;
     private final Clock clock;
+    private final SchoolQuarters quarters;
 
     public CalendarPageService(NamedParameterJdbcTemplate jdbc, CalendarEventRepository events,
                                CalendarEventService eventService, CalendarFeedTokenRepository feeds,
-                               SchoolRepository schools, HomeDashboardService home, SchoolDays schoolDays, Clock clock) {
+                               SchoolRepository schools, HomeDashboardService home, SchoolDays schoolDays, Clock clock,
+                               SchoolQuarters quarters) {
+        this.quarters = quarters;
         this.jdbc = jdbc;
         this.events = events;
         this.eventService = eventService;
@@ -99,14 +103,29 @@ public class CalendarPageService {
         LocalDate[] year = schoolYear(schoolId, today);
         List<CalendarEvent> inYear = events.findInRange(schoolId, year[0], year[1]);
 
+        // the quarters and vacations the school entered on O'quv yillari; the calendar quarters when it has none
         List<Segment> segments = new ArrayList<>();
-        for (int q = 1; q <= 4; q++) {
-            LocalDate[] r = ParentStats.quarterRange(year[0], q);
-            LocalDate to = q == 4 && r[1].isAfter(year[1]) ? year[1] : r[1];
-            segments.add(new Segment("QUARTER", q + "-chorak", r[0], to));
+        Long yearId = schoolYearId(schoolId, today);
+        List<SchoolQuarters.Term> terms = yearId == null ? List.of() : quarters.terms(yearId);
+        if (terms.stream().anyMatch(t -> "QUARTER".equals(t.kind()))) {
+            int n = 0;
+            for (SchoolQuarters.Term t : terms) {
+                segments.add("QUARTER".equals(t.kind()) ? new Segment("QUARTER", (++n) + "-chorak", t.from(), t.to())
+                        : new Segment("VACATION", t.name(), t.from(), t.to()));
+            }
+        } else {
+            for (int q = 1; q <= 4; q++) {
+                LocalDate[] r = ParentStats.quarterRange(year[0], q);
+                LocalDate to = q == 4 && r[1].isAfter(year[1]) ? year[1] : r[1];
+                segments.add(new Segment("QUARTER", q + "-chorak", r[0], to));
+            }
         }
+        // a vacation event the terms already show is not drawn twice
         for (CalendarEvent e : inYear) {
-            if (e.getType() == CalendarEventType.VACATION) segments.add(new Segment("VACATION", e.getTitle(), e.getStartDate(), e.getEndDate()));
+            if (e.getType() != CalendarEventType.VACATION) continue;
+            boolean shown = segments.stream().anyMatch(s -> s.kind().equals("VACATION")
+                    && !s.from().isAfter(e.getEndDate()) && !s.to().isBefore(e.getStartDate()));
+            if (!shown) segments.add(new Segment("VACATION", e.getTitle(), e.getStartDate(), e.getEndDate()));
         }
 
         // the quarter we are in: share of its school days gone, school days left
@@ -128,7 +147,8 @@ public class CalendarPageService {
         }
 
         EventRef next = null, exam = null, vacation = null;
-        boolean onVacation = false;
+        boolean onVacation = segments.stream().anyMatch(s -> s.kind().equals("VACATION")
+                && !today.isBefore(s.from()) && !today.isAfter(s.to()));
         int[] byMonth = new int[12];
         int monthEvents = 0;
         for (CalendarEvent e : inYear) {
@@ -158,6 +178,14 @@ public class CalendarPageService {
      * The academic year that holds today; when none does (the new year is not entered yet, or it is
      * summer), the school year around today: September 1 – May 31.
      */
+    /** The id of the academic year that holds today, or null. */
+    private Long schoolYearId(long schoolId, LocalDate today) {
+        List<Long> ids = jdbc.queryForList("""
+                select id from academic_year where school_id = :s and :t between start_date and end_date
+                 order by start_date desc limit 1""", p(schoolId).addValue("t", today), Long.class);
+        return ids.isEmpty() ? null : ids.get(0);
+    }
+
     LocalDate[] schoolYear(long schoolId, LocalDate today) {
         List<Map<String, Object>> years = jdbc.queryForList("""
                 select start_date, end_date from academic_year

@@ -44,7 +44,7 @@ public class AttendanceScreen implements Screen {
         String kind = cb.get("k", "m");
         YearMonth thisMonth = YearMonth.from(data.today());
         YearMonth month = parseMonth(cb.get("m"), thisMonth);
-        int quarter = cb.getInt("q", ParentStats.quarterOf(data.today()));
+        int quarter = cb.getInt("q", data.currentQuarter(ctx.student()));
         String view = cb.get("v", "sum");
 
         String kindCode = switch (kind) {
