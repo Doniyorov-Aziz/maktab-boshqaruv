@@ -202,8 +202,8 @@ public class AttendanceScreen implements Screen {
         return switch (kind) {
             case "quarter" -> ctx.t("att.period.quarter", "n", quarter);
             case "year" -> {
-                int start = ParentStats.schoolYearStart(data.today());
-                yield ctx.t("att.period.year", "from", start, "to", start + 1);
+                LocalDate[] year = data.schoolYear(ctx.student());
+                yield ctx.t("att.period.year", "from", year[0].getYear(), "to", year[1].getYear());
             }
             default -> ctx.i18n().monthYear(ctx.lang(), month.getMonthValue(), month.getYear());
         };

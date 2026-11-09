@@ -161,6 +161,20 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
     }
 
     @Test
+    void parentsBot_schoolYearIsTheClasssAcademicYear() {
+        at(10, 40); // 2031-03-03; the fixture's year is 2030-09-01 – 2031-06-30
+        var child = student(0, 0);
+        assertArrayEquals(new LocalDate[]{LocalDate.of(2030, 9, 1), LocalDate.of(2031, 6, 30)}, parentData.schoolYear(child));
+        assertArrayEquals(parentData.schoolYear(child), parentData.periodRange(child, "year", null));
+
+        // a year that is long over (or not started) falls back to the calendar school year around today
+        long yearId = school.classes.get(0).getAcademicYear().getId();
+        jdbc.update("update academic_year set start_date = ?, end_date = ? where id = ?",
+                Date.valueOf("2029-09-01"), Date.valueOf("2030-05-31"), yearId);
+        assertArrayEquals(new LocalDate[]{LocalDate.of(2030, 9, 1), LocalDate.of(2031, 8, 31)}, parentData.schoolYear(child));
+    }
+
+    @Test
     void gradeDistribution_skipsVacationWeeks_andLabelsThemWithDates() {
         at(10, 40); // Monday 2031-03-03
         String grade = "insert into grade (student_id, subject_id, grade_date, score, type, created_date) values (?, ?, ?, ?, 'CURRENT', now())";

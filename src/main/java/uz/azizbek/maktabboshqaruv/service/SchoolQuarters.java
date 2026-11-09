@@ -47,6 +47,24 @@ public class SchoolQuarters {
         return out;
     }
 
+    /**
+     * The dates of a school year as entered (O'quv yillari) while {@code today} is in it or in the summer after it
+     * (up to {@value #LOOKBACK_DAYS} days past its end); otherwise — the year has not started, or is long over — the
+     * calendar school year around today (Sep 1 – Aug 31).
+     */
+    public LocalDate[] yearRange(long yearId, LocalDate today) {
+        List<Map<String, Object>> rows = jdbc.queryForList("select start_date, end_date from academic_year where id = :y",
+                new MapSqlParameterSource("y", yearId));
+        if (!rows.isEmpty()) {
+            LocalDate from = date(rows.get(0).get("start_date"));
+            LocalDate to = date(rows.get(0).get("end_date"));
+            if (from != null && to != null && !today.isBefore(from) && !today.isAfter(to.plusDays(LOOKBACK_DAYS))) {
+                return new LocalDate[]{from, to};
+            }
+        }
+        return ParentStats.schoolYearRange(today);
+    }
+
     /** The quarters of an academic year, numbered 1.. in date order; empty when none were entered. */
     public List<Quarter> ofYear(long yearId) {
         List<Quarter> out = new ArrayList<>();

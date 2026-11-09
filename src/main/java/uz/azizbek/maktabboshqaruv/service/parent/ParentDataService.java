@@ -149,6 +149,11 @@ public class ParentDataService {
 
     // ------------------------------------------------------------- attendance
 
+    /** The child's school year: its class's year as the school entered it (O'quv yillari), else Sep 1 – Aug 31. */
+    public LocalDate[] schoolYear(Student s) {
+        return quarters.yearRange(s.getSchoolClass().getAcademicYear().getId(), today());
+    }
+
     /** The child's quarter "now": its school's own quarters (O'quv yillari), in a vacation the last one. */
     public int currentQuarter(Student s) {
         return quarters.currentOfYear(s.getSchoolClass().getAcademicYear().getId(), today()).number();
@@ -162,7 +167,7 @@ public class ParentDataService {
                 var q = quarters.nth(s.getSchoolClass().getAcademicYear().getId(), Integer.parseInt(value), today);
                 yield new LocalDate[]{q.from(), q.to()};
             }
-            case "year" -> ParentStats.schoolYearRange(today);
+            case "year" -> schoolYear(s);
             default -> {
                 YearMonth ym = value == null ? YearMonth.from(today) : YearMonth.parse(value);
                 yield new LocalDate[]{ym.atDay(1), ym.atEndOfMonth()};
@@ -238,7 +243,7 @@ public class ParentDataService {
      */
     public List<SubjectAverage> subjectAverages(Student s) {
         LocalDate today = today();
-        LocalDate[] year = ParentStats.schoolYearRange(today);
+        LocalDate[] year = schoolYear(s);
         List<Grade> all = gradeRepository.findByStudentIdOrderByGradeDateDesc(s.getId());
         YearMonth thisMonth = YearMonth.from(today);
         YearMonth previous = thisMonth.minusMonths(1);
@@ -276,7 +281,7 @@ public class ParentDataService {
      * the child's own average. Only averages — never other children's names or grades.
      */
     public Map<Long, Double> classSubjectAverages(Student s) {
-        LocalDate[] year = ParentStats.schoolYearRange(today());
+        LocalDate[] year = schoolYear(s);
         Map<Long, Double> result = new LinkedHashMap<>();
         for (Object[] row : gradeRepository.classAverageBySubjectBetween(s.getSchoolClass().getId(), year[0], year[1])) {
             if (row[0] != null && row[1] != null) {
@@ -288,7 +293,7 @@ public class ParentDataService {
 
     /** All of the current school year's grades in one subject, with its teacher. */
     public SubjectDetail subjectDetail(Student s, Long subjectId) {
-        LocalDate[] year = ParentStats.schoolYearRange(today());
+        LocalDate[] year = schoolYear(s);
         List<Grade> grades = gradeRepository.findByStudentIdOrderByGradeDateDesc(s.getId()).stream()
                 .filter(g -> g.getSubject().getId().equals(subjectId) && inRange(g.getGradeDate(), year)).toList();
         String subjectName = grades.isEmpty() ? null : grades.get(0).getSubject().getName();
