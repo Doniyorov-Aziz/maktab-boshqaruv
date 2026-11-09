@@ -161,6 +161,31 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
     }
 
     @Test
+    void gradeDistribution_skipsVacationWeeks_andLabelsThemWithDates() {
+        at(10, 40); // Monday 2031-03-03
+        String grade = "insert into grade (student_id, subject_id, grade_date, score, type, created_date) values (?, ?, ?, ?, 'CURRENT', now())";
+        jdbc.update(grade, student(0, 0).getId(), school.subject.getId(), Date.valueOf("2031-02-20"), 5);
+        jdbc.update(grade, student(0, 1).getId(), school.subject.getId(), Date.valueOf("2031-02-21"), 4);
+        jdbc.update(grade, student(0, 2).getId(), school.subject.getId(), Date.valueOf("2031-02-12"), 2);
+
+        // an ordinary week: this week and last week, both empty here
+        List<HomeDashboardService.GradeWeek> plain = home.gradeDistribution(school.id());
+        assertEquals(List.of("Shu hafta", "O'tgan hafta"), plain.stream().map(HomeDashboardService.GradeWeek::label).toList());
+        assertEquals(0, plain.get(0).total() + plain.get(1).total());
+
+        // a vacation from Feb 24 to Mar 8: this week and last week have no lessons — the two weeks before them show
+        jdbc.update("insert into calendar_event (school_id, title, type, start_date, end_date, created_date, seeded, notify_parents) "
+                + "values (?, 'Ta''til', 'VACATION', ?, ?, now(), false, false)", school.id(), Date.valueOf("2031-02-24"), Date.valueOf("2031-03-08"));
+        List<HomeDashboardService.GradeWeek> w = home.gradeDistribution(school.id());
+        assertEquals(List.of("17-fev – 23-fev", "10-fev – 16-fev"), w.stream().map(HomeDashboardService.GradeWeek::label).toList());
+        assertEquals(LocalDate.of(2031, 2, 17), w.get(0).from());
+        assertEquals(LocalDate.of(2031, 2, 23), w.get(0).to());
+        assertEquals(2, w.get(0).total());
+        assertEquals(1, w.get(1).total());
+        assertEquals(1, w.get(1).counts().get(2));
+    }
+
+    @Test
     void teacherDiscipline_countsOnlyManualAndDevice() {
         at(10, 40); // lessons 1 and 2 of today are over
         put(0, 0, 0, LocalDate.of(2031, 3, 3), AttendanceStatus.PRESENT, "AUTO_CARRY");

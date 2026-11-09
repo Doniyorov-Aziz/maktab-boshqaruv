@@ -706,21 +706,53 @@ public class HomeDashboardService {
 
     // ------------------------------------------------------------------ 6.8 grade distribution (weeks)
 
+    /**
+     * The grades of the last two weeks that had lessons, 5 / 4 / 3 / 2 each: normally this week and last week; a
+     * vacation week has no school days and is skipped, so after a break the widget shows the weeks before it, labelled
+     * with their dates ("26-okt – 1-noy").
+     */
     public List<GradeWeek> gradeDistribution(long schoolId) {
         LocalDate today = today();
         LocalDate monday = today.with(DayOfWeek.MONDAY);
-        LocalDate prevMonday = monday.minusWeeks(1);
+        List<LocalDate> weeks = new ArrayList<>();
+        List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, today, 30);
+        for (int k = days.size() - 1; k >= 0 && weeks.size() < 2; k--) {
+            LocalDate m = days.get(k).with(DayOfWeek.MONDAY);
+            if (!weeks.contains(m)) weeks.add(m);
+        }
+        if (weeks.isEmpty()) weeks.add(monday);
+        if (weeks.size() < 2) weeks.add(weeks.get(0).minusWeeks(1));
+        LocalDate cur = weeks.get(0);
+        LocalDate prev = weeks.get(1);
+        LocalDate curTo = min(cur.plusDays(6), today);
+        LocalDate prevTo = prev.plusDays(6);
         Map<Boolean, Map<Integer, Integer>> counts = new HashMap<>();
         for (Map<String, Object> r : jdbc.queryForList("""
-                select (g.grade_date >= :monday) as cur, least(greatest(g.score, 2), 5) as score, count(*) as n
+                select (g.grade_date >= :cf) as cur, least(greatest(g.score, 2), 5) as score, count(*) as n
                   from grade g join students st on st.id = g.student_id
                   join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
-                 where y.school_id = :s and g.grade_date between :from and :to
-                 group by 1, 2""", p(schoolId).addValue("monday", monday).addValue("from", prevMonday).addValue("to", today))) {
+                 where y.school_id = :s and (g.grade_date between :cf and :ct or g.grade_date between :pf and :pt)
+                 group by 1, 2""", p(schoolId).addValue("cf", cur).addValue("ct", curTo)
+                .addValue("pf", prev).addValue("pt", prevTo))) {
             counts.computeIfAbsent(Boolean.TRUE.equals(r.get("cur")), k -> new HashMap<>()).put(i(r.get("score")), i(r.get("n")));
         }
-        return List.of(week("Shu hafta", monday, today, counts.getOrDefault(true, Map.of())),
-                week("O'tgan hafta", prevMonday, monday.minusDays(1), counts.getOrDefault(false, Map.of())));
+        return List.of(week(weekLabel(cur, monday), cur, curTo, counts.getOrDefault(true, Map.of())),
+                week(weekLabel(prev, monday), prev, prevTo, counts.getOrDefault(false, Map.of())));
+    }
+
+    private static final String[] MONTHS_SHORT = {"yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avg", "sen", "okt", "noy", "dek"};
+
+    /** "Shu hafta", "O'tgan hafta", or the week's dates: "26-okt – 1-noy". */
+    static String weekLabel(LocalDate weekMonday, LocalDate thisMonday) {
+        if (weekMonday.equals(thisMonday)) return "Shu hafta";
+        if (weekMonday.equals(thisMonday.minusWeeks(1))) return "O'tgan hafta";
+        LocalDate sunday = weekMonday.plusDays(6);
+        return weekMonday.getDayOfMonth() + "-" + MONTHS_SHORT[weekMonday.getMonthValue() - 1] + " – "
+                + sunday.getDayOfMonth() + "-" + MONTHS_SHORT[sunday.getMonthValue() - 1];
+    }
+
+    private static LocalDate min(LocalDate a, LocalDate b) {
+        return a.isBefore(b) ? a : b;
     }
 
     static GradeWeek week(String label, LocalDate from, LocalDate to, Map<Integer, Integer> c) {

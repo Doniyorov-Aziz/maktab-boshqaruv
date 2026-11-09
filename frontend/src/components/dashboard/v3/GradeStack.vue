@@ -1,7 +1,7 @@
 <template>
   <ChartCard
     title="Baholar taqsimoti"
-    subtitle="Shu hafta va o'tgan hafta"
+    :subtitle="subtitle"
     :as-of="asOf"
     :loading="loading"
     :error="error"
@@ -76,6 +76,13 @@ const diff = (a, b, digits) =>
   a === null || a === undefined || b === null || b === undefined
     ? null
     : Math.round((a - b) * 10 ** digits) / 10 ** digits
+
+// after a vacation the backend sends the last two weeks that had lessons, labelled with their dates
+const subtitle = computed(() =>
+  !data.value || data.value[0]?.label === 'Shu hafta'
+    ? "Shu hafta va o'tgan hafta"
+    : "Dars bo'lgan oxirgi ikki hafta (ta'til haftalari o'tkazib yuborildi)"
+)
 
 const stats = computed(() => {
   const [now, before] = data.value || [{}, {}]
