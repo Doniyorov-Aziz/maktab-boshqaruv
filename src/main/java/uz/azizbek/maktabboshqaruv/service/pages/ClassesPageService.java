@@ -10,7 +10,6 @@ import uz.azizbek.maktabboshqaruv.service.attendance.SchoolDays;
 import uz.azizbek.maktabboshqaruv.service.dashboard.DashboardCache;
 import uz.azizbek.maktabboshqaruv.service.dashboard.DashboardMetrics;
 import uz.azizbek.maktabboshqaruv.service.dashboard.HomeDashboardService;
-import uz.azizbek.maktabboshqaruv.service.parent.ParentStats;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -137,7 +136,7 @@ public class ClassesPageService {
         LocalDate from30 = today.minusDays(29);
         LocalDate first = days.isEmpty() || days.get(0).isAfter(from30) ? from30 : days.get(0);
         Map<Long, Map<LocalDate, long[]>> daily = home.classDaily(schoolId, first, today);
-        LocalDate qFrom = ParentStats.quarterRange(today, ParentStats.quarterOf(today))[0];
+        LocalDate qFrom = home.currentQuarter(schoolId).from();
         Map<String, long[]> quarter = grades(schoolId, qFrom, today, false, null);
         Map<String, long[]> last30 = grades(schoolId, today.minusDays(29), today, false, null);
         Map<String, long[]> prev30 = grades(schoolId, today.minusDays(59), today.minusDays(30), false, null);
@@ -204,7 +203,7 @@ public class ClassesPageService {
         List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, today, SPARK_DAYS);
         LocalDate first = days.isEmpty() ? today.minusDays(29) : days.get(0);
         Map<Long, Map<LocalDate, long[]>> daily = home.classDaily(schoolId, first.isBefore(today.minusDays(29)) ? first : today.minusDays(29), today);
-        LocalDate qFrom = ParentStats.quarterRange(today, ParentStats.quarterOf(today))[0];
+        LocalDate qFrom = home.currentQuarter(schoolId).from();
         Map<String, long[]> quarter = grades(schoolId, qFrom, today, false, null);
         Map<String, long[]> bySubject = grades(schoolId, qFrom, today, true, null);
         Map<Long, String[]> subjects = subjects(schoolId);
@@ -272,7 +271,7 @@ public class ClassesPageService {
         List<LocalDate> days = schoolDays.lastSchoolDays(schoolId, today, SPARK_DAYS);
         LocalDate first = days.isEmpty() || days.get(0).isAfter(today.minusDays(29)) ? today.minusDays(29) : days.get(0);
         Map<Long, Map<LocalDate, long[]>> daily = home.classDaily(schoolId, first, today);
-        LocalDate qFrom = ParentStats.quarterRange(today, ParentStats.quarterOf(today))[0];
+        LocalDate qFrom = home.currentQuarter(schoolId).from();
         Map<String, long[]> quarter = grades(schoolId, qFrom, today, false, classId);
         Map<String, long[]> last30 = grades(schoolId, today.minusDays(29), today, false, classId);
         Map<String, long[]> prev30 = grades(schoolId, today.minusDays(59), today.minusDays(30), false, classId);

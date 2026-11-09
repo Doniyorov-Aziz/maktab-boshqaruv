@@ -115,6 +115,32 @@ class HomeDashboardIntegrationTest extends AttendanceAutomationTestBase {
     }
 
     @Test
+    void inAVacation_theQuarterIsTheSchoolsLastTerm_notTheCalendarOne() {
+        at(10, 40); // Monday 2031-03-03 — a vacation in this school's terms
+        long yearId = school.classes.get(0).getAcademicYear().getId();
+        String term = "insert into academic_term (academic_year_id, name, kind, start_date, end_date) values (?, ?, ?, ?, ?)";
+        try {
+            jdbc.update(term, yearId, "1-chorak", "QUARTER", Date.valueOf("2030-11-10"), Date.valueOf("2030-12-28"));
+            jdbc.update(term, yearId, "2-chorak", "QUARTER", Date.valueOf("2031-01-12"), Date.valueOf("2031-02-25"));
+            jdbc.update(term, yearId, "Ta'til", "VACATION", Date.valueOf("2031-02-26"), Date.valueOf("2031-03-08"));
+            String grade = "insert into grade (student_id, subject_id, grade_date, score, type, created_date) values (?, ?, ?, ?, 'CURRENT', now())";
+            // 2031-01-05 is in the calendar's 3rd quarter (from Jan 1) but in this school's winter break
+            jdbc.update(grade, student(0, 0).getId(), school.subject.getId(), Date.valueOf("2031-01-05"), 2);
+            jdbc.update(grade, student(0, 1).getId(), school.subject.getId(), Date.valueOf("2031-02-20"), 5);
+
+            HomeDashboardService.Quarter q = home.currentQuarter(school.id());
+            assertEquals(new HomeDashboardService.Quarter(2, LocalDate.of(2031, 1, 12), LocalDate.of(2031, 2, 25)), q);
+            assertEquals(100.0, kpi("quality").value(), "only the grade inside the school's quarter counts");
+            assertEquals(2, kpi("quality").extra().get("quarter"));
+            HomeDashboardService.Bubble b = home.classMap(school.id()).classes().get(0);
+            assertEquals(100.0, b.quality(), "the class map is not blank in the vacation");
+            assertEquals(1, b.grades());
+        } finally {
+            jdbc.update("delete from academic_term where academic_year_id = ?", yearId);
+        }
+    }
+
+    @Test
     void teacherDiscipline_countsOnlyManualAndDevice() {
         at(10, 40); // lessons 1 and 2 of today are over
         put(0, 0, 0, LocalDate.of(2031, 3, 3), AttendanceStatus.PRESENT, "AUTO_CARRY");

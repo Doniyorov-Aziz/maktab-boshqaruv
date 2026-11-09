@@ -207,14 +207,45 @@ public class HomeDashboardService {
     }
 
     /** The start of a period that ends today: quarter (default), month or week (from Monday). */
-    LocalDate periodStart(String period) {
+    LocalDate periodStart(long schoolId, String period) {
         LocalDate today = today();
         return switch (period == null ? "quarter" : period) {
             case "month" -> today.withDayOfMonth(1);
             case "week" -> today.with(DayOfWeek.MONDAY);
-            default -> ParentStats.quarterRange(today, ParentStats.quarterOf(today))[0];
+            default -> currentQuarter(schoolId).from();
         };
     }
+
+    /** A quarter: its number in the school year (1..4) and its dates. */
+    public record Quarter(int number, LocalDate from, LocalDate to) {
+    }
+
+    /**
+     * The school's quarter "now", from its own terms (O'quv yillari): the QUARTER that today falls in, or, in a
+     * vacation or the summer, the last one that ended (up to {@value #QUARTER_LOOKBACK_DAYS} days back), so the
+     * "shu chorak" numbers do not go blank between quarters. A school without terms gets the calendar quarter.
+     */
+    public Quarter currentQuarter(long schoolId) {
+        LocalDate today = today();
+        List<Map<String, Object>> rows = jdbc.queryForList("""
+                select q.start_date, q.end_date,
+                       (select count(*) from academic_term o where o.academic_year_id = q.academic_year_id
+                           and o.kind = 'QUARTER' and o.start_date <= q.start_date) as n
+                  from academic_term q join academic_year y on y.id = q.academic_year_id
+                 where y.school_id = :s and q.kind = 'QUARTER' and q.start_date <= :d and q.end_date >= :back
+                 order by q.start_date desc limit 1""",
+                p(schoolId).addValue("d", today).addValue("back", today.minusDays(QUARTER_LOOKBACK_DAYS)));
+        if (!rows.isEmpty()) {
+            Map<String, Object> r = rows.get(0);
+            return new Quarter(Math.min(4, i(r.get("n"))), ((Date) r.get("start_date")).toLocalDate(),
+                    ((Date) r.get("end_date")).toLocalDate());
+        }
+        int n = ParentStats.quarterOf(today);
+        LocalDate[] range = ParentStats.quarterRange(today, n);
+        return new Quarter(n, range[0], range[1]);
+    }
+
+    private static final int QUARTER_LOOKBACK_DAYS = 100;
 
     /** Classes with lessons today (none on a Sunday or a holiday). */
     private Set<Long> classesWithLessonsToday(long schoolId) {
@@ -263,7 +294,8 @@ public class HomeDashboardService {
                 spark.stream().map(dt -> { var r = att.get(dt); return r == null ? null : (double) i(r.get("absent")); }).toList(), e2));
 
         // grades: the period for the value, last 7 vs previous 7 school days for the change
-        LocalDate start = periodStart(period);
+        Quarter quarter = currentQuarter(schoolId);
+        LocalDate start = period == null || "quarter".equals(period) ? quarter.from() : periodStart(schoolId, period);
         Map<LocalDate, long[]> grades = dailyGrades(schoolId, start.isBefore(days.get(0)) ? start : days.get(0), today);
         long[] q = sum(grades, dt -> !dt.isBefore(start) && !dt.isAfter(today));
         List<LocalDate> last7 = days.subList(Math.max(0, days.size() - 7), days.size());
@@ -272,7 +304,7 @@ public class HomeDashboardService {
         long[] gp7 = sum(grades, prev7::contains);
         Map<String, Object> eq = new LinkedHashMap<>();
         eq.put("period", period == null ? "quarter" : period);
-        eq.put("quarter", ParentStats.quarterOf(today));
+        eq.put("quarter", quarter.number());
         eq.put("from", start.toString());
         eq.put("grades", q[0]);
         out.add(new Kpi("mastery", pct(q[1], q[0]), minus(pct(g7[1], g7[0]), pct(gp7[1], gp7[0])), true,
@@ -480,7 +512,7 @@ public class HomeDashboardService {
     public ClassMap classMap(long schoolId) {
         LocalDate today = today();
         LocalDate from = today.minusDays(29);
-        LocalDate qFrom = periodStart("quarter");
+        LocalDate qFrom = currentQuarter(schoolId).from();
         Map<Long, long[]> att = new HashMap<>(); // present, late, absent
         for (Map<String, Object> r : jdbc.queryForList("with " + DAY_CTE + """
                 select class_id,
@@ -686,7 +718,7 @@ public class HomeDashboardService {
                   join students st on st.id = g.student_id
                   join school_class c on c.id = st.class_id join academic_year y on y.id = c.academic_year_id
                  where y.school_id = :s and g.grade_date between :from and :to
-                 group by s.id, s.name""", p(schoolId).addValue("from", periodStart(period)).addValue("to", today))) {
+                 group by s.id, s.name""", p(schoolId).addValue("from", periodStart(schoolId, period)).addValue("to", today))) {
             long total = l(r.get("total"));
             rows.add(new SubjectRow(l(r.get("id")), (String) r.get("name"), (int) total,
                     pct(l(r.get("passed")), total), pct(l(r.get("good")), total)));

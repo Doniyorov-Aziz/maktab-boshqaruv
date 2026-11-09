@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.azizbek.maktabboshqaruv.entity.Role;
 import uz.azizbek.maktabboshqaruv.service.SchoolAccessService;
 import uz.azizbek.maktabboshqaruv.service.attendance.SchoolDays;
-import uz.azizbek.maktabboshqaruv.service.parent.ParentStats;
 
 import java.sql.Date;
 import java.time.Clock;
@@ -239,11 +238,11 @@ public class TeacherDashboardService {
             // [present, base without the excused, marked]
             byDay.put(((Date) r.get("d")).toLocalDate(), new long[]{l(r.get("present")), l(r.get("counted")), l(r.get("marked"))});
         }
-        LocalDate[] q = ParentStats.quarterRange(today, ParentStats.quarterOf(today));
+        LocalDate qFrom = home.currentQuarter(schoolId).from();
         Map<String, Object> g = jdbc.queryForMap("""
                 select count(*) as total, count(*) filter (where g.score >= 3) as passed, count(*) filter (where g.score >= 4) as good
                   from grade g join students st on st.id = g.student_id where st.class_id = :c and g.grade_date between :qf and :to""",
-                p.addValue("qf", q[0]));
+                p.addValue("qf", qFrom));
         long[] t = byDay.get(today);
         long total = l(g.get("total"));
         return new MyClass(classId, (String) cls.get("name"), i(cls.get("students")), t == null ? null : pct(t[0], t[1]),
