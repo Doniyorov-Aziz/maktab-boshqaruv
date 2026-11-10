@@ -80,7 +80,7 @@
             <div class="stat__value text-positive">
               {{ money(summary.collected) }}
             </div>
-            <div class="stat__label">yig'ilgan ({{ collectedPercent }}%)</div>
+            <div class="stat__label">yig'ilgan ({{ collectedPercent }})</div>
           </div>
         </div>
         <div class="col-6 col-md-3">
@@ -570,11 +570,13 @@ const monthOptions = computed(() => {
   return out.reverse()
 })
 
-const collectedPercent = computed(() =>
-  summary.value?.expected
-    ? Math.round((100 * summary.value.collected) / summary.value.expected)
-    : 0
-)
+// a small share is "<1%", never a misleading "0%"
+const collectedPercent = computed(() => {
+  const s = summary.value
+  if (!s?.expected) return '0%'
+  const p = (100 * s.collected) / s.expected
+  return s.collected > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`
+})
 
 const debtorColumns = [
   {
