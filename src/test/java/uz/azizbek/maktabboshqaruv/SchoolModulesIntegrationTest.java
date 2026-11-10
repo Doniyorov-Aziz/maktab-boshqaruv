@@ -108,6 +108,10 @@ class SchoolModulesIntegrationTest {
     @AfterEach
     void cleanUp() {
         jdbc.update("delete from notification_log where chat_id = ? or reference_id in (select id from homework where created_by like 'mod_%')", chatId);
+        // the modules' messages exist in the test database only because of this class: none may wait in the outbox
+        // (other tests expect their own row to be the next one sent)
+        jdbc.update("delete from notification_log where type in ('HOMEWORK', 'EXAM_REMINDER', 'MEETING', 'PAYMENT_REMINDER', "
+                + "'REPORT_CARD', 'ACHIEVEMENT', 'MODULE_FILE')");
         jdbc.update("delete from homework where created_by like 'mod_%'");
         jdbc.update("delete from grade where created_by like 'mod_%' or comment like '%" + TAG + "%'");
         jdbc.update("delete from grade where exam_id in (select id from exam where created_by like 'mod_%')");
