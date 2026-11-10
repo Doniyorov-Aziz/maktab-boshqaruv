@@ -87,6 +87,8 @@
         <q-tab name="attendance" label="Davomat" />
         <q-tab name="behavior" label="Xulq" />
         <q-tab name="schedule" label="Dars jadvali" />
+        <q-tab name="tabel" label="Tabel" />
+        <q-tab name="achievements" label="Yutuqlar" />
       </q-tabs>
 
       <q-tab-panels v-model="tab" animated class="bg-transparent">
@@ -253,6 +255,91 @@
             <div v-else class="muted-text">Dars jadvali topilmadi</div>
           </div>
         </q-tab-panel>
+
+        <q-tab-panel name="tabel" class="q-pa-none">
+          <div class="brand-card q-pa-md">
+            <div v-if="!tabel" class="row justify-center q-pa-md">
+              <q-spinner color="primary" />
+            </div>
+            <template v-else-if="tabel.terms.length">
+              <q-markup-table flat dense class="tabel-table">
+                <thead>
+                  <tr>
+                    <th class="text-left">Fan</th>
+                    <th v-for="t in tabel.terms" :key="t.id">{{ t.name }}</th>
+                    <th>Yillik</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="s in tabel.subjects" :key="s.subject">
+                    <td class="text-left">{{ s.subject }}</td>
+                    <td
+                      v-for="(q, i) in s.quarters"
+                      :key="i"
+                      class="text-center text-weight-bold"
+                    >
+                      {{ q ?? '—' }}
+                    </td>
+                    <td class="text-center text-weight-bold text-primary">
+                      {{ s.year ?? '—' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </q-markup-table>
+              <div class="row justify-end q-mt-sm">
+                <AppButton
+                  variant="secondary"
+                  icon="picture_as_pdf"
+                  label="Tabel (PDF)"
+                  @click="tabelPdf"
+                />
+              </div>
+            </template>
+            <div v-else class="muted-text">
+              Bu o'quv yili uchun choraklar kiritilmagan
+            </div>
+          </div>
+        </q-tab-panel>
+
+        <q-tab-panel name="achievements" class="q-pa-none">
+          <div class="brand-card q-pa-md">
+            <q-list v-if="achievements?.length" separator>
+              <q-item v-for="a in achievements" :key="a.id">
+                <q-item-section avatar>
+                  <span class="medal">{{
+                    a.place === 1
+                      ? '🥇'
+                      : a.place === 2
+                        ? '🥈'
+                        : a.place === 3
+                          ? '🥉'
+                          : '🎖'
+                  }}</span>
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label class="text-weight-medium">{{
+                    a.title
+                  }}</q-item-label>
+                  <q-item-label caption>
+                    {{ achievementLevels[a.level]?.label }} ·
+                    {{ achievementCategories[a.category]?.label }}
+                    <span v-if="a.place"> · {{ a.place }}-o'rin</span>
+                    <span v-if="a.subjectName"> · {{ a.subjectName }}</span>
+                  </q-item-label>
+                </q-item-section>
+                <q-item-section side>{{
+                  formatDate(a.achievedOn)
+                }}</q-item-section>
+              </q-item>
+            </q-list>
+            <div v-else-if="achievements" class="muted-text">
+              Yutuqlar kiritilmagan
+            </div>
+            <div v-else class="row justify-center q-pa-md">
+              <q-spinner color="primary" />
+            </div>
+          </div>
+        </q-tab-panel>
       </q-tab-panels>
     </template>
   </page-layout>
@@ -260,7 +347,12 @@
 
 <script setup>
 import AppButton from '@/components/app/AppButton.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import {
+  achievementCategories,
+  achievementLevels,
+  saveFile
+} from '@/utils/modules'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/boot/axios'
 import PageLayout from '@/components/PageLayout.vue'
@@ -368,11 +460,46 @@ async function load() {
 }
 
 load()
+
+// Tabel and Yutuqlar are read when their tab is opened
+const tabel = ref(null)
+const achievements = ref(null)
+watch(tab, async t => {
+  try {
+    if (t === 'tabel' && !tabel.value) {
+      tabel.value = (
+        await api.get('/api/report-cards/student', {
+          params: { studentId: route.params.id }
+        })
+      ).data
+    }
+    if (t === 'achievements' && !achievements.value) {
+      achievements.value = (
+        await api.get(`/api/achievements/student/${route.params.id}`)
+      ).data
+    }
+  } catch {
+    if (t === 'tabel') tabel.value = { terms: [], subjects: [] }
+    if (t === 'achievements') achievements.value = []
+  }
+})
+
+function tabelPdf() {
+  saveFile(
+    '/api/report-cards/pdf',
+    { classId: profile.value.schoolClassId, studentId: route.params.id },
+    `tabel-${profile.value.fullName || route.params.id}.pdf`
+  )
+}
 </script>
 
 <style scoped>
 .muted-text {
   color: var(--brand-text-muted);
+}
+
+.medal {
+  font-size: 22px;
 }
 
 .tabs-bar {

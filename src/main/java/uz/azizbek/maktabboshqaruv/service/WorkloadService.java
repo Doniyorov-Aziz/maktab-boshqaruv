@@ -31,7 +31,9 @@ public class WorkloadService {
                       int planned, int substitutedAway, int coveredForOthers, int total) {
     }
 
-    public record Report(LocalDate from, LocalDate to, int schoolDays, List<Row> rows, int totalWeekly, int totalHeld) {
+    /** {@code countedTo}: the last day counted — the period's end, or today when the period runs into the future. */
+    public record Report(LocalDate from, LocalDate to, LocalDate countedTo, int schoolDays, List<Row> rows, int totalWeekly,
+                         int totalHeld) {
     }
 
     /** Longest period one request may ask for. */
@@ -40,11 +42,14 @@ public class WorkloadService {
     private final NamedParameterJdbcTemplate jdbc;
     private final SchoolDays schoolDays;
     private final SchoolAccessService access;
+    private final java.time.Clock clock;
 
-    public WorkloadService(NamedParameterJdbcTemplate jdbc, SchoolDays schoolDays, SchoolAccessService access) {
+    public WorkloadService(NamedParameterJdbcTemplate jdbc, SchoolDays schoolDays, SchoolAccessService access,
+                           java.time.Clock clock) {
         this.jdbc = jdbc;
         this.schoolDays = schoolDays;
         this.access = access;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -77,7 +82,10 @@ public class WorkloadService {
         });
         Predicate<LocalDate> isSchool = schoolDays.predicate(schoolId, from, to);
         List<LocalDate> days = new ArrayList<>();
-        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+        // lessons are "held" only on days that have come
+        LocalDate today = LocalDate.now(clock);
+        LocalDate countedTo = to.isAfter(today) ? today : to;
+        for (LocalDate d = from; !d.isAfter(countedTo); d = d.plusDays(1)) {
             if (!isSchool.test(d) || vacation.contains(d)) continue;
             days.add(d);
         }
@@ -140,7 +148,7 @@ public class WorkloadService {
             totalHeld += total;
         }
         rows.sort(Comparator.comparingInt(Row::weeklyLessons).reversed().thenComparing(Row::name));
-        return new Report(from, to, days.size(), rows, totalWeekly, totalHeld);
+        return new Report(from, to, countedTo, days.size(), rows, totalWeekly, totalHeld);
     }
 
     /** "5-A|Matematika" before "10-A|…": the grade as a number. */

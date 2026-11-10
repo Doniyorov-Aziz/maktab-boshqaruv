@@ -109,6 +109,39 @@ const routes = [
         path: 'telegram-parents',
         component: () => import('@/pages/TelegramParentsPage.vue')
       },
+      // school modules
+      {
+        path: 'homework',
+        component: () => import('@/pages/HomeworkPage.vue')
+      },
+      {
+        path: 'exams',
+        component: () => import('@/pages/ExamsPage.vue')
+      },
+      {
+        path: 'report-cards',
+        component: () => import('@/pages/ReportCardPage.vue')
+      },
+      {
+        path: 'workload',
+        component: () => import('@/pages/WorkloadPage.vue')
+      },
+      {
+        path: 'achievements',
+        component: () => import('@/pages/AchievementsPage.vue')
+      },
+      {
+        // the parents who booked a teacher: closed to the demo visitor
+        path: 'meetings',
+        component: () => import('@/pages/MeetingsPage.vue'),
+        meta: { guestLocked: true }
+      },
+      {
+        // a family's fees: staff who edit, never the demo visitor
+        path: 'payments',
+        component: () => import('@/pages/PaymentsPage.vue'),
+        meta: { editorOnly: true, guestLocked: true }
+      },
       {
         path: 'parent-messages',
         component: () => import('@/pages/AppealsPage.vue'),

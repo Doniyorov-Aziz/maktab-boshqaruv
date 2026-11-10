@@ -543,8 +543,63 @@ const dailyNavItems = [
     title: 'Taqvim',
     icon: 'event_available',
     color: '#22c55e'
+  },
+  {
+    path: '/homework',
+    title: 'Uy vazifalari',
+    icon: 'assignment',
+    color: '#0ea5e9'
+  },
+  {
+    path: '/exams',
+    title: 'Imtihonlar jadvali',
+    icon: 'quiz',
+    color: '#ef4444'
   }
 ]
+
+// the school modules: results and services (Tabel, Yutuqlar, Ish yuklamasi, Uchrashuvlar, To'lovlar)
+const resultNavItems = computed(() => [
+  {
+    key: 'report-cards',
+    path: '/report-cards',
+    title: 'Chorak tabeli',
+    icon: 'workspace_premium',
+    color: '#6366f1'
+  },
+  {
+    key: 'achievements',
+    path: '/achievements',
+    title: 'Yutuqlar',
+    icon: 'emoji_events',
+    color: '#f59e0b'
+  },
+  {
+    key: 'workload',
+    path: '/workload',
+    title: 'Ish yuklamasi',
+    icon: 'work_history',
+    color: '#0f766e'
+  },
+  {
+    key: 'meetings',
+    path: '/meetings',
+    title: 'Uchrashuvlar',
+    icon: 'handshake',
+    color: '#ec4899'
+  },
+  ...(authStore.isEditor
+    ? [
+        {
+          key: 'payments',
+          path: '/payments',
+          title: "To'lovlar",
+          icon: 'payments',
+          color: '#16a34a'
+        }
+      ]
+    : [])
+])
 
 const visibleModules = computed(() =>
   modules.filter(m => !m.hidden && (!m.adminOnly || authStore.isAdmin))
@@ -650,6 +705,7 @@ const groupedModules = computed(() => {
         : [])
     )
   }
+  groups.push({ name: 'Natijalar va xizmatlar', items: resultNavItems.value })
   // the school library ("📚 Kitob mutolaasi" in the parents' bot)
   if (authStore.isEditor) {
     groups.push({
@@ -726,7 +782,9 @@ const GUEST_LOCKED = new Set([
   '/absence-requests',
   '/notifications',
   '/broadcasts',
-  '/visits'
+  '/visits',
+  '/meetings',
+  '/payments'
 ])
 function isLocked(item) {
   return authStore.isGuest && GUEST_LOCKED.has(item.path)
@@ -952,6 +1010,23 @@ const pageEntries = [
     color: 'positive',
     path: '/calendar'
   },
+  ...[
+    ['homework', 'Uy vazifalari', 'assignment'],
+    ['exams', 'Imtihonlar jadvali', 'quiz'],
+    ['report-cards', 'Chorak tabeli', 'workspace_premium'],
+    ['achievements', 'Yutuqlar', 'emoji_events'],
+    ['workload', 'Ish yuklamasi', 'work_history'],
+    ['meetings', 'Uchrashuvlar', 'handshake'],
+    ['payments', "To'lovlar", 'payments']
+  ].map(([id, label, icon]) => ({
+    type: 'page',
+    id,
+    label,
+    sublabel: 'Sahifa',
+    icon,
+    color: 'primary',
+    path: `/${id}`
+  })),
   ...modules
     .filter(m => !m.hidden)
     .map(m => ({
