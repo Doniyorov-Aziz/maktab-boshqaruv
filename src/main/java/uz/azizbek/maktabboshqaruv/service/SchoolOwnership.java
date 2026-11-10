@@ -20,7 +20,8 @@ public class SchoolOwnership {
 
     public enum Kind {
         SCHOOL, CLASS, STUDENT, EMPLOYEE, YEAR, BUILDING, ROOM, SUBJECT, LESSON_SLOT, ANNOUNCEMENT,
-        CALENDAR_EVENT, ABSENCE, BEHAVIOR, GRADE, ATTENDANCE, USER, APPEAL, BROADCAST, BOOK, BOOK_CATEGORY, LIBRARY_PERMISSION
+        CALENDAR_EVENT, ABSENCE, BEHAVIOR, GRADE, ATTENDANCE, USER, APPEAL, BROADCAST, BOOK, BOOK_CATEGORY, LIBRARY_PERMISSION,
+        HOMEWORK, EXAM, MEETING_SLOT, PAYMENT, ACHIEVEMENT, TERM
     }
 
     private static final String CLASS_SCHOOL =
@@ -53,7 +54,14 @@ public class SchoolOwnership {
             Map.entry(Kind.BROADCAST, "select school_id from broadcast where id = ?"),
             Map.entry(Kind.BOOK, "select school_id from book where id = ?"),
             Map.entry(Kind.BOOK_CATEGORY, "select school_id from book_category where id = ?"),
-            Map.entry(Kind.LIBRARY_PERMISSION, "select school_id from library_permission where id = ?")
+            Map.entry(Kind.LIBRARY_PERMISSION, "select school_id from library_permission where id = ?"),
+            Map.entry(Kind.TERM, "select y.school_id from academic_term t join academic_year y on y.id = t.academic_year_id where t.id = ?"),
+            Map.entry(Kind.HOMEWORK, "select school_id from homework where id = ?"),
+            Map.entry(Kind.EXAM, "select school_id from exam where id = ?"),
+            Map.entry(Kind.MEETING_SLOT, "select school_id from meeting_slot where id = ?"),
+            Map.entry(Kind.PAYMENT, "select school_id from payment where id = ?"),
+            Map.entry(Kind.ACHIEVEMENT, STUDENT_SCHOOL.replace("where s.id = ?",
+                    "where s.id = (select student_id from achievement where id = ?)"))
     );
 
     private final JdbcTemplate jdbc;

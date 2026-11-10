@@ -35,7 +35,9 @@ public class TelegramSchemaMigration implements CommandLineRunner {
             // journal v2: "Uy vazifasi" grades
             new String[]{"grade", "grade_type_check"},
             // public demo: the GUEST role
-            new String[]{"app_user", "app_user_role_check"}
+            new String[]{"app_user", "app_user_role_check"},
+            // school modules: "uchrashuvga yozildi" in the staff bell
+            new String[]{"staff_notification", "staff_notification_kind_check"}
     );
 
     @Autowired

@@ -50,7 +50,9 @@ public class SchoolScopeConfig implements WebMvcConfigurer {
             Map.entry("appeals", Kind.APPEAL), Map.entry("broadcasts", Kind.BROADCAST),
             // library: /api/library/books/{id}, /api/library/categories/{id}
             Map.entry("books", Kind.BOOK), Map.entry("categories", Kind.BOOK_CATEGORY),
-            Map.entry("permissions", Kind.LIBRARY_PERMISSION)
+            Map.entry("permissions", Kind.LIBRARY_PERMISSION),
+            Map.entry("homework", Kind.HOMEWORK), Map.entry("exams", Kind.EXAM), Map.entry("meeting-slots", Kind.MEETING_SLOT),
+            Map.entry("payments", Kind.PAYMENT), Map.entry("achievements", Kind.ACHIEVEMENT)
     );
 
     /** Query parameter / body field → what it names. */
@@ -61,7 +63,8 @@ public class SchoolScopeConfig implements WebMvcConfigurer {
             Map.entry("buildingId", Kind.BUILDING), Map.entry("roomId", Kind.ROOM), Map.entry("subjectId", Kind.SUBJECT),
             Map.entry("lessonSlotId", Kind.LESSON_SLOT),
             Map.entry("bookId", Kind.BOOK), Map.entry("categoryId", Kind.BOOK_CATEGORY),
-            Map.entry("permissionId", Kind.LIBRARY_PERMISSION)
+            Map.entry("permissionId", Kind.LIBRARY_PERMISSION),
+            Map.entry("termId", Kind.TERM), Map.entry("examId", Kind.EXAM)
     );
 
     private final SchoolAccessService access;

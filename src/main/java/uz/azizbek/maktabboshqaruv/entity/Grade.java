@@ -56,6 +56,18 @@ public class Grade {
     @Column(name = "lesson_slot_id")
     private Long lessonSlotId;
 
+    /** The exam (Imtihonlar jadvali) this result belongs to; null for every other grade. */
+    @Column(name = "exam_id")
+    private Long examId;
+
+    public Long getExamId() {
+        return examId;
+    }
+
+    public void setExamId(Long examId) {
+        this.examId = examId;
+    }
+
     public AttendanceSource getSource() {
         return source;
     }

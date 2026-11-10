@@ -53,6 +53,17 @@ public class ParentSession {
     /** Friday's book picks ("📚 Dam olish kunlari uchun 3 ta kitob"); null = on */
     private Boolean notifyLibrary;
 
+    /** "📝 Uy vazifasi" messages (null = on). */
+    private Boolean notifyHomework;
+
+    public Boolean getNotifyHomework() {
+        return notifyHomework;
+    }
+
+    public void setNotifyHomework(Boolean notifyHomework) {
+        this.notifyHomework = notifyHomework;
+    }
+
     private LocalTime scheduleTime;
 
     private Boolean quietHoursEnabled;
@@ -79,6 +90,11 @@ public class ParentSession {
             case EVENT_REMINDER -> notifyEventReminder;
             case MORNING_DIGEST -> notifyMorningDigest;
             case LIBRARY_WEEKLY -> notifyLibrary;
+            case HOMEWORK -> notifyHomework;
+            case EXAM_REMINDER -> notifyEventReminder;
+            case ACHIEVEMENT -> notifyGrades;
+            // a booking the parent made, a payment, the report card: official, always delivered
+            case MEETING, PAYMENT_REMINDER, REPORT_CARD, MODULE_FILE -> Boolean.TRUE;
             // Replies, decisions and school broadcasts are personal/official — always delivered;
             // a book is sent because the parent just asked for it.
             case MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST, BOOK_DOWNLOAD -> Boolean.TRUE;

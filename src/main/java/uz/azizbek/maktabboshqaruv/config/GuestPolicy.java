@@ -48,6 +48,9 @@ public final class GuestPolicy {
             "/api/dashboard/my-appeals",
             // absence requests: a parent's own words and photos
             "/api/absence-requests", "/api/absence-requests/**",
+            // a family's fees and debts; the parents who booked a teacher's time
+            "/api/payments", "/api/payments/**",
+            "/api/meeting-slots", "/api/meeting-slots/**",
             // Telegram outbox (NotificationLog), sent messages and their recipients, the send page
             "/api/notifications", "/api/notifications/**",
             "/api/broadcasts", "/api/broadcasts/**",

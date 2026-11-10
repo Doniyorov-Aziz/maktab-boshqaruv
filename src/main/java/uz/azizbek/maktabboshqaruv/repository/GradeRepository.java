@@ -89,4 +89,9 @@ public interface GradeRepository extends JpaRepository<Grade, Long> {
             """)
     List<Object[]> journal(@Param("classId") Long classId, @Param("subjectId") Long subjectId,
                            @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /** The results of one exam (Imtihonlar jadvali). */
+    List<Grade> findByExamId(Long examId);
+
+    long countByExamId(Long examId);
 }

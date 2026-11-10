@@ -16,7 +16,9 @@ import java.time.LocalDateTime;
 public class StaffNotification {
 
     public enum Kind {
-        ATTENDANCE_REMINDER
+        ATTENDANCE_REMINDER,
+        /** a parent booked (or cancelled) a meeting with this teacher */
+        MEETING
     }
 
     @Id

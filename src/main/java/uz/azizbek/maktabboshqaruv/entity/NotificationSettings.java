@@ -60,6 +60,8 @@ public class NotificationSettings {
             case TOMORROW_SCHEDULE, WEEKLY_REPORT, EVENT_REMINDER, MESSAGE_REPLY, ABSENCE_DECISION, BROADCAST, MORNING_DIGEST -> true;
             // a book the parent asked for; the weekly picks have their own switch in Bot sozlamalari
             case BOOK_DOWNLOAD, LIBRARY_WEEKLY -> true;
+            // school modules: the school switches each one on its own page; the parent per kind in the bot
+            case HOMEWORK, EXAM_REMINDER, MEETING, PAYMENT_REMINDER, REPORT_CARD, ACHIEVEMENT, MODULE_FILE -> true;
         };
     }
 
